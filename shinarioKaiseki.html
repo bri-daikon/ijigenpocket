@@ -158,27 +158,42 @@
                 throw new Error("APIキーが設定されていません。右上の設定欄に入力してください。");
             }
 
-            const systemPrompt = `You are a professional librarian specialized in TRPG scenarios. 
-Access the provided URL using the search tool, read the description carefully, and extract information.
-Ensure accuracy and format your response as JSON based on the schema.
-Required fields: system, title, summary, players, playtime, imageUrl.`;
+            // より確実なモデル名指定
+            const modelId = "gemini-1.5-flash-latest";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${currentApiKey}`;
 
-            const userQuery = `Search for this URL and extract scenario info: ${targetUrl}`;
+            const systemPrompt = `You are a helpful librarian for TRPG scenarios. 
+Access the URL using the search tool, read its product page (especially BOOTH), and extract:
+1. system: TRPG system name
+2. title: Scenario title
+3. summary: Brief summary (approx 100-150 Japanese chars)
+4. players: Recommended player count
+5. playtime: Estimated time
+6. imageUrl: Product thumbnail image URL
+Return as a JSON object.`;
 
-            // APIの呼び出し形式を一般的なものに修正
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`;
+            const userQuery = `Search and analyze this TRPG scenario page: ${targetUrl}`;
 
-            const responseSchema = {
-                type: "OBJECT",
-                properties: {
-                    system: { type: "STRING" },
-                    title: { type: "STRING" },
-                    summary: { type: "STRING" },
-                    players: { type: "STRING" },
-                    playtime: { type: "STRING" },
-                    imageUrl: { type: "STRING" }
-                },
-                required: ["system", "title", "summary", "players", "playtime", "imageUrl"]
+            // より標準的なプロパティ名（snake_case）を試用
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                tools: [{ "google_search": {} }],
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            system: { type: "STRING" },
+                            title: { type: "STRING" },
+                            summary: { type: "STRING" },
+                            players: { type: "STRING" },
+                            playtime: { type: "STRING" },
+                            imageUrl: { type: "STRING" }
+                        },
+                        required: ["system", "title", "summary", "players", "playtime", "imageUrl"]
+                    }
+                }
             };
 
             let response;
@@ -186,29 +201,27 @@ Required fields: system, title, summary, players, playtime, imageUrl.`;
                 response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: userQuery }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        tools: [{ "google_search": {} }],
-                        generationConfig: { 
-                            responseMimeType: "application/json",
-                            responseSchema: responseSchema
-                        }
-                    })
+                    body: JSON.stringify(payload)
                 });
             } catch (e) {
-                throw new Error("ネットワークエラーが発生しました。インターネット接続を確認してください。");
+                throw new Error("ネットワークエラー。接続を確認してください。");
             }
 
+            const result = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const msg = errorData.error?.message || response.statusText || "不明なエラー";
-                throw new Error(`APIエラー: ${msg} (Status: ${response.status})`);
+                console.error("API Error Response:", result);
+                const errorMsg = result.error?.message || response.statusText || "Unknown error";
+                
+                // 特定のエラーに対するヒント
+                if (response.status === 404) {
+                    throw new Error(`モデルが見つかりません(404)。APIキーが正しく作成されているか、または地域制限の可能性があります。メッセージ: ${errorMsg}`);
+                }
+                throw new Error(`APIエラー(${response.status}): ${errorMsg}`);
             }
             
-            const result = await response.json();
             const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error("情報が取得できませんでした。Google AI Studioで 'google_search' ツールが利用可能なキーか確認してください。");
+            if (!text) throw new Error("解析結果が空でした。");
             
             return JSON.parse(text);
         }
@@ -242,7 +255,7 @@ Required fields: system, title, summary, players, playtime, imageUrl.`;
                 <td class="p-4 align-top text-right">
                     <button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1-1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
                     </button>
                 </td>
@@ -263,11 +276,12 @@ Required fields: system, title, summary, players, playtime, imageUrl.`;
                 addRowToTable(data, url);
                 urlInput.value = "";
             } catch (error) {
-                showMessage("解析エラー", error.message);
+                console.error("Full Error Info:", error);
+                showMessage("解析失敗", error.message);
                 const manualData = {
                     system: "取得失敗",
                     title: "手動入力",
-                    summary: "AI解析に失敗しました。手動で補完してください。",
+                    summary: "AI解析に失敗しました。キーが正しいか、または少し時間をおいて試してください。",
                     players: "-",
                     playtime: "-",
                     imageUrl: ""
