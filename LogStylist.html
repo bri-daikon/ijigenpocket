@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogStylist Pro - ココフォリアログ整形</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfaf0;
+            --sidebar-bg: #ffffff;
+            --text-color: #3e3e3e;
+            --border-color: #efead8;
+            --accent: #6c5ce7;
+        }
+        .dark-mode {
+            --bg-color: #2d2d2d;
+            --sidebar-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #444444;
+            --accent: #a29bfe;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar {
+            width: 340px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .log-line {
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            align-items: baseline;
+            gap: 16px;
+            transition: all 0.2s;
+        }
+
+        .prio-main { padding-left: 20px; font-size: 1.0em; }
+        .prio-info { padding-left: 40px; font-size: 0.9em; opacity: 0.9; }
+        .prio-other-tab { padding-left: 60px; font-size: 0.8em; opacity: 0.75; }
+        .prio-lowest { padding-left: 80px; font-size: 0.7em; opacity: 0.6; }
+
+        .user-name {
+            font-weight: bold;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 1em;
+        }
+
+        .content-text {
+            line-height: 1.8;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        .critical { color: #e84393; font-weight: bold; text-decoration: underline; }
+        .fumble { color: #0984e3; font-weight: bold; text-decoration: underline; }
+        .special { color: #6c5ce7; font-weight: bold; }
+
+        .drag-over {
+            border: 4px dashed var(--accent) !important;
+            background-color: rgba(108, 92, 231, 0.1) !important;
+        }
+
+        /* 一括編集選択時のスタイル */
+        .user-row-selected {
+            background-color: rgba(108, 92, 231, 0.05);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="flex">
+
+    <aside class="sidebar p-6 flex flex-col gap-6 text-sm">
+        <header>
+            <h1 class="text-2xl font-black text-indigo-500">LogStylist <span class="text-xs font-normal opacity-50">Pro</span></h1>
+        </header>
+
+        <section class="space-y-4">
+            <h2 class="font-bold border-b pb-1 opacity-60">1. ファイル読込</h2>
+            <input type="file" id="fileInput" accept=".html" class="w-full text-xs cursor-pointer">
+            <div>
+                <label class="block text-xs mb-1">セッション名</label>
+                <input type="text" id="logTitle" placeholder="セッションログ" class="w-full p-2 border rounded bg-transparent dark:border-gray-600 outline-none">
+            </div>
+        </section>
+
+        <section class="space-y-4 flex-1 overflow-y-auto pr-2">
+            <h2 class="font-bold border-b pb-1 opacity-60">2. カスタマイズ</h2>
+            
+            <div class="space-y-2 bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <span>ダークモード</span>
+                    <input type="checkbox" id="darkModeToggle" class="accent-indigo-500">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>名前の色を本文に適用</span>
+                    <input type="checkbox" id="syncColorToggle" class="accent-indigo-500">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <p class="text-xs font-bold mt-4 text-indigo-500">タブ設定 (インデント/サイズ)</p>
+                <div id="tabControls" class="space-y-2"></div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center mt-4">
+                    <p class="text-xs font-bold text-indigo-500">発言者設定</p>
+                </div>
+                
+                <!-- 一括編集パネル -->
+                <div id="bulkPanel" class="hidden bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 space-y-2">
+                    <p class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">選択中の一括編集</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="bulkNameInput" placeholder="新しい表示名" class="flex-1 p-1 text-xs border rounded bg-white dark:bg-gray-800">
+                        <button id="applyBulkName" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] hover:bg-indigo-700">適用</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px]">一括カラー:</span>
+                        <input type="color" id="bulkColorInput" class="w-8 h-5 border-0 bg-transparent cursor-pointer">
+                    </div>
+                </div>
+
+                <div id="userControls" class="space-y-1"></div>
+            </div>
+        </section>
+
+        <section class="pt-4 border-t space-y-4">
+            <button id="downloadBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg">
+                HTMLを書き出し
+            </button>
+            <footer class="text-[10px] opacity-40 text-center space-y-1">
+                <p>Product by 異次元ポケット</p>
+                <p><a href="https://ijigenpocket.booth.pm/" target="_blank" class="hover:underline">https://ijigenpocket.booth.pm/</a></p>
+            </footer>
+        </section>
+    </aside>
+
+    <main class="flex-1 p-8 lg:p-12 overflow-y-auto h-screen">
+        <div class="max-w-4xl mx-auto">
+            <div id="statsArea" class="mb-10 hidden">
+                <div class="bg-white/40 dark:bg-black/20 p-6 rounded-2xl border border-white/50 dark:border-white/5 shadow-sm">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📊 クリティカル・ファンブル集計</h2>
+                    <div id="statsContent" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <div id="logDisplay" class="bg-white/30 dark:bg-black/10 rounded-3xl shadow-2xl min-h-[600px] border border-white/20 overflow-hidden transition-all duration-300 relative">
+                <div id="dropZone" class="p-20 text-center opacity-30 h-full flex flex-col items-center justify-center pointer-events-none absolute inset-0 z-0">
+                    <p class="text-5xl mb-4">📥</p>
+                    <p class="font-bold">ログをドロップ</p>
+                </div>
+                <div id="logContentArea" class="relative z-10"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let logData = [];
+        let tabSettings = {}; 
+        let userSettings = {}; 
+        let selectedUsers = new Set(); // 一括編集用の選択状態管理
+
+        const COLOR_PALETTE = [
+            '#fff5f5', '#f0f7ff', '#f2faf2', '#f8f2ff', '#fff0f6', '#fcf5ed'
+        ];
+
+        const fileInput = document.getElementById('fileInput');
+        const logDisplay = document.getElementById('logDisplay');
+        const logContentArea = document.getElementById('logContentArea');
+        const dropZone = document.getElementById('dropZone');
+        const tabControls = document.getElementById('tabControls');
+        const userControls = document.getElementById('userControls');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const syncColorToggle = document.getElementById('syncColorToggle');
+        const statsArea = document.getElementById('statsArea');
+        const logTitleInput = document.getElementById('logTitle');
+        const bulkPanel = document.getElementById('bulkPanel');
+        const bulkNameInput = document.getElementById('bulkNameInput');
+        const applyBulkNameBtn = document.getElementById('applyBulkName');
+        const bulkColorInput = document.getElementById('bulkColorInput');
+
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+        });
+
+        syncColorToggle.addEventListener('change', () => render());
+
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+
+        logDisplay.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            logDisplay.classList.add('drag-over');
+        });
+
+        logDisplay.addEventListener('dragleave', () => {
+            logDisplay.classList.remove('drag-over');
+        });
+
+        logDisplay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            logDisplay.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        });
+
+        // 一括編集の適用ロジック
+        applyBulkNameBtn.onclick = () => {
+            const newName = bulkNameInput.value.trim();
+            if (!newName) return;
+            selectedUsers.forEach(userId => {
+                if (userSettings[userId]) userSettings[userId].displayName = newName;
+            });
+            updateControlUI();
+            render();
+        };
+
+        bulkColorInput.oninput = (e) => {
+            const newColor = e.target.value;
+            selectedUsers.forEach(userId => {
+                if (userSettings[userId]) userSettings[userId].color = newColor;
+            });
+            updateControlUI();
+            render();
+        };
+
+        async function processFile(file) {
+            try {
+                const fileName = file.name.replace(/\.[^/.]+$/, "");
+                logTitleInput.value = fileName;
+
+                const text = await file.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const paragraphs = Array.from(doc.querySelectorAll('p'));
+
+                if (paragraphs.length === 0) return;
+
+                logData = [];
+                const tabs = new Set();
+                const users = new Set();
+
+                paragraphs.forEach((p) => {
+                    const spans = p.querySelectorAll('span');
+                    if (spans.length < 3) return;
+
+                    try {
+                        let rawTab = spans[0].innerText.trim().replace(/[\[\]]/g, '');
+                        if (rawTab === 'おはらい' || rawTab === 'お祓い') return;
+
+                        if (rawTab.toLowerCase() === 'other') {
+                            rawTab = '雑談';
+                        }
+
+                        const user = spans[1].innerText.trim().replace(/\s*:\s*$/, '');
+                        const content = spans[2].innerHTML.trim();
+                        const color = p.style.color || '#333';
+
+                        logData.push({ tab: rawTab, user, content, color });
+                        tabs.add(rawTab);
+                        users.add(user);
+                    } catch (e) { console.error(e); }
+                });
+
+                let otherTabIdx = 0;
+                tabs.forEach(t => {
+                    if (!tabSettings[t]) {
+                        let priority = 'other-tab';
+                        let bgColor = 'rgba(0,0,0,0)';
+                        const lowerT = t.toLowerCase();
+                        
+                        if (lowerT === 'main') {
+                            priority = 'main';
+                        } else if (lowerT === 'info') {
+                            priority = 'info';
+                            bgColor = '#fffde7'; 
+                        } else if (lowerT === '雑談' || lowerT === 'other') {
+                            priority = 'lowest';
+                            bgColor = '#f5f5f5'; 
+                        } else {
+                            bgColor = COLOR_PALETTE[otherTabIdx % COLOR_PALETTE.length];
+                            otherTabIdx++;
+                        }
+                        tabSettings[t] = { color: bgColor, priority, visible: true };
+                    }
+                });
+
+                users.forEach(u => {
+                    if (!userSettings[u]) {
+                        const firstColor = logData.find(d => d.user === u)?.color || '#333';
+                        userSettings[u] = { visible: true, color: firstColor, displayName: u };
+                    }
+                });
+
+                updateControlUI();
+                render();
+            } catch (err) { console.error(err); }
+        }
+
+        function updateControlUI() {
+            // タブ設定UI
+            tabControls.innerHTML = '';
+            const sortedTabKeys = Object.keys(tabSettings).sort((a, b) => {
+                const order = { 'main': 1, 'info': 2, '雑談': 3, 'other': 3 };
+                const aIdx = order[a.toLowerCase()] || 99;
+                const bIdx = order[b.toLowerCase()] || 99;
+                return aIdx - bIdx;
+            });
+
+            sortedTabKeys.forEach(tab => {
+                const conf = tabSettings[tab];
+                const div = document.createElement('div');
+                div.className = 'p-2 bg-black/5 dark:bg-white/5 rounded space-y-2';
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 truncate">
+                            <input type="checkbox" ${conf.visible ? 'checked' : ''} class="tab-vis accent-indigo-500">
+                            <span class="font-bold truncate w-24">${tab}</span>
+                        </label>
+                        <input type="color" value="${rgbaToHex(conf.color)}" class="tab-color">
+                    </div>
+                    <select class="tab-prio w-full bg-transparent border rounded text-[10px] p-1">
+                        <option value="main" ${conf.priority === 'main' ? 'selected' : ''}>1. [main] (標準)</option>
+                        <option value="info" ${conf.priority === 'info' ? 'selected' : ''}>2. [Info] (中)</option>
+                        <option value="other-tab" ${conf.priority === 'other-tab' ? 'selected' : ''}>3. その他 (小)</option>
+                        <option value="lowest" ${conf.priority === 'lowest' ? 'selected' : ''}>4. [雑談/other] (最小)</option>
+                    </select>
+                `;
+                div.querySelector('.tab-vis').onchange = (e) => { tabSettings[tab].visible = e.target.checked; render(); };
+                div.querySelector('.tab-color').oninput = (e) => { tabSettings[tab].color = e.target.value; render(); };
+                div.querySelector('.tab-prio').onchange = (e) => { tabSettings[tab].priority = e.target.value; render(); };
+                tabControls.appendChild(div);
+            });
+
+            // 発言者設定UI (一括編集対応)
+            userControls.innerHTML = '';
+            Object.keys(userSettings).forEach(userId => {
+                const setting = userSettings[userId];
+                const isSelected = selectedUsers.has(userId);
+                const div = document.createElement('div');
+                div.className = `flex flex-col gap-1 p-2 border-b border-black/5 dark:border-white/5 ${isSelected ? 'user-row-selected' : ''}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 truncate flex-1">
+                            <input type="checkbox" class="bulk-check accent-indigo-500" ${isSelected ? 'checked' : ''}>
+                            <input type="checkbox" ${setting.visible ? 'checked' : ''} class="user-vis accent-indigo-500">
+                            <span class="truncate font-medium user-label" style="color:${setting.color}">${setting.displayName}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="edit-btn text-[10px] opacity-40 hover:opacity-100 px-1 border rounded">編集</button>
+                            <input type="color" value="${setting.color}" class="user-color w-5 h-5 border-0 bg-transparent cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="edit-area hidden mt-1">
+                        <input type="text" value="${setting.displayName}" class="name-edit-input w-full p-1 text-[10px] border rounded bg-transparent">
+                    </div>
+                `;
+
+                // 一括編集用チェック
+                div.querySelector('.bulk-check').onchange = (e) => {
+                    if (e.target.checked) selectedUsers.add(userId);
+                    else selectedUsers.delete(userId);
+                    bulkPanel.classList.toggle('hidden', selectedUsers.size === 0);
+                    updateControlUI();
+                };
+
+                div.querySelector('.user-vis').onchange = (e) => { setting.visible = e.target.checked; render(); };
+                div.querySelector('.user-color').oninput = (e) => { 
+                    setting.color = e.target.value; 
+                    render(); 
+                    updateControlUI();
+                };
+                div.querySelector('.edit-btn').onclick = () => {
+                    div.querySelector('.edit-area').classList.toggle('hidden');
+                };
+                div.querySelector('.name-edit-input').onchange = (e) => {
+                    setting.displayName = e.target.value;
+                    render();
+                    updateControlUI();
+                };
+                userControls.appendChild(div);
+            });
+        }
+
+        function render() {
+            logContentArea.innerHTML = '';
+            const stats = {};
+            const syncColor = syncColorToggle.checked;
+            const visibleLogs = logData.filter(item => tabSettings[item.tab].visible && userSettings[item.user].visible);
+
+            visibleLogs.forEach(item => {
+                const setting = userSettings[item.user];
+                const isCrit = item.content.includes('決定的成功');
+                const isFumb = item.content.includes('致命的失敗');
+                const isSpec = item.content.includes('スペシャル') && !isCrit;
+
+                if (!stats[item.user]) stats[item.user] = { criticals: [], fumbles: [], specials: [] };
+                if (isCrit) stats[item.user].criticals.push(item);
+                else if (isFumb) stats[item.user].fumbles.push(item);
+                else if (isSpec) stats[item.user].specials.push(item);
+
+                const line = document.createElement('div');
+                const prio = tabSettings[item.tab].priority;
+                line.className = `log-line prio-${prio} log-row`;
+                line.setAttribute('data-tab', item.tab);
+                line.setAttribute('data-user', setting.displayName);
+                line.style.backgroundColor = tabSettings[item.tab].color;
+
+                const contentColor = syncColor ? setting.color : 'inherit';
+                line.innerHTML = `
+                    <div class="user-name" style="color: ${setting.color}">${setting.displayName}</div>
+                    <div class="content-text" style="color: ${contentColor}">${highlight(item.content)}</div>
+                `;
+                logContentArea.appendChild(line);
+            });
+
+            dropZone.style.display = visibleLogs.length > 0 ? 'none' : 'flex';
+            updateStatsUI(stats);
+        }
+
+        function highlight(html) {
+            return html
+                .replace(/決定的成功/g, '<span class="critical">$&</span>')
+                .replace(/致命的失敗/g, '<span class="fumble">$&</span>')
+                .replace(/スペシャル/g, '<span class="special">$&</span>');
+        }
+
+        function updateStatsUI(stats) {
+            const contentArea = document.getElementById('statsContent');
+            contentArea.innerHTML = '';
+            let hasStats = false;
+
+            Object.keys(stats).forEach(user => {
+                const s = stats[user];
+                const setting = userSettings[user];
+                if (s.criticals.length + s.fumbles.length + s.specials.length > 0) {
+                    hasStats = true;
+                    const div = document.createElement('div');
+                    div.className = 'bg-white/50 dark:bg-black/20 rounded-xl border border-black/5 overflow-hidden';
+                    div.innerHTML = `
+                        <div class="p-3 flex items-center justify-between cursor-pointer header-click">
+                            <div class="font-bold flex items-center gap-2" style="color:${setting.color}">
+                                <span>${setting.displayName}</span>
+                                <span class="text-[10px] opacity-40">▼ 詳細表示</span>
+                            </div>
+                            <div class="flex gap-3 text-[10px] font-bold">
+                                <span class="text-pink-500">Crit: ${s.criticals.length}</span>
+                                <span class="text-blue-500">Funb: ${s.fumbles.length}</span>
+                                <span class="text-indigo-500">Spec: ${s.specials.length}</span>
+                            </div>
+                        </div>
+                        <div class="hidden p-4 bg-black/5 dark:bg-black/40 text-[10px] space-y-4 border-t border-black/5 details-body">
+                            ${s.criticals.length ? `<div><p class="font-bold text-pink-500 mb-1">【決定的成功】</p>${s.criticals.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
+                            ${s.fumbles.length ? `<div><p class="font-bold text-blue-500 mb-1">【致命的失敗】</p>${s.fumbles.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
+                            ${s.specials.length ? `<div><p class="font-bold text-indigo-500 mb-1">【スペシャル】</p>${s.specials.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
+                        </div>
+                    `;
+                    div.querySelector('.header-click').onclick = () => div.querySelector('.details-body').classList.toggle('hidden');
+                    contentArea.appendChild(div);
+                }
+            });
+            statsArea.classList.toggle('hidden', !hasStats);
+        }
+
+        function stripHtml(html) {
+            let tmp = document.createElement("DIV");
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || "";
+        }
+
+        function rgbaToHex(color) {
+            if (color === 'rgba(0,0,0,0)' || color === 'transparent') return '#ffffff';
+            if (color.startsWith('#')) return color;
+            return '#ffffff';
+        }
+
+        document.getElementById('downloadBtn').onclick = function() {
+            const title = logTitleInput.value || 'SessionLog';
+            const isDark = darkModeToggle.checked;
+            const logContentHtml = logContentArea.innerHTML;
+            const statsContentHtml = statsArea.classList.contains('hidden') ? '' : statsArea.innerHTML;
+            
+            const activeTabs = Object.keys(tabSettings)
+                .filter(t => tabSettings[t].visible)
+                .sort((a, b) => {
+                    const order = { 'main': 1, 'info': 2, '雑談': 3, 'other': 3 };
+                    const aIdx = order[a.toLowerCase()] || 99;
+                    const bIdx = order[b.toLowerCase()] || 99;
+                    return aIdx - bIdx;
+                });
+                
+            const activeUsers = Object.keys(userSettings)
+                .filter(u => userSettings[u].visible)
+                .map(u => userSettings[u].displayName);
+            
+            // 重複名を排除したユニークなリストを作成
+            const uniqueUsers = Array.from(new Set(activeUsers));
+
+            const htmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <style>
+        body { background: ${isDark ? '#2d2d2d' : '#fdfaf0'}; color: ${isDark ? '#e0e0e0' : '#3e3e3e'}; font-family: sans-serif; margin: 0; padding: 40px 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: ${isDark ? '#1e1e1e' : '#fff'}; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .controls { padding: 20px; background: rgba(0,0,0,0.05); font-size: 12px; }
+        .filter-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .filter-chip { padding: 4px 12px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; transition: 0.2s; }
+        .filter-chip.active { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        .log-line { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px; display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: baseline; }
+        .prio-main { padding-left: 20px; font-size: 1.0em; }
+        .prio-info { padding-left: 40px; font-size: 0.9em; opacity: 0.9; }
+        .prio-other-tab { padding-left: 60px; font-size: 0.8em; opacity: 0.75; }
+        .prio-lowest { padding-left: 80px; font-size: 0.7em; opacity: 0.6; }
+        .user-name { font-weight: bold; padding-right: 1em; }
+        .critical { color: #e84393; font-weight: bold; text-decoration: underline; }
+        .fumble { color: #0984e3; font-weight: bold; text-decoration: underline; }
+        .special { color: #6c5ce7; font-weight: bold; }
+        .stats-area { padding: 20px; background: rgba(0,0,0,0.03); }
+        .hidden { display: none !important; }
+        .header-click { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        footer { margin-top: 40px; text-align: center; font-size: 10px; opacity: 0.5; line-height: 1.6; }
+        footer a { color: inherit; }
+    </style>
+</head>
+<body>
+    <h1>${title}</h1>
+    <div class="container">
+        <div class="controls">
+            <div class="filter-group">
+                ${activeTabs.map(t => `<div class="filter-chip active" onclick="toggleFilter(this, 'tab', '${t}')">${t}</div>`).join('')}
+            </div>
+            <div class="filter-group">
+                ${uniqueUsers.map(u => `<div class="filter-chip active" onclick="toggleFilter(this, 'user', '${u}')">${u}</div>`).join('')}
+            </div>
+        </div>
+        <div class="stats-area">${statsContentHtml}</div>
+        <div id="log-body">${logContentHtml}</div>
+    </div>
+    <footer>
+        <p>Product by 異次元ポケット</p>
+        <p><a href="https://ijigenpocket.booth.pm/" target="_blank">https://ijigenpocket.booth.pm/</a></p>
+    </footer>
+    <script>
+        const states = { tab: {}, user: {} };
+        document.querySelectorAll('.filter-chip').forEach(el => {
+            const onclickText = el.getAttribute('onclick');
+            const parts = onclickText.match(/'([^']+)'/g);
+            states[parts[0].replace(/'/g,'')][parts[1].replace(/'/g,'')] = true;
+        });
+
+        function toggleFilter(el, type, val) {
+            el.classList.toggle('active');
+            states[type][val] = el.classList.contains('active');
+            document.querySelectorAll('.log-row').forEach(row => {
+                const visible = states.tab[row.dataset.tab] && states.user[row.dataset.user];
+                row.classList.toggle('hidden', !visible);
+            });
+        }
+
+        document.querySelectorAll('.header-click').forEach(el => {
+            el.onclick = () => {
+                const body = el.nextElementSibling;
+                if (body) body.classList.toggle('hidden');
+            };
+        });
+    <\/script>
+</body>
+</html>`;
+
+            try {
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = title + ".html";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) { console.error(err); }
+        };
+    </script>
+</body>
+</html>
