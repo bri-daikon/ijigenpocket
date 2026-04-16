@@ -6,113 +6,356 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --muted:#9aa4b2;
-      --accent:#5eead4;
-      --accent-2:#60a5fa;
-      --glass: rgba(255,255,255,0.04);
-      --glass-2: rgba(255,255,255,0.02);
-      --danger:#ff7b7b;
-      --radius:12px;
-      --gap:14px;
-    }
-    html,body{height:100%;margin:0;background:
-      radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.08), transparent 8%),
-      radial-gradient(1000px 500px at 90% 90%, rgba(94,234,212,0.04), transparent 8%),
-      linear-gradient(180deg,#071025 0%, #071827 60%);
-      color:#e6eef6;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:28px 18px;
-    }
+:root{
+  --bg:#0f1724;
+  --muted:#9aa4b2;
+  --accent:#5eead4;
+  --accent-2:#60a5fa;
+  --glass: rgba(255,255,255,0.04);
+  --radius:12px;
+}
 
-    .container{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .title {
-      display:flex;flex-direction:column;gap:4px;
-    }
-    .title h1{margin:0;font-size:20px;font-weight:700;letter-spacing:0.2px}
-    .title p{margin:0;color:var(--muted);font-size:13px}
+html,body{
+  height:100%;
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.08), transparent 8%),
+    radial-gradient(1000px 500px at 90% 90%, rgba(94,234,212,0.04), transparent 8%),
+    linear-gradient(180deg,#071025 0%, #071827 60%);
+  color:#e6eef6;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  padding:28px 18px;
+}
 
-    .controlsCard{
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.04);
-      padding:14px;border-radius:var(--radius);display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-      box-shadow: 0 6px 18px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-    }
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
 
-    .field{display:flex;flex-direction:column;gap:6px}
-    .field label{font-size:12px;color:var(--muted)}
-    .field input[type="text"], .field input[type="number"], select{
-      background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff;padding:8px 10px;border-radius:8px;
-      min-width:120px;font-size:14px;outline:none;
-    }
-    .field input[type="number"]::-webkit-outer-spin-button, .field input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
 
-    .btn {
-      display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent-2),var(--accent));
-      color:#04202b;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(96,165,250,0.08);
-      transition:transform .12s ease, box-shadow .12s ease, opacity .12s;
-    }
-    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent-2);font-weight:600}
-    .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.03);color:var(--muted)}
-    .btn:active{transform:translateY(1px)}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
+.title h1{
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+}
 
-    .summaryCard{
-      display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
-      border:1px solid rgba(255,255,255,0.03);
-    }
-    .stat{padding:10px 14px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));min-width:140px}
-    .stat .label{font-size:12px;color:var(--muted)}
-    .stat .value{font-size:18px;font-weight:700;color:#eaf6ff;margin-top:6px}
+.title p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+}
 
-    .layout{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
-    .gridsWrap{display:flex;gap:18px;flex-wrap:wrap;flex:1;min-width:320px}
-    .gridCard{flex:1;min-width:300px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03)}
-    .gridTitleRow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .gridTitleRow h3{margin:0;font-size:14px}
-    .grid{width:100%;border-collapse:collapse}
-    .grid td{width:64px;height:64px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);text-align:center;vertical-align:middle;padding:6px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));transition:transform .12s ease, box-shadow .12s ease}
-    .grid td.empty{color:rgba(255,255,255,0.18);background:transparent;cursor:default}
-    .grid td.filled{background:linear-gradient(180deg, rgba(96,165,250,0.08), rgba(94,234,212,0.03));box-shadow:0 6px 18px rgba(2,6,23,0.45);cursor:pointer}
-    .grid td.filled:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(2,6,23,0.6)}
-    .cell-value{font-size:16px;font-weight:700;color:#04202b}
-    .cell-meta{font-size:11px;color:#04202b;opacity:0.85;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 入力欄カード */
+.controlsCard{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.04);
+  padding:14px;
+  border-radius:var(--radius);
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  box-shadow:0 6px 18px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+}
 
-    .pager{display:flex;gap:8px;align-items:center;margin-top:12px}
-    .pager .pageInfo{color:var(--muted);font-size:13px}
-    .icon{width:16px;height:16px;display:inline-block;vertical-align:middle}
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
 
-    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+.field label{
+  font-size:12px;
+  color:var(--muted);
+}
 
-    /* responsive */
-    @media (max-width:880px){
-      .grid td{width:56px;height:56px}
-      .field input[type="text"], .field input[type="number"]{min-width:90px}
-      .summaryCard{flex-direction:column;align-items:flex-start}
-    }
-	/* クリティカル（左列）: 数値は白、メタは淡い黄色 */
-	#gridCritical td.filled .cell-value { color: #ffffff !important; }
-	#gridCritical td.filled .cell-meta  { color: #fff7a8 !important; }
+.field input[type="text"],
+.field input[type="number"],
+.field input[type="date"],
+select{
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,0.03);
+  color:#eaf6ff;
+  padding:8px 10px;
+  border-radius:8px;
+  min-width:120px;
+  font-size:14px;
+  outline:none;
+}
 
-	/* ファンブル（右列）: 数値は白、メタはやや暖かい黄色 */
-	#gridFumble td.filled .cell-value  { color: #ffffff !important; }
-	#gridFumble td.filled .cell-meta   { color: #fff1a8 !important; }
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:0;
+  background:linear-gradient(90deg,var(--accent-2),var(--accent));
+  color:#04202b;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(96,165,250,0.08);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
 
-	/* 空セルの色も明るく（必要なら） */
-	#gridCritical td.empty, #gridFumble td.empty {
-	  color: rgba(255,255,255,0.28) !important;
-	}
+.btn.ghost{
+  background:transparent;
+  border:1px dashed rgba(255,255,255,0.03);
+  color:var(--muted);
+}
 
-	/* 強調（ホバー時）で文字をさらに明るく */
-	#gridCritical td.filled:hover .cell-value,
-	#gridFumble td.filled:hover .cell-value {
-	  color: #ffffff;
-	  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
-	}
+.btn:active{
+  transform:translateY(1px);
+}
+
+/* 月選択 */
+.monthSelector{
+  background:rgba(255,255,255,0.03);
+  padding:10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.monthSelector label{
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* 入力者表示 */
+.inputterBar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+.inputterLabel{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.inputterName{
+  font-weight:700;
+  color:#eaf6ff;
+}
+
+/* 件数エリア */
+.summaryCard{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  padding:12px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+.stat{
+  padding:10px 14px;
+  border-radius:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  min-width:140px;
+}
+
+.stat .label{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.stat .value{
+  font-size:18px;
+  font-weight:700;
+  color:#eaf6ff;
+  margin-top:6px;
+}
+
+/* 縦並びレイアウト */
+.stackArea{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+/* 表エリア */
+.gridsWrap{
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+
+.gridCard{
+  flex:1;
+  min-width:300px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border-radius:12px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+.gridTitleRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.gridTitleRow h3{
+  margin:0;
+  font-size:14px;
+}
+
+.grid{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.grid td{
+  width:64px;
+  height:64px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.05);
+  text-align:center;
+  vertical-align:middle;
+  padding:6px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+
+.grid td.empty{
+  color:rgba(255,255,255,0.18);
+  background:transparent;
+  cursor:default;
+}
+
+.grid td.filled{
+  cursor:pointer;
+}
+
+.grid td.filled:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 28px rgba(2,6,23,0.6);
+}
+
+.cell-value{
+  font-size:16px;
+  font-weight:700;
+  color:#ffffff;
+  line-height:1;
+}
+
+/* キャラ名・シナリオ名 */
+.cell-meta{
+  display:block;
+  font-size:11px;
+  color:#fff7a8;
+  opacity:0.95;
+  margin-top:6px;
+  white-space:normal;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1.1;
+}
+
+.cell-meta.char{
+  font-weight:600;
+  color:#ffffff;
+}
+
+.cell-meta.scenario{
+  color:#fff7a8;
+}
+
+/* 日付（改行するが折り返さない） */
+.cell-meta.date{
+  display:block;
+  font-size:10px;
+  color:rgba(255,255,255,0.95);
+  margin-top:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* フッター */
+footer{
+  margin-top:18px;
+  color:var(--muted);
+  font-size:13px;
+  text-align:center;
+}
+
+a.product-link{
+  color:#60a5fa;
+  font-weight:700;
+  text-decoration:none;
+}
+
+a.product-link:hover{
+  color:#5eead4;
+  text-decoration:underline;
+}
+
+/* ベース */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 8px 36px 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background-color: #fff;
+  color: #111;
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04) inset;
+}
+
+/* フォーカス時 */
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(33,150,243,0.12);
+  border-color: #2196f3;
+}
+
+/* スマホ対応 */
+@media (max-width:880px){
+  .grid td{
+    width:56px;
+    height:56px;
+  }
+  .summaryCard{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .gridsWrap{
+    flex-direction:column;
+  }
+}
+
+/* プルダウン文字色を黒にする */
+select, 
+#monthSelect {
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
   </style>
-
   <!-- head 内に追加 -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -122,228 +365,987 @@
     <header>
       <div class="title">
         <h1>クリファンチェック表</h1>
+        <p>あなたは出目カスか！？</p>
       </div>
 
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn ghost" id="exportAllBtn" title="CSV出力（全件）">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          全件CSV
-        </button>
-        <button class="btn ghost" id="exportPageBtn" title="CSV出力（このページ）">
-          <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          ページCSV
-        </button>
+        <button class="btn ghost" id="exportAllBtn" title="CSV出力（全件）">全件CSV</button>
+        <button class="btn ghost" id="exportPageBtn" title="CSV出力（このページ）">ページCSV</button>
       </div>
     </header>
 
     <div class="controlsCard">
+      <div class="field"><label>やった人</label><input id="inputter" type="text" placeholder="あなたの名前"></div>
       <div class="field"><label>キャラクター名</label><input id="charName" type="text" placeholder="例：太郎"></div>
       <div class="field"><label>クリティカル</label><input id="critical" type="number" step="any" min="0" value="0" oninput="this.value = this.value === '' ? '' : Math.max(0, Number(this.value))"></div>
       <div class="field"><label>ファンブル</label><input id="fumble" type="number" step="any" min="0" value="0" oninput="this.value = this.value === '' ? '' : Math.max(0, Number(this.value))"></div>
-      <div class="field" style="flex:1;min-width:180px"><label>備考 シナリオ名</label><input id="scenario" type="text" placeholder="シナリオ名"></div>
+      <div class="field"><label>日付</label><input id="dateInput" type="date"></div>
+      <div class="field" style="flex:1;min-width:180px"><label>シナリオ名</label><input id="scenario" type="text" placeholder="シナリオ名"></div>
 
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <button class="btn" id="addBtn">
-          <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#04202b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          追加
-        </button>
-        <button class="btn secondary" id="clearBtn">
-          <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          全クリア
-        </button>
+    <!-- 月選択（ページング対象） -->
+    <div id="monthSelector" class="monthSelector">
+      <label>表示する月</label>
+      <select id="monthSelect"></select>
+    </div>
+
+	<div id="characterSelector" class="monthSelector">
+	  <label>キャラ名</label>
+	  <select id="characterSelect"></select>
+	</div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+        <button class="btn" id="addBtn">追加</button>
+		<button class="btn ghost" id="clearAllBtn">全クリア</button>        
+        <button class="btn ghost" id="saveImageBtn">画像で保存（PNG）</button>  
+      </div>
+
+	<div class="field">
+	  <label>CSV読み込み</label>
+	  <input id="csvFileInput" type="file" accept=".csv,text/csv">
+	  <div style="margin-top:6px">
+	    <button class="btn ghost" id="csvAppendBtn">追記で読み込む</button>
+	    <button class="btn ghost" id="csvReplaceBtn">置換で読み込む</button>
+	  </div>
+	</div>
+
+	<div class="field">
+	  <label>並べ替え</label>
+	  <select id="sortSelect">
+	    <option value="none">並べ替えなし</option>
+	    <option value="critical">critical（クリティカル）</option>
+	    <option value="fumble">fumble（ファンブル）</option>
+	    <option value="date">date（入力日付）</option>
+	    <option value="character">character（キャラ名）</option>
+	    <option value="scenario">scenario（シナリオ）</option>
+	  </select>
+	  <button class="btn ghost" id="sortDirBtn" title="昇順/降順切替">▲</button>
+	</div>
+
+
+      <div style="width:100%;display:flex;gap:8px;align-items:center;margin-top:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="color:var(--muted);font-size:13px;margin-right:6px">Rows</label>
+          <input id="rowsInput" type="number" min="1" max="20" value="5" style="width:72px;padding:6px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+          <label style="color:var(--muted);font-size:13px;margin-left:8px">Cols</label>
+          <input id="colsInput" type="number" min="1" max="20" value="8" style="width:72px;padding:6px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+          <button class="btn ghost" id="applyGridBtn" style="margin-left:8px">表示数を変更</button>
+        </div>
+
+        <label style="margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted)">
+          <input id="syncPageSize" type="checkbox" checked> ページサイズをグリッドに合わせる
+        </label>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="color:var(--muted);font-size:13px">ページサイズ</label>
+          <select id="pageSizeSelect" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:#eaf6ff">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <div class="layout">
-      <div style="flex:1;min-width:260px">
+<!-- 画像化したい領域を囲む（既存の summary と grids をこの div に入れる） -->
+<div id="captureArea">
+
+    <div id="inputterBar" class="inputterBar" aria-live="polite">
+      <div class="inputterLabel">やった人</div>
+      <div id="inputterDisplay" class="inputterName">（未設定）</div>
+      <div style="margin-left:auto;color:var(--muted);font-size:13px">クリファンチェック表</div>
+    </div>
+
+    <!-- 縦並びエリア：上に件数（summary）、下に表（grids） -->
+    <div class="stackArea">
+      <!-- 件数エリア（上） -->
+      <div>
         <div class="summaryCard">
           <div class="stat"><div class="label">件数</div><div class="value" id="count">0</div></div>
           <div class="stat"><div class="label">クリティカル 合計</div><div class="value" id="sumCritical">0</div></div>
           <div class="stat"><div class="label">ファンブル 合計</div><div class="value" id="sumFumble">0</div></div>
-          <div class="stat"><div class="label">ページサイズ</div>
-            <div style="margin-top:6px">
-              <select id="pageSizeSelect" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:#eaf6ff">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50" selected>50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
-        <div class="pager" style="margin-top:12px">
-          <button class="btn ghost" id="firstPage">|&lt;</button>
-          <button class="btn ghost" id="prevPage">&lt; 前</button>
-          <div class="pageInfo">ページ <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></div>
-          <button class="btn ghost" id="nextPage">次 &gt;</button>
-          <button class="btn ghost" id="lastPage">&gt;|</button>
-          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-            <input id="jumpInput" type="number" min="1" placeholder="ページ" style="width:84px;padding:8px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+	<div id="monthlySummary" 
+	     style="background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;
+	            border:1px solid rgba(255,255,255,0.05);margin-top:10px;">
+	  <h3 style="margin:0 0 8px 0;font-size:14px;color:#9aa4b2;">月別集計</h3>
+	  <div id="monthlySummaryContent" style="font-size:13px;line-height:1.6;"></div>
+	</div>
+
+
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <button class="btn ghost" id="firstPage">|&lt;</button>
+            <button class="btn ghost" id="prevPage">&lt; 前</button>
+            <div class="pageInfo" style="color:var(--muted)">ページ <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></div>
+            <button class="btn ghost" id="nextPage">次 &gt;</button>
+            <button class="btn ghost" id="lastPage">&gt;|</button>
+            <input id="jumpInput" type="number" min="1" placeholder="ページ" style="width:84px;padding:8px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff;margin-left:12px">
             <button class="btn ghost" id="jumpBtn">移動</button>
-	    <!-- 画像保存ボタン（既存のコントロール群に追加） -->
-	    <button class="btn ghost" id="saveImageBtn">画像で保存（PNG）</button>  
-
           </div>
         </div>
       </div>
-<!-- 画像化したい領域を囲む（既存の summary と grids をこの div に入れる） -->
-<div id="captureArea">
 
+      <!-- 表エリア（下） -->
       <div class="gridsWrap">
         <div class="gridCard">
-          <div class="gridTitleRow">
-            <h3>クリティカル</h3>
-            <div class="small">クリックで削除</div>
-          </div>
+          <div class="gridTitleRow"><h3>クリティカル</h3><div class="small">クリックで削除</div></div>
           <table id="gridCritical" class="grid" aria-label="クリティカルグリッド"></table>
         </div>
 
         <div class="gridCard">
-          <div class="gridTitleRow">
-            <h3>ファンブル</h3>
-            <div class="small">同じ順序で埋まります</div>
-          </div>
+          <div class="gridTitleRow"><h3>ファンブル</h3><div class="small">同じ順序で埋まります</div></div>
           <table id="gridFumble" class="grid" aria-label="ファンブルグリッド"></table>
         </div>
       </div>
     </div>
-</div>
 
-    <footer>データはブラウザの localStorage に保存されます。別ブラウザでは共有されません。</footer>
+</div>
+    <footer>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;color:var(--muted);font-size:13px">
+        <span>Product by</span>
+        <a class="product-link" href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer">異次元ポケット</a>
+      </div>
+    </footer>
   </div>
 
   <script>
-    // ページング対応・既存ロジック（機能はそのまま）
-    const ROWS = 5, COLS = 10;
-    const STORAGE_KEY = 'crit_fumble_paged_v1';
-    const charNameEl = document.getElementById('charName');
-    const criticalEl = document.getElementById('critical');
-    const fumbleEl = document.getElementById('fumble');
-    const scenarioEl = document.getElementById('scenario');
-    const addBtn = document.getElementById('addBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const exportAllBtn = document.getElementById('exportAllBtn');
-    const exportPageBtn = document.getElementById('exportPageBtn');
-    const gridCritical = document.getElementById('gridCritical');
-    const gridFumble = document.getElementById('gridFumble');
-    const countEl = document.getElementById('count');
-    const sumCriticalEl = document.getElementById('sumCritical');
-    const sumFumbleEl = document.getElementById('sumFumble');
-    const pageSizeSelect = document.getElementById('pageSizeSelect');
-    const firstPageBtn = document.getElementById('firstPage');
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
-    const lastPageBtn = document.getElementById('lastPage');
-    const currentPageEl = document.getElementById('currentPage');
-    const totalPagesEl = document.getElementById('totalPages');
-    const jumpInput = document.getElementById('jumpInput');
-    const jumpBtn = document.getElementById('jumpBtn');
-    let data = load();
-    let pageSize = Number(pageSizeSelect.value);
-    let currentPage = 1;
+let ROWS = 5, COLS = 8;
+const MAX_ROWS = 20, MAX_COLS = 20;
 
-    function buildGrid(table, cols = COLS, rows = ROWS) {
-      table.innerHTML = '';
-      for (let r = 0; r < rows; r++) {
-        const tr = document.createElement('tr');
-        for (let c = 0; c < cols; c++) {
-          const td = document.createElement('td');
-          td.classList.add('empty');
-          td.dataset.slot = r * cols + c;
-          tr.appendChild(td);
-        }
-        table.appendChild(tr);
-      }
+const STORAGE_KEY = "crit_fumble_paged_v1";
+const INPUTTER_KEY = "crit_fumble_inputter";
+
+// DOM 取得
+const inputterEl = document.getElementById("inputter");
+const inputterDisplay = document.getElementById("inputterDisplay");
+
+const charNameEl = document.getElementById("charName");
+const criticalEl = document.getElementById("critical");
+const fumbleEl = document.getElementById("fumble");
+const dateInput = document.getElementById("dateInput");
+const scenarioEl = document.getElementById("scenario");
+
+const addBtn = document.getElementById("addBtn");
+const clearBtn = document.getElementById("clearBtn");
+
+const exportAllBtn = document.getElementById("exportAllBtn");
+const exportPageBtn = document.getElementById("exportPageBtn");
+
+const gridCritical = document.getElementById("gridCritical");
+const gridFumble = document.getElementById("gridFumble");
+
+const countEl = document.getElementById("count");
+const sumCriticalEl = document.getElementById("sumCritical");
+const sumFumbleEl = document.getElementById("sumFumble");
+
+const monthSelect = document.getElementById("monthSelect");
+const characterSelect = document.getElementById("characterSelect"); 
+
+const rowsInput = document.getElementById("rowsInput");
+const colsInput = document.getElementById("colsInput");
+const applyGridBtn = document.getElementById("applyGridBtn");
+
+const syncPageSize = document.getElementById("syncPageSize");
+const pageSizeSelect = document.getElementById("pageSizeSelect");
+
+const firstPageBtn = document.getElementById("firstPage");
+const prevPageBtn = document.getElementById("prevPage");
+const nextPageBtn = document.getElementById("nextPage");
+const lastPageBtn = document.getElementById("lastPage");
+
+const currentPageEl = document.getElementById("currentPage");
+const totalPagesEl = document.getElementById("totalPages");
+
+const jumpInput = document.getElementById("jumpInput");
+const jumpBtn = document.getElementById("jumpBtn");
+
+
+
+// データ読み込み
+let data = load();
+let currentPage = 1;
+let pageSize = ROWS * COLS;
+
+// グリッド生成
+function buildGrid(table, cols = COLS, rows = ROWS) {
+  table.innerHTML = "";
+  for (let r = 0; r < rows; r++) {
+    const tr = document.createElement("tr");
+    for (let c = 0; c < cols; c++) {
+      const td = document.createElement("td");
+      td.classList.add("empty");
+      td.dataset.slot = r * cols + c;
+      tr.appendChild(td);
     }
-    buildGrid(gridCritical); buildGrid(gridFumble);
+    table.appendChild(tr);
+  }
+}
 
-    function totalPages(){ return Math.max(1, Math.ceil(data.length / pageSize)); }
-    function pageRangeIndices(page){ const start = (page-1)*pageSize; const end = Math.min(data.length, start+pageSize); return {start,end}; }
-    function computeTotals(){ const count = data.length; const sumC = data.reduce((s,e)=>s+Number(e.critical||0),0); const sumF = data.reduce((s,e)=>s+Number(e.fumble||0),0); return {count,sumC,sumF}; }
-    function updateSummary(){ const t = computeTotals(); countEl.textContent = t.count; sumCriticalEl.textContent = t.sumC; sumFumbleEl.textContent = t.sumF; }
 
-    function renderPage(){
-      gridCritical.querySelectorAll('td').forEach(td=>{ td.innerHTML=''; td.title=''; td.className=''; td.classList.add('empty'); });
-      gridFumble.querySelectorAll('td').forEach(td=>{ td.innerHTML=''; td.title=''; td.className=''; td.classList.add('empty'); });
-      const tp = totalPages(); if (currentPage>tp) currentPage=tp;
-      const {start,end} = pageRangeIndices(currentPage);
-      for (let i=start;i<end;i++){
-        const pageIdx = i-start;
-        const tdC = gridCritical.querySelector(`td[data-slot="${pageIdx}"]`);
-        const tdF = gridFumble.querySelector(`td[data-slot="${pageIdx}"]`);
-        const entry = data[i];
-        const metaText = `${entry.character || '(無名)'}${entry.scenario ? ' / ' + entry.scenario : ''}`;
-        const titleText = `#${i+1} ${metaText}\n${entry.time}`;
-        if (tdC){ tdC.innerHTML = `<div class="cell-value">${escapeHtml(entry.critical)}</div><div class="cell-meta">${escapeHtml(metaText)}</div>`; tdC.title = titleText; tdC.classList.remove('empty'); tdC.classList.add('filled'); tdC.dataset.globalIndex = i; }
-        if (tdF){ tdF.innerHTML = `<div class="cell-value">${escapeHtml(entry.fumble)}</div><div class="cell-meta">${escapeHtml(metaText)}</div>`; tdF.title = titleText; tdF.classList.remove('empty'); tdF.classList.add('filled'); tdF.dataset.globalIndex = i; }
-      }
-      currentPageEl.textContent = currentPage; totalPagesEl.textContent = tp; updateSummary();
+
+function updateCharacterList() {
+  if (!characterSelect) return; // 要素が無ければ何もしない
+
+  const chars = new Set();
+
+  data.forEach(entry => {
+    if (entry.character && entry.character.trim() !== "") {
+      chars.add(entry.character.trim());
     }
+  });
 
-    addBtn.addEventListener('click', ()=>{
-      const aRaw = criticalEl.value.trim(); const bRaw = fumbleEl.value.trim();
-      if (aRaw === '' || bRaw === '') return alert('クリティカルとファンブルの両方に数値を入力してください');
-      const normalize = s => String(s).replace(/－/g,'-').trim();
-      const aNum = Number(normalize(aRaw)); const bNum = Number(normalize(bRaw));
-      if (Number.isNaN(aNum) || Number.isNaN(bNum)) return alert('有効な数値を入力してください');
-      if (aNum < 0 || bNum < 0) return alert('負の数は入力できません');
-      const entry = { critical: aNum, fumble: bNum, character: charNameEl.value.trim(), scenario: scenarioEl.value.trim(), time: new Date().toLocaleString() };
-      data.push(entry); save(); pageSize = Number(pageSizeSelect.value); currentPage = totalPages(); renderPage();
-      criticalEl.value = '0'; fumbleEl.value = '0'; charNameEl.value = ''; scenarioEl.value = '';
-    });
+  const sorted = Array.from(chars).sort();
 
-    function onCellClick(e){
-      const td = e.target.closest('td'); if (!td) return; const gIdx = td.dataset.globalIndex; if (gIdx === undefined) return;
-      const idx = Number(gIdx); if (Number.isNaN(idx)) return;
-      if (!confirm(`#${idx+1} のエントリを削除しますか？\nキャラ: ${data[idx].character || '(無名)'}\nシナリオ: ${data[idx].scenario || ''}`)) return;
-      data.splice(idx,1); save(); const tp = totalPages(); if (currentPage>tp) currentPage=tp; renderPage();
+  characterSelect.innerHTML =
+    `<option value="all">全キャラ</option>` +
+    sorted.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  characterSelect.value = "all";
+}
+
+
+// 月一覧を更新
+function updateMonthList() {
+  const months = new Set();
+
+  data.forEach(entry => {
+    if (entry.date) {
+      months.add(entry.date.slice(0, 7)); // YYYY-MM
     }
-    gridCritical.addEventListener('click', onCellClick); gridFumble.addEventListener('click', onCellClick);
+  });
 
-    firstPageBtn.addEventListener('click', ()=>{ currentPage=1; renderPage(); });
-    prevPageBtn.addEventListener('click', ()=>{ if (currentPage>1) currentPage--; renderPage(); });
-    nextPageBtn.addEventListener('click', ()=>{ if (currentPage<totalPages()) currentPage++; renderPage(); });
-    lastPageBtn.addEventListener('click', ()=>{ currentPage = totalPages(); renderPage(); });
-    jumpBtn.addEventListener('click', ()=>{ const v = Number(jumpInput.value); if (!v || v<1) return; const tp = totalPages(); currentPage = Math.min(tp, Math.max(1, Math.floor(v))); renderPage(); });
+  const sorted = Array.from(months).sort();
 
-    pageSizeSelect.addEventListener('change', ()=>{
-      const old = Number(pageSizeSelect.oldValue || pageSize);
-      pageSize = Number(pageSizeSelect.value);
-      const globalStart = (currentPage - 1) * old;
-      currentPage = Math.floor(globalStart / pageSize) + 1;
-      if (currentPage < 1) currentPage = 1;
-      renderPage();
-    });
-    pageSizeSelect.addEventListener('focus', ()=>{ pageSizeSelect.oldValue = pageSizeSelect.value; });
+  // 先頭に「全件」を追加
+  monthSelect.innerHTML = `<option value="all">全件</option>` +
+    sorted.map(m => `<option value="${m}">${m}</option>`).join("");
 
-    clearBtn.addEventListener('click', ()=>{
-      if (!confirm('全データを削除しますか？')) return;
-      data = []; save(); currentPage = 1; renderPage(); criticalEl.value='0'; fumbleEl.value='0'; charNameEl.value=''; scenarioEl.value='';
-    });
+  // デフォルトは全件
+  monthSelect.value = "all";
+}
 
-    function downloadCsv(rows, filename){
-      const header = ['index','time','character','scenario','critical','fumble'];
-      const csv = [header, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
 
-    exportAllBtn.addEventListener('click', ()=>{ if (data.length===0) return alert('データがありません'); const rows = data.map((d,i)=>[i+1,d.time,d.character,d.scenario,d.critical,d.fumble]); downloadCsv(rows,'crit_fumble_all.csv'); });
-    exportPageBtn.addEventListener('click', ()=>{ const {start,end} = pageRangeIndices(currentPage); if (start>=end) return alert('このページにデータがありません'); const rows = data.slice(start,end).map((d,idx)=>[start+idx+1,d.time,d.character,d.scenario,d.critical,d.fumble]); downloadCsv(rows,`crit_fumble_page${currentPage}.csv`); });
+// 月かキャらでフィルタ
+function getFilteredData() {
+  const month = monthSelect ? monthSelect.value : "all";
+  const char = characterSelect ? characterSelect.value : "all";
 
-    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-    function load(){ try{ const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; } }
-    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  let filtered = data;
 
-    // 初期化
-    criticalEl.value = criticalEl.value === '' ? '0' : criticalEl.value;
-    fumbleEl.value = fumbleEl.value === '' ? '0' : fumbleEl.value;
-    pageSize = Number(pageSizeSelect.value);
+  if (month !== "all") {
+    filtered = filtered.filter(entry =>
+      entry.date && entry.date.startsWith(month)
+    );
+  }
+
+  if (char !== "all") {
+    filtered = filtered.filter(entry =>
+      entry.character && entry.character.trim() === char
+    );
+  }
+
+  return filtered;
+}
+
+// 合計計算
+function computeTotals(filtered) {
+  const count = filtered.length;
+  const sumC = filtered.reduce((s, e) => s + Number(e.critical || 0), 0);
+  const sumF = filtered.reduce((s, e) => s + Number(e.fumble || 0), 0);
+  return { count, sumC, sumF };
+}
+
+// 入力者表示
+function updateInputterDisplay(name) {
+  inputterDisplay.textContent = name && name.trim() !== "" ? name : "（未設定）";
+}
+
+characterSelect.addEventListener("change", () => {
+  currentPage = 1;
+  renderPage();
+});
+
+
+/* ============================
+   月別背景色（背景テーマ）
+   ============================ */
+
+// 月 → 背景色 のマップ
+const monthColors = {};
+
+// 背景色パレット（淡い色）
+const colorPalette = [
+  "#60a5fa33", // 青
+  "#5eead433", // 緑
+  "#f472b633", // ピンク
+  "#facc1533", // 黄
+  "#a78bfa33", // 紫
+  "#34d39933", // エメラルド
+  "#fb718533", // 赤
+  "#38bdf833", // 水色
+];
+
+// 月の背景色を取得（未登録なら自動割り当て）
+function getMonthColor(ym) {
+  if (!monthColors[ym]) {
+    const index = Object.keys(monthColors).length;
+    monthColors[ym] = colorPalette[index % colorPalette.length];
+  }
+  return monthColors[ym];
+}
+/* ============================
+   月別枠線色（背景より濃い色）
+   ============================ */
+
+// 月 → 枠線色 のマップ
+const monthBorderColors = {};
+
+// 枠線色パレット（背景色より濃い）
+const borderPalette = [
+  "#60a5fa88", // 青
+  "#5eead488", // 緑
+  "#f472b688", // ピンク
+  "#facc1588", // 黄
+  "#a78bfa88", // 紫
+  "#34d39988", // エメラルド
+  "#fb718588", // 赤
+  "#38bdf888", // 水色
+];
+
+// 月の枠線色を取得（未登録なら自動割り当て）
+function getMonthBorderColor(ym) {
+  if (!monthBorderColors[ym]) {
+    const index = Object.keys(monthBorderColors).length;
+    monthBorderColors[ym] = borderPalette[index % borderPalette.length];
+  }
+  return monthBorderColors[ym];
+}
+
+/* ============================
+   renderPage（完全版）
+   ============================ */
+
+function renderPage() {
+
+  let filtered = getFilteredData();
+
+// ソート適用（none でなければコピーしてソート）
+if (sortColumn && sortColumn !== "none") {
+  filtered = filtered.slice().sort(compareEntries);
+}
+
+  // グリッド再生成
+  buildGrid(gridCritical, COLS, ROWS);
+  buildGrid(gridFumble, COLS, ROWS);
+
+  // ページ数計算
+  const total = filtered.length;
+  const tp = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > tp) currentPage = tp;
+
+  const start = (currentPage - 1) * pageSize;
+  const end = Math.min(total, start + pageSize);
+
+  // セル描画
+// renderPage() 内のセル描画ループ部分をこれに置き換えてください
+for (let i = start; i < end; i++) {
+  const pageIdx = i - start;
+  const entry = filtered[i]; // ← ここで必ず entry を先に宣言
+
+  if (!entry) continue; // 念のためのガード
+
+  const tdC = gridCritical.querySelector(`td[data-slot="${pageIdx}"]`);
+  const tdF = gridFumble.querySelector(`td[data-slot="${pageIdx}"]`);
+
+  // entry のプロパティを先に取得
+  const critText = String(entry.critical);
+  const fumbleText = String(entry.fumble);
+  const charText = entry.character || "(無名)";
+  const scenarioText = entry.scenario || "";
+  const dateText = entry.date || "";
+
+  // 月（YYYY-MM）
+  const ym = entry.date ? entry.date.slice(0, 7) : "";
+
+  // 月別背景色・枠線色
+  const bgColor = ym ? getMonthColor(ym) : "transparent";
+  const borderColor = ym ? getMonthBorderColor(ym) : "rgba(255,255,255,0.05)";
+
+  // data 配列における実インデックスを取得（重要）
+  const globalIndex = data.indexOf(entry);
+  if (globalIndex === -1) {
+    // 通常は起きないが、起きたらそのセルは描画しない（安全策）
+    continue;
+  }
+
+  if (tdC) {
+    tdC.innerHTML =
+      `<div class="cell-value">${critText}</div>` +
+      `<div class="cell-meta char">${charText}</div>` +
+      `<div class="cell-meta scenario">${scenarioText}</div>` +
+      `<div class="cell-meta date">${dateText}</div>`;
+
+    tdC.classList.remove("empty");
+    tdC.classList.add("filled");
+
+    tdC.style.backgroundColor = bgColor;
+    tdC.style.borderColor = borderColor;
+
+    tdC.dataset.globalIndex = globalIndex;
+  }
+
+  if (tdF) {
+    tdF.innerHTML =
+      `<div class="cell-value">${fumbleText}</div>` +
+      `<div class="cell-meta char">${charText}</div>` +
+      `<div class="cell-meta scenario">${scenarioText}</div>` +
+      `<div class="cell-meta date">${dateText}</div>`;
+
+    tdF.classList.remove("empty");
+    tdF.classList.add("filled");
+
+    tdF.style.backgroundColor = bgColor;
+    tdF.style.borderColor = borderColor;
+
+    tdF.dataset.globalIndex = globalIndex;
+  }
+}
+
+  // 件数表示
+  const totals = computeTotals(filtered);
+  countEl.textContent = totals.count;
+  sumCriticalEl.textContent = totals.sumC;
+  sumFumbleEl.textContent = totals.sumF;
+
+  // ページ表示
+  currentPageEl.textContent = currentPage;
+  totalPagesEl.textContent = tp;
+
+  // 入力者表示
+  const currentInputter =
+    inputterEl.value.trim() ||
+    (data.length ? data[data.length - 1].inputter || "" : "");
+  updateInputterDisplay(currentInputter);
+}
+
+// --- ソート状態
+let sortColumn = "none"; // none | critical | fumble | date | character | scenario | inputter
+let sortDir = 1; // 1 = 昇順, -1 = 降順
+
+const sortSelect = document.getElementById("sortSelect");
+const sortDirBtn = document.getElementById("sortDirBtn");
+
+// 比較関数（列に応じて型を扱う）
+function compareEntries(a, b) {
+  if (sortColumn === "none") return 0;
+
+  let va = a[sortColumn];
+  let vb = b[sortColumn];
+
+  // 数値列
+  if (sortColumn === "critical" || sortColumn === "fumble") {
+    va = Number(va) || 0;
+    vb = Number(vb) || 0;
+    return (va - vb) * sortDir;
+  }
+
+  // 日付（YYYY-MM-DD 形式を想定。任意文字列でも比較可能）
+  if (sortColumn === "date") {
+    // 空文字は末尾に回す
+    if (!va) return 1 * sortDir;
+    if (!vb) return -1 * sortDir;
+    // ISO 形式なら文字列比較でOK
+    if (va === vb) return 0;
+    return (va > vb ? 1 : -1) * sortDir;
+  }
+
+  // 文字列列（大文字小文字を無視）
+  va = (va || "").toString().toLowerCase();
+  vb = (vb || "").toString().toLowerCase();
+  if (va === vb) return 0;
+  return (va > vb ? 1 : -1) * sortDir;
+}
+
+// ソート UI イベント
+if (sortSelect) {
+  sortSelect.addEventListener("change", () => {
+    sortColumn = sortSelect.value;
     currentPage = 1;
     renderPage();
+  });
+}
+
+if (sortDirBtn) {
+  sortDirBtn.addEventListener("click", () => {
+    sortDir = -sortDir;
+    sortDirBtn.textContent = sortDir === 1 ? "▲" : "▼";
+    currentPage = 1;
+    renderPage();
+  });
+}
+
+
+// DOM
+const csvFileInput = document.getElementById("csvFileInput");
+const csvAppendBtn = document.getElementById("csvAppendBtn");
+const csvReplaceBtn = document.getElementById("csvReplaceBtn");
+
+// シンプルな CSV パーサ（引用符対応）
+function parseCSV(text) {
+  const rows = [];
+  let cur = "";
+  let row = [];
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (ch === '"' ) {
+      if (inQuotes && next === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === ',' && !inQuotes) {
+      row.push(cur);
+      cur = "";
+      continue;
+    }
+
+    if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (cur !== "" || row.length > 0) {
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = "";
+      }
+      // handle CRLF by skipping the next char if it's the pair
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      continue;
+    }
+
+    cur += ch;
+  }
+
+  if (cur !== "" || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+// CSV の行をオブジェクトに変換するヘルパ
+function rowsToObjects(rows) {
+  if (!rows || rows.length === 0) return [];
+  const header = rows[0].map(h => h.trim().replace(/^"|"$/g, ""));
+  const objs = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.length === 0) continue;
+    const obj = {};
+    for (let j = 0; j < header.length; j++) {
+      const key = header[j] || `col${j}`;
+      obj[key] = (r[j] || "").trim().replace(/^"|"$/g, "");
+    }
+    objs.push(obj);
+  }
+  return objs;
+}
+
+// CSV の列名期待値
+// 出力時のヘッダ: index,time,date,character,scenario,critical,fumble,inputter
+function normalizeCsvObject(o) {
+  return {
+    time: o.time || o.Time || "",
+    date: o.date || o.Date || "",
+    character: o.character || o.Character || o.character || "",
+    scenario: o.scenario || o.Scenario || "",
+    critical: Number(o.critical || o.Critical || 0),
+    fumble: Number(o.fumble || o.Fumble || 0),
+    inputter: o.inputter || o.Inputter || ""
+  };
+}
+
+// ファイル読み込み共通処理
+function handleCsvFile(file, mode = "append") {
+  if (!file) {
+    alert("CSVファイルを選択してください");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const rows = parseCSV(text);
+      const objs = rowsToObjects(rows);
+
+      if (objs.length === 0) {
+        alert("CSVにデータが見つかりませんでした");
+        return;
+      }
+
+      const imported = objs.map(normalizeCsvObject).map(o => ({
+        critical: isNaN(o.critical) ? 0 : o.critical,
+        fumble: isNaN(o.fumble) ? 0 : o.fumble,
+        character: o.character,
+        scenario: o.scenario,
+        date: o.date,
+        time: o.time || new Date().toLocaleString(),
+        inputter: o.inputter
+      }));
+
+      if (mode === "replace") {
+        data = imported;
+      } else {
+        // append: 重複チェックは行わないが必要なら追加可能
+        data = data.concat(imported);
+      }
+
+      save();
+      updateMonthList();
+      updateCharacterList();
+      currentPage = 1;
+      renderPage();
+
+      alert(`CSVを${mode === "replace" ? "置換" : "追記"}で読み込みました。読み込み件数: ${imported.length}`);
+    } catch (err) {
+      console.error(err);
+      alert("CSV読み込み中にエラーが発生しました");
+    }
+  };
+
+  reader.onerror = function() {
+    alert("ファイルの読み込みに失敗しました");
+  };
+
+  reader.readAsText(file, "UTF-8");
+}
+
+// ボタンに紐付け
+csvAppendBtn.addEventListener("click", () => {
+  const f = csvFileInput.files[0];
+  handleCsvFile(f, "append");
+});
+
+csvReplaceBtn.addEventListener("click", () => {
+  const f = csvFileInput.files[0];
+  if (!f) {
+    alert("CSVファイルを選択してください");
+    return;
+  }
+  if (!confirm("既存データを置換してCSVを読み込みますか？ 元に戻せません。")) return;
+  handleCsvFile(f, "replace");
+});
+
+/* ============================
+   データ追加
+   ============================ */
+
+addBtn.addEventListener("click", () => {
+  const aRaw = criticalEl.value.trim();
+  const bRaw = fumbleEl.value.trim();
+
+  if (aRaw === "" || bRaw === "") {
+    alert("クリティカルとファンブルの両方に数値を入力してください");
+    return;
+  }
+
+  const aNum = Number(aRaw);
+  const bNum = Number(bRaw);
+
+  if (Number.isNaN(aNum) || Number.isNaN(bNum)) {
+    alert("有効な数値を入力してください");
+    return;
+  }
+
+  if (aNum < 0 || bNum < 0) {
+    alert("負の数は入力できません");
+    return;
+  }
+
+  const inputterName = inputterEl.value.trim();
+  localStorage.setItem(INPUTTER_KEY, inputterName);
+
+  const entry = {
+    critical: aNum,
+    fumble: bNum,
+    character: charNameEl.value.trim(),
+    scenario: scenarioEl.value.trim(),
+    date: dateInput.value || "",
+    time: new Date().toLocaleString(),
+    inputter: inputterName
+  };
+
+  data.push(entry);
+  save();
+
+  // 月一覧更新
+  updateMonthList();
+
+  // キャラ一覧更新
+  updateCharacterList();
+
+  // ページを先頭に戻す
+  currentPage = 1;
+
+  // 再描画
+  renderPage();
+
+  // 入力欄リセット
+  criticalEl.value = "0";
+  fumbleEl.value = "0";
+  charNameEl.value = "";
+  scenarioEl.value = "";
+});
+
+//全クリア
+
+const clearAllBtn = document.getElementById("clearAllBtn");
+
+clearAllBtn.addEventListener("click", () => {
+  if (!confirm("本当に全データを削除しますか？\nこの操作は元に戻せません。")) return;
+
+  // データを空にする
+  data = [];
+
+  // 保存
+  save();
+
+  // 月一覧・キャラ一覧を更新
+  updateMonthList();
+  updateCharacterList();
+
+  // ページを先頭に戻す
+  currentPage = 1;
+
+  // 再描画
+  renderPage();
+
+  alert("全データを削除しました");
+});
+
+/* ============================
+   セルクリック（削除）
+   ============================ */
+
+function onCellClick(e) {
+  const td = e.target.closest("td");
+  if (!td) return;
+
+  const idx = Number(td.dataset.globalIndex);
+  if (Number.isNaN(idx)) return;
+
+  const entry = data[idx];
+
+  if (!confirm(
+    `#${idx + 1} を削除しますか？\n` +
+    `キャラ: ${entry.character || "(無名)"}\n` +
+    `シナリオ: ${entry.scenario || ""}\n` +
+    `日付: ${entry.date || "未入力"}\n` +
+    `入力者: ${entry.inputter || "未設定"}`
+  )) return;
+
+  data.splice(idx, 1);
+  save();
+
+  updateMonthList();
+  renderPage();
+}
+
+gridCritical.addEventListener("click", onCellClick);
+gridFumble.addEventListener("click", onCellClick);
+
+/* ============================
+   ページング
+   ============================ */
+
+firstPageBtn.addEventListener("click", () => {
+  currentPage = 1;
+  renderPage();
+});
+
+prevPageBtn.addEventListener("click", () => {
+  if (currentPage > 1) currentPage--;
+  renderPage();
+});
+
+nextPageBtn.addEventListener("click", () => {
+  currentPage++;
+  renderPage();
+});
+
+lastPageBtn.addEventListener("click", () => {
+  const filtered = getFilteredData();
+  currentPage = Math.ceil(filtered.length / pageSize);
+  renderPage();
+});
+
+jumpBtn.addEventListener("click", () => {
+  const v = Number(jumpInput.value);
+  if (!v || v < 1) return;
+
+  const filtered = getFilteredData();
+  const tp = Math.ceil(filtered.length / pageSize);
+
+  currentPage = Math.min(tp, Math.max(1, v));
+  renderPage();
+});
+
+/* ============================
+   月変更
+   ============================ */
+
+monthSelect.addEventListener("change", () => {
+  currentPage = 1;
+  renderPage();
+});
+
+/* ============================
+   グリッドサイズ変更
+   ============================ */
+
+applyGridBtn.addEventListener("click", () => {
+  let r = Number(rowsInput.value);
+  let c = Number(colsInput.value);
+
+  r = Math.max(1, Math.min(MAX_ROWS, r));
+  c = Math.max(1, Math.min(MAX_COLS, c));
+
+  ROWS = r;
+  COLS = c;
+
+  // ★ ここが重要：同期チェックが ON のときは rows×cols を pageSize にする
+  if (syncPageSize.checked) {
+    pageSize = ROWS * COLS;
+    pageSizeSelect.disabled = true;
+  } else {
+    pageSize = Number(pageSizeSelect.value);
+    pageSizeSelect.disabled = false;
+  }
+
+  // グリッド再生成 → 再描画
+  renderPage();
+});
+
+/* ============================
+   CSV 出力
+   ============================ */
+
+function downloadCsv(rows, filename) {
+  const header = [
+    "index","time","date","character","scenario",
+    "critical","fumble","inputter"
+  ];
+
+  const csv = [header, ...rows]
+    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+exportAllBtn.addEventListener("click", () => {
+  if (data.length === 0) {
+    alert("データがありません");
+    return;
+  }
+
+  const rows = data.map((d, i) => [
+    i + 1, d.time, d.date, d.character, d.scenario,
+    d.critical, d.fumble, d.inputter
+  ]);
+
+  downloadCsv(rows, "crit_fumble_all.csv");
+});
+
+exportPageBtn.addEventListener("click", () => {
+  const filtered = getFilteredData();
+
+  const start = (currentPage - 1) * pageSize;
+  const end = Math.min(filtered.length, start + pageSize);
+
+  if (start >= end) {
+    alert("このページにデータがありません");
+    return;
+  }
+
+  const rows = filtered.slice(start, end).map((d, idx) => [
+    start + idx + 1, d.time, d.date, d.character, d.scenario,
+    d.critical, d.fumble, d.inputter
+  ]);
+
+  downloadCsv(rows, `crit_fumble_page${currentPage}.csv`);
+});
+
+/* ============================
+   保存・読み込み
+   ============================ */
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/* ============================
+   初期化
+   ============================ */
+
+// 今日の日付
+(function initDate() {
+  const today = new Date();
+  dateInput.value =
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+})();
+
+// 入力者復元
+(function initInputter() {
+  const saved = localStorage.getItem(INPUTTER_KEY);
+  if (saved) {
+    inputterEl.value = saved;
+    updateInputterDisplay(saved);
+  }
+})();
+
+// 月一覧生成
+updateMonthList();
+updateCharacterList();
+
+// 初期ページサイズ
+pageSize = ROWS * COLS;
+pageSizeSelect.disabled = true;
+
+// 初回描画
+renderPage();
+
+
   </script>
+
+
 
 <!-- スクリプト（既存の script の下に追加） -->
 <script>
