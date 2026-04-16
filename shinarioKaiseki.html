@@ -30,9 +30,6 @@
             border-radius: 8px;
             background-color: #e2e8f0;
         }
-        .settings-panel {
-            transition: all 0.3s ease;
-        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-800">
@@ -101,22 +98,20 @@
 
     <!-- メッセージボックス -->
     <div id="modalOverlay" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl">
-            <h3 id="modalTitle" class="text-lg font-bold mb-2">エラー</h3>
-            <p id="modalContent" class="text-slate-600 mb-6 text-sm"></p>
+        <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-bold mb-2">通知</h3>
+            <p id="modalContent" class="text-slate-600 mb-6 text-sm break-words"></p>
             <button onclick="document.getElementById('modalOverlay').classList.add('hidden')" 
                 class="w-full bg-slate-800 text-white py-2 rounded-lg font-bold">閉じる</button>
         </div>
     </div>
 
     <script>
-        // APIキーの管理
         let currentApiKey = "";
         const apiKeyInput = document.getElementById('apiKeyInput');
         const saveKeyBtn = document.getElementById('saveKeyBtn');
         const keyStatus = document.getElementById('keyStatus');
 
-        // 初期化時に保存されたキーを読み込む
         window.addEventListener('DOMContentLoaded', () => {
             const savedKey = localStorage.getItem('gemini_api_key');
             if (savedKey) {
@@ -132,7 +127,7 @@
             if (key) {
                 localStorage.setItem('gemini_api_key', key);
                 currentApiKey = key;
-                showMessage("設定保存", "APIキーを保存しました。解析が利用可能になります。");
+                showMessage("設定保存", "APIキーを保存しました。");
                 keyStatus.innerText = "キーが保存されています";
                 keyStatus.classList.remove('text-slate-400');
                 keyStatus.classList.add('text-green-600');
@@ -165,9 +160,14 @@
 
             const systemPrompt = `You are a professional librarian specialized in TRPG scenarios. 
 Access the provided URL using the search tool, read the description carefully, and extract information.
-Ensure accuracy and format your response as JSON based on the schema.`;
+Ensure accuracy and format your response as JSON based on the schema.
+Required fields: system, title, summary, players, playtime, imageUrl.`;
 
-            const userQuery = `Search for this specific page and extract its scenario details: ${targetUrl}`;
+            const userQuery = `Search for this URL and extract scenario info: ${targetUrl}`;
+
+            // 公開用APIで最も安定している gemini-1.5-flash を使用
+            const modelName = "gemini-1.5-flash";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentApiKey}`;
 
             const responseSchema = {
                 type: "OBJECT",
@@ -183,42 +183,33 @@ Ensure accuracy and format your response as JSON based on the schema.`;
             };
 
             let response;
-            let retries = 0;
-            const maxRetries = 5;
-
-            while (retries < maxRetries) {
-                try {
-                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: userQuery }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] },
-                            tools: [{ "google_search": {} }],
-                            generationConfig: { 
-                                responseMimeType: "application/json",
-                                responseSchema: responseSchema
-                            }
-                        })
-                    });
-                    if (response.ok) break;
-                    
-                    const errJson = await response.json();
-                    if (response.status === 400 || response.status === 403) {
-                        throw new Error(`APIキーが無効、または制限がかかっています。コード:${response.status}`);
-                    }
-                } catch (e) {
-                    if (e.message.includes("APIキー")) throw e;
-                }
-                await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
-                retries++;
+            try {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        tools: [{ "google_search": {} }],
+                        generationConfig: { 
+                            responseMimeType: "application/json",
+                            responseSchema: responseSchema
+                        }
+                    })
+                });
+            } catch (e) {
+                throw new Error("ネットワークエラーが発生しました。インターネット接続を確認してください。");
             }
 
-            if (!response?.ok) throw new Error("通信に失敗しました。APIキーを確認してください。");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const msg = errorData.error?.message || response.statusText || "不明なエラー";
+                throw new Error(`APIエラー: ${msg} (Status: ${response.status})`);
+            }
             
             const result = await response.json();
             const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error("情報が見つかりませんでした。");
+            if (!text) throw new Error("情報が取得できませんでした。");
             
             return JSON.parse(text);
         }
@@ -252,7 +243,7 @@ Ensure accuracy and format your response as JSON based on the schema.`;
                 <td class="p-4 align-top text-right">
                     <button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1-1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
                     </button>
                 </td>
@@ -263,11 +254,6 @@ Ensure accuracy and format your response as JSON based on the schema.`;
         analyzeBtn.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url) return;
-
-            if (!currentApiKey) {
-                showMessage("キー未設定", "右上の設定欄にGemini APIキーを入力して「保存」してください。");
-                return;
-            }
 
             analyzeBtn.disabled = true;
             analyzeBtn.innerText = "解析中...";
