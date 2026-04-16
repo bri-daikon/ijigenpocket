@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フレンズ・エントリー画像作成</title>
+    <title>プロフィール・エントリー画像作成</title>
     <style>
         /* 基本設定：明るいオレンジと丸ゴシック */
         :root {
@@ -131,19 +131,27 @@
 <body>
 
 <div class="container">
-    <h1>フレンズエントリー入力</h1>
+    <h1>プロフィール入力</h1>
 
     <div class="form-group">
         <label class="main-label">名前</label>
-        <input type="text" id="name" placeholder="例：太郎">
+        <input type="text" id="name" placeholder="例：ルキウス">
+    </div>
+    <div class="form-group">
+        <label class="main-label">誕生日</label>
+        <input type="text" id="birthday" placeholder="例：4月1日">
+    </div>
+    <div class="form-group">
+        <label class="main-label">年齢</label>
+        <input type="text" id="age" placeholder="例：20">
     </div>
     <div class="form-group">
         <label class="main-label">身長 (cm)</label>
-        <input type="text" id="height" placeholder="例：173">
+        <input type="text" id="height" placeholder="例：183">
     </div>
     <div class="form-group">
         <label class="main-label">一人称</label>
-        <input type="text" id="pronoun" placeholder="例：我輩">
+        <input type="text" id="pronoun" placeholder="例：オレ">
     </div>
 
     <div class="form-group">
@@ -273,19 +281,21 @@
         }
 
         const textStartX = 520;
-        let currentY = 70; // 描画開始位置
+        let currentY = 55; // 項目が増えたため、少し上に開始位置を調整
 
         // --- 全体の文字色をオレンジに設定 ---
         ctx.fillStyle = '#FF8C00';
-        ctx.font = `bold 28px ${fontStr}`;
+        ctx.font = `bold 24px ${fontStr}`; // 収まりを良くするためフォントサイズを微調整
 
         const drawInfo = (label, val) => {
             ctx.fillText(`${label}：${val}`, textStartX, currentY);
-            currentY += 45;
+            currentY += 38; // 行間を詰める
         };
 
         // 基本情報描画
         drawInfo("名前", document.getElementById('name').value || "未入力");
+        drawInfo("誕生日", document.getElementById('birthday').value || "---");
+        drawInfo("年齢", (document.getElementById('age').value || "---") + " 歳");
         drawInfo("身長", (document.getElementById('height').value || "---") + " cm");
         drawInfo("一人称", document.getElementById('pronoun').value || "---");
         
@@ -299,11 +309,11 @@
         const interestList = Array.from(interestNodes).map(node => node.value);
         drawInfo("恋愛対象", interestList.length > 0 ? interestList.join(', ') : "未選択");
 
-        currentY += 15; // 隙間
+        currentY += 10; // 隙間
 
         // --- 特性スライダー (1行にまとめて描画) ---
         const sliders = document.querySelectorAll('.trait-slider');
-        ctx.font = `bold 20px ${fontStr}`; // 特性は少し小さめに
+        ctx.font = `bold 18px ${fontStr}`; // 特性はさらに少し小さめに
         
         sliders.forEach(slider => {
             const label = slider.getAttribute('data-label');
@@ -316,9 +326,8 @@
                 bar += (i <= val) ? "■" : "□";
             }
 
-            // 1行で描画: 項目名 + 極端状態1 + バー + 極端状態2
             ctx.fillText(`${label}　${leftTxt} ${bar} ${rightTxt}`, textStartX, currentY);
-            currentY += 36; // 行間を固定して詰めすぎないように調整
+            currentY += 32; // 行間を固定して調整
         });
 
         // --- 顔画像 (アスペクト比を維持して全体を表示) ---
@@ -374,9 +383,6 @@
         });
     }
 </script>
-<footer>
-    <p>Product by 異次元ポケット</p>
-    <p><a href="https://ijigenpocket.booth.pm/" target="_blank">https://ijigenpocket.booth.pm/</a></p>
-</footer>
+
 </body>
 </html>
