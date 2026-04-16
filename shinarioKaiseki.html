@@ -37,7 +37,7 @@
     <div class="max-w-[1400px] mx-auto">
         <header class="mb-8">
             <h1 class="text-3xl font-bold">シナリオ一覧マネージャー</h1>
-            <p class="text-slate-600">入力されたURLの内容を正確に抽出します。URLと内容の不一致を防ぐよう改善しました。</p>
+            <p class="text-slate-600">入力されたURLの内容を正確に抽出します。情報の取得精度を大幅に向上させました。</p>
         </header>
 
         <!-- 入力エリア -->
@@ -91,30 +91,25 @@
         const emptyRow = document.getElementById('emptyRow');
 
         async function analyzeUrl(targetUrl) {
-            // プロンプトを強化：指定されたURL「そのもの」の情報を出すように強調
-            const systemPrompt = `あなたはTRPGシナリオの情報を抽出する正確なアシスタントです。
-指定されたURL（特にBOOTHの商品ページ）の内容を読み取り、正確な情報をJSONで返してください。
-他の似たようなシナリオと混同しないでください。
+            const systemPrompt = `You are a professional librarian specialized in TRPG scenarios. 
+Access the provided URL (especially BOOTH pages) using the search tool, read the description carefully, and extract information.
+Ensure you do not mix information with other scenarios. If you cannot find a specific field, provide your best estimate or "Unknown".`;
 
-抽出ルール:
-1. system: システム名（CoC 6th、エモクロア等）
-2. title: 正確な商品名
-3. summary: そのページに記載されている導入やあらすじを100文字程度で要約
-4. players: プレイ人数（例：3〜4人）
-5. playtime: プレイ時間（例：5時間）
-6. imageUrl: 商品のメイン画像URL
+            const userQuery = `Search for this specific page and extract its scenario details: ${targetUrl}`;
 
-返却形式 (JSONのみ):
-{
-  "system": "...",
-  "title": "...",
-  "summary": "...",
-  "players": "...",
-  "playtime": "...",
-  "imageUrl": "..."
-}`;
-
-            const userQuery = `以下のURLのページ内容だけを正確に解析してください: ${targetUrl}`;
+            // 構造化データの定義
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    system: { type: "STRING", description: "Name of the TRPG system (e.g., CoC 6th, Emoklore)" },
+                    title: { type: "STRING", description: "Title of the scenario" },
+                    summary: { type: "STRING", description: "Brief summary of the scenario (approx 100-150 Japanese characters)" },
+                    players: { type: "STRING", description: "Recommended number of players" },
+                    playtime: { type: "STRING", description: "Estimated play time" },
+                    imageUrl: { type: "STRING", description: "URL of the main product image" }
+                },
+                required: ["system", "title", "summary", "players", "playtime", "imageUrl"]
+            };
 
             try {
                 let response;
@@ -130,25 +125,29 @@
                                 contents: [{ parts: [{ text: userQuery }] }],
                                 systemInstruction: { parts: [{ text: systemPrompt }] },
                                 tools: [{ "google_search": {} }],
-                                generationConfig: { responseMimeType: "application/json" }
+                                generationConfig: { 
+                                    responseMimeType: "application/json",
+                                    responseSchema: responseSchema
+                                }
                             })
                         });
                         if (response.ok) break;
                     } catch (e) {}
-                    await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
+                    const delay = Math.pow(2, retries) * 1000;
+                    await new Promise(r => setTimeout(r, delay));
                     retries++;
                 }
 
-                if (!response?.ok) throw new Error("APIエラー");
-                const result = await response.json();
-                const data = JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text);
+                if (!response?.ok) throw new Error("API Connection Error");
                 
-                // AIが返したデータに、元のURLを確実に上書きする
-                data.url = targetUrl;
-                return data;
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Empty Response");
+                
+                return JSON.parse(text);
 
             } catch (error) {
-                console.error(error);
+                console.error("Analysis Error:", error);
                 throw error;
             }
         }
@@ -159,12 +158,10 @@
             const tr = document.createElement('tr');
             tr.className = "hover:bg-blue-50/50 transition-colors group";
             
-            // 画像のフォールバック
-            const imgHtml = data.imageUrl 
+            const imgHtml = data.imageUrl && data.imageUrl !== ""
                 ? `<img src="${data.imageUrl}" class="img-preview mx-auto" onerror="this.src='https://placehold.jp/24/e2e8f0/64748b/60x60.png?text=NO+IMG'">`
                 : `<div class="img-preview mx-auto flex items-center justify-center bg-slate-100 text-slate-400 text-[10px]">No Image</div>`;
 
-            // URLは必ず originalUrl を使用する
             tr.innerHTML = `
                 <td class="p-4 align-middle">${imgHtml}</td>
                 <td class="p-4 align-top" contenteditable="true">${data.system || '-'}</td>
@@ -202,18 +199,16 @@
             
             try {
                 const data = await analyzeUrl(url);
-                // 成功時：AIデータと、ユーザーが入力した「元のURL」を渡す
                 addRowToTable(data, url);
                 urlInput.value = "";
             } catch (error) {
-                // 失敗時：URLだけは正しくセットした空行を追加する
                 const manualData = {
                     system: "取得失敗",
                     title: "手動入力",
                     summary: "AIが情報を取得できませんでした。URL先を確認して手動で補完してください。",
                     players: "-",
                     playtime: "-",
-                    imageUrl: null
+                    imageUrl: ""
                 };
                 addRowToTable(manualData, url);
             } finally {
