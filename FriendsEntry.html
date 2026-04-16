@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィール・エントリー画像作成</title>
+    <style>
+        /* 基本設定：明るいオレンジと丸ゴシック */
+        :root {
+            --main-orange: #FF8C00;
+            --light-orange: #FFF4E5;
+            --accent-color: #FF6600;
+        }
+
+        body {
+            background-color: var(--light-orange);
+            font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: white;
+            border: 4px solid var(--main-orange);
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--accent-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label.main-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--main-orange);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .choice-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .choice-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .choice-item input[type="radio"], 
+        .choice-item input[type="checkbox"] {
+            accent-color: var(--accent-color);
+            width: 18px;
+            height: 18px;
+        }
+
+        .slider-container {
+            margin: 5px 0 10px 0;
+            padding: 10px;
+            background: var(--light-orange);
+            border-radius: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--main-orange);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s, background-color 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 0 #CC7000;
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #CC7000;
+        }
+
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>プロフィール入力</h1>
+
+    <div class="form-group">
+        <label class="main-label">名前</label>
+        <input type="text" id="name" placeholder="例：ルキウス">
+    </div>
+    <div class="form-group">
+        <label class="main-label">身長 (cm)</label>
+        <input type="text" id="height" placeholder="例：183">
+    </div>
+    <div class="form-group">
+        <label class="main-label">一人称</label>
+        <input type="text" id="pronoun" placeholder="例：オレ">
+    </div>
+
+    <div class="form-group">
+        <label class="main-label">顔画像</label>
+        <input type="file" id="faceImage" accept="image/*">
+    </div>
+
+    <hr style="border: 1px solid var(--main-orange); opacity: 0.2; margin: 15px 0;">
+
+    <div class="form-group">
+        <label class="main-label">性別</label>
+        <div class="choice-group">
+            <label class="choice-item"><input type="radio" name="gender" value="男" checked> 男</label>
+            <label class="choice-item"><input type="radio" name="gender" value="女"> 女</label>
+            <label class="choice-item"><input type="radio" name="gender" value="その他"> その他</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="main-label">恋愛対象</label>
+        <div class="choice-group">
+            <label class="choice-item"><input type="checkbox" name="interest" value="男" checked> 男</label>
+            <label class="choice-item"><input type="checkbox" name="interest" value="女" checked> 女</label>
+            <label class="choice-item"><input type="checkbox" name="interest" value="その他"> その他</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="main-label">体型（7段階）</label>
+        <div class="slider-container">
+            <div class="slider-label"><span>めっちゃ太め</span><span>めっちゃ細め</span></div>
+            <input type="range" id="bodyType" min="1" max="7" value="4">
+        </div>
+    </div>
+
+    <div id="traits-sliders">
+        <div class="form-group">
+            <label class="main-label">話す速さ（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>早い</span><span>遅い</span></div>
+                <input type="range" class="trait-slider" data-label="話す速さ" data-left="早い" data-right="遅い" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">声の高さ（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>高い</span><span>低い</span></div>
+                <input type="range" class="trait-slider" data-label="声の高さ" data-left="高い" data-right="低い" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">声の太さ（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>太い</span><span>細い</span></div>
+                <input type="range" class="trait-slider" data-label="声の太さ" data-left="太い" data-right="細い" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">行動（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>ゆっくり</span><span>きびきび</span></div>
+                <input type="range" class="trait-slider" data-label="行動" data-left="ゆっくり" data-right="きびきび" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">ことば（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>やんわり</span><span>きっぱり</span></div>
+                <input type="range" class="trait-slider" data-label="ことば" data-left="やんわり" data-right="きっぱり" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">表情（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>クール</span><span>ゆたか</span></div>
+                <input type="range" class="trait-slider" data-label="表情" data-left="クール" data-right="ゆたか" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">考え方（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>マジメ</span><span>お気楽</span></div>
+                <input type="range" class="trait-slider" data-label="考え方" data-left="マジメ" data-right="お気楽" min="1" max="8" value="4">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="main-label">はっきりいって（8段階）</label>
+            <div class="slider-container">
+                <div class="slider-label"><span>常識人</span><span>個人的</span></div>
+                <input type="range" class="trait-slider" data-label="はっきりいって" data-left="常識人" data-right="個人的" min="1" max="8" value="4">
+            </div>
+        </div>
+    </div>
+
+    <button id="saveBtn">保存して画像を出力する</button>
+</div>
+
+<canvas id="exportCanvas"></canvas>
+
+<script>
+    const saveBtn = document.getElementById('saveBtn');
+    const canvas = document.getElementById('exportCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const bodyLabels = ["めっちゃ太め", "太め", "やや太め", "普通", "やや細め", "細め", "めっちゃ細め"];
+    const fontStr = '"Hiragino Maru Gothic ProN", "Rounded Mplus 1c", sans-serif';
+
+    saveBtn.addEventListener('click', async () => {
+        const width = 1200;
+        const height = 630;
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx.fillStyle = '#FF8C00';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.fillStyle = '#FFFFFF';
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(20, 20, width - 40, height - 40, 20);
+            ctx.fill();
+        } else {
+            ctx.fillRect(20, 20, width - 40, height - 40);
+        }
+
+        const textStartX = 520;
+        let currentY = 65;
+
+        ctx.fillStyle = '#FF8C00';
+        ctx.font = `bold 28px ${fontStr}`;
+
+        const drawInfo = (label, val) => {
+            ctx.fillText(`${label}：${val}`, textStartX, currentY);
+            currentY += 40;
+        };
+
+        drawInfo("名前", document.getElementById('name').value || "未入力");
+        drawInfo("身長", (document.getElementById('height').value || "---") + " cm");
+        drawInfo("一人称", document.getElementById('pronoun').value || "---");
+        
+        const bIdx = parseInt(document.getElementById('bodyType').value) - 1;
+        drawInfo("体型", bodyLabels[bIdx]);
+        
+        const genderVal = document.querySelector('input[name="gender"]:checked').value;
+        drawInfo("性別", genderVal);
+
+        const interestNodes = document.querySelectorAll('input[name="interest"]:checked');
+        const interestList = Array.from(interestNodes).map(node => node.value);
+        drawInfo("恋愛対象", interestList.length > 0 ? interestList.join(', ') : "未選択");
+
+        currentY += 5;
+
+        const sliders = document.querySelectorAll('.trait-slider');
+        
+        sliders.forEach(slider => {
+            const label = slider.getAttribute('data-label');
+            const leftTxt = slider.getAttribute('data-left');
+            const rightTxt = slider.getAttribute('data-right');
+            const val = parseInt(slider.value);
+
+            let bar = "";
+            for(let i = 1; i <= 8; i++) {
+                bar += (i <= val) ? "■" : "□";
+            }
+
+            ctx.font = `bold 18px ${fontStr}`;
+            ctx.fillText(label, textStartX, currentY);
+            currentY += 22;
+
+            ctx.font = `18px ${fontStr}`;
+            ctx.fillText(`${leftTxt} ${bar} ${rightTxt}`, textStartX, currentY);
+            currentY += 32;
+        });
+
+        const fileInput = document.getElementById('faceImage');
+        const imgSize = 420;
+        const imgX = 60;
+        const imgY = (height - imgSize) / 2;
+
+        if (fileInput.files && fileInput.files[0]) {
+            const img = await loadImage(fileInput.files[0]);
+            const aspect = img.width / img.height;
+            let sx, sy, sWidth, sHeight;
+            if (aspect > 1) {
+                sHeight = img.height;
+                sWidth = img.height;
+                sx = (img.width - sWidth) / 2;
+                sy = 0;
+            } else {
+                sWidth = img.width;
+                sHeight = img.width;
+                sx = 0;
+                sy = (img.height - sHeight) / 2;
+            }
+
+            ctx.save();
+            ctx.drawImage(img, sx, sy, sWidth, sHeight, imgX, imgY, imgSize, imgSize);
+            ctx.strokeStyle = '#FF8C00';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(imgX, imgY, imgSize, imgSize);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#F5F5F5';
+            ctx.fillRect(imgX, imgY, imgSize, imgSize);
+            ctx.fillStyle = '#FF8C00';
+            ctx.font = `24px ${fontStr}`;
+            ctx.fillText('No Image', imgX + 155, imgY + 220);
+        }
+
+        const link = document.createElement('a');
+        link.download = 'profile_entry_card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+
+    function loadImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+</script>
+
+</body>
+</html>
