@@ -30,14 +30,31 @@
             border-radius: 8px;
             background-color: #e2e8f0;
         }
+        .settings-panel {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-800">
 
     <div class="max-w-[1400px] mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold">シナリオ一覧マネージャー</h1>
-            <p class="text-slate-600">入力されたURLの内容を正確に抽出します。情報の取得精度を大幅に向上させました。</p>
+        <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">シナリオ一覧マネージャー</h1>
+                <p class="text-slate-600">URLから情報を自動抽出します。※利用にはGemini APIキーが必要です。</p>
+            </div>
+            <!-- APIキー設定エリア -->
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 text-sm">
+                <label class="block text-slate-500 mb-1 font-semibold">Gemini API Key</label>
+                <div class="flex gap-2">
+                    <input type="password" id="apiKeyInput" placeholder="キーを入力して保存" 
+                        class="p-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-48">
+                    <button id="saveKeyBtn" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded transition-colors">
+                        保存
+                    </button>
+                </div>
+                <p id="keyStatus" class="text-[10px] mt-1 text-slate-400">キーはブラウザにのみ保存されます</p>
+            </div>
         </header>
 
         <!-- 入力エリア -->
@@ -82,8 +99,59 @@
         </div>
     </div>
 
+    <!-- メッセージボックス -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-bold mb-2">エラー</h3>
+            <p id="modalContent" class="text-slate-600 mb-6 text-sm"></p>
+            <button onclick="document.getElementById('modalOverlay').classList.add('hidden')" 
+                class="w-full bg-slate-800 text-white py-2 rounded-lg font-bold">閉じる</button>
+        </div>
+    </div>
+
     <script>
-        const apiKey = ""; // 実行環境から提供
+        // APIキーの管理
+        let currentApiKey = "";
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const keyStatus = document.getElementById('keyStatus');
+
+        // 初期化時に保存されたキーを読み込む
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                currentApiKey = savedKey;
+                apiKeyInput.value = savedKey;
+                keyStatus.innerText = "キーが保存されています";
+                keyStatus.classList.add('text-green-600');
+            }
+        });
+
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                currentApiKey = key;
+                showMessage("設定保存", "APIキーを保存しました。解析が利用可能になります。");
+                keyStatus.innerText = "キーが保存されています";
+                keyStatus.classList.remove('text-slate-400');
+                keyStatus.classList.add('text-green-600');
+            } else {
+                localStorage.removeItem('gemini_api_key');
+                currentApiKey = "";
+                showMessage("設定解除", "APIキーを削除しました。");
+                keyStatus.innerText = "キーはブラウザにのみ保存されます";
+                keyStatus.classList.remove('text-green-600');
+                keyStatus.classList.add('text-slate-400');
+            }
+        });
+
+        function showMessage(title, content) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalContent').innerText = content;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+
         const analyzeBtn = document.getElementById('analyzeBtn');
         const urlInput = document.getElementById('urlInput');
         const scenarioList = document.getElementById('scenarioList');
@@ -91,65 +159,68 @@
         const emptyRow = document.getElementById('emptyRow');
 
         async function analyzeUrl(targetUrl) {
+            if (!currentApiKey) {
+                throw new Error("APIキーが設定されていません。右上の設定欄に入力してください。");
+            }
+
             const systemPrompt = `You are a professional librarian specialized in TRPG scenarios. 
-Access the provided URL (especially BOOTH pages) using the search tool, read the description carefully, and extract information.
-Ensure you do not mix information with other scenarios. If you cannot find a specific field, provide your best estimate or "Unknown".`;
+Access the provided URL using the search tool, read the description carefully, and extract information.
+Ensure accuracy and format your response as JSON based on the schema.`;
 
             const userQuery = `Search for this specific page and extract its scenario details: ${targetUrl}`;
 
-            // 構造化データの定義
             const responseSchema = {
                 type: "OBJECT",
                 properties: {
-                    system: { type: "STRING", description: "Name of the TRPG system (e.g., CoC 6th, Emoklore)" },
-                    title: { type: "STRING", description: "Title of the scenario" },
-                    summary: { type: "STRING", description: "Brief summary of the scenario (approx 100-150 Japanese characters)" },
-                    players: { type: "STRING", description: "Recommended number of players" },
-                    playtime: { type: "STRING", description: "Estimated play time" },
-                    imageUrl: { type: "STRING", description: "URL of the main product image" }
+                    system: { type: "STRING" },
+                    title: { type: "STRING" },
+                    summary: { type: "STRING" },
+                    players: { type: "STRING" },
+                    playtime: { type: "STRING" },
+                    imageUrl: { type: "STRING" }
                 },
                 required: ["system", "title", "summary", "players", "playtime", "imageUrl"]
             };
 
-            try {
-                let response;
-                let retries = 0;
-                const maxRetries = 5;
+            let response;
+            let retries = 0;
+            const maxRetries = 5;
 
-                while (retries < maxRetries) {
-                    try {
-                        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: userQuery }] }],
-                                systemInstruction: { parts: [{ text: systemPrompt }] },
-                                tools: [{ "google_search": {} }],
-                                generationConfig: { 
-                                    responseMimeType: "application/json",
-                                    responseSchema: responseSchema
-                                }
-                            })
-                        });
-                        if (response.ok) break;
-                    } catch (e) {}
-                    const delay = Math.pow(2, retries) * 1000;
-                    await new Promise(r => setTimeout(r, delay));
-                    retries++;
+            while (retries < maxRetries) {
+                try {
+                    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: userQuery }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            tools: [{ "google_search": {} }],
+                            generationConfig: { 
+                                responseMimeType: "application/json",
+                                responseSchema: responseSchema
+                            }
+                        })
+                    });
+                    if (response.ok) break;
+                    
+                    const errJson = await response.json();
+                    if (response.status === 400 || response.status === 403) {
+                        throw new Error(`APIキーが無効、または制限がかかっています。コード:${response.status}`);
+                    }
+                } catch (e) {
+                    if (e.message.includes("APIキー")) throw e;
                 }
-
-                if (!response?.ok) throw new Error("API Connection Error");
-                
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Empty Response");
-                
-                return JSON.parse(text);
-
-            } catch (error) {
-                console.error("Analysis Error:", error);
-                throw error;
+                await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
+                retries++;
             }
+
+            if (!response?.ok) throw new Error("通信に失敗しました。APIキーを確認してください。");
+            
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error("情報が見つかりませんでした。");
+            
+            return JSON.parse(text);
         }
 
         function addRowToTable(data, originalUrl) {
@@ -158,7 +229,7 @@ Ensure you do not mix information with other scenarios. If you cannot find a spe
             const tr = document.createElement('tr');
             tr.className = "hover:bg-blue-50/50 transition-colors group";
             
-            const imgHtml = data.imageUrl && data.imageUrl !== ""
+            const imgHtml = data.imageUrl && data.imageUrl.startsWith('http')
                 ? `<img src="${data.imageUrl}" class="img-preview mx-auto" onerror="this.src='https://placehold.jp/24/e2e8f0/64748b/60x60.png?text=NO+IMG'">`
                 : `<div class="img-preview mx-auto flex items-center justify-center bg-slate-100 text-slate-400 text-[10px]">No Image</div>`;
 
@@ -181,7 +252,7 @@ Ensure you do not mix information with other scenarios. If you cannot find a spe
                 <td class="p-4 align-top text-right">
                     <button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1-1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
                     </button>
                 </td>
@@ -193,6 +264,11 @@ Ensure you do not mix information with other scenarios. If you cannot find a spe
             const url = urlInput.value.trim();
             if (!url) return;
 
+            if (!currentApiKey) {
+                showMessage("キー未設定", "右上の設定欄にGemini APIキーを入力して「保存」してください。");
+                return;
+            }
+
             analyzeBtn.disabled = true;
             analyzeBtn.innerText = "解析中...";
             statusMessage.classList.remove('hidden');
@@ -202,10 +278,11 @@ Ensure you do not mix information with other scenarios. If you cannot find a spe
                 addRowToTable(data, url);
                 urlInput.value = "";
             } catch (error) {
+                showMessage("解析エラー", error.message);
                 const manualData = {
                     system: "取得失敗",
                     title: "手動入力",
-                    summary: "AIが情報を取得できませんでした。URL先を確認して手動で補完してください。",
+                    summary: "AI解析に失敗しました。手動で補完してください。",
                     players: "-",
                     playtime: "-",
                     imageUrl: ""
