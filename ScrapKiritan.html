@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap Kiritan | 異次元ポケット</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            /* スタイリッシュな動的グラデーション背景 */
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 切り抜きエリアの高度なスタイリング */
+        .img-container {
+            min-height: 400px;
+            max-height: 65vh;
+            width: 100%;
+            background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-radius: 24px;
+            border: 2px dashed #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .drop-active {
+            border-color: #3b82f6 !important;
+            background-color: #f0f7ff !important;
+            transform: scale(1.01);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.2);
+        }
+
+        /* ボタンのホバーアニメーション */
+        .btn-hover {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-hover:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.2);
+        }
+        .btn-hover:active {
+            transform: translateY(-1px);
+        }
+
+        /* Cropperのカスタマイズ */
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 0;
+        }
+        .cropper-line, .cropper-point {
+            background-color: #3b82f6;
+        }
+
+        /* グラスモーフィズム効果 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-blue-100">
+
+    <div class="flex-grow w-full max-w-6xl mx-auto p-4 md:p-10 flex flex-col justify-center">
+        <!-- メインカード -->
+        <div class="glass-card shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] rounded-[40px] overflow-hidden border border-white/20">
+            
+            <!-- ヘッダーセクション -->
+            <header class="pt-12 pb-6 px-8 text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl shadow-blue-500/20 mb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758L5 19m0-14l4.121 4.121" />
+                    </svg>
+                </div>
+                <h1 class="text-5xl font-black text-slate-900 tracking-tighter">Scrap Kiritan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Pro</span></h1>
+                <p class="text-slate-500 mt-4 text-lg font-medium opacity-80">スクショ貼り付け、画像ドロップ、ファイル選んで、それぞれ切り取って、保存出来るよ！</p>
+            </header>
+
+            <div class="p-6 md:p-12">
+                <!-- アクションエリア (メイン操作) -->
+                <div class="flex flex-wrap gap-5 mb-12 justify-center">
+                    <label class="btn-hover bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold cursor-pointer flex items-center gap-3 text-lg shadow-xl shadow-slate-900/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>ファイルを選択</span>
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    </label>
+                    
+                    <button id="cropButton" class="hidden btn-hover bg-emerald-500 text-white px-10 py-5 rounded-2xl font-bold flex items-center gap-3 text-lg shadow-xl shadow-emerald-500/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                            <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>切り抜く</span>
+                    </button>
+                </div>
+
+                <!-- ワークスペース -->
+                <div id="dropZone" class="img-container relative group ring-1 ring-slate-100">
+                    <img id="imageToCrop" src="" alt="Editor" class="hidden">
+                    
+                    <!-- ガイド表示 -->
+                    <div id="initialGuide" class="flex flex-col items-center justify-center text-center p-12 transition-all duration-500">
+                        <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-700">ここに画像をドロップ</p>
+                        <div class="flex items-center gap-3 mt-4 text-slate-400">
+                            <span>または</span>
+                            <div class="flex gap-1.5">
+                                <kbd class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-bold font-sans">Ctrl</kbd>
+                                <span class="font-bold">+</span>
+                                <kbd class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-bold font-sans">V</kbd>
+                            </div>
+                            <span>で貼り付け</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 結果プレビュー & 保存セクション -->
+                <div id="resultWrapper" class="hidden mt-20 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+                    <div class="flex items-center gap-6 mb-10">
+                        <div class="h-px flex-grow bg-slate-100"></div>
+                        <h2 class="text-xs font-black text-slate-300 uppercase tracking-[0.4em] text-center">Result Preview</h2>
+                        <div class="h-px flex-grow bg-slate-100"></div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center gap-12">
+                        <!-- プレビュー画像本体 -->
+                        <div class="p-3 bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-3xl border border-slate-50 overflow-hidden">
+                            <img id="croppedResult" class="max-w-full rounded-2xl" src="" alt="Result">
+                        </div>
+
+                        <!-- 移動した保存ボタン -->
+                        <button id="downloadButton" class="hidden btn-hover bg-blue-600 text-white px-12 py-6 rounded-[2rem] font-bold flex items-center gap-4 text-xl shadow-2xl shadow-blue-600/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <span>PNG形式で保存する</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- スタイリッシュなクレジットフッター -->
+    <footer class="w-full py-16 px-6 flex flex-col items-center">
+        <div class="group flex flex-col items-center">
+            <span class="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-black mb-4 opacity-50">Authorized Application</span>
+            <div class="flex items-center gap-2">
+                <span class="text-xl font-bold text-white tracking-tight">Product by 異次元ポケット</span>
+            </div>
+            <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" class="mt-6 px-6 py-2 rounded-full bg-white/10 text-white/60 text-xs font-bold hover:bg-white/20 hover:text-white transition-all border border-white/10 backdrop-blur-sm">
+                ijigenpocket.booth.pm
+            </a>
+        </div>
+        <p class="mt-10 text-[10px] font-bold text-white/20 tracking-widest uppercase">
+            Private Local Processing • No Server Uploads
+        </p>
+    </footer>
+
+    <!-- Cropper.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const imageToCrop = document.getElementById('imageToCrop');
+        const cropButton = document.getElementById('cropButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const resultWrapper = document.getElementById('resultWrapper');
+        const croppedResult = document.getElementById('croppedResult');
+        const dropZone = document.getElementById('dropZone');
+        const initialGuide = document.getElementById('initialGuide');
+
+        let cropper = null;
+
+        function loadFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (cropper) {
+                    cropper.destroy();
+                }
+
+                imageToCrop.src = e.target.result;
+                imageToCrop.classList.remove('hidden');
+                initialGuide.classList.add('hidden');
+                
+                cropButton.classList.remove('hidden');
+                resultWrapper.classList.add('hidden');
+                downloadButton.classList.add('hidden');
+
+                cropper = new Cropper(imageToCrop, {
+                    viewMode: 1,
+                    dragMode: 'move',
+                    aspectRatio: NaN,
+                    autoCropArea: 0.8,
+                    responsive: true,
+                    restore: false,
+                    checkCrossOrigin: false,
+                    modal: true,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadFile(e.target.files[0]);
+            }
+        });
+
+        document.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    loadFile(blob);
+                }
+            }
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('drop-active'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
+        
+        dropZone.addEventListener('drop', (e) => {
+            dropZone.classList.remove('drop-active');
+            const files = e.dataTransfer.files;
+            if (files && files[0]) {
+                loadFile(files[0]);
+            }
+        });
+
+        cropButton.addEventListener('click', () => {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            croppedResult.src = canvas.toDataURL('image/png');
+            resultWrapper.classList.remove('hidden');
+            downloadButton.classList.remove('hidden');
+            
+            setTimeout(() => {
+                resultWrapper.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        });
+
+        downloadButton.addEventListener('click', () => {
+            const date = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const fileName = `ijigen-pocket-${date}.png`;
+            
+            const link = document.createElement('a');
+            link.style.display = 'none';
+            link.href = croppedResult.src;
+            link.download = fileName;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>
