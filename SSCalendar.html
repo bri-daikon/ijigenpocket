@@ -762,10 +762,31 @@
                 WEEKDAYS.forEach(d => mini.innerHTML += `<div class="text-center font-bold opacity-50 py-2 bg-black/5">${d}</div>`);
                 const offset = curr.getDay(); const days = new Date(curr.getFullYear(), curr.getMonth()+1, 0).getDate();
                 for (let j = 0; j < offset; j++) mini.innerHTML += '<div class="bg-black/5"></div>';
+                
                 for (let d = 1; d <= days; d++) {
-                    const dStr = getLocalDateString(new Date(curr.getFullYear(), curr.getMonth(), d));
-                    const has = events.some(e => isDateInRange(dStr, e.start, e.end));
-                    mini.innerHTML += `<div onclick="referenceDate=new Date('${dStr}');setView('day')" class="text-center py-3 cursor-pointer bg-white/90 hover:bg-blue-400/20 transition ${has ? 'font-black text-blue-600' : ''}">${d}</div>`;
+                    const currentDay = new Date(curr.getFullYear(), curr.getMonth(), d);
+                    const dStr = getLocalDateString(currentDay);
+                    const dayEvents = events.filter(e => isDateInRange(dStr, e.start, e.end));
+                    const has = dayEvents.length > 0;
+                    const isToday = currentDay.toDateString() === new Date().toDateString();
+                    
+                    let styleAttr = "";
+                    let classList = "text-center py-3 cursor-pointer transition hover:brightness-95 ";
+                    
+                    if (has) {
+                        // 最初に見つかった予定のカテゴリ色を使用
+                        const cat = categories.find(c => c.id === dayEvents[0].category) || categories[0];
+                        styleAttr = `style="background-color: ${cat.color}22; border-bottom: 3px solid ${cat.color};"`;
+                        classList += "font-bold ";
+                    } else {
+                        classList += "bg-white/90 ";
+                    }
+                    
+                    if (isToday) {
+                        classList += "ring-2 ring-blue-500 ring-inset ";
+                    }
+
+                    mini.innerHTML += `<div onclick="referenceDate=new Date('${dStr}');setView('day')" class="${classList}" ${styleAttr}>${d}</div>`;
                 }
                 box.appendChild(mini); grid.appendChild(box);
             }
