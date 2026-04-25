@@ -515,23 +515,66 @@
 
         function goToToday() { referenceDate = new Date(); render(); }
 
+        /**
+         * カレンダーを画像としてダウンロードする関数
+         * 縦長にならないよう、横幅を十分に確保した状態でキャプチャ
+         */
         async function downloadCalendarImage() {
             const target = document.querySelector('.calendar-card');
             if (!target) return;
             
-            const canvas = await html2canvas(target, {
-                backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-color'),
-                scale: 2, 
-                logging: false, 
-                useCORS: true,
-                allowTaint: true,
-                scrollY: -window.scrollY
-            });
-            const image = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.download = `calendar_${getLocalDateString(referenceDate)}.png`;
-            link.href = image;
-            link.click();
+            // 出力時の理想的な横幅（1400px）を設定
+            const exportWidth = 1400;
+
+            const tempWrapper = document.createElement('div');
+            tempWrapper.style.position = 'fixed';
+            tempWrapper.style.top = '-9999px';
+            tempWrapper.style.left = '0';
+            tempWrapper.style.width = exportWidth + 'px'; // 横幅を固定して広げる
+            tempWrapper.style.padding = '32px';
+            tempWrapper.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--bg-color');
+            tempWrapper.style.color = getComputedStyle(document.body).getPropertyValue('--text-main');
+            tempWrapper.style.fontFamily = getComputedStyle(document.body).fontFamily;
+            
+            // 年月タイトル部分
+            const title = document.createElement('h2');
+            title.innerText = document.getElementById('currentDateDisplay').innerText;
+            title.style.fontSize = '36px';
+            title.style.fontWeight = 'bold';
+            title.style.marginBottom = '24px';
+            title.style.textAlign = 'center';
+            title.style.borderBottom = `3px solid ${getComputedStyle(document.body).getPropertyValue('--border-color')}`;
+            title.style.paddingBottom = '16px';
+            
+            // カレンダー本体をクローンし、幅を100%にする
+            const clone = target.cloneNode(true);
+            clone.style.width = '100%';
+            clone.style.maxWidth = 'none';
+            
+            tempWrapper.appendChild(title);
+            tempWrapper.appendChild(clone);
+            document.body.appendChild(tempWrapper);
+
+            try {
+                const canvas = await html2canvas(tempWrapper, {
+                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-color'),
+                    scale: 2, // 高解像度
+                    logging: false, 
+                    useCORS: true,
+                    allowTaint: true,
+                    scrollY: 0,
+                    width: exportWidth + 64, // パディング分を加味
+                });
+                const image = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = `calendar_${getLocalDateString(referenceDate)}.png`;
+                link.href = image;
+                link.click();
+            } catch (err) {
+                console.error("Image generation failed", err);
+            } finally {
+                document.body.removeChild(tempWrapper);
+            }
         }
 
         function sortEvents(eventList) {
@@ -637,103 +680,51 @@
 
         function renderHourly(container, date) {
             const dateStr = getLocalDateString(date);
-            
-            // 1. 本日の予定（終日以外）を抽出
             const rawDayEvents = events.filter(e => !e.isAllDay && isDateInRange(dateStr, e.start, e.end));
-
-            // 2. 本日の時間枠内(0:00-24:00)での開始・終了分を計算
             const dayEvents = rawDayEvents.map(e => {
-                let sMin = 0;
-                let eMin = 1440; // 24:00
-
-                // 開始時間のパース
-                if (e.start === dateStr && e.startTime) {
-                    const [h, m] = e.startTime.split(':').map(Number);
-                    sMin = h * 60 + m;
-                } else if (e.start < dateStr) {
-                    sMin = 0; // 今日以前から開始している場合
-                }
-                
-                // 終了時間のパース
-                if (e.end === dateStr && e.endTime) {
-                    const [h, m] = e.endTime.split(':').map(Number);
-                    eMin = h * 60 + m;
-                } else if (e.end > dateStr) {
-                    eMin = 1440; // 明日以降に終了する場合
-                } else if (e.start === dateStr && !e.endTime) {
-                    eMin = sMin + 60; // 終了未指定ならとりあえず1時間
-                }
-                
+                let sMin = 0; let eMin = 1440;
+                if (e.start === dateStr && e.startTime) { const [h, m] = e.startTime.split(':').map(Number); sMin = h * 60 + m; } else if (e.start < dateStr) { sMin = 0; }
+                if (e.end === dateStr && e.endTime) { const [h, m] = e.endTime.split(':').map(Number); eMin = h * 60 + m; } else if (e.end > dateStr) { eMin = 1440; } else if (e.start === dateStr && !e.endTime) { eMin = sMin + 60; }
                 return { ...e, sMin, eMin };
             }).sort((a,b) => a.sMin - b.sMin);
 
-            // 3. カラムの割り当て（重なり対応）
             const columns = [];
             dayEvents.forEach(ev => {
                 let colIdx = -1;
-                for (let i = 0; i < columns.length; i++) {
-                    if (columns[i] <= ev.sMin) {
-                        colIdx = i;
-                        break;
-                    }
-                }
-                if (colIdx === -1) {
-                    colIdx = columns.length;
-                    columns.push(ev.eMin);
-                } else {
-                    columns[colIdx] = ev.eMin;
-                }
+                for (let i = 0; i < columns.length; i++) { if (columns[i] <= ev.sMin) { colIdx = i; break; } }
+                if (colIdx === -1) { colIdx = columns.length; columns.push(ev.eMin); } else { columns[colIdx] = ev.eMin; }
                 ev.colIdx = colIdx;
             });
 
-            // 4. ベースの構築
             const card = document.createElement('div'); card.className = 'calendar-card relative overflow-hidden';
             const grid = document.createElement('div'); grid.className = 'divide-y divide-black/5';
             for (let h = 0; h < 24; h++) {
-                const row = document.createElement('div');
-                row.className = 'time-grid h-16';
+                const row = document.createElement('div'); row.className = 'time-grid h-16';
                 row.innerHTML = `<div class="bg-black/5 flex items-center justify-center text-xs opacity-50 border-r border-inherit w-20">${h}:00</div><div class="flex-1 hover:bg-black/5 cursor-crosshair" onclick="openModal('${dateStr}', '${h.toString().padStart(2,'0')}:00')"></div>`;
                 grid.appendChild(row);
             }
             card.appendChild(grid);
 
-            // 5. 予定のオーバーレイ
-            const overlay = document.createElement('div'); 
-            overlay.className = 'absolute top-0 right-0 left-20 bottom-0 pointer-events-none';
-            
+            const overlay = document.createElement('div'); overlay.className = 'absolute top-0 right-0 left-20 bottom-0 pointer-events-none';
             dayEvents.forEach(ev => {
                 const cat = categories.find(cat => cat.id === ev.category) || categories[0];
                 const totalCols = Math.max(1, columns.length);
                 const widthPercent = 100 / totalCols;
                 const leftPercent = ev.colIdx * widthPercent;
-                
                 const topPx = (ev.sMin / 60) * 64;
                 const heightPx = Math.max((ev.eMin - ev.sMin) / 60 * 64, 32);
-
                 const block = document.createElement('div'); 
                 block.className = `hourly-event pointer-events-auto shadow-md`;
-                block.style.top = `${topPx}px`;
-                block.style.height = `${heightPx}px`;
-                block.style.width = `calc(${widthPercent}% - 6px)`;
-                block.style.left = `calc(${leftPercent}% + 3px)`;
-                block.style.borderLeft = `5px solid ${cat.color}`;
-                block.style.backgroundColor = cat.color + '59'; // 約35%不透明度
-                
-                const isNeon = document.body.getAttribute('data-theme').startsWith('neon');
-                if (isNeon) block.style.color = cat.color;
-
+                block.style.top = `${topPx}px`; block.style.height = `${heightPx}px`;
+                block.style.width = `calc(${widthPercent}% - 6px)`; block.style.left = `calc(${leftPercent}% + 3px)`;
+                block.style.borderLeft = `5px solid ${cat.color}`; block.style.backgroundColor = cat.color + '59';
                 const startLabel = (ev.start === dateStr ? ev.startTime : "0:00");
                 const endLabel = (ev.end === dateStr ? ev.endTime : "24:00");
-                
-                block.innerHTML = `
-                    <div class="font-bold text-[12px] leading-snug mb-0.5 truncate">${ev.title}</div>
-                    <div class="text-[10px] opacity-90 leading-tight">${startLabel} - ${endLabel}</div>
-                `;
+                block.innerHTML = `<div class="font-bold text-[12px] leading-snug mb-0.5 truncate">${ev.title}</div><div class="text-[10px] opacity-90 leading-tight">${startLabel} - ${endLabel}</div>`;
                 block.onclick = (event) => { event.stopPropagation(); editEvent(ev.id); }; 
                 overlay.appendChild(block);
             });
 
-            // 6. 終日予定エリア
             const allDayRaw = events.filter(e => e.isAllDay && isDateInRange(dateStr, e.start, e.end));
             const allDay = sortEvents(allDayRaw);
             if (allDay.length) {
@@ -741,14 +732,11 @@
                 allDay.forEach(e => {
                     const cat = categories.find(cat => cat.id === e.category) || categories[0];
                     const tag = document.createElement('div'); tag.className = `px-4 py-2 rounded-full text-xs font-bold cursor-pointer shadow-sm border`;
-                    tag.style.backgroundColor = cat.color + '40'; 
-                    tag.style.borderColor = cat.color;
-                    tag.innerText = `終日: ${e.title}`; 
-                    tag.onclick = () => editEvent(e.id); bar.appendChild(tag);
+                    tag.style.backgroundColor = cat.color + '40'; tag.style.borderColor = cat.color;
+                    tag.innerText = `終日: ${e.title}`; tag.onclick = () => editEvent(e.id); bar.appendChild(tag);
                 });
                 container.prepend(bar);
             }
-
             card.appendChild(overlay); container.appendChild(card);
         }
 
@@ -762,30 +750,13 @@
                 WEEKDAYS.forEach(d => mini.innerHTML += `<div class="text-center font-bold opacity-50 py-2 bg-black/5">${d}</div>`);
                 const offset = curr.getDay(); const days = new Date(curr.getFullYear(), curr.getMonth()+1, 0).getDate();
                 for (let j = 0; j < offset; j++) mini.innerHTML += '<div class="bg-black/5"></div>';
-                
                 for (let d = 1; d <= days; d++) {
-                    const currentDay = new Date(curr.getFullYear(), curr.getMonth(), d);
-                    const dStr = getLocalDateString(currentDay);
-                    const dayEvents = events.filter(e => isDateInRange(dStr, e.start, e.end));
-                    const has = dayEvents.length > 0;
+                    const currentDay = new Date(curr.getFullYear(), curr.getMonth(), d); const dStr = getLocalDateString(currentDay);
+                    const dayEvents = events.filter(e => isDateInRange(dStr, e.start, e.end)); const has = dayEvents.length > 0;
                     const isToday = currentDay.toDateString() === new Date().toDateString();
-                    
-                    let styleAttr = "";
-                    let classList = "text-center py-3 cursor-pointer transition hover:brightness-95 ";
-                    
-                    if (has) {
-                        // 最初に見つかった予定のカテゴリ色を使用
-                        const cat = categories.find(c => c.id === dayEvents[0].category) || categories[0];
-                        styleAttr = `style="background-color: ${cat.color}22; border-bottom: 3px solid ${cat.color};"`;
-                        classList += "font-bold ";
-                    } else {
-                        classList += "bg-white/90 ";
-                    }
-                    
-                    if (isToday) {
-                        classList += "ring-2 ring-blue-500 ring-inset ";
-                    }
-
+                    let styleAttr = ""; let classList = "text-center py-3 cursor-pointer transition hover:brightness-95 ";
+                    if (has) { const cat = categories.find(c => c.id === dayEvents[0].category) || categories[0]; styleAttr = `style="background-color: ${cat.color}22; border-bottom: 3px solid ${cat.color};"`; classList += "font-bold "; } else { classList += "bg-white/90 "; }
+                    if (isToday) { classList += "ring-2 ring-blue-500 ring-inset "; }
                     mini.innerHTML += `<div onclick="referenceDate=new Date('${dStr}');setView('day')" class="${classList}" ${styleAttr}>${d}</div>`;
                 }
                 box.appendChild(mini); grid.appendChild(box);
@@ -795,67 +766,35 @@
 
         function openModal(date = '', time = '') {
             editingEventId = null; document.getElementById('modalTitle').innerText = '予定の登録';
-            document.getElementById('eventTitle').value = ''; 
-            document.getElementById('eventCategory').value = categories[0].id;
-            document.getElementById('eventAllDay').checked = false; 
-            document.getElementById('eventDescription').value = '';
+            document.getElementById('eventTitle').value = ''; document.getElementById('eventCategory').value = categories[0].id;
+            document.getElementById('eventAllDay').checked = false; document.getElementById('eventDescription').value = '';
             document.getElementById('eventStartDate').value = date || getLocalDateString(new Date());
             document.getElementById('eventEndDate').value = date || getLocalDateString(new Date());
             document.getElementById('eventStartTime').value = time || '';
             document.getElementById('eventEndTime').value = time ? (parseInt(time.split(':')[0])+1).toString().padStart(2,'0')+':00' : '';
-            document.getElementById('duplicateBtn').classList.add('hidden');
-            document.getElementById('deleteBtn').classList.add('hidden'); 
-            document.getElementById('eventModal').classList.remove('hidden');
-            toggleTimeInputs();
+            document.getElementById('duplicateBtn').classList.add('hidden'); document.getElementById('deleteBtn').classList.add('hidden'); 
+            document.getElementById('eventModal').classList.remove('hidden'); toggleTimeInputs();
         }
-
         function closeModal() { document.getElementById('eventModal').classList.add('hidden'); }
-
         function saveEvent() {
             const title = document.getElementById('eventTitle').value; const start = document.getElementById('eventStartDate').value;
             if (!title || !start) return alert('入力内容を確認してください');
             const data = { title, start, end: document.getElementById('eventEndDate').value || start, startTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventStartTime').value, endTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventEndTime').value, category: document.getElementById('eventCategory').value, isAllDay: document.getElementById('eventAllDay').checked, description: document.getElementById('eventDescription').value };
-            
-            if (editingEventId) { 
-                const idx = events.findIndex(e => e.id === editingEventId); 
-                events[idx] = { ...data, id: editingEventId }; 
-            } else { 
-                events.push({ ...data, id: Date.now().toString() }); 
-            }
-            
+            if (editingEventId) { const idx = events.findIndex(e => e.id === editingEventId); events[idx] = { ...data, id: editingEventId }; } else { events.push({ ...data, id: Date.now().toString() }); }
             localStorage.setItem('weby_events', JSON.stringify(events)); closeModal(); render();
         }
-
         function editEvent(id) {
             const ev = events.find(e => e.id === id); if (!ev) return;
             editingEventId = id; document.getElementById('modalTitle').innerText = '予定を編集';
-            document.getElementById('eventTitle').value = ev.title; 
-            document.getElementById('eventCategory').value = categories.some(c => c.id === ev.category) ? ev.category : categories[0].id;
-            document.getElementById('eventAllDay').checked = ev.isAllDay; 
-            document.getElementById('eventStartDate').value = ev.start;
-            document.getElementById('eventEndDate').value = ev.end; 
-            document.getElementById('eventStartTime').value = ev.startTime;
-            document.getElementById('eventEndTime').value = ev.endTime; 
-            document.getElementById('eventDescription').value = ev.description;
-            
-            document.getElementById('duplicateBtn').classList.remove('hidden');
-            document.getElementById('deleteBtn').classList.remove('hidden'); 
-            document.getElementById('eventModal').classList.remove('hidden');
-            toggleTimeInputs();
+            document.getElementById('eventTitle').value = ev.title; document.getElementById('eventCategory').value = categories.some(c => c.id === ev.category) ? ev.category : categories[0].id;
+            document.getElementById('eventAllDay').checked = ev.isAllDay; document.getElementById('eventStartDate').value = ev.start;
+            document.getElementById('eventEndDate').value = ev.end; document.getElementById('eventStartTime').value = ev.startTime;
+            document.getElementById('eventEndTime').value = ev.endTime; document.getElementById('eventDescription').value = ev.description;
+            document.getElementById('duplicateBtn').classList.remove('hidden'); document.getElementById('deleteBtn').classList.remove('hidden'); 
+            document.getElementById('eventModal').classList.remove('hidden'); toggleTimeInputs();
         }
-
-        /**
-         * 予定の複製機能
-         */
-        function duplicateEvent() {
-            editingEventId = null;
-            document.getElementById('modalTitle').innerText = '予定を複製';
-            document.getElementById('duplicateBtn').classList.add('hidden');
-            document.getElementById('deleteBtn').classList.add('hidden');
-        }
-
+        function duplicateEvent() { editingEventId = null; document.getElementById('modalTitle').innerText = '予定を複製'; document.getElementById('duplicateBtn').classList.add('hidden'); document.getElementById('deleteBtn').classList.add('hidden'); }
         function deleteEvent() { if (confirm('削除しますか？')) { events = events.filter(e => e.id !== editingEventId); localStorage.setItem('weby_events', JSON.stringify(events)); closeModal(); render(); } }
-        
         function exportToGoogle() {
             const t = document.getElementById('eventTitle').value; const all = document.getElementById('eventAllDay').checked;
             const s = document.getElementById('eventStartDate').value.replace(/-/g, ''); const e = document.getElementById('eventEndDate').value.replace(/-/g, '');
