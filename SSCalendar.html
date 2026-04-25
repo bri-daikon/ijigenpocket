@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予定提出カレンダー</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for UI -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas for saving as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            --bg-color: #f3f4f6;
+            --container-bg: #ffffff;
+            --cell-bg: #ffffff;
+            --cell-off-bg: #f9fafb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --accent-color: #3b82f6;
+            --border-color: #e5e7eb;
+            --header-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --glow: none;
+        }
+
+        body[data-theme="antique"] {
+            --bg-color: #e6d5b8;
+            --container-bg: #f4ebd0;
+            --cell-bg: #fdf5e6;
+            --cell-off-bg: #ece0c8;
+            --text-main: #433422;
+            --text-muted: #8b7355;
+            --accent-color: #a68b6d;
+            --border-color: #d1b894;
+            --header-bg: #dcc9aa;
+            font-family: "Sawarabi Mincho", serif;
+        }
+
+        body[data-theme="pastel-pink"] {
+            --bg-color: #fff1f2;
+            --container-bg: #fff1f2;
+            --cell-bg: #fff5f7;
+            --cell-off-bg: #ffe4e6;
+            --text-main: #9f1239;
+            --text-muted: #e11d48;
+            --accent-color: #fb7185;
+            --border-color: #fecdd3;
+            --header-bg: #ffe4e6;
+        }
+
+        body[data-theme="pastel-green"] {
+            --bg-color: #f0fdf4;
+            --container-bg: #f0fdf4;
+            --cell-bg: #f7fee7;
+            --cell-off-bg: #dcfce7;
+            --text-main: #166534;
+            --text-muted: #15803d;
+            --accent-color: #4ade80;
+            --border-color: #bbf7d0;
+            --header-bg: #dcfce7;
+        }
+
+        body[data-theme="pastel-yellow"] {
+            --bg-color: #fffbeb;
+            --container-bg: #fffbeb;
+            --cell-bg: #fffdf2;
+            --cell-off-bg: #fef3c7;
+            --text-main: #92400e;
+            --text-muted: #b45309;
+            --accent-color: #fbbf24;
+            --border-color: #fde68a;
+            --header-bg: #fef3c7;
+        }
+
+        body[data-theme="neon-pink"] {
+            --bg-color: #1a001a;
+            --container-bg: #2d002d;
+            --cell-bg: #1a001a;
+            --cell-off-bg: #000000;
+            --text-main: #ff00ff;
+            --text-muted: #ff00ff;
+            --accent-color: #ff00ff;
+            --border-color: #ff00ff;
+            --header-bg: #000000;
+            --glow: 0 0 10px #ff00ff;
+            --shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+
+        body[data-theme="neon-blue"] {
+            --bg-color: #000a1a;
+            --container-bg: #001a33;
+            --cell-bg: #000a1a;
+            --cell-off-bg: #000000;
+            --text-main: #00ffff;
+            --text-muted: #00ffff;
+            --accent-color: #00ffff;
+            --border-color: #00ffff;
+            --header-bg: #000000;
+            --glow: 0 0 10px #00ffff;
+            --shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        body[data-theme="neon-green"] {
+            --bg-color: #001a00;
+            --container-bg: #003300;
+            --cell-bg: #001a00;
+            --cell-off-bg: #000000;
+            --text-main: #39ff14;
+            --text-muted: #39ff14;
+            --accent-color: #39ff14;
+            --border-color: #39ff14;
+            --header-bg: #000000;
+            --glow: 0 0 10px #39ff14;
+            --shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+        }
+
+        body[data-theme="black"] {
+            --bg-color: #000000;
+            --container-bg: #111111;
+            --cell-bg: #111111;
+            --cell-off-bg: #000000;
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --accent-color: #ffffff;
+            --border-color: #333333;
+            --header-bg: #000000;
+        }
+
+        body[data-theme="beige"] {
+            --bg-color: #f5f5dc;
+            --container-bg: #fafaf0;
+            --cell-bg: #ffffff;
+            --cell-off-bg: #fdf5e6;
+            --text-main: #4a4a4a;
+            --text-muted: #a5a58d;
+            --accent-color: #d2b48c;
+            --border-color: #e3d5b8;
+            --header-bg: #ede4d3;
+        }
+
+        body[data-theme="rainbow"] {
+            --bg-color: #f8fafc;
+            --container-bg: #ffffff;
+            --cell-bg: #ffffff;
+            --cell-off-bg: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-color: #f43f5e;
+            --border-color: #e2e8f0;
+            --header-bg: #ffffff;
+        }
+
+        /* --- Global Styles --- */
+        body { background-color: var(--bg-color); color: var(--text-main); transition: background-color 0.4s ease, color 0.4s ease; min-height: 100vh; display: flex; flex-direction: column; }
+        header { background-color: var(--header-bg); border-bottom: 2px solid var(--border-color); color: var(--text-main); }
+        main { flex: 1; transition: all 0.3s ease; width: 100%; }
+        
+        /* 画面を広く使う設定 */
+        .full-width-container { max-width: 100% !important; padding-left: 1rem; padding-right: 1rem; }
+
+        .calendar-card { 
+            background-color: var(--container-bg); 
+            border: 2px solid var(--border-color) !important;
+            box-shadow: var(--shadow);
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .day-cell { 
+            background-color: var(--cell-bg); 
+            border-right: 1px solid var(--border-color); 
+            border-bottom: 1px solid var(--border-color); 
+            min-height: 180px; 
+            height: auto; 
+            transition: background-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 8px;
+        }
+        .day-cell:hover { background-color: rgba(0,0,0,0.03); }
+        .cell-off { background-color: var(--cell-off-bg) !important; color: var(--text-muted) !important; opacity: 0.6; }
+
+        #themeSelect { 
+            background-color: var(--container-bg); 
+            color: var(--text-main); 
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 8px;
+        }
+        #themeSelect option { background-color: #ffffff; color: #000000; }
+
+        body[data-theme^="neon-"] .event-item,
+        body[data-theme^="neon-"] .hourly-event {
+            box-shadow: 0 0 10px currentColor;
+            text-shadow: var(--glow);
+        }
+        body[data-theme^="neon-"] h1, body[data-theme^="neon-"] h2, body[data-theme^="neon-"] .day-number { text-shadow: var(--glow); }
+
+        body[data-theme="rainbow"] header {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+            background-size: 400% 400%;
+            animation: rainbow_anim 10s ease infinite;
+            color: white !important;
+        }
+        @keyframes rainbow_anim { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body[data-theme="rainbow"] header h1, body[data-theme="rainbow"] header h2 { color: white !important; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .time-grid { display: grid; grid-template-columns: 80px 1fr; position: relative; }
+        
+        .event-item {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            margin: 1px 4px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            z-index: 2;
+            min-height: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-radius: 6px;
+            border-left-width: 4px;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            line-height: 1.1;
+        }
+        .event-item:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        .hourly-event {
+            position: absolute;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            z-index: 10;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-sizing: border-box;
+            overflow: hidden;
+            word-break: break-all;
+            line-height: 1.3;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .week-row {
+            display: grid; grid-template-columns: 90px 1fr;
+            min-height: 250px; 
+            border-bottom: 1px solid var(--border-color);
+        }
+        .week-date-col { background-color: var(--cell-off-bg); border-right: 1px solid var(--border-color); }
+
+        /* Footer Credits */
+        footer {
+            padding: 2rem;
+            text-align: center;
+            font-size: 0.875rem;
+            opacity: 0.6;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--header-bg);
+        }
+        footer a { color: var(--accent-color); text-decoration: underline; }
+    </style>
+</head>
+<body data-theme="default" class="font-sans">
+
+    <!-- Header Section -->
+    <header class="sticky top-0 z-20 p-4 shadow-md">
+        <div class="max-w-full mx-auto flex flex-wrap items-center justify-between gap-4 px-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="calendar"></i> 予定提出カレンダー
+                </h1>
+                <div class="flex items-center bg-black/10 rounded-lg p-1">
+                    <button onclick="changeDate(-1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-left"></i></button>
+                    <button onclick="goToToday()" class="px-4 py-1 text-sm font-medium hover:bg-black/10 rounded-md transition text-current">今日</button>
+                    <button onclick="changeDate(1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <h2 id="currentDateDisplay" class="text-lg font-bold"></h2>
+            </div>
+
+            <div class="flex flex-wrap gap-1 bg-black/10 p-1 rounded-xl">
+                <button onclick="setView('hourly')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="hourly">時間</button>
+                <button onclick="setView('day')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="day">1日</button>
+                <button onclick="setView('week')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="week">1週</button>
+                <button onclick="setView('2weeks')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="2weeks">2週</button>
+                <button onclick="setView('month')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="month">月</button>
+                <button onclick="setView('3months')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="3months">3ヶ月</button>
+                <button onclick="setView('year')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="year">年</button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="downloadBtn" onclick="downloadCalendarImage()" class="hidden border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> 画像で保存
+                </button>
+                <select id="themeSelect" onchange="setTheme(this.value)" class="outline-none cursor-pointer text-sm">
+                    <option value="default">デフォルト</option>
+                    <option value="antique">アンティーク調</option>
+                    <option value="pastel-pink">パステルピンク</option>
+                    <option value="pastel-green">パステルグリーン</option>
+                    <option value="pastel-yellow">パステルイエロー</option>
+                    <option value="neon-pink">ネオンピンク</option>
+                    <option value="neon-blue">ネオンブルー</option>
+                    <option value="neon-green">ネオングリーン</option>
+                    <option value="black">ブラック</option>
+                    <option value="beige">ベージュ</option>
+                    <option value="rainbow">七色</option>
+                </select>
+                <button onclick="openCategoryModal()" class="border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="settings" class="w-4 h-4"></i> カテゴリ
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition shadow-md font-bold">
+                    <i data-lucide="plus"></i> 予定を追加
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="full-width-container mx-auto p-4" id="calendarContainer"></main>
+
+    <footer>
+        <p>Product by <a href="https://ijigenpocket.booth.pm/" target="_blank">異次元ポケット</a></p>
+    </footer>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="modalTitle">予定の登録</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">タイトル</label>
+                    <input type="text" id="eventTitle" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">カテゴリー</label>
+                    <select id="eventCategory" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 py-2">
+                    <input type="checkbox" id="eventAllDay" class="w-5 h-5 rounded cursor-pointer accent-blue-600" onchange="toggleTimeInputs()">
+                    <label for="eventAllDay" class="text-sm font-bold cursor-pointer">終日予定にする</label>
+                </div>
+                <div class="grid grid-cols-2 gap-4 border-t pt-4 border-gray-100">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始日</label>
+                        <input type="date" id="eventStartDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了日</label>
+                        <input type="date" id="eventEndDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div id="timeInputs" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始時間</label>
+                        <input type="time" id="eventStartTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了時間</label>
+                        <input type="time" id="eventEndTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">メモ</label>
+                    <textarea id="eventDescription" class="w-full border-gray-300 border rounded-lg p-3 h-24 outline-none resize-none" placeholder="メモを入力してください"></textarea>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button id="saveBtn" onclick="saveEvent()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">保存する</button>
+                    <button id="googleExportBtn" onclick="exportToGoogle()" class="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition text-sm font-bold">
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Google
+                    </button>
+                </div>
+                <div class="flex flex-col gap-2 pt-2">
+                    <button id="duplicateBtn" onclick="duplicateEvent()" class="w-full text-blue-500 text-sm font-bold hidden hover:underline">この予定を複製する</button>
+                    <button id="deleteBtn" onclick="deleteEvent()" class="w-full text-red-500 text-sm font-bold hidden hover:underline">この予定を削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">カテゴリ管理</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-xl space-y-3">
+                    <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider">新しいカテゴリを追加</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="newCatName" placeholder="カテゴリ名" class="flex-1 border rounded-lg p-2 outline-none">
+                        <input type="color" id="newCatColor" value="#3b82f6" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+                        <button onclick="addCategory()" class="bg-blue-600 text-white px-4 rounded-lg font-bold hover:bg-blue-700 transition">追加</button>
+                    </div>
+                </div>
+                <div id="categoryList" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentView = 'month';
+        let referenceDate = new Date();
+        let events = JSON.parse(localStorage.getItem('weby_events') || '[]');
+        let categories = JSON.parse(localStorage.getItem('weby_categories') || JSON.stringify([
+            { id: 'work', name: '仕事', color: '#3b82f6' },
+            { id: 'private', name: 'プライベート', color: '#22c55e' },
+            { id: 'important', name: '重要', color: '#ef4444' },
+            { id: 'other', name: 'その他', color: '#9ca3af' }
+        ]));
+        let editingEventId = null;
+        const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('weby_theme') || 'default';
+            setTheme(savedTheme);
+            document.getElementById('themeSelect').value = savedTheme;
+            updateCategorySelectors();
+            lucide.createIcons();
+            render();
+        };
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('weby_theme', theme);
+            render();
+        }
+
+        function openCategoryModal() { renderCategoryList(); document.getElementById('categoryModal').classList.remove('hidden'); }
+        function closeCategoryModal() { document.getElementById('categoryModal').classList.add('hidden'); }
+        function renderCategoryList() {
+            const list = document.getElementById('categoryList');
+            list.innerHTML = '<h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">登録済みカテゴリ</h4>';
+            categories.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 bg-white border p-3 rounded-xl shadow-sm';
+                item.innerHTML = `<div class="w-6 h-6 rounded-full" style="background-color: ${cat.color}"></div><span class="flex-1 font-bold">${cat.name}</span><button onclick="deleteCategory('${cat.id}')" class="text-red-400 hover:text-red-600 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                list.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+        function addCategory() {
+            const name = document.getElementById('newCatName').value.trim(); const color = document.getElementById('newCatColor').value;
+            if (!name) return;
+            const newCat = { id: 'cat_' + Date.now(), name, color };
+            categories.push(newCat); saveCategories(); document.getElementById('newCatName').value = ''; renderCategoryList(); updateCategorySelectors();
+        }
+        function deleteCategory(id) {
+            if (categories.length <= 1) return;
+            if (!confirm('削除しますか？')) return;
+            categories = categories.filter(c => c.id !== id); saveCategories(); renderCategoryList(); updateCategorySelectors(); render();
+        }
+        function saveCategories() { localStorage.setItem('weby_categories', JSON.stringify(categories)); }
+        function updateCategorySelectors() {
+            const select = document.getElementById('eventCategory'); select.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; select.appendChild(opt);
+            });
+        }
+
+        function getLocalDateString(date) {
+            const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        function isDateInRange(targetDateStr, startDateStr, endDateStr) { 
+            const end = endDateStr || startDateStr; 
+            return targetDateStr >= startDateStr && targetDateStr <= end; 
+        }
+        function toggleTimeInputs() { document.getElementById('timeInputs').style.display = document.getElementById('eventAllDay').checked ? 'none' : 'grid'; }
+        
+        function formatHeaderDate(date, view) {
+            const year = date.getFullYear(); const month = date.getMonth() + 1; const day = date.getDate(); const weekday = WEEKDAYS[date.getDay()];
+            if (view === 'day' || view === 'hourly') return `${year}年${month}月${day}日 (${weekday})`;
+            if (view === 'month' || view === '3months') return `${year}年 ${month}月`;
+            if (view === 'year') return `${year}年`;
+            if (view === 'week' || view === '2weeks') {
+                const start = new Date(date); start.setDate(date.getDate() - date.getDay());
+                const end = new Date(start); end.setDate(start.getDate() + (view === 'week' ? 6 : 13));
+                return `${start.getMonth() + 1}/${start.getDate()} 〜 ${end.getMonth() + 1}/${end.getDate()}`;
+            }
+            return `${year}年 ${month}月`;
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('bg-black/20', 'shadow-sm');
+                if (btn.dataset.view === view) btn.classList.add('bg-black/20', 'shadow-sm');
+            });
+            render();
+        }
+
+        function changeDate(delta) {
+            switch (currentView) {
+                case 'hourly': case 'day': referenceDate.setDate(referenceDate.getDate() + delta); break;
+                case 'week': referenceDate.setDate(referenceDate.getDate() + (delta * 7)); break;
+                case '2weeks': referenceDate.setDate(referenceDate.getDate() + (delta * 14)); break;
+                case 'month': referenceDate.setMonth(referenceDate.getMonth() + delta); break;
+                case '3months': referenceDate.setMonth(referenceDate.getMonth() + (delta * 3)); break;
+                case 'year': referenceDate.setFullYear(referenceDate.getFullYear() + delta); break;
+            }
+            render();
+        }
+
+        function goToToday() { referenceDate = new Date(); render(); }
+
+        async function downloadCalendarImage() {
+            const target = document.querySelector('.calendar-card');
+            if (!target) return;
+            
+            const canvas = await html2canvas(target, {
+                backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-color'),
+                scale: 2, 
+                logging: false, 
+                useCORS: true,
+                allowTaint: true,
+                scrollY: -window.scrollY
+            });
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `calendar_${getLocalDateString(referenceDate)}.png`;
+            link.href = image;
+            link.click();
+        }
+
+        function sortEvents(eventList) {
+            return eventList.sort((a, b) => {
+                if (a.isAllDay && !b.isAllDay) return -1;
+                if (!a.isAllDay && b.isAllDay) return 1;
+                const timeA = a.startTime || '00:00';
+                const timeB = b.startTime || '00:00';
+                return timeA.localeCompare(timeB);
+            });
+        }
+
+        function render() {
+            const container = document.getElementById('calendarContainer');
+            const dateDisplay = document.getElementById('currentDateDisplay');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            container.innerHTML = '';
+            dateDisplay.innerText = formatHeaderDate(referenceDate, currentView);
+            
+            if (currentView === 'month') downloadBtn.classList.remove('hidden');
+            else downloadBtn.classList.add('hidden');
+
+            if (currentView === 'month') renderMonth(container, referenceDate);
+            else if (currentView === 'week' || currentView === '2weeks' || currentView === 'day') renderWeek(container, referenceDate, (currentView === 'week' ? 7 : (currentView === '2weeks' ? 14 : 1)));
+            else if (currentView === 'hourly') renderHourly(container, referenceDate);
+            else if (currentView === '3months') renderMultiMonth(container, referenceDate, 3);
+            else if (currentView === 'year') renderMultiMonth(container, referenceDate, 12);
+
+            lucide.createIcons();
+        }
+
+        function createEventElement(e, currentStr, showDesc = false) {
+            const isStart = e.start === currentStr;
+            const cat = categories.find(c => c.id === e.category) || categories[0];
+            const ev = document.createElement('div');
+            ev.className = 'event-item';
+            ev.style.borderColor = cat.color;
+            ev.style.backgroundColor = cat.color + '40';
+            
+            const isNeon = document.body.getAttribute('data-theme').startsWith('neon');
+            if (isNeon) ev.style.color = cat.color;
+
+            const t = document.createElement('div'); t.className = "font-bold leading-tight";
+            const timeInfo = (e.isAllDay ? '終日' : (e.startTime || ''));
+            t.innerText = isStart ? `${timeInfo} ${e.title}` : `(続く) ${e.title}`;
+            ev.appendChild(t);
+            
+            if (showDesc && e.description) {
+                const d = document.createElement('div'); d.className = "text-[10px] opacity-75 italic leading-tight mt-1";
+                d.innerText = e.description; ev.appendChild(d);
+            }
+            ev.onclick = (event) => { event.stopPropagation(); editEvent(e.id); };
+            return ev;
+        }
+
+        function renderMonth(container, date) {
+            const year = date.getFullYear(); const month = date.getMonth();
+            const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0);
+            const startOffset = firstDay.getDay(); const totalCells = Math.ceil((lastDay.getDate() + startOffset) / 7) * 7;
+            const card = document.createElement('div'); card.className = 'calendar-card';
+            const grid = document.createElement('div'); grid.className = 'calendar-grid';
+            WEEKDAYS.forEach(day => {
+                const h = document.createElement('div');
+                h.className = `p-2 text-center text-xs font-bold border-r border-b border-inherit bg-black/5 ${day === '日' ? 'text-red-500' : (day === '土' ? 'text-blue-500' : '')}`;
+                h.innerText = day; grid.appendChild(h);
+            });
+            const startDate = new Date(year, month, 1 - startOffset);
+            for (let i = 0; i < totalCells; i++) {
+                const current = new Date(startDate); current.setDate(startDate.getDate() + i);
+                const currentStr = getLocalDateString(current);
+                const cell = document.createElement('div');
+                cell.className = `day-cell p-1 hover:brightness-95 transition ${current.getMonth() !== month ? 'cell-off' : ''}`;
+                cell.innerHTML = `<div class="flex justify-between mb-1 p-1"><span class="day-number text-xs font-bold ${current.toDateString() === new Date().toDateString() ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}">${current.getDate()}</span></div>`;
+                
+                const dayEvents = events.filter(e => isDateInRange(currentStr, e.start, e.end));
+                sortEvents(dayEvents).forEach(e => cell.appendChild(createEventElement(e, currentStr)));
+                
+                cell.onclick = () => openModal(currentStr); grid.appendChild(cell);
+            }
+            card.appendChild(grid); container.appendChild(card);
+        }
+
+        function renderWeek(container, date, daysCount) {
+            let start = new Date(date); if (daysCount > 1) start.setDate(date.getDate() - date.getDay());
+            const card = document.createElement('div'); card.className = 'calendar-card divide-y divide-inherit';
+            for (let i = 0; i < daysCount; i++) {
+                const current = new Date(start); current.setDate(start.getDate() + i);
+                const currentStr = getLocalDateString(current);
+                const row = document.createElement('div'); row.className = `week-row ${current.toDateString() === new Date().toDateString() ? 'bg-blue-500/10' : ''}`;
+                const info = document.createElement('div'); info.className = `week-date-col flex flex-col items-center justify-center p-3`;
+                info.innerHTML = `<span class="text-xs font-bold ${current.getDay() === 0 ? 'text-red-500' : (current.getDay() === 6 ? 'text-blue-500' : '')}">${WEEKDAYS[current.getDay()]}</span><span class="text-3xl font-black">${current.getDate()}</span>`;
+                const evArea = document.createElement('div'); evArea.className = 'p-3 flex flex-col gap-1 cursor-pointer w-full';
+                
+                const dayEvents = events.filter(e => isDateInRange(currentStr, e.start, e.end));
+                if (dayEvents.length === 0) evArea.innerHTML = `<span class="opacity-30 text-xs italic">予定なし</span>`;
+                else sortEvents(dayEvents).forEach(e => evArea.appendChild(createEventElement(e, currentStr, true)));
+                
+                row.onclick = () => openModal(currentStr); row.appendChild(info); row.appendChild(evArea); card.appendChild(row);
+            }
+            container.appendChild(card);
+        }
+
+        function renderHourly(container, date) {
+            const dateStr = getLocalDateString(date);
+            
+            // 1. 本日の予定（終日以外）を抽出
+            const rawDayEvents = events.filter(e => !e.isAllDay && isDateInRange(dateStr, e.start, e.end));
+
+            // 2. 本日の時間枠内(0:00-24:00)での開始・終了分を計算
+            const dayEvents = rawDayEvents.map(e => {
+                let sMin = 0;
+                let eMin = 1440; // 24:00
+
+                // 開始時間のパース
+                if (e.start === dateStr && e.startTime) {
+                    const [h, m] = e.startTime.split(':').map(Number);
+                    sMin = h * 60 + m;
+                } else if (e.start < dateStr) {
+                    sMin = 0; // 今日以前から開始している場合
+                }
+                
+                // 終了時間のパース
+                if (e.end === dateStr && e.endTime) {
+                    const [h, m] = e.endTime.split(':').map(Number);
+                    eMin = h * 60 + m;
+                } else if (e.end > dateStr) {
+                    eMin = 1440; // 明日以降に終了する場合
+                } else if (e.start === dateStr && !e.endTime) {
+                    eMin = sMin + 60; // 終了未指定ならとりあえず1時間
+                }
+                
+                return { ...e, sMin, eMin };
+            }).sort((a,b) => a.sMin - b.sMin);
+
+            // 3. カラムの割り当て（重なり対応）
+            const columns = [];
+            dayEvents.forEach(ev => {
+                let colIdx = -1;
+                for (let i = 0; i < columns.length; i++) {
+                    if (columns[i] <= ev.sMin) {
+                        colIdx = i;
+                        break;
+                    }
+                }
+                if (colIdx === -1) {
+                    colIdx = columns.length;
+                    columns.push(ev.eMin);
+                } else {
+                    columns[colIdx] = ev.eMin;
+                }
+                ev.colIdx = colIdx;
+            });
+
+            // 4. ベースの構築
+            const card = document.createElement('div'); card.className = 'calendar-card relative overflow-hidden';
+            const grid = document.createElement('div'); grid.className = 'divide-y divide-black/5';
+            for (let h = 0; h < 24; h++) {
+                const row = document.createElement('div');
+                row.className = 'time-grid h-16';
+                row.innerHTML = `<div class="bg-black/5 flex items-center justify-center text-xs opacity-50 border-r border-inherit w-20">${h}:00</div><div class="flex-1 hover:bg-black/5 cursor-crosshair" onclick="openModal('${dateStr}', '${h.toString().padStart(2,'0')}:00')"></div>`;
+                grid.appendChild(row);
+            }
+            card.appendChild(grid);
+
+            // 5. 予定のオーバーレイ
+            const overlay = document.createElement('div'); 
+            overlay.className = 'absolute top-0 right-0 left-20 bottom-0 pointer-events-none';
+            
+            dayEvents.forEach(ev => {
+                const cat = categories.find(cat => cat.id === ev.category) || categories[0];
+                const totalCols = Math.max(1, columns.length);
+                const widthPercent = 100 / totalCols;
+                const leftPercent = ev.colIdx * widthPercent;
+                
+                const topPx = (ev.sMin / 60) * 64;
+                const heightPx = Math.max((ev.eMin - ev.sMin) / 60 * 64, 32);
+
+                const block = document.createElement('div'); 
+                block.className = `hourly-event pointer-events-auto shadow-md`;
+                block.style.top = `${topPx}px`;
+                block.style.height = `${heightPx}px`;
+                block.style.width = `calc(${widthPercent}% - 6px)`;
+                block.style.left = `calc(${leftPercent}% + 3px)`;
+                block.style.borderLeft = `5px solid ${cat.color}`;
+                block.style.backgroundColor = cat.color + '59'; // 約35%不透明度
+                
+                const isNeon = document.body.getAttribute('data-theme').startsWith('neon');
+                if (isNeon) block.style.color = cat.color;
+
+                const startLabel = (ev.start === dateStr ? ev.startTime : "0:00");
+                const endLabel = (ev.end === dateStr ? ev.endTime : "24:00");
+                
+                block.innerHTML = `
+                    <div class="font-bold text-[12px] leading-snug mb-0.5 truncate">${ev.title}</div>
+                    <div class="text-[10px] opacity-90 leading-tight">${startLabel} - ${endLabel}</div>
+                `;
+                block.onclick = (event) => { event.stopPropagation(); editEvent(ev.id); }; 
+                overlay.appendChild(block);
+            });
+
+            // 6. 終日予定エリア
+            const allDayRaw = events.filter(e => e.isAllDay && isDateInRange(dateStr, e.start, e.end));
+            const allDay = sortEvents(allDayRaw);
+            if (allDay.length) {
+                const bar = document.createElement('div'); bar.className = 'bg-black/5 border-b border-inherit p-3 flex flex-wrap gap-2';
+                allDay.forEach(e => {
+                    const cat = categories.find(cat => cat.id === e.category) || categories[0];
+                    const tag = document.createElement('div'); tag.className = `px-4 py-2 rounded-full text-xs font-bold cursor-pointer shadow-sm border`;
+                    tag.style.backgroundColor = cat.color + '40'; 
+                    tag.style.borderColor = cat.color;
+                    tag.innerText = `終日: ${e.title}`; 
+                    tag.onclick = () => editEvent(e.id); bar.appendChild(tag);
+                });
+                container.prepend(bar);
+            }
+
+            card.appendChild(overlay); container.appendChild(card);
+        }
+
+        function renderMultiMonth(container, date, count) {
+            const grid = document.createElement('div'); grid.className = `grid gap-8 ${count === 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`;
+            for (let i = 0; i < count; i++) {
+                const curr = new Date(date.getFullYear(), date.getMonth() + i, 1);
+                const box = document.createElement('div'); box.className = 'p-4 rounded-xl calendar-card';
+                box.innerHTML = `<h3 class="font-bold mb-3 text-center text-base">${curr.getFullYear()}年 ${curr.getMonth()+1}月</h3>`;
+                const mini = document.createElement('div'); mini.className = 'grid grid-cols-7 text-[10px] gap-px bg-black/10';
+                WEEKDAYS.forEach(d => mini.innerHTML += `<div class="text-center font-bold opacity-50 py-2 bg-black/5">${d}</div>`);
+                const offset = curr.getDay(); const days = new Date(curr.getFullYear(), curr.getMonth()+1, 0).getDate();
+                for (let j = 0; j < offset; j++) mini.innerHTML += '<div class="bg-black/5"></div>';
+                for (let d = 1; d <= days; d++) {
+                    const dStr = getLocalDateString(new Date(curr.getFullYear(), curr.getMonth(), d));
+                    const has = events.some(e => isDateInRange(dStr, e.start, e.end));
+                    mini.innerHTML += `<div onclick="referenceDate=new Date('${dStr}');setView('day')" class="text-center py-3 cursor-pointer bg-white/90 hover:bg-blue-400/20 transition ${has ? 'font-black text-blue-600' : ''}">${d}</div>`;
+                }
+                box.appendChild(mini); grid.appendChild(box);
+            }
+            container.appendChild(grid);
+        }
+
+        function openModal(date = '', time = '') {
+            editingEventId = null; document.getElementById('modalTitle').innerText = '予定の登録';
+            document.getElementById('eventTitle').value = ''; 
+            document.getElementById('eventCategory').value = categories[0].id;
+            document.getElementById('eventAllDay').checked = false; 
+            document.getElementById('eventDescription').value = '';
+            document.getElementById('eventStartDate').value = date || getLocalDateString(new Date());
+            document.getElementById('eventEndDate').value = date || getLocalDateString(new Date());
+            document.getElementById('eventStartTime').value = time || '';
+            document.getElementById('eventEndTime').value = time ? (parseInt(time.split(':')[0])+1).toString().padStart(2,'0')+':00' : '';
+            document.getElementById('duplicateBtn').classList.add('hidden');
+            document.getElementById('deleteBtn').classList.add('hidden'); 
+            document.getElementById('eventModal').classList.remove('hidden');
+            toggleTimeInputs();
+        }
+
+        function closeModal() { document.getElementById('eventModal').classList.add('hidden'); }
+
+        function saveEvent() {
+            const title = document.getElementById('eventTitle').value; const start = document.getElementById('eventStartDate').value;
+            if (!title || !start) return alert('入力内容を確認してください');
+            const data = { title, start, end: document.getElementById('eventEndDate').value || start, startTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventStartTime').value, endTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventEndTime').value, category: document.getElementById('eventCategory').value, isAllDay: document.getElementById('eventAllDay').checked, description: document.getElementById('eventDescription').value };
+            
+            if (editingEventId) { 
+                const idx = events.findIndex(e => e.id === editingEventId); 
+                events[idx] = { ...data, id: editingEventId }; 
+            } else { 
+                events.push({ ...data, id: Date.now().toString() }); 
+            }
+            
+            localStorage.setItem('weby_events', JSON.stringify(events)); closeModal(); render();
+        }
+
+        function editEvent(id) {
+            const ev = events.find(e => e.id === id); if (!ev) return;
+            editingEventId = id; document.getElementById('modalTitle').innerText = '予定を編集';
+            document.getElementById('eventTitle').value = ev.title; 
+            document.getElementById('eventCategory').value = categories.some(c => c.id === ev.category) ? ev.category : categories[0].id;
+            document.getElementById('eventAllDay').checked = ev.isAllDay; 
+            document.getElementById('eventStartDate').value = ev.start;
+            document.getElementById('eventEndDate').value = ev.end; 
+            document.getElementById('eventStartTime').value = ev.startTime;
+            document.getElementById('eventEndTime').value = ev.endTime; 
+            document.getElementById('eventDescription').value = ev.description;
+            
+            document.getElementById('duplicateBtn').classList.remove('hidden');
+            document.getElementById('deleteBtn').classList.remove('hidden'); 
+            document.getElementById('eventModal').classList.remove('hidden');
+            toggleTimeInputs();
+        }
+
+        /**
+         * 予定の複製機能
+         */
+        function duplicateEvent() {
+            editingEventId = null;
+            document.getElementById('modalTitle').innerText = '予定を複製';
+            document.getElementById('duplicateBtn').classList.add('hidden');
+            document.getElementById('deleteBtn').classList.add('hidden');
+        }
+
+        function deleteEvent() { if (confirm('削除しますか？')) { events = events.filter(e => e.id !== editingEventId); localStorage.setItem('weby_events', JSON.stringify(events)); closeModal(); render(); } }
+        
+        function exportToGoogle() {
+            const t = document.getElementById('eventTitle').value; const all = document.getElementById('eventAllDay').checked;
+            const s = document.getElementById('eventStartDate').value.replace(/-/g, ''); const e = document.getElementById('eventEndDate').value.replace(/-/g, '');
+            let dp = all ? `${s}/${getLocalDateString(new Date(new Date(document.getElementById('eventEndDate').value).getTime() + 86400000)).replace(/-/g,'')}` : `${s}T${document.getElementById('eventStartTime').value.replace(/:/g,'')}00/${e}T${document.getElementById('eventEndTime').value.replace(/:/g,'')}00`;
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t)}&dates=${dp}&details=${encodeURIComponent(document.getElementById('eventDescription').value)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
