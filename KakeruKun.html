@@ -491,30 +491,54 @@
         /* --- リンク設定 --- */
         function insertLink() {
             const sel = window.getSelection();
-            if (sel.getRangeAt && sel.rangeCount) savedSelectionRange = sel.getRangeAt(0).cloneRange();
+            if (sel.rangeCount > 0) {
+                savedSelectionRange = sel.getRangeAt(0).cloneRange();
+            } else {
+                // セレクションがない場合はエディタの最後尾などにフォーカス
+                editor.focus();
+                const newSel = window.getSelection();
+                if (newSel.rangeCount > 0) savedSelectionRange = newSel.getRangeAt(0).cloneRange();
+            }
+
             const list = document.getElementById('heading-link-list');
             list.innerHTML = '';
+            
+            // 最新の見出しリストを取得
             const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             headers.forEach((h, i) => {
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1 text-slate-700";
-                btn.textContent = h.textContent || '見出し';
-                btn.onclick = () => {
-                    const sel = window.getSelection();
-                    sel.removeAllRanges(); sel.addRange(savedSelectionRange);
+                btn.textContent = h.textContent.trim() || `見出し ${i+1}`;
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    if (!savedSelectionRange) return;
+
+                    editor.focus();
+                    const currentSel = window.getSelection();
+                    currentSel.removeAllRanges();
+                    currentSel.addRange(savedSelectionRange);
+                    
+                    // 確実にリンクを貼るために createLink を実行
                     document.execCommand('createLink', false, `#${h.id}`);
+                    
                     closeModal('link-modal');
+                    autoSave();
                 };
                 list.appendChild(btn);
             });
+            
             openModal('link-modal');
         }
+
         function applyExternalLink() {
             const url = document.getElementById('external-url-input').value;
-            if (url) {
-                const sel = window.getSelection();
-                sel.removeAllRanges(); sel.addRange(savedSelectionRange);
+            if (url && savedSelectionRange) {
+                editor.focus();
+                const currentSel = window.getSelection();
+                currentSel.removeAllRanges();
+                currentSel.addRange(savedSelectionRange);
                 document.execCommand('createLink', false, url);
+                autoSave();
             }
             closeModal('link-modal');
         }
@@ -688,6 +712,7 @@
                             }
                             table += '</tr>';
                         }
+                        table += '</tr>';
                         table += '</table><p><br></p>';
                         restoreRange();
                         document.execCommand('insertHTML', false, table);
