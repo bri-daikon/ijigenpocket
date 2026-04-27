@@ -51,6 +51,13 @@
             padding: 3rem;
         }
 
+        /* リンクのスタイル（エディタ内） */
+        #editor a {
+            color: #4f46e5;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
         /* --- 見出し・段落の基本挙動設定 --- */
         #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6, #editor .h7, #editor .h8, #editor p, #editor div {
             transition: margin-left 0.2s ease;
@@ -488,13 +495,16 @@
             }
         }
 
-        /* --- リンク設定 --- */
+        /* --- リンク設定（修正版） --- */
         function insertLink() {
+            // 1. 最新のIDを割り振り、TOCを更新しておく
+            updateTOC();
+
+            // 2. 現在の選択範囲を保存
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
                 savedSelectionRange = sel.getRangeAt(0).cloneRange();
             } else {
-                // セレクションがない場合はエディタの最後尾などにフォーカス
                 editor.focus();
                 const newSel = window.getSelection();
                 if (newSel.rangeCount > 0) savedSelectionRange = newSel.getRangeAt(0).cloneRange();
@@ -503,22 +513,25 @@
             const list = document.getElementById('heading-link-list');
             list.innerHTML = '';
             
-            // 最新の見出しリストを取得
+            // 3. モーダル内の見出しリストを構築
             const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             headers.forEach((h, i) => {
+                // IDがない場合は強制付与
+                if (!h.id) h.id = `h-${i}`;
+
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1 text-slate-700";
-                btn.textContent = h.textContent.trim() || `見出し ${i+1}`;
+                btn.textContent = h.textContent.trim() || `無題の見出し ${i+1}`;
                 btn.onclick = (e) => {
                     e.preventDefault();
                     if (!savedSelectionRange) return;
 
+                    // エディタへ戻り、範囲を復元してからコマンド実行
                     editor.focus();
                     const currentSel = window.getSelection();
                     currentSel.removeAllRanges();
                     currentSel.addRange(savedSelectionRange);
                     
-                    // 確実にリンクを貼るために createLink を実行
                     document.execCommand('createLink', false, `#${h.id}`);
                     
                     closeModal('link-modal');
@@ -660,13 +673,19 @@
             const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             tocContainer.innerHTML = hs.length ? '' : '<p class="p-4 text-slate-400 italic">見出しなし</p>';
             hs.forEach((h, i) => {
-                const id = `h-${i}`; h.id = id;
-                const link = document.createElement('a'); link.href = `#${id}`; link.textContent = h.textContent || '無題';
+                // IDがない場合は付与（内部リンク用）
+                if (!h.id) h.id = `h-${i}`;
+                
+                const link = document.createElement('a');
+                link.href = `#${h.id}`;
+                link.textContent = h.textContent.trim() || '無題';
                 link.className = 'block py-2 px-4 hover:bg-slate-50 truncate border-r-4 border-transparent text-slate-600';
+                
                 let lv = 0;
                 if (h.tagName.startsWith('H')) lv = parseInt(h.tagName[1]) - 1;
                 else if (h.classList.contains('h7')) lv = 6;
                 else if (h.classList.contains('h8')) lv = 7;
+                
                 link.style.paddingLeft = `${lv + 1}em`;
                 link.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
                 tocContainer.appendChild(link);
@@ -712,7 +731,6 @@
                             }
                             table += '</tr>';
                         }
-                        table += '</tr>';
                         table += '</table><p><br></p>';
                         restoreRange();
                         document.execCommand('insertHTML', false, table);
