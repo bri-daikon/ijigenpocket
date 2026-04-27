@@ -723,8 +723,18 @@
         function updateCharCount() { charCountDisplay.textContent = `文字数: ${(editor.innerText || "").length}`; }
         
         function autoSave() { 
-            localStorage.setItem('weby_autosave', editor.innerHTML); 
-            localStorage.setItem('weby_autosave_title', titleInput.value);
+            try {
+                localStorage.setItem('weby_autosave', editor.innerHTML); 
+                localStorage.setItem('weby_autosave_title', titleInput.value);
+                saveStatus.textContent = "自動保存済み";
+                saveStatus.classList.remove('text-red-500');
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    saveStatus.textContent = "⚠️ 容量制限のため自動保存に失敗（画像が大きすぎます）";
+                    saveStatus.classList.add('text-red-500');
+                    console.warn("localStorage quota exceeded. Auto-save disabled for current content size.");
+                }
+            }
         }
 
         function updateTOC() {
