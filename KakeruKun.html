@@ -130,8 +130,14 @@
         .grid-square.active { background-color: #c7d2fe; border-color: #818cf8; }
 
         @media print { .no-print { display: none !important; } .main-content { margin: 0; width: 100%; } #editor { border: none; box-shadow: none; padding: 0; } }
-        #search-replace-bar { transition: all 0.2s ease-out; max-height: 0; overflow: hidden; opacity: 0; }
+        
+        /* 検索バーとツールバーのアニメーション */
+        #search-replace-bar, #toolbar-wrapper { transition: all 0.3s ease-in-out; overflow: hidden; }
+        #search-replace-bar { max-height: 0; opacity: 0; }
         #search-replace-bar.active { max-height: 100px; opacity: 1; margin-top: 1rem; }
+        
+        #toolbar-wrapper.collapsed { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
+        #toolbar-wrapper:not(.collapsed) { max-height: 500px; opacity: 1; margin-top: 1rem; }
     </style>
 </head>
 <body data-theme="standard" class="font-sans">
@@ -222,7 +228,10 @@
                 <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="flex flex-col flex-1">
                         <h1 class="text-xl font-extrabold text-indigo-700 leading-none mb-1">シナリオ書けるくん</h1>
-                        <input type="text" id="scenario-title" placeholder="シナリオタイトルを入力..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all w-full max-w-sm" oninput="autoSave()">
+                        <div class="flex items-center gap-2 w-full max-w-sm">
+                            <input type="text" id="scenario-title" placeholder="シナリオタイトルを入力..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all flex-1" oninput="autoSave()">
+                            <button onclick="toggleToolbar()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded transition whitespace-nowrap" title="ツールバーの表示/非表示">🛠️ ツールバー切替</button>
+                        </div>
                         <!-- 現在のセクション表示 -->
                         <div id="current-section-display" class="text-[10px] text-slate-400 font-medium mt-1">執筆中: <span>本文</span></div>
                     </div>
@@ -247,82 +256,85 @@
                     </div>
                 </div>
 
-                <!-- ツールバー -->
-                <div class="max-w-5xl mx-auto mt-4 p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-wrap gap-2 items-center">
-                    <select id="heading-selector" onchange="handleHeadingChange(this.value); this.selectedIndex=0;" class="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none text-slate-900">
-                        <option value="">見出し...</option>
-                        <option value="H1">見出し1</option><option value="H2">見出し2</option><option value="H3">見出し3</option><option value="H4">見出し4</option><option value="H5">見出し5</option><option value="H6">見出し6</option><option value="div_h7">見出し7</option><option value="div_h8">見出し8</option><option value="P">本文</option>
-                    </select>
+                <!-- ツールバーラッパー -->
+                <div id="toolbar-wrapper" class="max-w-5xl mx-auto">
+                    <!-- ツールバー -->
+                    <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-wrap gap-2 items-center">
+                        <select id="heading-selector" onchange="handleHeadingChange(this.value); this.selectedIndex=0;" class="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none text-slate-900">
+                            <option value="">見出し...</option>
+                            <option value="H1">見出し1</option><option value="H2">見出し2</option><option value="H3">見出し3</option><option value="H4">見出し4</option><option value="H5">見出し5</option><option value="H6">見出し6</option><option value="div_h7">見出し7</option><option value="div_h8">見出し8</option><option value="P">本文</option>
+                        </select>
 
-                    <div class="flex items-center gap-1 bg-white border border-slate-200 rounded px-1">
-                        <input type="color" id="text-color-picker" oninput="execCommandWithParam('foreColor', this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="文字色">
-                        <input type="color" id="bg-color-picker" value="#f1f5f9" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="枠・表のヘッダー色">
-                    </div>
-                    
-                    <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
-                        <button onclick="execCommand('justifyLeft')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⬅️</button>
-                        <button onclick="execCommand('justifyCenter')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">↔️</button>
-                        <button onclick="execCommand('justifyRight')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">➡️</button>
-                        <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
-                        <button onclick="execCommand('outdent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇤</button>
-                        <button onclick="execCommand('indent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇥</button>
-                    </div>
-
-                    <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
-                        <button onclick="execCommand('undo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="元に戻す (Ctrl+Z)">↩️</button>
-                        <button onclick="execCommand('redo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="やり直し (Ctrl+Y)">↪️</button>
-                        <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
-                        <button onclick="execCommand('bold')" class="w-6 h-6 hover:bg-slate-100 rounded font-bold text-xs text-slate-600">B</button>
-                        <button onclick="insertLink()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="リンク設定">🔗</button>
-                        <button onclick="document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">🖼️</button>
-                    </div>
-
-                    <div class="h-4 w-px bg-slate-300"></div>
-
-                    <!-- TRPG用枠ボタン群 -->
-                    <div class="flex flex-wrap gap-1">
-                        <button onclick="insertDivider()" class="px-2 h-7 border rounded bg-white hover:bg-slate-100 text-[10px] text-slate-600" title="仕切り線">線 —</button>
-                        <button onclick="insertTRPGBox('summary')" class="px-2 h-7 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded text-[10px] text-blue-700 font-bold">📄 概要</button>
-                        <button onclick="insertTRPGBox('check')" class="px-2 h-7 border border-green-200 bg-green-50 hover:bg-green-100 rounded text-[10px] text-green-700 font-bold">🎲 判定</button>
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded px-1">
+                            <input type="color" id="text-color-picker" oninput="execCommandWithParam('foreColor', this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="文字色">
+                            <input type="color" id="bg-color-picker" value="#f1f5f9" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="枠・表のヘッダー色">
+                        </div>
                         
-                        <button onclick="insertTRPGBox('spot')" class="px-2 h-7 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 rounded text-[10px] text-emerald-800 font-bold">👀 目星</button>
-                        <button onclick="insertTRPGBox('listen')" class="px-2 h-7 border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded text-[10px] text-amber-800 font-bold">👂 聞き耳</button>
-                        <button onclick="insertTRPGBox('library')" class="px-2 h-7 border border-cyan-300 bg-cyan-50 hover:bg-cyan-100 rounded text-[10px] text-cyan-800 font-bold">📚 図書館</button>
-                        <button onclick="insertTRPGBox('san')" class="px-2 h-7 border border-rose-300 bg-rose-50 hover:bg-rose-100 rounded text-[10px] text-rose-800 font-bold">🌀 正気度</button>
+                        <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
+                            <button onclick="execCommand('justifyLeft')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⬅️</button>
+                            <button onclick="execCommand('justifyCenter')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">↔️</button>
+                            <button onclick="execCommand('justifyRight')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">➡️</button>
+                            <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
+                            <button onclick="execCommand('outdent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇤</button>
+                            <button onclick="execCommand('indent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇥</button>
+                        </div>
 
-                        <button onclick="insertTRPGBox('secret')" class="px-2 h-7 border border-purple-200 bg-purple-50 hover:bg-purple-100 rounded text-[10px] text-purple-700 font-bold">🤫 秘匿</button>
-                        <button onclick="insertTRPGBox('gimmick')" class="px-2 h-7 border border-orange-200 bg-orange-50 hover:bg-orange-100 rounded text-[10px] text-orange-700 font-bold">⚙️ ギミック</button>
-                        <button onclick="insertKPInfo()" class="px-2 h-7 border border-yellow-200 bg-yellow-50 hover:bg-yellow-100 rounded text-[10px] text-yellow-800 font-bold">📝 KP</button>
-                        <button onclick="insertQuote()" class="px-2 h-7 border border-slate-200 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-700 font-bold">💬 引用</button>
-                        <button onclick="insertColorBox()" class="px-2 h-7 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 rounded text-[10px] text-indigo-700 font-bold">🎨 枠</button>
-                        <button onclick="insertDetails()" class="px-2 h-7 border rounded bg-white hover:bg-slate-100 text-[10px] text-slate-600">▼ 畳む</button>
-                        <button onclick="openTableModal()" class="px-2 h-7 border border-slate-300 bg-white hover:bg-slate-100 rounded text-[10px] font-bold text-slate-700">📊 表</button>
+                        <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
+                            <button onclick="execCommand('undo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="元に戻す (Ctrl+Z)">↩️</button>
+                            <button onclick="execCommand('redo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="やり直し (Ctrl+Y)">↪️</button>
+                            <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
+                            <button onclick="execCommand('bold')" class="w-6 h-6 hover:bg-slate-100 rounded font-bold text-xs text-slate-600">B</button>
+                            <button onclick="insertLink()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="リンク設定">🔗</button>
+                            <button onclick="document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">🖼️</button>
+                        </div>
+
+                        <div class="h-4 w-px bg-slate-300"></div>
+
+                        <!-- TRPG用枠ボタン群 -->
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="insertDivider()" class="px-2 h-7 border rounded bg-white hover:bg-slate-100 text-[10px] text-slate-600" title="仕切り線">線 —</button>
+                            <button onclick="insertTRPGBox('summary')" class="px-2 h-7 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded text-[10px] text-blue-700 font-bold">📄 概要</button>
+                            <button onclick="insertTRPGBox('check')" class="px-2 h-7 border border-green-200 bg-green-50 hover:bg-green-100 rounded text-[10px] text-green-700 font-bold">🎲 判定</button>
+                            
+                            <button onclick="insertTRPGBox('spot')" class="px-2 h-7 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 rounded text-[10px] text-emerald-800 font-bold">👀 目星</button>
+                            <button onclick="insertTRPGBox('listen')" class="px-2 h-7 border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded text-[10px] text-amber-800 font-bold">👂 聞き耳</button>
+                            <button onclick="insertTRPGBox('library')" class="px-2 h-7 border border-cyan-300 bg-cyan-50 hover:bg-cyan-100 rounded text-[10px] text-cyan-800 font-bold">📚 図書館</button>
+                            <button onclick="insertTRPGBox('san')" class="px-2 h-7 border border-rose-300 bg-rose-50 hover:bg-rose-100 rounded text-[10px] text-rose-800 font-bold">🌀 正気度</button>
+
+                            <button onclick="insertTRPGBox('secret')" class="px-2 h-7 border border-purple-200 bg-purple-50 hover:bg-purple-100 rounded text-[10px] text-purple-700 font-bold">🤫 秘匿</button>
+                            <button onclick="insertTRPGBox('gimmick')" class="px-2 h-7 border border-orange-200 bg-orange-50 hover:bg-orange-100 rounded text-[10px] text-orange-700 font-bold">⚙️ ギミック</button>
+                            <button onclick="insertKPInfo()" class="px-2 h-7 border border-yellow-200 bg-yellow-50 hover:bg-yellow-100 rounded text-[10px] text-yellow-800 font-bold">📝 KP</button>
+                            <button onclick="insertQuote()" class="px-2 h-7 border border-slate-200 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-700 font-bold">💬 引用</button>
+                            <button onclick="insertColorBox()" class="px-2 h-7 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 rounded text-[10px] text-indigo-700 font-bold">🎨 枠</button>
+                            <button onclick="insertDetails()" class="px-2 h-7 border rounded bg-white hover:bg-slate-100 text-[10px] text-slate-600">▼ 畳む</button>
+                            <button onclick="openTableModal()" class="px-2 h-7 border border-slate-300 bg-white hover:bg-slate-100 rounded text-[10px] font-bold text-slate-700">📊 表</button>
+                        </div>
+
+                        <div class="h-4 w-px bg-slate-300"></div>
+
+                        <!-- 特別枠ボタン群 -->
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="insertSpecialBox('許諾')" class="px-2 h-7 border border-slate-300 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-700 font-bold">⚖️ 許諾</button>
+                            <button onclick="insertSpecialBox('シナリオ傾向')" class="px-2 h-7 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 rounded text-[10px] text-emerald-700 font-bold">📊 傾向</button>
+                            <button onclick="insertSpecialBox('諸注意')" class="px-2 h-7 border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded text-[10px] text-amber-700 font-bold">⚠️ 諸注意</button>
+                            <button onclick="insertSpecialBox('HO')" class="px-2 h-7 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 rounded text-[10px] text-indigo-700 font-bold">🆔 HO</button>
+                            <button onclick="insertSpecialBox('エネミー')" class="px-2 h-7 border border-rose-300 bg-rose-50 hover:bg-rose-100 rounded text-[10px] text-rose-700 font-bold">💀 エネミー</button>
+                            <button onclick="insertSpecialBox('クレジット')" class="px-2 h-7 border border-slate-300 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-600 font-bold">✒️ クレジット</button>
+                        </div>
+
+                        <button onclick="toggleSearchReplace()" class="w-7 h-7 flex items-center justify-center border rounded bg-white hover:bg-slate-100 text-xs text-slate-600">🔍</button>
+                        <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
                     </div>
 
-                    <div class="h-4 w-px bg-slate-300"></div>
-
-                    <!-- 特別枠ボタン群 -->
-                    <div class="flex flex-wrap gap-1">
-                        <button onclick="insertSpecialBox('許諾')" class="px-2 h-7 border border-slate-300 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-700 font-bold">⚖️ 許諾</button>
-                        <button onclick="insertSpecialBox('シナリオ傾向')" class="px-2 h-7 border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 rounded text-[10px] text-emerald-700 font-bold">📊 傾向</button>
-                        <button onclick="insertSpecialBox('諸注意')" class="px-2 h-7 border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded text-[10px] text-amber-700 font-bold">⚠️ 諸注意</button>
-                        <button onclick="insertSpecialBox('HO')" class="px-2 h-7 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 rounded text-[10px] text-indigo-700 font-bold">🆔 HO</button>
-                        <button onclick="insertSpecialBox('エネミー')" class="px-2 h-7 border border-rose-300 bg-rose-50 hover:bg-rose-100 rounded text-[10px] text-rose-700 font-bold">💀 エネミー</button>
-                        <button onclick="insertSpecialBox('クレジット')" class="px-2 h-7 border border-slate-300 bg-slate-50 hover:bg-slate-100 rounded text-[10px] text-slate-600 font-bold">✒️ クレジット</button>
-                    </div>
-
-                    <button onclick="toggleSearchReplace()" class="w-7 h-7 flex items-center justify-center border rounded bg-white hover:bg-slate-100 text-xs text-slate-600">🔍</button>
-                    <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
-                </div>
-
-                <!-- 検索バー -->
-                <div id="search-replace-bar" class="max-w-5xl mx-auto bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-wrap items-center gap-3 no-print">
-                    <input type="text" id="search-input" placeholder="検索..." class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none text-slate-900">
-                    <input type="text" id="replace-input" placeholder="置換..." class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none text-slate-900">
-                    <div class="flex gap-1">
-                        <button onclick="findNext()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600">次へ</button>
-                        <button onclick="replaceNext()" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-xs font-bold">置換</button>
-                        <button onclick="replaceAll()" class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-xs font-bold">すべて置換</button>
+                    <!-- 検索バー -->
+                    <div id="search-replace-bar" class="bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-wrap items-center gap-3 no-print">
+                        <input type="text" id="search-input" placeholder="検索..." class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none text-slate-900">
+                        <input type="text" id="replace-input" placeholder="置換..." class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none text-slate-900">
+                        <div class="flex gap-1">
+                            <button onclick="findNext()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600">次へ</button>
+                            <button onclick="replaceNext()" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-xs font-bold">置換</button>
+                            <button onclick="replaceAll()" class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-xs font-bold">すべて置換</button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -351,6 +363,14 @@
         function setTheme(theme) {
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('weby_theme', theme);
+        }
+
+        /* --- 折り畳み機能 --- */
+        function toggleToolbar() {
+            const wrapper = document.getElementById('toolbar-wrapper');
+            wrapper.classList.toggle('collapsed');
+            const isCollapsed = wrapper.classList.contains('collapsed');
+            localStorage.setItem('weby_toolbar_collapsed', isCollapsed);
         }
 
         /* --- 新規作成 --- */
@@ -431,19 +451,14 @@
                 const reader = new FileReader();
                 reader.onload = e => {
                     let result = e.target.result;
-                    
-                    // JSONの開始と終了位置を特定して、その間だけを抽出（ゴミ取り）
                     const startIdx = result.indexOf('{');
                     const endIdx = result.lastIndexOf('}');
-                    
                     if (startIdx === -1 || endIdx === -1) {
                         alert("ファイルの形式が正しくありません。");
                         input.value = '';
                         return;
                     }
-
                     const jsonPart = result.substring(startIdx, endIdx + 1);
-                    
                     try {
                         const data = JSON.parse(jsonPart);
                         if (data.content !== undefined) {
@@ -497,19 +512,37 @@
 
         function insertTRPGBox(type) {
             const html = getSelectedHTML();
-            const content = html || "内容を入力してください。";
-            let className = "", label = "";
+            let className = "", label = "", defaultContent = "";
+            const checkTemplate = "成功：<br>失敗：";
+
             switch(type) {
-                case 'summary': className = "box-summary"; label = "概要"; break;
-                case 'check': className = "box-check"; label = "判定"; break;
-                case 'spot': className = "box-spot"; label = "判定：＜目星＞"; break;
-                case 'listen': className = "box-listen"; label = "判定：＜聞き耳＞"; break;
-                case 'library': className = "box-library"; label = "判定：＜図書館＞"; break;
-                case 'san': className = "box-san"; label = "正気度チェック：正気度喪失()"; break;
-                case 'secret': className = "box-secret"; label = "秘匿描写"; break;
-                case 'gimmick': className = "box-gimmick"; label = "ギミック"; break;
+                case 'summary': 
+                    className = "box-summary"; label = "概要"; defaultContent = html || "内容を入力してください。"; break;
+                case 'check': 
+                    className = "box-check"; label = "判定：＜＞"; 
+                    defaultContent = html || checkTemplate; 
+                    break;
+                case 'spot': 
+                    className = "box-spot"; label = "判定：＜目星＞"; 
+                    defaultContent = html || checkTemplate; 
+                    break;
+                case 'listen': 
+                    className = "box-listen"; label = "判定：＜聞き耳＞"; 
+                    defaultContent = html || checkTemplate; 
+                    break;
+                case 'library': 
+                    className = "box-library"; label = "判定：＜図書館＞"; 
+                    defaultContent = html || checkTemplate; 
+                    break;
+                case 'san': 
+                    className = "box-san"; label = "正気度チェック"; 
+                    defaultContent = html || "正気度喪失：()<br>成功：<br>失敗："; break;
+                case 'secret': 
+                    className = "box-secret"; label = "秘匿描写"; defaultContent = html || "内容を入力してください。"; break;
+                case 'gimmick': 
+                    className = "box-gimmick"; label = "ギミック"; defaultContent = html || "内容を入力してください。"; break;
             }
-            const wrapper = `<div class="${className}"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
+            const wrapper = `<div class="${className}"><strong>【${label}】</strong><div class="mt-1">${defaultContent}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, wrapper);
             editor.focus();
         }
@@ -518,7 +551,6 @@
             if (!label) return;
             let content = getSelectedHTML();
             let subClass = "";
-            
             if (label === '許諾') {
                 content = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`;
                 subClass = "box-license";
@@ -530,7 +562,6 @@
                 else if (label === 'エネミー') subClass = "box-enemy";
                 else if (label === 'クレジット') subClass = "box-credit";
             }
-            
             const wrapper = `<div class="box-special ${subClass}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, wrapper);
             editor.focus();
@@ -682,7 +713,6 @@
             if (input.files?.[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    // 画像をpタグ（段落）で囲むことで、標準の整列コマンド（justifyLeft等）が効くようになります。
                     const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width: 100%; height: auto; border-radius: 0.5rem; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></p><p><br></p>`;
                     document.execCommand('insertHTML', false, imgHtml);
                 };
@@ -711,8 +741,6 @@
                 link.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
                 tocContainer.appendChild(link);
             });
-            
-            // 執筆中セクションの表示更新
             const currentSectionSpan = document.querySelector('#current-section-display span');
             if (currentSectionSpan) {
                 if (hs.length > 0) {
@@ -867,12 +895,15 @@
             
             const savedContent = localStorage.getItem('weby_autosave'); 
             const savedTitle = localStorage.getItem('weby_autosave_title');
-            
             if (savedContent) editor.innerHTML = savedContent;
             if (savedTitle) titleInput.value = savedTitle;
             
             const theme = localStorage.getItem('weby_theme') || 'standard';
             setTheme(theme);
+
+            const isCollapsed = localStorage.getItem('weby_toolbar_collapsed') === 'true';
+            if (isCollapsed) document.getElementById('toolbar-wrapper').classList.add('collapsed');
+
             updateTOC(); 
             updateCharCount();
         };
