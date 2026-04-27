@@ -67,12 +67,10 @@
             outline: 2px solid #6366f1;
         }
 
-        /* インデント操作用: 標準のblockquoteは使用しないが、念のためスタイルのみ定義 */
-        #editor blockquote { margin: 0 0 0 1.5em; padding: 0; border: none; display: block; }
-
         /* --- エディタ内の見出し・階層デザイン --- */
         #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6, #editor p, #editor div {
             transition: margin-left 0.2s ease;
+            display: block;
         }
 
         #editor h1 { font-size: 2rem; font-weight: 800; color: #4f46e5; border-bottom: 3px solid #4f46e5; padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; }
@@ -651,7 +649,7 @@
             let container = range.commonAncestorContainer;
             if (container.nodeType === 3) container = container.parentNode;
 
-            // カーソル位置の直近の「ブロック要素」を探す（枠、見出し、段落）
+            // カーソル位置の直近の「ブロック要素」を探す
             const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'DIV', 'DETAILS', 'BLOCKQUOTE'];
             let target = container;
             while (target && target !== editor) {
@@ -662,15 +660,15 @@
             }
 
             if (!target || target === editor) {
-                // ブロックが見つからない場合、選択範囲をPで囲んでから処理
                 document.execCommand('formatBlock', false, 'p');
-                manualIndent(isIndent); // 再帰実行
+                manualIndent(isIndent);
                 return;
             }
 
-            // margin-leftを直接操作
+            // 1文字分(1em)ずつ移動
             let currentMargin = parseFloat(target.style.marginLeft) || 0;
-            const step = 2; // em単位
+            const step = 1; 
+            
             if (isIndent) {
                 target.style.marginLeft = (currentMargin + step) + 'em';
             } else {
@@ -684,20 +682,39 @@
         /* --- 基礎機能 --- */
         function execCommand(cmd) { 
             editor.focus(); 
-            // インデントコマンドは独自処理に飛ばす
             if (cmd === 'indent') return manualIndent(true);
             if (cmd === 'outdent') return manualIndent(false);
-            
             document.execCommand(cmd, false, null); 
             updateTOC(); 
         }
 
         function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); updateTOC(); }
+        
         function handleHeadingChange(val) {
-            if (val.startsWith('div_')) applyCustomBlock(val.replace('div_', ''));
-            else document.execCommand('formatBlock', false, val);
-            editor.focus(); updateTOC();
+            if (val.startsWith('div_')) {
+                applyCustomBlock(val.replace('div_', ''));
+            } else {
+                document.execCommand('formatBlock', false, val);
+                
+                // 見出し変更直後に自動インデントを適用
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        let node = sel.getRangeAt(0).commonAncestorContainer;
+                        if (node.nodeType === 3) node = node.parentNode;
+                        let target = node.closest('h1, h2, h3, h4, h5, h6, p');
+                        if (target && target.tagName.startsWith('H')) {
+                            const level = parseInt(target.tagName[1]) - 1; // H1=0, H2=1, H3=2...
+                            target.style.marginLeft = level + 'em';
+                        }
+                    }
+                    updateTOC();
+                    autoSave();
+                }, 10);
+            }
+            editor.focus();
         }
+
         function applyCustomBlock(cls) {
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
@@ -707,6 +724,7 @@
                 range.deleteContents(); range.insertNode(div); div.after(document.createElement('br'));
             }
         }
+        
         function handleImageUpload(input) {
             if (input.files?.[0]) {
                 const reader = new FileReader();
