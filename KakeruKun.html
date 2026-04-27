@@ -428,9 +428,15 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
+                    let result = e.target.result;
+                    // BOM (Byte Order Mark) を除去
+                    if (result.startsWith('\ufeff')) {
+                        result = result.substring(1);
+                    }
+                    
                     try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.content) {
+                        const data = JSON.parse(result.trim());
+                        if (data.content !== undefined) {
                             editor.innerHTML = data.content;
                             titleInput.value = data.title || '';
                             currentFileHandle = null; 
@@ -438,9 +444,12 @@
                             updateCharCount(); 
                             saveStatus.textContent = "読み込み完了: " + input.files[0].name;
                             autoSave();
+                        } else {
+                            throw new Error("Missing content property");
                         }
                     } catch (err) {
-                        alert("ファイルの形式が正しくありません。");
+                        console.error("JSON Parse Error:", err);
+                        alert("ファイルの形式が正しくありません。正しく保存された .weby ファイルであることを確認してください。");
                     }
                     input.value = '';
                 };
