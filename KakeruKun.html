@@ -66,20 +66,21 @@
         #editor img:hover {
             outline: 2px solid #6366f1;
         }
-        #editor img:active, #editor img:focus {
-            outline: 3px solid #4f46e5;
-        }
 
-        /* インデント操作用 */
-        #editor blockquote { margin: 0 0 0 1em; padding: 0; border: none; }
+        /* インデント操作用: 標準のblockquoteは使用しないが、念のためスタイルのみ定義 */
+        #editor blockquote { margin: 0 0 0 1.5em; padding: 0; border: none; display: block; }
 
         /* --- エディタ内の見出し・階層デザイン --- */
+        #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6, #editor p, #editor div {
+            transition: margin-left 0.2s ease;
+        }
+
         #editor h1 { font-size: 2rem; font-weight: 800; color: #4f46e5; border-bottom: 3px solid #4f46e5; padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; }
-        #editor h2 { font-size: 1.5rem; font-weight: 700; border-left: 6px solid #4f46e5; padding-left: 1rem; margin-top: 1.75rem; margin-bottom: 0.75rem; background-color: rgba(79, 70, 229, 0.05); margin-left: 1em; }
-        #editor h3 { font-size: 1.25rem; font-weight: 700; border-bottom: 1px solid var(--border-editor); margin-top: 1.5rem; margin-bottom: 0.5rem; margin-left: 2em; }
-        #editor h4 { font-size: 1.125rem; font-weight: 700; margin-top: 1.25rem; margin-left: 3em; }
-        #editor h5 { font-size: 1rem; font-weight: 700; margin-left: 4em; }
-        #editor h6 { font-size: 0.875rem; font-weight: 700; margin-left: 5em; }
+        #editor h2 { font-size: 1.5rem; font-weight: 700; border-left: 6px solid #4f46e5; padding-left: 1rem; margin-top: 1.75rem; margin-bottom: 0.75rem; background-color: rgba(79, 70, 229, 0.05); }
+        #editor h3 { font-size: 1.25rem; font-weight: 700; border-bottom: 1px solid var(--border-editor); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        #editor h4 { font-size: 1.125rem; font-weight: 700; margin-top: 1.25rem; }
+        #editor h5 { font-size: 1rem; font-weight: 700; }
+        #editor h6 { font-size: 0.875rem; font-weight: 700; }
 
         /* --- テーブルスタイル --- */
         #editor table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
@@ -115,7 +116,7 @@
         .box-credit { border-top-color: #64748b; }
 
         /* 仕切り線 */
-        .divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 2rem 0; }
+        .divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 2rem 0; display: block; width: 100%; }
 
         /* 折りたたみ */
         details { border: 1px solid var(--border-editor); border-radius: 0.5rem; padding: 0.75rem; margin: 1rem 0; background-color: rgba(148, 163, 184, 0.05); }
@@ -275,8 +276,8 @@
                             <button onclick="execCommand('justifyCenter')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">↔️</button>
                             <button onclick="execCommand('justifyRight')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">➡️</button>
                             <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
-                            <button onclick="execCommand('outdent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇤</button>
-                            <button onclick="execCommand('indent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇥</button>
+                            <button onclick="manualIndent(false)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="左へ戻す (Shift+Tab)">⇤</button>
+                            <button onclick="manualIndent(true)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="右へスライド (Tab)">⇥</button>
                         </div>
 
                         <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
@@ -446,22 +447,14 @@
             saveStatus.textContent = "ファイルをダウンロードしました";
         }
 
-        /* --- 読み込み処理 (強化版) --- */
+        /* --- 読み込み処理 --- */
         function loadProject(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
                     let result = e.target.result;
-                    const startIdx = result.indexOf('{');
-                    const endIdx = result.lastIndexOf('}');
-                    if (startIdx === -1 || endIdx === -1) {
-                        alert("ファイルの形式が正しくありません。");
-                        input.value = '';
-                        return;
-                    }
-                    const jsonPart = result.substring(startIdx, endIdx + 1);
                     try {
-                        const data = JSON.parse(jsonPart);
+                        const data = JSON.parse(result);
                         if (data.content !== undefined) {
                             editor.innerHTML = data.content;
                             titleInput.value = data.title || '';
@@ -470,12 +463,10 @@
                             updateCharCount(); 
                             saveStatus.textContent = "読み込み完了: " + input.files[0].name;
                             autoSave();
-                        } else {
-                            throw new Error("Missing content property");
                         }
                     } catch (err) {
                         console.error("JSON Parse Error:", err);
-                        alert("ファイルの形式が正しくありません。正しく保存された .weby ファイルであることを確認してください。");
+                        alert("読み込みに失敗しました。正しいプロジェクトファイルではありません。");
                     }
                     input.value = '';
                 };
@@ -517,38 +508,20 @@
             const checkTemplate = "成功：<br>失敗：";
 
             switch(type) {
-                case 'summary': 
-                    className = "box-summary"; label = "概要"; defaultContent = html || "内容を入力してください。"; break;
-                case 'check': 
-                    className = "box-check"; label = "判定：＜＞"; 
-                    defaultContent = html || checkTemplate; 
-                    break;
-                case 'spot': 
-                    className = "box-spot"; label = "判定：＜目星＞"; 
-                    defaultContent = html || checkTemplate; 
-                    break;
-                case 'listen': 
-                    className = "box-listen"; label = "判定：＜聞き耳＞"; 
-                    defaultContent = html || checkTemplate; 
-                    break;
-                case 'library': 
-                    className = "box-library"; label = "判定：＜図書館＞"; 
-                    defaultContent = html || checkTemplate; 
-                    break;
-                case 'san': 
-                    className = "box-san"; label = "正気度チェック"; 
-                    defaultContent = html || "正気度喪失：()"; break;
-                case 'search': 
-                    className = "box-spot"; label = "探索箇所：　"; 
-                    defaultContent = html || "探索で得られる情報を入力してください。"; break;
-                case 'secret': 
-                    className = "box-secret"; label = "秘匿描写"; defaultContent = html || "内容を入力してください。"; break;
-                case 'gimmick': 
-                    className = "box-gimmick"; label = "ギミック"; defaultContent = html || "内容を入力してください。"; break;
+                case 'summary': className = "box-summary"; label = "概要"; defaultContent = html || "内容。"; break;
+                case 'check': className = "box-check"; label = "判定：＜＞"; defaultContent = html || checkTemplate; break;
+                case 'spot': className = "box-spot"; label = "判定：＜目星＞"; defaultContent = html || checkTemplate; break;
+                case 'listen': className = "box-listen"; label = "判定：＜聞き耳＞"; defaultContent = html || checkTemplate; break;
+                case 'library': className = "box-library"; label = "判定：＜図書館＞"; defaultContent = html || checkTemplate; break;
+                case 'san': className = "box-san"; label = "正気度チェック"; defaultContent = html || "正気度喪失：()"; break;
+                case 'search': className = "box-spot"; label = "探索箇所：　"; defaultContent = html || "詳細。"; break;
+                case 'secret': className = "box-secret"; label = "秘匿描写"; defaultContent = html || "内容。"; break;
+                case 'gimmick': className = "box-gimmick"; label = "ギミック"; defaultContent = html || "内容。"; break;
             }
             const wrapper = `<div class="${className}"><strong>【${label}】</strong><div class="mt-1">${defaultContent}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, wrapper);
             editor.focus();
+            updateTOC();
         }
 
         function insertSpecialBox(label) {
@@ -556,10 +529,10 @@
             let content = getSelectedHTML();
             let subClass = "";
             if (label === '許諾') {
-                content = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`;
+                content = `二次創作ガイドライン等に基づく権利表記。`;
                 subClass = "box-license";
             } else {
-                content = content || "詳細を入力してください。";
+                content = content || "詳細。";
                 if (label === 'シナリオ傾向') subClass = "box-trend";
                 else if (label === '諸注意') subClass = "box-warning";
                 else if (label === 'HO') subClass = "box-ho";
@@ -569,6 +542,7 @@
             const wrapper = `<div class="box-special ${subClass}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, wrapper);
             editor.focus();
+            updateTOC();
         }
 
         /* --- 視覚的テーブル作成機能 --- */
@@ -605,15 +579,15 @@
 
         function insertTableWithDimensions(rows, cols) {
             const headerColor = document.getElementById('bg-color-picker').value;
-            let tableHtml = `<table style="border-collapse: collapse; width: 100%; margin: 1rem 0;"><thead><tr>`;
+            let tableHtml = `<table style="width: 100%; margin: 1rem 0;"><thead><tr>`;
             for (let j = 0; j < cols; j++) {
-                tableHtml += `<th style="border: 1px solid var(--border-editor); padding: 10px; background-color: ${headerColor}; color: white; font-weight: bold;">ヘッダー</th>`;
+                tableHtml += `<th style="background-color: ${headerColor}; color: white; padding: 10px;">ヘッダー</th>`;
             }
             tableHtml += `</tr></thead><tbody>`;
             for (let i = 0; i < rows; i++) {
                 tableHtml += `<tr>`;
                 for (let j = 0; j < cols; j++) {
-                    tableHtml += `<td style="border: 1px solid var(--border-editor); padding: 10px;">データ</td>`;
+                    tableHtml += `<td style="padding: 10px;">データ</td>`;
                 }
                 tableHtml += `</tr>`;
             }
@@ -627,58 +601,30 @@
         }
 
         /* --- リンク設定機能 --- */
-        function insertLink() {
-            saveSelection();
-            populateLinkModal();
-            openModal('link-modal');
-        }
-
+        function insertLink() { saveSelection(); populateLinkModal(); openModal('link-modal'); }
         function populateLinkModal() {
             const list = document.getElementById('heading-link-list');
             list.innerHTML = '';
-            const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
-            if (headers.length === 0) {
-                list.innerHTML = '<p class="text-xs text-slate-400 italic">ジャンプ先となる見出しがありません</p>';
-                return;
-            }
+            const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6'));
             headers.forEach((h, i) => {
                 const btn = document.createElement('button');
-                btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-transparent hover:border-indigo-400 flex items-center gap-2 transition";
-                const level = h.tagName.startsWith('H') ? h.tagName : 'CUSTOM';
-                btn.innerHTML = `<span class="bg-slate-200 text-slate-500 px-1 rounded text-[8px]">${level}</span> ${h.textContent || '無題の見出し'}`;
+                btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1";
+                btn.textContent = h.textContent || '見出し';
                 btn.onclick = () => applyInternalLink(h.id);
                 list.appendChild(btn);
             });
         }
-
         function applyInternalLink(id) {
             restoreSelection();
-            if (id) {
-                document.execCommand('createLink', false, `#${id}`);
-                const links = editor.querySelectorAll(`a[href="#${id}"]`);
-                links.forEach(l => {
-                    l.className = "text-indigo-600 underline hover:text-indigo-800 transition-colors cursor-pointer";
-                });
-            }
+            if (id) document.execCommand('createLink', false, `#${id}`);
             closeModal('link-modal');
-            updateCharCount();
             autoSave();
         }
-
         function applyExternalLink() {
             const url = document.getElementById('external-url-input').value;
             restoreSelection();
-            if (url) {
-                document.execCommand('createLink', false, url);
-                const links = editor.querySelectorAll(`a[href="${url}"]`);
-                links.forEach(l => {
-                    l.className = "text-indigo-600 underline hover:text-indigo-800 transition-colors";
-                    l.target = "_blank";
-                });
-            }
-            document.getElementById('external-url-input').value = '';
+            if (url) document.execCommand('createLink', false, url);
             closeModal('link-modal');
-            updateCharCount();
             autoSave();
         }
 
@@ -691,13 +637,61 @@
             document.execCommand('insertHTML', false, `<div class="color-box" style="background-color: ${col};">${c}</div><p><br></p>`);
         }
         function insertDetails() {
-            const c = getSelectedHTML() || "詳細。";
             const t = prompt("タイトル:", "クリックして表示");
-            if (t) document.execCommand('insertHTML', false, `<details><summary>${t}</summary><div class="pt-2">${c}</div></details><p><br></p>`);
+            if (t) document.execCommand('insertHTML', false, `<details><summary>${t}</summary><div class="pt-2">詳細内容。</div></details><p><br></p>`);
+        }
+
+        /* --- 独自インデント処理 (タグを壊さない方式) --- */
+        function manualIndent(isIndent) {
+            editor.focus();
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            let container = range.commonAncestorContainer;
+            if (container.nodeType === 3) container = container.parentNode;
+
+            // カーソル位置の直近の「ブロック要素」を探す（枠、見出し、段落）
+            const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'DIV', 'DETAILS', 'BLOCKQUOTE'];
+            let target = container;
+            while (target && target !== editor) {
+                if (blockTags.includes(target.tagName) || target.classList.contains('divider')) {
+                    break;
+                }
+                target = target.parentNode;
+            }
+
+            if (!target || target === editor) {
+                // ブロックが見つからない場合、選択範囲をPで囲んでから処理
+                document.execCommand('formatBlock', false, 'p');
+                manualIndent(isIndent); // 再帰実行
+                return;
+            }
+
+            // margin-leftを直接操作
+            let currentMargin = parseFloat(target.style.marginLeft) || 0;
+            const step = 2; // em単位
+            if (isIndent) {
+                target.style.marginLeft = (currentMargin + step) + 'em';
+            } else {
+                target.style.marginLeft = Math.max(0, currentMargin - step) + 'em';
+            }
+
+            autoSave();
+            updateTOC();
         }
 
         /* --- 基礎機能 --- */
-        function execCommand(cmd) { editor.focus(); document.execCommand(cmd, false, null); updateTOC(); }
+        function execCommand(cmd) { 
+            editor.focus(); 
+            // インデントコマンドは独自処理に飛ばす
+            if (cmd === 'indent') return manualIndent(true);
+            if (cmd === 'outdent') return manualIndent(false);
+            
+            document.execCommand(cmd, false, null); 
+            updateTOC(); 
+        }
+
         function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); updateTOC(); }
         function handleHeadingChange(val) {
             if (val.startsWith('div_')) applyCustomBlock(val.replace('div_', ''));
@@ -717,7 +711,7 @@
             if (input.files?.[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width: 100%; height: auto; border-radius: 0.5rem; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></p><p><br></p>`;
+                    const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width: 100%; height: auto; border-radius: 0.5rem;"></p><p><br></p>`;
                     document.execCommand('insertHTML', false, imgHtml);
                 };
                 reader.readAsDataURL(input.files[0]);
@@ -725,7 +719,6 @@
         }
 
         function updateCharCount() { charCountDisplay.textContent = `文字数: ${(editor.innerText || "").length}`; }
-        
         function autoSave() { 
             try {
                 localStorage.setItem('weby_autosave', editor.innerHTML); 
@@ -733,37 +726,24 @@
                 saveStatus.textContent = "自動保存済み";
                 saveStatus.classList.remove('text-red-500');
             } catch (e) {
-                if (e.name === 'QuotaExceededError') {
-                    saveStatus.textContent = "⚠️ 容量制限のため自動保存に失敗（画像が大きすぎます）";
-                    saveStatus.classList.add('text-red-500');
-                    console.warn("localStorage quota exceeded. Auto-save disabled for current content size.");
-                }
+                saveStatus.textContent = "⚠️ 保存エラー（容量制限）";
+                saveStatus.classList.add('text-red-500');
             }
         }
 
         function updateTOC() {
-            const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
+            const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6'));
             tocContainer.innerHTML = hs.length ? '' : '<p class="p-4 text-slate-400 italic">見出しなし</p>';
             tocCount.textContent = hs.length;
             hs.forEach((h, i) => {
                 const id = `h-${i}`; h.id = id;
                 const link = document.createElement('a'); link.href = `#${id}`; link.textContent = h.textContent || '見出し';
                 link.className = 'block py-2 px-4 hover:bg-slate-50 truncate border-r-4 border-transparent';
-                let lv = h.tagName.startsWith('H') ? parseInt(h.tagName[1])-1 : (h.classList.contains('h7') ? 6 : 7);
-                link.style.paddingLeft = `${lv + 1}rem`;
-                if (lv === 0) link.classList.add('font-bold', 'text-slate-800');
+                let lv = parseInt(h.tagName[1]) - 1;
+                link.style.paddingLeft = `${lv + 1}em`;
                 link.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
                 tocContainer.appendChild(link);
             });
-            const currentSectionSpan = document.querySelector('#current-section-display span');
-            if (currentSectionSpan) {
-                if (hs.length > 0) {
-                    const lastHeading = hs[hs.length - 1];
-                    currentSectionSpan.textContent = lastHeading.textContent || "見出し";
-                } else {
-                    currentSectionSpan.textContent = "本文";
-                }
-            }
         }
 
         function toggleSearchReplace() { document.getElementById('search-replace-bar').classList.toggle('active'); }
@@ -774,131 +754,22 @@
         }
         function replaceAll() {
             const s = document.getElementById('search-input').value, r = document.getElementById('replace-input').value;
-            if (s) { editor.innerHTML = editor.innerHTML.replace(new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), r); updateTOC(); updateCharCount(); }
+            if (s) { editor.innerHTML = editor.innerHTML.replace(new RegExp(s, 'g'), r); updateTOC(); updateCharCount(); }
         }
 
         function exportWord() {
             const content = editor.innerHTML;
-            const title = titleInput.value.trim() || '名称未設定シナリオ';
-            const fullDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>
-                body { font-family: sans-serif; } 
-                h1 { color: #4f46e5; border-bottom: 2pt solid #4f46e5; } 
-                h2 { border-left: 10pt solid #4f46e5; background: #f8fafc; padding-left: 5pt; }
-                table { border-collapse: collapse; width: 100%; border: 1pt solid #cbd5e1; }
-                th, td { border: 1pt solid #cbd5e1; padding: 5pt; }
-                img { max-width: 100%; height: auto; display: block; margin: 10pt auto; }
-                .kp-info { background: #fef9c3; border: 1pt solid #fde047; padding: 10pt; } 
-                .box-summary { background: #e0f2fe; border: 2pt solid #7dd3fc; padding: 10pt; }
-                .box-check { background: #f0fdf4; border: 2pt solid #86efac; padding: 10pt; } 
-                .box-special { border-top: 4pt solid #6366f1; background: #f8fafc; padding: 10pt; }
-                .divider { border-bottom: 1pt solid #4f46e5; margin: 20pt 0; }
-                a { color: #4f46e5; text-decoration: underline; }
-            </style></head><body><h1>${title}</h1>${content}</body></html>`;
-            const blob = new Blob(['\ufeff', fullDoc], { type: 'application/msword' });
+            const title = titleInput.value.trim() || 'シナリオ';
+            const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
             const url = URL.createObjectURL(blob); 
-            const link = document.createElement('a'); 
-            link.href = url; 
-            link.download = `${title}.doc`; 
-            link.click();
+            const link = document.createElement('a'); link.href = url; link.download = `${title}.doc`; link.click();
         }
 
         function exportHTML() {
             const content = editor.innerHTML;
-            const title = titleInput.value.trim() || '名称未設定シナリオ';
-            const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
-            const exportDate = new Date().toLocaleDateString('ja-JP');
-            let tocHTML = '';
-            hs.forEach((h, i) => {
-                const level = h.tagName.startsWith('H') ? parseInt(h.tagName[1]) : (h.classList.contains('h7') ? 7 : 8);
-                const indent = (level - 1) * 15;
-                tocHTML += `<a href="#h-${i}" style="display:block; padding: 5px 10px 5px ${indent + 10}px; font-size: 13px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(79, 70, 229, 0.1)'; this.style.color='#4f46e5';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--text-muted)';">${h.textContent}</a>`;
-            });
-
-            const fullHTML = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    <style>
-        :root {
-            --bg-body: #f8fafc; --bg-editor: #ffffff; --text-main: #334155; --border: #e2e8f0; --text-muted: #64748b; --sidebar-bg: #fff;
-        }
-        [data-theme="dark"] {
-            --bg-body: #0f172a; --bg-editor: #1e293b; --text-main: #f1f5f9; --border: #334155; --text-muted: #94a3b8; --sidebar-bg: #1e293b;
-        }
-        [data-theme="sepia"] {
-            --bg-body: #f4ecd8; --bg-editor: #fdf6e3; --text-main: #5b4636; --border: #e6dfcf; --text-muted: #8c786a; --sidebar-bg: #fdf6e3;
-        }
-        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: row; height: 100vh; overflow: hidden; background: var(--bg-body); color: var(--text-main); transition: all 0.3s; }
-        .sidebar { width: 280px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px 0; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; }
-        .sidebar-title { padding: 0 20px 15px; font-weight: bold; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
-        .sidebar-nav { flex: 1; overflow-y: auto; }
-        .sidebar-footer { padding: 15px 20px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); text-align: center; font-family: monospace; opacity: 0.6; }
-        .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 40px; box-sizing: border-box; scroll-behavior: smooth; }
-        .article-container { max-width: 800px; margin: 0 auto; background: var(--bg-editor); padding: 40px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.8; }
-        
-        .scenario-header-title { font-size: 2.5rem; font-weight: 900; color: #4f46e5; margin-bottom: 2rem; text-align: center; line-height: 1.2; }
-        h1 { border-bottom: 3px solid #4f46e5; padding-bottom: 5px; color: #4f46e5; }
-        h2 { border-left: 6px solid #4f46e5; padding-left: 10px; background: rgba(79, 70, 229, 0.05); margin-top: 1.5em; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid var(--border); padding: 10px; }
-        img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        .kp-info { background: rgba(254, 249, 195, 0.2); border: 1px solid #fde047; padding: 15px; border-radius: 8px; color: #eab308; margin: 15px 0; }
-        [data-theme="standard"] .kp-info { background: #fef9c3; color: #854d0e; }
-        .box-summary { background: rgba(224, 242, 254, 0.2); border: 2px solid #7dd3fc; padding: 15px; border-radius: 8px; color: #38bdf8; margin: 15px 0; }
-        [data-theme="standard"] .box-summary { background: #e0f2fe; color: #0369a1; }
-        .box-check { background: rgba(240, 253, 244, 0.2); border: 2px solid #86efac; padding: 15px; border-radius: 8px; color: #4ade80; margin: 15px 0; }
-        [data-theme="standard"] .box-check { background: #f0fdf4; color: #15803d; }
-        .box-secret { background: rgba(250, 245, 255, 0.2); border: 2px dashed #d8b4fe; padding: 15px; border-radius: 8px; color: #c084fc; margin: 15px 0; }
-        .box-special { border-top: 4px solid #6366f1; background: rgba(248, 250, 252, 0.05); padding: 15px; margin: 20px 0; border-radius: 4px; border: 1px solid var(--border); border-top-width: 4px; }
-        .divider { height: 1px; background: linear-gradient(to right, transparent, #4f46e5, transparent); margin: 40px 0; }
-        a { color: #4f46e5; text-decoration: underline; }
-        
-        .theme-switcher { padding: 15px 20px; display: flex; gap: 5px; border-bottom: 1px solid var(--border); }
-        .theme-btn { flex: 1; padding: 5px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: var(--bg-editor); color: var(--text-main); font-size: 11px; }
-
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); }
-            .main-content { padding: 20px; } .article-container { padding: 20px; }
-        }
-    </style>
-</head>
-<body data-theme="standard">
-    <aside class="sidebar">
-        <div class="sidebar-title">表示設定</div>
-        <div class="theme-switcher">
-            <button class="theme-btn" onclick="setTheme('standard')">☀️ 標準</button>
-            <button class="theme-btn" onclick="setTheme('dark')">🌙 ダーク</button>
-            <button class="theme-btn" onclick="setTheme('sepia')">👁️ セピア</button>
-        </div>
-        <div class="sidebar-title" style="margin-top:20px;">目次</div>
-        <nav class="sidebar-nav">${tocHTML}</nav>
-        <div class="sidebar-footer">
-            Generated by 異次元ポケット<br>
-            ${exportDate}
-        </div>
-    </aside>
-    <main class="main-content">
-        <article class="article-container">
-            <header class="scenario-header-title">${title}</header>
-            ${content}
-        </article>
-    </main>
-    <script>
-        function setTheme(theme) { document.body.setAttribute('data-theme', theme); }
-    <\/script>
-</body>
-</html>`;
-
-            const blob = new Blob([fullHTML], { type: 'text/html' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${title}.html`;
-            a.click();
-            URL.revokeObjectURL(a.href);
+            const title = titleInput.value.trim() || 'シナリオ';
+            const blob = new Blob([content], { type: 'text/html' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${title}.html`; a.click();
         }
 
         function throttle(fn, wait) { let time = Date.now(); return () => { if ((time + wait - Date.now()) < 0) { fn(); time = Date.now(); } } }
@@ -906,25 +777,26 @@
         window.onload = () => {
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('defaultParagraphSeparator', false, 'p');
-            
             const savedContent = localStorage.getItem('weby_autosave'); 
             const savedTitle = localStorage.getItem('weby_autosave_title');
             if (savedContent) editor.innerHTML = savedContent;
             if (savedTitle) titleInput.value = savedTitle;
-            
             const theme = localStorage.getItem('weby_theme') || 'standard';
             setTheme(theme);
-
-            const isCollapsed = localStorage.getItem('weby_toolbar_collapsed') === 'true';
-            if (isCollapsed) document.getElementById('toolbar-wrapper').classList.add('collapsed');
+            
+            // Tabキーイベントの制御
+            editor.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    manualIndent(!e.shiftKey);
+                }
+            });
 
             updateTOC(); 
             updateCharCount();
         };
 
-        editor.oninput = throttle(() => { 
-            updateCharCount(); updateTOC(); autoSave();
-        }, 1000);
+        editor.oninput = throttle(() => { updateCharCount(); updateTOC(); autoSave(); }, 1000);
     </script>
 </body>
 </html>
