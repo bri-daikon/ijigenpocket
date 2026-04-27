@@ -114,7 +114,7 @@
             <h3 class="text-lg font-bold mb-2">保存</h3>
             <p id="save-modal-text" class="text-slate-500 text-sm mb-6">現在のファイルに上書き保存、または新しく保存します。</p>
             <div class="flex flex-col gap-2">
-                <button id="overwrite-btn" onclick="executeSave(true)" class="hidden w-full px-4 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-bold shadow-sm transition">現在開いているファイルに上書き</button>
+                <button id="overwrite-btn" onclick="executeSave(true)" class="hidden w-full px-4 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-bold shadow-sm transition">上書き保存を試みる</button>
                 <button onclick="executeSave(false)" class="w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-bold shadow-sm transition">名前をつけて新しく保存</button>
                 <button onclick="closeModal('save-modal')" class="w-full px-4 py-2 text-slate-400 text-xs transition">キャンセル</button>
             </div>
@@ -275,6 +275,9 @@
         </div>
     </div>
 
+    <!-- ファイル読込用ダミー -->
+    <input type="file" id="project-load-fallback" class="hidden" accept=".weby" onchange="loadProjectFallback(this)">
+
     <script>
         const editor = document.getElementById('editor');
         const tocContainer = document.getElementById('toc-container');
@@ -293,6 +296,24 @@
             g = Math.floor(g * (1 - percent));
             b = Math.floor(b * (1 - percent));
             return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        /* --- ヘルパー: 選択範囲のHTMLを取得して削除 --- */
+        function getSelectedHtmlAndRemove() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (range.collapsed) return null; // 選択なし
+
+                const clonedSelection = range.cloneContents();
+                const div = document.createElement('div');
+                div.appendChild(clonedSelection);
+                const html = div.innerHTML;
+                
+                range.deleteContents();
+                return html;
+            }
+            return null;
         }
 
         /* --- UI制御 --- */
@@ -319,7 +340,7 @@
             const overwriteBtn = document.getElementById('overwrite-btn');
             if (currentFileHandle) {
                 overwriteBtn.classList.remove('hidden');
-                document.getElementById('save-modal-text').textContent = `「${currentFileHandle.name}」を開いています。上書きしますか？`;
+                document.getElementById('save-modal-text').textContent = "現在の環境ではブラウザ制限によりダウンロード保存が推奨されます。";
             } else {
                 overwriteBtn.classList.add('hidden');
             }
@@ -331,30 +352,8 @@
             const title = titleInput.value.trim() || 'シナリオ';
             const content = { title, content: editor.innerHTML };
             const jsonStr = JSON.stringify(content, null, 2);
-
-            if (isOverwrite && currentFileHandle) {
-                try {
-                    const writable = await currentFileHandle.createWritable();
-                    await writable.write(jsonStr);
-                    await writable.close();
-                    saveStatus.textContent = `上書き保存完了: ${currentFileHandle.name}`;
-                    return;
-                } catch (err) { console.error(err); }
-            }
-
-            if (window.showSaveFilePicker) {
-                try {
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: `${title}.weby`,
-                        types: [{ description: 'シナリオファイル', accept: { 'application/json': ['.weby'] } }]
-                    });
-                    currentFileHandle = handle;
-                    const writable = await handle.createWritable();
-                    await writable.write(jsonStr);
-                    await writable.close();
-                    saveStatus.textContent = `保存完了: ${handle.name}`;
-                } catch (err) { if (err.name !== 'AbortError') fallbackDownload(jsonStr, `${title}.weby`); }
-            } else { fallbackDownload(jsonStr, `${title}.weby`); }
+            fallbackDownload(jsonStr, `${title}.weby`);
+            saveStatus.textContent = "保存（ダウンロード）しました";
         }
 
         function fallbackDownload(content, filename) {
@@ -362,24 +361,8 @@
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
         }
 
-        async function loadProjectWithPicker() {
-            if (window.showOpenFilePicker) {
-                try {
-                    const [handle] = await window.showOpenFilePicker({
-                        types: [{ description: 'シナリオファイル', accept: { 'application/json': ['.weby'] } }]
-                    });
-                    currentFileHandle = handle;
-                    const file = await handle.getFile();
-                    const text = await file.text();
-                    const data = JSON.parse(text);
-                    editor.innerHTML = data.content;
-                    titleInput.value = data.title;
-                    updateTOC(); updateCharCount();
-                    saveStatus.textContent = `読み込み完了: ${handle.name}`;
-                } catch (err) { console.error(err); }
-            } else {
-                document.getElementById('project-load-fallback').click();
-            }
+        function loadProjectWithPicker() {
+            document.getElementById('project-load-fallback').click();
         }
 
         function loadProjectFallback(input) {
@@ -391,8 +374,10 @@
                         const data = JSON.parse(e.target.result);
                         editor.innerHTML = data.content;
                         titleInput.value = data.title;
-                        updateTOC(); updateCharCount();
-                    } catch(err) { alert('読み込み失敗'); }
+                        updateTOC(); 
+                        updateCharCount();
+                        saveStatus.textContent = "読み込み完了";
+                    } catch(err) { alert('読み込み失敗: 正しいファイル形式ではありません。'); }
                 };
                 reader.readAsText(file);
             }
@@ -412,29 +397,36 @@
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return;
             const range = selection.getRangeAt(0);
-            let container = range.commonAncestorContainer;
-            if (container.nodeType === 3) container = container.parentNode;
 
-            const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'DIV', 'DETAILS', 'BLOCKQUOTE'];
-            let target = container;
-            while (target && target !== editor) {
-                if (blockTags.includes(target.tagName) || target.classList.contains('divider')) break;
-                target = target.parentNode;
+            let blocks = [];
+            if (range.collapsed) {
+                let node = range.commonAncestorContainer;
+                if (node.nodeType === 3) node = node.parentNode;
+                let target = node.closest('p, h1, h2, h3, h4, h5, h6, .h7, .h8, div, table, blockquote');
+                if (!target || target === editor) {
+                    document.execCommand('formatBlock', false, 'p');
+                    const newRange = window.getSelection().getRangeAt(0);
+                    let newContainer = newRange.commonAncestorContainer;
+                    if (newContainer.nodeType === 3) newContainer = newContainer.parentNode;
+                    target = newContainer.closest('p, div');
+                }
+                if (target && target !== editor) blocks.push(target);
+            } else {
+                Array.from(editor.children).forEach(child => {
+                    if (selection.containsNode(child, true)) {
+                        blocks.push(child);
+                    }
+                });
             }
 
-            if (!target || target === editor) {
-                document.execCommand('formatBlock', false, 'p');
-                const newRange = window.getSelection().getRangeAt(0);
-                let newContainer = newRange.commonAncestorContainer;
-                if (newContainer.nodeType === 3) newContainer = newContainer.parentNode;
-                target = newContainer.closest('p, div');
-                if (!target) return;
-            }
-
-            let currentMargin = parseFloat(target.style.marginLeft) || 0;
-            const step = 1; 
-            target.style.marginLeft = isIndent ? (currentMargin + step) + 'em' : Math.max(0, currentMargin - step) + 'em';
-            autoSave(); updateTOC();
+            blocks.forEach(block => {
+                if (block === editor) return;
+                let currentMargin = parseFloat(block.style.marginLeft) || 0;
+                const step = 1; 
+                block.style.marginLeft = isIndent ? (currentMargin + step) + 'em' : Math.max(0, currentMargin - step) + 'em';
+            });
+            autoSave(); 
+            updateTOC();
         }
 
         function handleHeadingChange(val) {
@@ -539,72 +531,92 @@
         }
 
         function insertTRPGBox(type) {
-            let className = "", label = "", content = "内容を入力...";
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            
+            let className = "", label = "", defaultContent = "内容を入力...";
             const checkTpl = "成功：<br>失敗：";
             const col = document.getElementById('bg-color-picker').value;
             let borderColor = col;
 
             switch(type) {
                 case 'summary': className = "box-summary"; label = "概要"; borderColor = "#7dd3fc"; break;
-                case 'check': className = "box-check"; label = "判定：＜＞"; content = checkTpl; borderColor = "#86efac"; break;
-                case 'spot': className = "box-spot"; label = "判定：＜目星＞"; content = checkTpl; borderColor = "#34d399"; break;
-                case 'search': className = "box-search"; label = "探索箇所：　"; content = "詳細..."; borderColor = "#10b981"; break;
-                case 'listen': className = "box-listen"; label = "判定：＜聞き耳＞"; content = checkTpl; borderColor = "#fbbf24"; break;
-                case 'library': className = "box-library"; label = "判定：＜図書館＞"; content = checkTpl; borderColor = "#22d3ee"; break;
-                case 'san': className = "box-san"; label = "正気度チェック"; content = "正気度喪失：()"; borderColor = "#fb7185"; break;
-                case 'secret': className = "box-secret"; label = "HO ：秘匿描写"; content = "内容を入力..."; borderColor = "#d8b4fe"; break;
-                case 'gimmick': className = "box-gimmick"; label = "ギミック：　"; content = "内容を入力..."; borderColor = "#fb923c"; break;
+                case 'check': className = "box-check"; label = "判定：＜＞"; defaultContent = checkTpl; borderColor = "#86efac"; break;
+                case 'spot': className = "box-spot"; label = "判定：＜目星＞"; defaultContent = checkTpl; borderColor = "#34d399"; break;
+                case 'search': className = "box-search"; label = "探索箇所：　"; defaultContent = "詳細..."; borderColor = "#10b981"; break;
+                case 'listen': className = "box-listen"; label = "判定：＜聞き耳＞"; defaultContent = checkTpl; borderColor = "#fbbf24"; break;
+                case 'library': className = "box-library"; label = "判定：＜図書館＞"; defaultContent = checkTpl; borderColor = "#22d3ee"; break;
+                case 'san': className = "box-san"; label = "正気度チェック"; defaultContent = "正気度喪失：()"; borderColor = "#fb7185"; break;
+                case 'secret': className = "box-secret"; label = "HO ：秘匿描写"; defaultContent = "内容を入力..."; borderColor = "#d8b4fe"; break;
+                case 'gimmick': className = "box-gimmick"; label = "ギミック：　"; defaultContent = "内容を入力..."; borderColor = "#fb923c"; break;
                 case 'tendency': 
-                    className = "box-tendency"; label = "傾向"; content = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; 
+                    className = "box-tendency"; label = "傾向"; defaultContent = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; 
                     break;
             }
             
+            const content = selectedHtml || defaultContent;
             const textColor = darkenColor(borderColor, 0.4);
             const html = `<div class="${className}" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            editor.focus(); updateTOC();
+            updateTOC(); autoSave();
         }
 
         function insertBorderBox() {
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            const content = selectedHtml || "内容を入力...";
+            
             const col = document.getElementById('bg-color-picker').value;
             const textColor = darkenColor(col, 0.4);
-            const html = `<div class="box-custom" style="border-color:${col}; background-color:${col}11; color:${textColor}">内容を入力...</div><p><br></p>`;
+            const html = `<div class="box-custom" style="border-color:${col}; background-color:${col}11; color:${textColor}">${content}</div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            editor.focus(); updateTOC();
+            updateTOC(); autoSave();
         }
 
         function insertKPInfo() {
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            const content = selectedHtml || "内容...";
+            
             const borderColor = "#fde047";
             const textColor = darkenColor(borderColor, 0.6);
-            const html = `<div class="kp-info" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【KP情報】</strong><div class="mt-1">内容...</div></div><p><br></p>`;
+            const html = `<div class="kp-info" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【KP情報】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            editor.focus(); updateTOC();
+            updateTOC(); autoSave();
         }
 
         function insertQuote() {
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            const content = selectedHtml || "内容...";
+            
             const borderColor = "#94a3b8";
             const textColor = darkenColor(borderColor, 0.4);
-            const html = `<div class="quote" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}">内容...</div><p><br></p>`;
+            const html = `<div class="quote" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}">${content}</div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            editor.focus(); updateTOC();
+            updateTOC(); autoSave();
         }
 
         function insertSpecialBox(label) {
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            
             let defaultCol = "#64748b";
-            let content = "詳細...";
+            let defaultContent = "詳細...";
             
             switch(label) {
-                case '許諾': defaultCol = "#94a3b8"; content = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`; break;
-                case '諸注意': defaultCol = "#f59e0b"; content = `・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり`; break;
-                case 'HO': defaultCol = "#6366f1"; content = `公開HO：<br>貴方は……である。`; break;
-                case 'エネミー': defaultCol = "#ef4444"; content = `名前：<br>STR: / CON: / SIZ: / DEX: / POW: / INT: / EDU: / APP:<br>耐久力: / マジックポイント:<br>ダメージボーナス: / ビルド: / 移動: <br>攻撃：<br>装甲：<br>技能：`; break;
-                case 'クレジット': defaultCol = "#64748b"; content = `著者：<br>協力：<br>画像：`; break;
+                case '許諾': defaultCol = "#94a3b8"; defaultContent = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`; break;
+                case '諸注意': defaultCol = "#f59e0b"; defaultContent = `・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり`; break;
+                case 'HO': defaultCol = "#6366f1"; defaultContent = `公開HO：<br>貴方は……である。`; break;
+                case 'エネミー': defaultCol = "#ef4444"; defaultContent = `名前：<br>STR: / CON: / SIZ: / DEX: / POW: / INT: / EDU: / APP:<br>耐久力: / マジックポイント:<br>ダメージボーナス: / ビルド: / 移動: <br>攻撃：<br>装甲：<br>技能：`; break;
+                case 'クレジット': defaultCol = "#64748b"; defaultContent = `著者：<br>協力：<br>画像：`; break;
             }
             
+            const content = selectedHtml || defaultContent;
             const textColor = darkenColor(defaultCol, 0.5);
             const html = `<div class="box-special" style="border-top-color:${defaultCol}; background-color:${defaultCol}11; color:${textColor}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            editor.focus(); updateTOC();
+            updateTOC(); autoSave();
         }
 
         function insertDivider() { document.execCommand('insertHTML', false, '<div class="divider"></div><p><br></p>'); }
