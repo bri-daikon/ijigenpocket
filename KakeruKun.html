@@ -223,7 +223,7 @@
                     <div class="flex flex-col flex-1">
                         <h1 class="text-xl font-extrabold text-indigo-700 leading-none mb-1">シナリオ書けるくん</h1>
                         <input type="text" id="scenario-title" placeholder="シナリオタイトルを入力..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all w-full max-w-sm" oninput="autoSave()">
-                        <!-- 現在のセクション表示を復活 -->
+                        <!-- 現在のセクション表示 -->
                         <div id="current-section-display" class="text-[10px] text-slate-400 font-medium mt-1">執筆中: <span>本文</span></div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -268,8 +268,10 @@
                         <button onclick="execCommand('indent')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">⇥</button>
                     </div>
 
-                    <div class="flex bg-white border border-slate-200 rounded p-0.5">
+                    <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
                         <button onclick="execCommand('undo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="元に戻す (Ctrl+Z)">↩️</button>
+                        <button onclick="execCommand('redo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="やり直し (Ctrl+Y)">↪️</button>
+                        <div class="w-px h-4 bg-slate-200 self-center mx-0.5"></div>
                         <button onclick="execCommand('bold')" class="w-6 h-6 hover:bg-slate-100 rounded font-bold text-xs text-slate-600">B</button>
                         <button onclick="insertLink()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600" title="リンク設定">🔗</button>
                         <button onclick="document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs text-slate-600">🖼️</button>
@@ -423,19 +425,27 @@
             saveStatus.textContent = "ファイルをダウンロードしました";
         }
 
-        /* --- 読み込み処理 --- */
+        /* --- 読み込み処理 (強化版) --- */
         function loadProject(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
                     let result = e.target.result;
-                    // BOM (Byte Order Mark) を除去
-                    if (result.startsWith('\ufeff')) {
-                        result = result.substring(1);
+                    
+                    // JSONの開始と終了位置を特定して、その間だけを抽出（ゴミ取り）
+                    const startIdx = result.indexOf('{');
+                    const endIdx = result.lastIndexOf('}');
+                    
+                    if (startIdx === -1 || endIdx === -1) {
+                        alert("ファイルの形式が正しくありません。");
+                        input.value = '';
+                        return;
                     }
+
+                    const jsonPart = result.substring(startIdx, endIdx + 1);
                     
                     try {
-                        const data = JSON.parse(result.trim());
+                        const data = JSON.parse(jsonPart);
                         if (data.content !== undefined) {
                             editor.innerHTML = data.content;
                             titleInput.value = data.title || '';
@@ -673,7 +683,6 @@
                 const reader = new FileReader();
                 reader.onload = e => {
                     // 画像をpタグ（段落）で囲むことで、標準の整列コマンド（justifyLeft等）が効くようになります。
-                    // また、img自体をinline-blockにすることで親のtext-alignの影響を受けるようにします。
                     const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width: 100%; height: auto; border-radius: 0.5rem; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></p><p><br></p>`;
                     document.execCommand('insertHTML', false, imgHtml);
                 };
@@ -707,7 +716,6 @@
             const currentSectionSpan = document.querySelector('#current-section-display span');
             if (currentSectionSpan) {
                 if (hs.length > 0) {
-                    // ドキュメント内の最新（最後）の見出しを暫定的に表示
                     const lastHeading = hs[hs.length - 1];
                     currentSectionSpan.textContent = lastHeading.textContent || "見出し";
                 } else {
