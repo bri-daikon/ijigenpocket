@@ -73,6 +73,11 @@
         #editor .h7 { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.5rem; border-left: 2px solid var(--text-muted); padding-left: 0.5rem; }
         #editor .h8 { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); font-style: italic; margin-top: 0.5rem; opacity: 0.8; }
 
+        /* 折りたたみスタイル */
+        #editor details { border: 1px solid var(--border-editor); border-radius: 8px; padding: 0.5rem; background: rgba(0,0,0,0.02); margin: 1rem 0; }
+        #editor summary { cursor: pointer; font-weight: bold; color: #4f46e5; outline: none; }
+        #editor details[open] { padding-bottom: 1rem; }
+
         /* --- TRPG専用枠スタイル --- */
         .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
             padding: 1rem;
@@ -100,15 +105,22 @@
         /* 検索置換バー */
         #search-replace-bar { background: var(--sidebar-bg); border-top: 1px solid var(--border-editor); display: none; }
         #search-replace-bar.active { display: flex; }
+
+        /* 通知トースト */
+        #toast { position: fixed; bottom: 2rem; right: 2rem; background: #4f46e5; color: white; padding: 0.75rem 1.5rem; border-radius: 9999px; font-weight: bold; transform: translateY(150%); transition: transform 0.3s ease; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        #toast.visible { transform: translateY(0); }
     </style>
 </head>
 <body data-theme="standard">
+
+    <!-- 通知 -->
+    <div id="toast">保存しました</div>
 
     <!-- モーダル類 -->
     <div id="confirm-modal" class="modal-overlay no-print text-slate-900">
         <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
             <h3 class="text-lg font-bold mb-2">新規作成しますか？</h3>
-            <p class="text-slate-500 text-sm mb-6">現在の内容は失われます。</p>
+            <p class="text-slate-500 text-sm mb-6">保存していない現在の内容は失われます。</p>
             <div class="flex justify-end gap-3">
                 <button onclick="closeModal('confirm-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm transition">キャンセル</button>
                 <button onclick="confirmNewProject()" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-bold transition">新しく作成</button>
@@ -116,20 +128,8 @@
         </div>
     </div>
 
-    <div id="save-modal" class="modal-overlay no-print text-slate-900">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
-            <h3 class="text-lg font-bold mb-2">保存</h3>
-            <p id="save-modal-text" class="text-slate-500 text-sm mb-6">現在のファイルに上書き保存、または新しく保存します。</p>
-            <div class="flex flex-col gap-2">
-                <button id="overwrite-btn" onclick="executeSave(true)" class="hidden w-full px-4 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-bold shadow-sm transition">上書き保存を試みる</button>
-                <button onclick="executeSave(false)" class="w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-bold shadow-sm transition">名前をつけて新しく保存</button>
-                <button onclick="closeModal('save-modal')" class="w-full px-4 py-2 text-slate-400 text-xs transition">キャンセル</button>
-            </div>
-        </div>
-    </div>
-
     <div id="link-modal" class="modal-overlay no-print text-slate-900">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[80vh]">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-md w-full mx-4 flex flex-col max-h-[80vh]">
             <h3 class="text-lg font-bold mb-2">リンクを設定</h3>
             <div class="mb-4">
                 <label class="block text-xs font-bold text-slate-400 mb-1">外部URL</label>
@@ -165,9 +165,8 @@
             <nav id="toc-container" class="flex-1 overflow-y-auto py-4 text-sm"></nav>
             <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-2 text-slate-900">
                 <button onclick="openModal('confirm-modal')" class="w-full py-2 bg-white border border-slate-200 rounded text-xs hover:bg-slate-100 transition font-medium">➕ 新規作成</button>
-                <button onclick="saveProject()" class="w-full py-2 bg-indigo-50 border border-indigo-100 rounded text-xs text-indigo-600 hover:bg-indigo-100 transition font-medium">💾 保存</button>
+                <button onclick="executeDirectSave()" class="w-full py-2 bg-indigo-50 border border-indigo-100 rounded text-xs text-indigo-600 hover:bg-indigo-100 transition font-medium">💾 保存 (.weby)</button>
                 <button onclick="loadProjectWithPicker()" class="w-full py-2 bg-white border border-slate-200 rounded text-xs hover:bg-slate-100 transition font-medium">📂 読み込み</button>
-                <input type="file" id="project-load-fallback" class="hidden" accept=".weby" onchange="loadProjectFallback(this)">
                 <div class="pt-2 text-[9px] text-slate-300 text-center font-mono opacity-50">Powered by 異次元ポケット</div>
             </div>
         </aside>
@@ -178,7 +177,7 @@
                     <div class="flex flex-col flex-1">
                         <h1 class="text-xl font-extrabold text-indigo-700 mb-1">シナリオ書けるくん</h1>
                         <div class="flex items-center gap-2 w-full max-w-sm">
-                            <input type="text" id="scenario-title" placeholder="シナリオタイトル..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all flex-1" oninput="autoSave()">
+                            <input type="text" id="scenario-title" placeholder="シナリオタイトル..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all flex-1">
                             <button onclick="toggleToolbar()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded transition">🛠️ 切替</button>
                         </div>
                         <div id="current-section-display" class="text-[10px] text-slate-400 font-medium mt-1">執筆中: <span>本文</span></div>
@@ -186,7 +185,7 @@
                     <div class="flex items-center gap-2">
                         <div class="flex bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 gap-1 text-slate-900">
                             <button onclick="openModal('confirm-modal')" class="p-2 hover:bg-white rounded transition text-slate-600 text-xs" title="新規">➕</button>
-                            <button onclick="saveProject()" class="p-2 hover:bg-white rounded transition text-indigo-600 text-xs" title="保存">💾</button>
+                            <button onclick="executeDirectSave()" class="p-2 hover:bg-white rounded transition text-indigo-600 text-xs" title="保存">💾</button>
                             <button onclick="loadProjectWithPicker()" class="p-2 hover:bg-white rounded transition text-slate-600 text-xs" title="読込">📂</button>
                         </div>
                         <div class="flex bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
@@ -231,6 +230,7 @@
                             <button onclick="execCommand('redo')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="再実行">↪️</button>
                             <button onclick="execCommand('bold')" class="w-6 h-6 hover:bg-slate-100 rounded font-bold text-xs" title="太字">B</button>
                             <button onclick="insertLink()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="リンク">🔗</button>
+                            <button onclick="insertFold()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="折りたたみ">📁</button>
                             <button onclick="document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="画像">🖼️</button>
                             <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
                         </div>
@@ -277,7 +277,7 @@
 
             <main class="p-4 sm:p-10 flex-1 flex flex-col items-center overflow-y-auto">
                 <div id="editor" contenteditable="true" class="w-full max-w-5xl border rounded-xl shadow-xl bg-white" placeholder="本文を入力..."><p><br></p></div>
-                <div class="w-full max-w-5xl mt-4 flex justify-between text-xs text-slate-400 font-mono"><span id="char-count">文字数: 0</span><span id="save-status">自動保存済み</span></div>
+                <div class="w-full max-w-5xl mt-4 flex justify-between text-xs text-slate-400 font-mono"><span id="char-count">文字数: 0</span><span id="save-status">未保存</span></div>
             </main>
         </div>
     </div>
@@ -291,8 +291,8 @@
         const charCountDisplay = document.getElementById('char-count');
         const saveStatus = document.getElementById('save-status');
         const titleInput = document.getElementById('scenario-title');
+        const toast = document.getElementById('toast');
         let savedSelectionRange = null;
-        let currentFileHandle = null;
 
         /* --- ヘルパー: 色を濃くする --- */
         function darkenColor(hex, percent) {
@@ -330,42 +330,53 @@
         function toggleToolbar() { document.getElementById('toolbar-wrapper').classList.toggle('collapsed'); }
         function toggleSearchReplace() { document.getElementById('search-replace-bar').classList.toggle('active'); }
 
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2000);
+        }
+
         /* --- プロジェクト管理 --- */
-        function autoSave() { 
-            try {
-                localStorage.setItem('weby_autosave', editor.innerHTML); 
-                localStorage.setItem('weby_autosave_title', titleInput.value);
-                saveStatus.textContent = "自動保存済み";
-                saveStatus.classList.remove('text-red-500');
-            } catch (e) {
-                saveStatus.textContent = "⚠️容量オーバー";
-                saveStatus.classList.add('text-red-500');
-            }
+        
+        function autoUpdateUI() { 
+            updateTOC(); 
+            updateCharCount();
+            saveStatus.textContent = "変更あり（未保存）";
+            saveStatus.classList.add('text-amber-500');
         }
 
-        function saveProject() { 
-            const overwriteBtn = document.getElementById('overwrite-btn');
-            if (currentFileHandle) {
-                overwriteBtn.classList.remove('hidden');
-                document.getElementById('save-modal-text').textContent = "現在の環境ではブラウザ制限によりダウンロード保存が推奨されます。";
-            } else {
-                overwriteBtn.classList.add('hidden');
-            }
-            openModal('save-modal'); 
-        }
-
-        async function executeSave(isOverwrite) {
-            closeModal('save-modal');
+        // 保存を実行（環境制限を考慮し、標準的なダウンロード方式を使用）
+        function executeDirectSave() {
             const title = titleInput.value.trim() || 'シナリオ';
             const content = { title, content: editor.innerHTML };
             const jsonStr = JSON.stringify(content, null, 2);
-            fallbackDownload(jsonStr, `${title}.weby`);
-            saveStatus.textContent = "保存（ダウンロード）しました";
-        }
+            
+            saveStatus.textContent = "保存ダイアログを確認中...";
+            saveStatus.classList.remove('text-amber-500');
 
-        function fallbackDownload(content, filename) {
-            const blob = new Blob([content], { type: 'application/json' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+            // ブラウザのバックアップ（念のため）
+            try {
+                localStorage.setItem('weby_autosave', editor.innerHTML); 
+                localStorage.setItem('weby_autosave_title', titleInput.value);
+            } catch (e) { console.warn("バックアップ失敗: 容量不足"); }
+
+            // ダウンロードリンクを作成してクリック（これが上書き保存ダイアログのトリガーになります）
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); 
+            a.href = url;
+            a.download = `${title}.weby`; 
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // ブラウザの仕様上、ダイアログの結果（成功/キャンセル）は判定できないため、
+            // 実行後のメッセージを表示
+            setTimeout(() => {
+                saveStatus.textContent = "保存操作を完了しました";
+                showToast("保存操作を実行しました");
+            }, 1000);
         }
 
         function loadProjectWithPicker() {
@@ -384,6 +395,8 @@
                         updateTOC(); 
                         updateCharCount();
                         saveStatus.textContent = "読み込み完了";
+                        saveStatus.classList.remove('text-amber-500');
+                        showToast("読み込みました");
                     } catch(err) { alert('読み込み失敗: 正しいファイル形式ではありません。'); }
                 };
                 reader.readAsText(file);
@@ -393,9 +406,20 @@
         function confirmNewProject() {
             editor.innerHTML = '<p><br></p>';
             titleInput.value = '';
-            currentFileHandle = null;
             closeModal('confirm-modal');
             updateTOC(); updateCharCount();
+            saveStatus.textContent = "新規作成";
+            showToast("新規作成しました");
+        }
+
+        /* --- 折りたたみ機能 --- */
+        function insertFold() {
+            editor.focus();
+            const selectedHtml = getSelectedHtmlAndRemove();
+            const content = selectedHtml || "折りたたみ内の内容をここに...";
+            const html = `<details><summary>クリックで開閉</summary><div>${content}</div></details><p><br></p>`;
+            document.execCommand('insertHTML', false, html);
+            updateTOC(); autoUpdateUI();
         }
 
         /* --- インデントと見出し --- */
@@ -432,8 +456,7 @@
                 const step = 1; 
                 block.style.marginLeft = isIndent ? (currentMargin + step) + 'em' : Math.max(0, currentMargin - step) + 'em';
             });
-            autoSave(); 
-            updateTOC();
+            autoUpdateUI(); 
         }
 
         function handleHeadingChange(val) {
@@ -466,7 +489,7 @@
                         target.style.marginLeft = level + 'em';
                     }
                 }
-                updateTOC(); autoSave();
+                updateTOC(); autoUpdateUI();
             }, 10);
             editor.focus();
         }
@@ -478,8 +501,9 @@
             if (cmd === 'outdent') return manualIndent(false);
             document.execCommand(cmd, false, null); 
             updateTOC(); 
+            autoUpdateUI();
         }
-        function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); }
+        function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
 
         /* --- 検索置換機能 --- */
         function findNext() {
@@ -491,16 +515,13 @@
             const replace = document.getElementById('replace-input').value;
             if (query) {
                 editor.innerHTML = editor.innerHTML.split(query).join(replace);
-                autoSave();
+                autoUpdateUI();
             }
         }
 
-        /* --- リンク設定（修正版） --- */
+        /* --- リンク設定 --- */
         function insertLink() {
-            // 1. 最新のIDを割り振り、TOCを更新しておく
             updateTOC();
-
-            // 2. 現在の選択範囲を保存
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
                 savedSelectionRange = sel.getRangeAt(0).cloneRange();
@@ -513,33 +534,25 @@
             const list = document.getElementById('heading-link-list');
             list.innerHTML = '';
             
-            // 3. モーダル内の見出しリストを構築
             const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             headers.forEach((h, i) => {
-                // IDがない場合は強制付与
                 if (!h.id) h.id = `h-${i}`;
-
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1 text-slate-700";
                 btn.textContent = h.textContent.trim() || `無題の見出し ${i+1}`;
                 btn.onclick = (e) => {
                     e.preventDefault();
                     if (!savedSelectionRange) return;
-
-                    // エディタへ戻り、範囲を復元してからコマンド実行
                     editor.focus();
                     const currentSel = window.getSelection();
                     currentSel.removeAllRanges();
                     currentSel.addRange(savedSelectionRange);
-                    
                     document.execCommand('createLink', false, `#${h.id}`);
-                    
                     closeModal('link-modal');
-                    autoSave();
+                    autoUpdateUI();
                 };
                 list.appendChild(btn);
             });
-            
             openModal('link-modal');
         }
 
@@ -551,7 +564,7 @@
                 currentSel.removeAllRanges();
                 currentSel.addRange(savedSelectionRange);
                 document.execCommand('createLink', false, url);
-                autoSave();
+                autoUpdateUI();
             }
             closeModal('link-modal');
         }
@@ -570,7 +583,6 @@
         function insertTRPGBox(type) {
             editor.focus();
             const selectedHtml = getSelectedHtmlAndRemove();
-            
             let className = "", label = "", defaultContent = "内容を入力...";
             const checkTpl = "成功：<br>失敗：";
             const col = document.getElementById('bg-color-picker').value;
@@ -586,58 +598,52 @@
                 case 'san': className = "box-san"; label = "正気度チェック"; defaultContent = "正気度喪失：()"; borderColor = "#fb7185"; break;
                 case 'secret': className = "box-secret"; label = "HO ：秘匿描写"; defaultContent = "内容を入力..."; borderColor = "#d8b4fe"; break;
                 case 'gimmick': className = "box-gimmick"; label = "ギミック：　"; defaultContent = "内容を入力..."; borderColor = "#fb923c"; break;
-                case 'tendency': 
-                    className = "box-tendency"; label = "傾向"; defaultContent = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; 
-                    break;
+                case 'tendency': className = "box-tendency"; label = "傾向"; defaultContent = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; break;
             }
             
             const content = selectedHtml || defaultContent;
             const textColor = darkenColor(borderColor, 0.4);
             const html = `<div class="${className}" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            updateTOC(); autoSave();
+            updateTOC(); autoUpdateUI();
         }
 
         function insertBorderBox() {
             editor.focus();
             const selectedHtml = getSelectedHtmlAndRemove();
             const content = selectedHtml || "内容を入力...";
-            
             const col = document.getElementById('bg-color-picker').value;
             const textColor = darkenColor(col, 0.4);
             const html = `<div class="box-custom" style="border-color:${col}; background-color:${col}11; color:${textColor}">${content}</div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            updateTOC(); autoSave();
+            updateTOC(); autoUpdateUI();
         }
 
         function insertKPInfo() {
             editor.focus();
             const selectedHtml = getSelectedHtmlAndRemove();
             const content = selectedHtml || "内容...";
-            
             const borderColor = "#fde047";
             const textColor = darkenColor(borderColor, 0.6);
             const html = `<div class="kp-info" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【KP情報】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            updateTOC(); autoSave();
+            updateTOC(); autoUpdateUI();
         }
 
         function insertQuote() {
             editor.focus();
             const selectedHtml = getSelectedHtmlAndRemove();
             const content = selectedHtml || "内容...";
-            
             const borderColor = "#94a3b8";
             const textColor = darkenColor(borderColor, 0.4);
             const html = `<div class="quote" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}">${content}</div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            updateTOC(); autoSave();
+            updateTOC(); autoUpdateUI();
         }
 
         function insertSpecialBox(label) {
             editor.focus();
             const selectedHtml = getSelectedHtmlAndRemove();
-            
             let defaultCol = "#64748b";
             let defaultContent = "詳細...";
             
@@ -653,10 +659,10 @@
             const textColor = darkenColor(defaultCol, 0.5);
             const html = `<div class="box-special" style="border-top-color:${defaultCol}; background-color:${defaultCol}11; color:${textColor}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
             document.execCommand('insertHTML', false, html);
-            updateTOC(); autoSave();
+            updateTOC(); autoUpdateUI();
         }
 
-        function insertDivider() { document.execCommand('insertHTML', false, '<div class="divider"></div><p><br></p>'); }
+        function insertDivider() { document.execCommand('insertHTML', false, '<div class="divider"></div><p><br></p>'); autoUpdateUI(); }
 
         function handleImageUpload(input) {
             if (input.files?.[0]) {
@@ -664,6 +670,7 @@
                 reader.onload = e => {
                     const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width:100%; height:auto;"></p><p><br></p>`;
                     document.execCommand('insertHTML', false, imgHtml);
+                    autoUpdateUI();
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -673,19 +680,15 @@
             const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             tocContainer.innerHTML = hs.length ? '' : '<p class="p-4 text-slate-400 italic">見出しなし</p>';
             hs.forEach((h, i) => {
-                // IDがない場合は付与（内部リンク用）
                 if (!h.id) h.id = `h-${i}`;
-                
                 const link = document.createElement('a');
                 link.href = `#${h.id}`;
                 link.textContent = h.textContent.trim() || '無題';
                 link.className = 'block py-2 px-4 hover:bg-slate-50 truncate border-r-4 border-transparent text-slate-600';
-                
                 let lv = 0;
                 if (h.tagName.startsWith('H')) lv = parseInt(h.tagName[1]) - 1;
                 else if (h.classList.contains('h7')) lv = 6;
                 else if (h.classList.contains('h8')) lv = 7;
-                
                 link.style.paddingLeft = `${lv + 1}em`;
                 link.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
                 tocContainer.appendChild(link);
@@ -735,6 +738,7 @@
                         restoreRange();
                         document.execCommand('insertHTML', false, table);
                         closeModal('table-modal');
+                        autoUpdateUI();
                     };
                     container.appendChild(sq);
                 }
@@ -747,17 +751,23 @@
             document.execCommand('defaultParagraphSeparator', false, 'p');
             const savedContent = localStorage.getItem('weby_autosave'); 
             const savedTitle = localStorage.getItem('weby_autosave_title');
-            if (savedContent) editor.innerHTML = savedContent;
+            if (savedContent) {
+                editor.innerHTML = savedContent;
+                saveStatus.textContent = "ブラウザから復元済み";
+            }
             if (savedTitle) titleInput.value = savedTitle;
             setTheme(localStorage.getItem('weby_theme') || 'standard');
             editor.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') { e.preventDefault(); manualIndent(!e.shiftKey); }
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); executeDirectSave(); }
             });
-            updateTOC(); updateCharCount();
+            updateTOC(); 
+            updateCharCount();
         };
 
         const throttle = (fn, wait) => { let time = Date.now(); return () => { if ((time + wait - Date.now()) < 0) { fn(); time = Date.now(); } } };
-        editor.oninput = throttle(() => { updateTOC(); autoSave(); }, 1000);
+        editor.oninput = throttle(() => { autoUpdateUI(); }, 1000);
+        titleInput.oninput = () => { autoUpdateUI(); };
     </script>
 </body>
 </html>
