@@ -345,7 +345,7 @@
             saveStatus.classList.add('text-amber-500');
         }
 
-        // 保存を実行（環境制限を考慮し、標準的なダウンロード方式を使用）
+        // 保存を実行
         function executeDirectSave() {
             const title = titleInput.value.trim() || 'シナリオ';
             const content = { title, content: editor.innerHTML };
@@ -354,13 +354,11 @@
             saveStatus.textContent = "保存ダイアログを確認中...";
             saveStatus.classList.remove('text-amber-500');
 
-            // ブラウザのバックアップ（念のため）
             try {
                 localStorage.setItem('weby_autosave', editor.innerHTML); 
                 localStorage.setItem('weby_autosave_title', titleInput.value);
             } catch (e) { console.warn("バックアップ失敗: 容量不足"); }
 
-            // ダウンロードリンクを作成してクリック（これが上書き保存ダイアログのトリガーになります）
             const blob = new Blob([jsonStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); 
@@ -371,8 +369,6 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            // ブラウザの仕様上、ダイアログの結果（成功/キャンセル）は判定できないため、
-            // 実行後のメッセージを表示
             setTimeout(() => {
                 saveStatus.textContent = "保存操作を完了しました";
                 showToast("保存操作を実行しました");
@@ -412,6 +408,135 @@
             showToast("新規作成しました");
         }
 
+        /* --- 書き出し機能 --- */
+        function getStylesForExport() {
+            return `
+                :root { --bg-body: #f1f5f9; --bg-editor: #ffffff; --text-main: #0f172a; --border-editor: #e2e8f0; --accent: #4f46e5; }
+                * { box-sizing: border-box; }
+                body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; line-height: 1.8; color: var(--text-main); margin: 0; padding: 0; background-color: var(--bg-body); display: flex; scroll-behavior: smooth; }
+                
+                aside { width: 280px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid var(--border-editor); overflow-y: auto; padding: 20px; z-index: 100; }
+                .toc-title { font-weight: bold; font-size: 1.1rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; color: var(--accent); }
+                .toc-link { display: block; padding: 6px 12px; font-size: 0.9rem; text-decoration: none; color: #64748b; border-left: 3px solid transparent; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .toc-link:hover { background: #f8fafc; color: var(--accent); border-left-color: var(--accent); }
+
+                main { flex: 1; margin-left: 280px; padding: 40px 20px; display: flex; justify-content: center; min-height: 100vh; }
+                .content-wrapper { max-width: 850px; width: 100%; background: white; padding: 60px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-editor); }
+                
+                h1 { font-size: 2.5rem; font-weight: 800; color: var(--accent); border-bottom: 4px solid var(--accent); padding-bottom: 0.5rem; margin-top: 0; margin-bottom: 2rem; }
+                h2 { font-size: 1.75rem; font-weight: 700; border-left: 8px solid var(--accent); padding-left: 1rem; margin-top: 2rem; margin-bottom: 1rem; background-color: rgba(79, 70, 229, 0.05); }
+                h3 { font-size: 1.5rem; font-weight: 700; border-bottom: 1px solid var(--border-editor); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+                h4, h5, h6 { font-weight: 700; margin-top: 1.25rem; }
+                .h7 { font-size: 0.95rem; font-weight: 700; color: #64748b; margin-top: 0.5rem; border-left: 2px solid #64748b; padding-left: 0.5rem; display: block; }
+                .h8 { font-size: 0.9rem; font-weight: 700; color: #64748b; font-style: italic; margin-top: 0.5rem; opacity: 0.8; display: block; }
+                p { margin-bottom: 1rem; }
+                img { max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0; }
+                table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.95rem; }
+                td, th { border: 1px solid var(--border-editor); padding: 12px; text-align: left; }
+                th { background-color: #f8fafc; font-weight: bold; }
+                .divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 3rem 0; }
+                details { border: 1px solid var(--border-editor); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.02); margin: 1rem 0; }
+                summary { cursor: pointer; font-weight: bold; color: var(--accent); }
+                
+                .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid transparent; }
+                .box-special { border-top-width: 4px; }
+                .box-secret { border-style: dashed; }
+                .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
+
+                @media (max-width: 900px) {
+                    body { flex-direction: column; }
+                    aside { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border-editor); }
+                    main { margin-left: 0; padding: 20px; }
+                    .content-wrapper { padding: 30px 20px; }
+                }
+                @media print {
+                    aside { display: none; }
+                    main { margin-left: 0; padding: 0; }
+                    .content-wrapper { box-shadow: none; border: none; padding: 0; }
+                }
+            `;
+        }
+
+        function exportHTML() {
+            updateTOC(); 
+            const title = titleInput.value || '無題のシナリオ';
+            const content = editor.innerHTML;
+            
+            const headings = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
+            let tocHtml = '';
+            headings.forEach(h => {
+                const lv = h.tagName.startsWith('H') ? parseInt(h.tagName[1]) : (h.classList.contains('h7') ? 7 : 8);
+                const padding = (lv - 1) * 15;
+                tocHtml += `<a href="#${h.id}" class="toc-link" style="padding-left: ${padding + 12}px;">${h.textContent}</a>`;
+            });
+
+            const htmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        ${getStylesForExport()}
+        [style*="margin-left"] { display: block; }
+    </style>
+</head>
+<body>
+    <aside>
+        <div class="toc-title">📋 目次</div>
+        ${tocHtml}
+    </aside>
+    <main>
+        <div class="content-wrapper">
+            <h1>${title}</h1>
+            <div class="main-content">
+                ${content}
+            </div>
+        </div>
+    </main>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("サイドバー付きHTMLを書き出しました");
+        }
+
+        function exportWord() {
+            const title = titleInput.value || '無題のシナリオ';
+            const content = editor.innerHTML;
+            const wordContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'MS Mincho', 'serif'; }
+                        h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
+                        h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
+                        .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
+                            border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin: 10px 0;
+                        }
+                    </style>
+                </head>
+                <body><h1>${title}</h1>${content}</body>
+                </html>
+            `;
+            const blob = new Blob(['\ufeff', wordContent], { type: 'application/msword;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${title}.doc`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast("Wordファイルを書き出しました");
+        }
+
         /* --- 折りたたみ機能 --- */
         function insertFold() {
             editor.focus();
@@ -428,7 +553,6 @@
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return;
             const range = selection.getRangeAt(0);
-
             let blocks = [];
             if (range.collapsed) {
                 let node = range.commonAncestorContainer;
@@ -444,17 +568,13 @@
                 if (target && target !== editor) blocks.push(target);
             } else {
                 Array.from(editor.children).forEach(child => {
-                    if (selection.containsNode(child, true)) {
-                        blocks.push(child);
-                    }
+                    if (selection.containsNode(child, true)) { blocks.push(child); }
                 });
             }
-
             blocks.forEach(block => {
                 if (block === editor) return;
                 let currentMargin = parseFloat(block.style.marginLeft) || 0;
-                const step = 1; 
-                block.style.marginLeft = isIndent ? (currentMargin + step) + 'em' : Math.max(0, currentMargin - step) + 'em';
+                block.style.marginLeft = isIndent ? (currentMargin + 1) + 'em' : Math.max(0, currentMargin - 1) + 'em';
             });
             autoUpdateUI(); 
         }
@@ -474,7 +594,6 @@
             } else {
                 document.execCommand('formatBlock', false, val);
             }
-            
             setTimeout(() => {
                 const sel = window.getSelection();
                 if (sel.rangeCount > 0) {
@@ -500,12 +619,10 @@
             if (cmd === 'indent') return manualIndent(true);
             if (cmd === 'outdent') return manualIndent(false);
             document.execCommand(cmd, false, null); 
-            updateTOC(); 
-            autoUpdateUI();
+            updateTOC(); autoUpdateUI();
         }
         function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
 
-        /* --- 検索置換機能 --- */
         function findNext() {
             const query = document.getElementById('search-input').value;
             if (query) window.find(query, false, false, true);
@@ -513,27 +630,15 @@
         function replaceAll() {
             const query = document.getElementById('search-input').value;
             const replace = document.getElementById('replace-input').value;
-            if (query) {
-                editor.innerHTML = editor.innerHTML.split(query).join(replace);
-                autoUpdateUI();
-            }
+            if (query) { editor.innerHTML = editor.innerHTML.split(query).join(replace); autoUpdateUI(); }
         }
 
-        /* --- リンク設定 --- */
         function insertLink() {
             updateTOC();
             const sel = window.getSelection();
-            if (sel.rangeCount > 0) {
-                savedSelectionRange = sel.getRangeAt(0).cloneRange();
-            } else {
-                editor.focus();
-                const newSel = window.getSelection();
-                if (newSel.rangeCount > 0) savedSelectionRange = newSel.getRangeAt(0).cloneRange();
-            }
-
+            if (sel.rangeCount > 0) savedSelectionRange = sel.getRangeAt(0).cloneRange();
             const list = document.getElementById('heading-link-list');
             list.innerHTML = '';
-            
             const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
             headers.forEach((h, i) => {
                 if (!h.id) h.id = `h-${i}`;
@@ -569,7 +674,6 @@
             closeModal('link-modal');
         }
 
-        /* --- 挿入 --- */
         function saveRange() {
             const sel = window.getSelection();
             if (sel.rangeCount > 0) savedSelectionRange = sel.getRangeAt(0).cloneRange();
@@ -587,7 +691,6 @@
             const checkTpl = "成功：<br>失敗：";
             const col = document.getElementById('bg-color-picker').value;
             let borderColor = col;
-
             switch(type) {
                 case 'summary': className = "box-summary"; label = "概要"; borderColor = "#7dd3fc"; break;
                 case 'check': className = "box-check"; label = "判定：＜＞"; defaultContent = checkTpl; borderColor = "#86efac"; break;
@@ -600,7 +703,6 @@
                 case 'gimmick': className = "box-gimmick"; label = "ギミック：　"; defaultContent = "内容を入力..."; borderColor = "#fb923c"; break;
                 case 'tendency': className = "box-tendency"; label = "傾向"; defaultContent = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; break;
             }
-            
             const content = selectedHtml || defaultContent;
             const textColor = darkenColor(borderColor, 0.4);
             const html = `<div class="${className}" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
@@ -646,7 +748,6 @@
             const selectedHtml = getSelectedHtmlAndRemove();
             let defaultCol = "#64748b";
             let defaultContent = "詳細...";
-            
             switch(label) {
                 case '許諾': defaultCol = "#94a3b8"; defaultContent = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`; break;
                 case '諸注意': defaultCol = "#f59e0b"; defaultContent = `・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり`; break;
@@ -654,7 +755,6 @@
                 case 'エネミー': defaultCol = "#ef4444"; defaultContent = `名前：<br>STR: / CON: / SIZ: / DEX: / POW: / INT: / EDU: / APP:<br>耐久力: / マジックポイント:<br>ダメージボーナス: / ビルド: / 移動: <br>攻撃：<br>装甲：<br>技能：`; break;
                 case 'クレジット': defaultCol = "#64748b"; defaultContent = `著者：<br>協力：<br>画像：`; break;
             }
-            
             const content = selectedHtml || defaultContent;
             const textColor = darkenColor(defaultCol, 0.5);
             const html = `<div class="box-special" style="border-top-color:${defaultCol}; background-color:${defaultCol}11; color:${textColor}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
@@ -700,69 +800,19 @@
 
         function updateCharCount() { charCountDisplay.textContent = `文字数: ${(editor.innerText || "").length}`; }
 
-        function exportHTML() {
-            const blob = new Blob([editor.innerHTML], { type: 'text/html' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${titleInput.value || 'scenario'}.html`; a.click();
-        }
-        function exportWord() {
-            const blob = new Blob(['\ufeff', editor.innerHTML], { type: 'application/msword' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${titleInput.value || 'scenario'}.doc`; a.click();
-        }
-
-        function openTableModal() {
-            saveRange();
-            const container = document.getElementById('table-grid-container');
-            container.innerHTML = '';
-            for (let r = 1; r <= 10; r++) {
-                for (let c = 1; c <= 10; c++) {
-                    const sq = document.createElement('div'); sq.className = 'grid-square';
-                    sq.onmouseover = () => {
-                        document.getElementById('table-size-display').textContent = `${c} x ${r}`;
-                        Array.from(container.children).forEach((child, i) => {
-                            const curR = Math.floor(i / 10) + 1, curC = (i % 10) + 1;
-                            child.classList.toggle('active', curR <= r && curC <= c);
-                        });
-                    };
-                    sq.onclick = () => {
-                        const col = document.getElementById('bg-color-picker').value;
-                        let table = '<table style="width:100%; border:1px solid #ccc;">';
-                        for (let i = 0; i < r; i++) {
-                            table += '<tr>';
-                            for (let j = 0; j < c; j++) {
-                                const style = i === 0 ? `style="background-color:${col};color:white;font-weight:bold;text-align:center;"` : 'style="border:1px solid #ccc;"';
-                                table += `<td ${style}>&nbsp;</td>`;
-                            }
-                            table += '</tr>';
-                        }
-                        table += '</table><p><br></p>';
-                        restoreRange();
-                        document.execCommand('insertHTML', false, table);
-                        closeModal('table-modal');
-                        autoUpdateUI();
-                    };
-                    container.appendChild(sq);
-                }
-            }
-            openModal('table-modal');
-        }
-
         window.onload = () => {
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('defaultParagraphSeparator', false, 'p');
             const savedContent = localStorage.getItem('weby_autosave'); 
             const savedTitle = localStorage.getItem('weby_autosave_title');
-            if (savedContent) {
-                editor.innerHTML = savedContent;
-                saveStatus.textContent = "ブラウザから復元済み";
-            }
+            if (savedContent) { editor.innerHTML = savedContent; saveStatus.textContent = "ブラウザから復元済み"; }
             if (savedTitle) titleInput.value = savedTitle;
             setTheme(localStorage.getItem('weby_theme') || 'standard');
             editor.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') { e.preventDefault(); manualIndent(!e.shiftKey); }
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); executeDirectSave(); }
             });
-            updateTOC(); 
-            updateCharCount();
+            updateTOC(); updateCharCount();
         };
 
         const throttle = (fn, wait) => { let time = Date.now(); return () => { if ((time + wait - Date.now()) < 0) { fn(); time = Date.now(); } } };
