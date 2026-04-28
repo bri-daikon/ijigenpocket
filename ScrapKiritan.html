@@ -105,8 +105,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758L5 19m0-14l4.121 4.121" />
                     </svg>
                 </div>
-                <h1 class="text-5xl font-black text-slate-900 tracking-tighter">Scrap Kiritan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Ver.3</span></h1>
-                <p class="text-slate-500 mt-4 text-lg font-medium opacity-80">スクショ貼り付け、切り取り、モザイク・スタンプ・文字入れ加工ができるツール</p>
+                <h1 class="text-5xl font-black text-slate-900 tracking-tighter">Scrap Kiritan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Ver.2.3</span></h1>
+                <p class="text-slate-500 mt-4 text-lg font-medium opacity-80">スクショ貼り付け、切り取り、モザイク・スタンプ・枠・文字入れができるツール</p>
             </header>
 
             <div class="p-6 md:p-12">
@@ -160,6 +160,9 @@
                             <button id="toolStamp" class="tool-btn px-6 py-3 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2">
                                 <span>🎨</span> スタンプ
                             </button>
+                            <button id="toolRect" class="tool-btn px-6 py-3 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2">
+                                <span>⬜</span> 枠入れ
+                            </button>
                             <button id="toolText" class="tool-btn px-6 py-3 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2">
                                 <span>T</span> 文字入れ
                             </button>
@@ -176,19 +179,21 @@
                                 <button class="stamp-option p-2 text-2xl hover:scale-125 transition-transform" data-emoji="💡">💡</button>
                             </div>
 
+                            <!-- カラー設定（枠入れ・文字入れ共通） -->
+                            <div id="colorPanel" class="hidden flex items-center gap-2 px-2">
+                                <span class="text-xs font-bold text-slate-400">COLOR</span>
+                                <input type="color" id="mainColor" value="#3b82f6">
+                            </div>
+
                             <!-- テキスト入力設定 -->
-                            <div id="textInputWrapper" class="hidden flex items-center gap-3">
+                            <div id="textInputWrapper" class="hidden">
                                 <input type="text" id="textToInsert" placeholder="ここに入力..." class="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-slate-400">COLOR</span>
-                                    <input type="color" id="textColor" value="#000000">
-                                </div>
                             </div>
 
                             <!-- 共通サイズ設定 -->
-                            <div id="mosaicControl" class="flex items-center gap-3 px-2">
-                                <span class="text-xs font-bold text-slate-400">SIZE</span>
-                                <input type="range" id="brushSize" min="10" max="150" value="40" class="accent-blue-600">
+                            <div id="sizeControl" class="flex items-center gap-3 px-2">
+                                <span id="sizeLabel" class="text-xs font-bold text-slate-400">SIZE</span>
+                                <input type="range" id="brushSize" min="2" max="150" value="40" class="accent-blue-600">
                             </div>
                             
                             <button id="resetEdit" class="px-6 py-3 rounded-xl font-bold bg-red-50 text-red-500 hover:bg-red-100 transition-all flex items-center gap-2">
@@ -243,11 +248,14 @@
         const ctx = canvas.getContext('2d');
         const toolMosaic = document.getElementById('toolMosaic');
         const toolStamp = document.getElementById('toolStamp');
+        const toolRect = document.getElementById('toolRect');
         const toolText = document.getElementById('toolText');
+        
         const stampList = document.getElementById('stampList');
+        const colorPanel = document.getElementById('colorPanel');
         const textInputWrapper = document.getElementById('textInputWrapper');
         const textToInsert = document.getElementById('textToInsert');
-        const textColorInput = document.getElementById('textColor');
+        const mainColorInput = document.getElementById('mainColor');
         const brushSizeInput = document.getElementById('brushSize');
         const resetEditBtn = document.getElementById('resetEdit');
 
@@ -256,6 +264,8 @@
         let currentTool = 'mosaic';
         let isDrawing = false;
         let selectedEmoji = '❤️';
+        let startX, startY;
+        let snapshot = null;
 
         // 1. ファイル読み込み
         function loadFile(file) {
@@ -315,8 +325,8 @@
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+            const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
             return {
                 x: (clientX - rect.left) * scaleX,
                 y: (clientY - rect.top) * scaleY
@@ -346,22 +356,28 @@
             ctx.fillText(selectedEmoji, x, y);
         }
 
+        function applyRect(x1, y1, x2, y2, preview = false) {
+            if (preview && snapshot) {
+                ctx.putImageData(snapshot, 0, 0);
+            }
+            ctx.beginPath();
+            ctx.strokeStyle = mainColorInput.value;
+            ctx.lineWidth = Math.max(1, parseInt(brushSizeInput.value) / 4); // 枠線の太さを調整
+            ctx.rect(x1, y1, x2 - x1, y2 - y1);
+            ctx.stroke();
+        }
+
         function applyText(x, y) {
             const text = textToInsert.value;
             if (!text) return;
             const size = parseInt(brushSizeInput.value);
-            const color = textColorInput.value;
-            
+            const color = mainColorInput.value;
             ctx.font = `bold ${size}px 'Inter', 'Noto Sans JP', sans-serif`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
-            
-            // 白い縁取り（視認性向上）
             ctx.strokeStyle = 'white';
             ctx.lineWidth = size * 0.15;
             ctx.strokeText(text, x, y);
-            
-            // 選択された色で塗りつぶし
             ctx.fillStyle = color;
             ctx.fillText(text, x, y);
         }
@@ -369,39 +385,78 @@
         const startAction = (e) => {
             isDrawing = true;
             const pos = getMousePos(e);
-            if (currentTool === 'mosaic') applyMosaic(pos.x, pos.y);
-            else if (currentTool === 'stamp') applyStamp(pos.x, pos.y);
-            else if (currentTool === 'text') applyText(pos.x, pos.y);
+            startX = pos.x;
+            startY = pos.y;
+            
+            if (currentTool === 'rect') {
+                snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            } else if (currentTool === 'mosaic') {
+                applyMosaic(pos.x, pos.y);
+            } else if (currentTool === 'stamp') {
+                applyStamp(pos.x, pos.y);
+            } else if (currentTool === 'text') {
+                applyText(pos.x, pos.y);
+            }
         };
 
         const moveAction = (e) => {
-            if (!isDrawing || currentTool !== 'mosaic') return;
+            if (!isDrawing) return;
             e.preventDefault();
             const pos = getMousePos(e);
-            applyMosaic(pos.x, pos.y);
+            
+            if (currentTool === 'mosaic') {
+                applyMosaic(pos.x, pos.y);
+            } else if (currentTool === 'rect') {
+                applyRect(startX, startY, pos.x, pos.y, true);
+            }
+        };
+
+        const stopAction = (e) => {
+            if (!isDrawing) return;
+            if (currentTool === 'rect') {
+                const pos = getMousePos(e);
+                applyRect(startX, startY, pos.x, pos.y, false);
+            }
+            isDrawing = false;
+            snapshot = null;
         };
 
         canvas.addEventListener('mousedown', startAction);
         canvas.addEventListener('mousemove', moveAction);
-        window.addEventListener('mouseup', () => { isDrawing = false; });
+        window.addEventListener('mouseup', stopAction);
         canvas.addEventListener('touchstart', startAction, { passive: false });
         canvas.addEventListener('touchmove', moveAction, { passive: false });
-        window.addEventListener('touchend', () => { isDrawing = false; });
+        window.addEventListener('touchend', stopAction);
 
         // 4. ツール切り替え
         function switchTool(tool) {
             currentTool = tool;
-            [toolMosaic, toolStamp, toolText].forEach(btn => btn.classList.remove('active'));
+            [toolMosaic, toolStamp, toolRect, toolText].forEach(btn => btn.classList.remove('active'));
+            
+            // 全パネルを一旦隠す
             stampList.classList.add('hidden');
+            colorPanel.classList.add('hidden');
             textInputWrapper.classList.add('hidden');
+            
+            // スライダーラベルのリセット
+            const sizeLabel = document.getElementById('sizeLabel');
+            sizeLabel.textContent = "SIZE";
+            brushSizeInput.min = "10";
 
             if (tool === 'mosaic') {
                 toolMosaic.classList.add('active');
             } else if (tool === 'stamp') {
                 toolStamp.classList.add('active');
                 stampList.classList.remove('hidden');
+            } else if (tool === 'rect') {
+                toolRect.classList.add('active');
+                colorPanel.classList.remove('hidden');
+                sizeLabel.textContent = "LINE"; // 枠線の時は太さ
+                brushSizeInput.min = "2";
+                if (brushSizeInput.value > 150) brushSizeInput.value = 10;
             } else if (tool === 'text') {
                 toolText.classList.add('active');
+                colorPanel.classList.remove('hidden');
                 textInputWrapper.classList.remove('hidden');
                 textToInsert.focus();
             }
@@ -409,6 +464,7 @@
 
         toolMosaic.addEventListener('click', () => switchTool('mosaic'));
         toolStamp.addEventListener('click', () => switchTool('stamp'));
+        toolRect.addEventListener('click', () => switchTool('rect'));
         toolText.addEventListener('click', () => switchTool('text'));
 
         document.querySelectorAll('.stamp-option').forEach(btn => {
