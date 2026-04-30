@@ -695,10 +695,10 @@
                 case 'summary': className = "box-summary"; label = "概要"; borderColor = "#7dd3fc"; break;
                 case 'check': className = "box-check"; label = "判定：＜＞"; defaultContent = checkTpl; borderColor = "#86efac"; break;
                 case 'spot': className = "box-spot"; label = "判定：＜目星＞"; defaultContent = checkTpl; borderColor = "#34d399"; break;
-                case 'search': className = "box-search"; label = "探索箇所：　"; defaultContent = "詳細..."; borderColor = "#10b981"; break;
                 case 'listen': className = "box-listen"; label = "判定：＜聞き耳＞"; defaultContent = checkTpl; borderColor = "#fbbf24"; break;
                 case 'library': className = "box-library"; label = "判定：＜図書館＞"; defaultContent = checkTpl; borderColor = "#22d3ee"; break;
                 case 'san': className = "box-san"; label = "正気度チェック"; defaultContent = "正気度喪失：()"; borderColor = "#fb7185"; break;
+                case 'search': className = "box-search"; label = "探索箇所：　"; defaultContent = "詳細..."; borderColor = "#10b981"; break;
                 case 'secret': className = "box-secret"; label = "HO ：秘匿描写"; defaultContent = "内容を入力..."; borderColor = "#d8b4fe"; break;
                 case 'gimmick': className = "box-gimmick"; label = "ギミック：　"; defaultContent = "内容を入力..."; borderColor = "#fb923c"; break;
                 case 'tendency': className = "box-tendency"; label = "傾向"; defaultContent = "舞台：<br>人数：<br>時間：<br>ロスト："; borderColor = "#d946ef"; break;
@@ -799,6 +799,51 @@
         }
 
         function updateCharCount() { charCountDisplay.textContent = `文字数: ${(editor.innerText || "").length}`; }
+
+        /* --- 表の挿入 --- */
+        function openTableModal() {
+            saveRange(); // 現在のカーソル位置を保存
+            const container = document.getElementById('table-grid-container');
+            container.innerHTML = '';
+            for (let r = 1; r <= 10; r++) {
+                for (let c = 1; c <= 10; c++) {
+                    const sq = document.createElement('div');
+                    sq.className = 'grid-square';
+                    sq.onmouseover = () => {
+                        document.getElementById('table-size-display').textContent = `${c} x ${r}`;
+                        Array.from(container.children).forEach((child, i) => {
+                            const curR = Math.floor(i / 10) + 1, curC = (i % 10) + 1;
+                            if (curR <= r && curC <= c) child.classList.add('active');
+                            else child.classList.remove('active');
+                        });
+                    };
+                    sq.onclick = () => {
+                        const col = document.getElementById('bg-color-picker').value;
+                        let table = `<table style="width:100%; border-collapse:collapse; margin:1rem 0; border:1px solid #ccc;">`;
+                        for (let i = 0; i < r; i++) {
+                            table += '<tr>';
+                            for (let j = 0; j < c; j++) {
+                                // 1行目はヘッダー色、それ以外は白背景
+                                const bgColor = (i === 0) ? col : '#ffffff';
+                                const textColor = (i === 0) ? '#ffffff' : 'inherit';
+                                const fontWeight = (i === 0) ? 'bold' : 'normal';
+                                table += `<td style="border:1px solid #ccc; padding:8px; background-color:${bgColor}; color:${textColor}; font-weight:${fontWeight}; min-height:1.5em;">&nbsp;</td>`;
+                            }
+                            table += '</tr>';
+                        }
+                        table += '</table><p><br></p>';
+                        
+                        restoreRange(); // 保存した位置にフォーカスを戻す
+                        document.execCommand('insertHTML', false, table);
+                        closeModal('table-modal');
+                        autoSave();
+                    };
+                    container.appendChild(sq);
+                }
+            }
+            openModal('table-modal');
+        }
+
 
         window.onload = () => {
             document.execCommand('styleWithCSS', false, true);
