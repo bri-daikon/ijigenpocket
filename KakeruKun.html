@@ -58,6 +58,42 @@
             cursor: pointer;
         }
 
+        /* --- 画像配置・回り込み用のスタイル --- */
+        #editor img {
+            max-width: 100%;
+            height: auto;
+            transition: all 0.2s ease;
+            display: inline-block;
+            margin: 0.5rem;
+            border-radius: 4px;
+        }
+        /* 回り込み・配置クラスの最適化 */
+        #editor img.img-left {
+            float: left;
+            margin: 0.5rem 1.5rem 1rem 0;
+            max-width: 45%;
+            display: block;
+        }
+        #editor img.img-right {
+            float: right;
+            margin: 0.5rem 0 1rem 1.5rem;
+            max-width: 45%;
+            display: block; 
+        }
+        #editor img.img-center {
+            display: block;
+            margin: 1.5rem auto;
+            float: none;
+            clear: both;
+        }
+        /* 回り込み解除用 */
+        #editor .clear-fix {
+            clear: both;
+            display: block;
+            height: 0;
+            overflow: hidden;
+        }
+
         /* --- 見出し・段落の基本挙動設定 --- */
         #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6, #editor .h7, #editor .h8, #editor p, #editor div {
             transition: margin-left 0.2s ease;
@@ -83,24 +119,24 @@
             padding: 1rem;
             border-radius: 0.5rem;
             margin: 1rem 0;
+            clear: both;
         }
 
         .box-special { border-radius: 0.25rem; border-top-width: 4px; }
         .box-secret { border-style: dashed; }
         .quote { border-left-width: 4px; border-right-width: 0; border-top-width: 0; border-bottom-width: 0; font-style: italic; border-radius: 0; }
         
-        .divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 2rem 0; display: block; width: 100%; }
-
+		.divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 2rem 0; display: block; width: 100%; clear: both; }
         #toolbar-wrapper.collapsed { display: none; }
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
         
         /* 表スタイル */
-        #editor table { border-collapse: collapse; width: 100%; margin: 1rem 0; border: 1px solid var(--border-editor); table-layout: fixed; }
+        #editor table { border-collapse: collapse; width: 100%; margin: 1rem 0; border: 1px solid var(--border-editor); table-layout: fixed; clear: both; }
         #editor td, #editor th { border: 1px solid var(--border-editor); padding: 8px; min-height: 1.5em; }
 
         #table-grid-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 220px; margin: 10px auto; }
         .grid-square { width: 20px; height: 20px; border: 1px solid var(--border-editor); background-color: var(--bg-editor); cursor: pointer; }
-        .grid-square.active { background-color: #c7d2fe; border-color: #818cf8; }
+        .grid-square.active { background-color: #c7d2fe; border-color: #818cf8; !important; }
 
         /* 検索置換バー */
         #search-replace-bar { background: var(--sidebar-bg); border-top: 1px solid var(--border-editor); display: none; }
@@ -215,14 +251,14 @@
                         </div>
 
                         <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
-                            <button onclick="execCommand('justifyLeft')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="左寄せ">⬅️</button>
-                            <button onclick="execCommand('justifyCenter')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="中央寄せ">↔️</button>
-                            <button onclick="execCommand('justifyRight')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="右寄せ">➡️</button>
+                            <button onclick="handleAlignment('justifyLeft')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="左寄せ">⬅️</button>
+                            <button onclick="handleAlignment('justifyCenter')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="中央寄せ">↔️</button>
+                            <button onclick="handleAlignment('justifyRight')" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="右寄せ">➡️</button>
                         </div>
 
                         <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
-                            <button onclick="manualIndent(false)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="戻す (Shift+Tab)">⇤</button>
-                            <button onclick="manualIndent(true)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="進む (Tab)">⇥</button>
+                            <button onclick="manualIndent(false)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="インデント戻す (Shift+Tab)">⇤</button>
+                            <button onclick="manualIndent(true)" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="インデント進む (Tab)">⇥</button>
                         </div>
 
                         <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
@@ -231,7 +267,7 @@
                             <button onclick="execCommand('bold')" class="w-6 h-6 hover:bg-slate-100 rounded font-bold text-xs" title="太字">B</button>
                             <button onclick="insertLink()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="リンク">🔗</button>
                             <button onclick="insertFold()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="折りたたみ">📁</button>
-                            <button onclick="document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="画像">🖼️</button>
+                            <button onclick="saveRange(); document.getElementById('image-upload').click()" class="w-6 h-6 hover:bg-slate-100 rounded text-xs" title="画像">🖼️</button>
                             <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
                         </div>
 
@@ -293,6 +329,7 @@
         const titleInput = document.getElementById('scenario-title');
         const toast = document.getElementById('toast');
         let savedSelectionRange = null;
+		let currentFileHandle = null;
 
         /* --- ヘルパー: 色を濃くする --- */
         function darkenColor(hex, percent) {
@@ -431,6 +468,9 @@
                 .h8 { font-size: 0.9rem; font-weight: 700; color: #64748b; font-style: italic; margin-top: 0.5rem; opacity: 0.8; display: block; }
                 p { margin-bottom: 1rem; }
                 img { max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0; }
+				img[class*="img-left"] { float: left; margin: 0 1.5rem 1rem 0; max-width: 45%; }
+				img[class*="img-right"] { float: right; margin: 0 0 1rem 1.5rem; max-width: 45%; }
+				img[class*="img-center"] { display: block; margin: 1.5rem auto; float: none; clear: both; }
                 table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.95rem; }
                 td, th { border: 1px solid var(--border-editor); padding: 12px; text-align: left; }
                 th { background-color: #f8fafc; font-weight: bold; }
@@ -438,8 +478,7 @@
                 details { border: 1px solid var(--border-editor); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.02); margin: 1rem 0; }
                 summary { cursor: pointer; font-weight: bold; color: var(--accent); }
                 
-                .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid transparent; }
-                .box-special { border-top-width: 4px; }
+				.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid transparent; clear: both; }                .box-special { border-top-width: 4px; }
                 .box-secret { border-style: dashed; }
                 .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
 
@@ -623,6 +662,44 @@
         }
         function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
 
+
+        /* --- 配置処理（画像対応版） --- */
+        /* --- 配置処理（【修正】画像回り込み対応版） --- */
+        function handleAlignment(cmd) {
+            const sel = window.getSelection();
+            let targetImg = null;
+
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                // 画像が選択されているかチェック
+                if (range.startContainer.nodeType === 1 && range.startContainer.tagName === 'IMG') {
+                    targetImg = range.startContainer;
+                } else if (range.startContainer.childNodes[range.startOffset] && range.startContainer.childNodes[range.startOffset].tagName === 'IMG') {
+                    targetImg = range.startContainer.childNodes[range.startOffset];
+                } else {
+                    let node = range.startContainer;
+                    if (node.nodeType === 3) node = node.parentNode;
+                    targetImg = node.closest('img');
+                }
+            }
+
+            if (targetImg) {
+                // 回り込みクラスをリセット
+                targetImg.classList.remove('img-left', 'img-right', 'img-center');
+                if (cmd === 'justifyLeft') targetImg.classList.add('img-left');
+                else if (cmd === 'justifyCenter') targetImg.classList.add('img-center');
+                else if (cmd === 'justifyRight') targetImg.classList.add('img-right');
+                
+                autoUpdateUI(); // 【修正】存在しないautoSaveを差し替え
+            } else {
+                document.execCommand(cmd, false, null);
+                autoUpdateUI();
+            }
+        }
+
+
+
+        /* --- 検索置換機能 --- */
         function findNext() {
             const query = document.getElementById('search-input').value;
             if (query) window.find(query, false, false, true);
@@ -674,10 +751,19 @@
             closeModal('link-modal');
         }
 
+        /* --- 挿入 --- */
         function saveRange() {
             const sel = window.getSelection();
-            if (sel.rangeCount > 0) savedSelectionRange = sel.getRangeAt(0).cloneRange();
+            if (sel.rangeCount > 0) {
+                savedSelectionRange = sel.getRangeAt(0).cloneRange();
+            } else {
+                // フォーカスがない場合でも最後尾を保持するように試みる
+                editor.focus();
+                const newSel = window.getSelection();
+                if (newSel.rangeCount > 0) savedSelectionRange = newSel.getRangeAt(0).cloneRange();
+            }
         }
+
         function restoreRange() {
             const sel = window.getSelection();
             sel.removeAllRanges();
@@ -764,17 +850,23 @@
 
         function insertDivider() { document.execCommand('insertHTML', false, '<div class="divider"></div><p><br></p>'); autoUpdateUI(); }
 
+        /* --- 【修正】画像アップロード処理 --- */
         function handleImageUpload(input) {
             if (input.files?.[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    const imgHtml = `<p style="text-align: center;"><img src="${e.target.result}" style="max-width:100%; height:auto;"></p><p><br></p>`;
+                    restoreRange(); 
+                    // デフォルトは中央配置で挿入
+                    const imgHtml = `<img src="${e.target.result}" class="img-center">`;
                     document.execCommand('insertHTML', false, imgHtml);
-                    autoUpdateUI();
+                    
+                    autoUpdateUI(); 
+                    input.value = '';
                 };
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
 
         function updateTOC() {
             const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
@@ -855,10 +947,20 @@
             setTheme(localStorage.getItem('weby_theme') || 'standard');
             editor.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') { e.preventDefault(); manualIndent(!e.shiftKey); }
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); executeDirectSave(); }
+            });
+			// 画像クリック時に選択状態にする
+            editor.addEventListener('click', (e) => {
+                if (e.target.tagName === 'IMG') {
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNode(e.target);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
             });
             updateTOC(); updateCharCount();
         };
+
 
         const throttle = (fn, wait) => { let time = Date.now(); return () => { if ((time + wait - Date.now()) < 0) { fn(); time = Date.now(); } } };
         editor.oninput = throttle(() => { autoUpdateUI(); }, 1000);
