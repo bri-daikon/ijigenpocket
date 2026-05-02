@@ -300,6 +300,14 @@
                             <input type="file" id="image-upload" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
                         </div>
 
+                        <!-- 記号挿入ボタン -->
+                        <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
+                            <button onclick="insertQuickSymbol('「', '」')" class="w-7 h-6 hover:bg-slate-100 rounded text-xs font-bold" title="鉤括弧">「」</button>
+                            <button onclick="insertQuickSymbol('『', '』')" class="w-7 h-6 hover:bg-slate-100 rounded text-xs font-bold" title="二重鉤括弧">『』</button>
+                            <button onclick="insertQuickSymbol('【', '】')" class="w-7 h-6 hover:bg-slate-100 rounded text-xs font-bold" title="隅付き括弧">【】</button>
+                            <button onclick="insertQuickSymbol('――', '')" class="w-7 h-6 hover:bg-slate-100 rounded text-xs font-bold" title="ダッシュ">――</button>
+                        </div>
+
                         <div class="flex flex-wrap gap-1 border-l pl-2">
                             <button onclick="insertDivider()" class="px-2 h-7 border rounded bg-white text-[10px]">線 —</button>
                             <button onclick="insertTRPGBox('summary')" class="px-2 h-7 border border-blue-200 bg-blue-50 rounded text-[10px] text-blue-700 font-bold">📄 概要</button>
@@ -701,6 +709,37 @@
             }, 10);
             editor.focus();
         }
+
+        /* --- 記号挿入機能 --- */
+        function insertQuickSymbol(left, right) {
+            editor.focus();
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const selectedText = range.toString();
+
+            // 記号を構築
+            const fullInsert = left + selectedText + right;
+            
+            // 挿入実行
+            document.execCommand('insertText', false, fullInsert);
+
+            // 括弧で何も選択していなかった場合、カーソルを中に入れる
+            if (!selectedText && right !== '') {
+                const currentSelection = window.getSelection();
+                const currentRange = currentSelection.getRangeAt(0);
+                
+                // カーソルを閉じ括弧の前に戻す
+                currentRange.setStart(currentRange.startContainer, currentRange.startOffset - right.length);
+                currentRange.collapse(true);
+                currentSelection.removeAllRanges();
+                currentSelection.addRange(currentRange);
+            }
+            autoUpdateUI();
+        }
+
+
         /* --- 編集機能 --- */
         function execCommand(cmd) { 
             editor.focus(); 

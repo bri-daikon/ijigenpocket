@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Side-by-Side Diff - Weby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 比較用のライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.2.0/diff.min.js"></script>
+    <style>
+        .diff-added {
+            background-color: #fef08a; /* 黄色のマーカー（追加） */
+            display: block;
+            width: 100%;
+        }
+        .diff-removed {
+            background-color: #fef08a; /* 黄色のマーカー（削除） */
+            display: block;
+            width: 100%;
+        }
+        .diff-placeholder {
+            color: transparent;
+            user-select: none;
+            display: block;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5rem; /* 行の高さを固定してズレを防ぐ */
+        }
+        .diff-line {
+            min-height: 1.5rem;
+            border-left: 3px solid transparent;
+            padding-left: 0.5rem;
+        }
+        .diff-added-line { border-left-color: #eab308; }
+        .diff-removed-line { border-left-color: #eab308; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8 font-sans">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">HTML比較しよう</h1>
+            <p class="text-gray-600 mt-2">左右でコードを比較し、違いをハイライトします。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- 入力 A -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">元のHTML (A)</label>
+                <textarea id="fileA" class="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="比較元のコードを貼り付けてください..."></textarea>
+            </div>
+            <!-- 入力 B -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">比較先のHTML (B)</label>
+                <textarea id="fileB" class="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="比較先のコードを貼り付けてください..."></textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-8">
+            <button id="compareBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition duration-300 shadow-md">
+                比較する
+            </button>
+        </div>
+
+        <!-- 結果表示エリア (左右分割) -->
+        <div id="resultContainer" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                <!-- 左側の結果 -->
+                <div class="border-r border-gray-200">
+                    <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-500 uppercase border-b">File A (削除箇所を強調)</div>
+                    <div id="outputA" class="p-4 font-mono text-sm bg-white overflow-x-auto min-h-[200px]"></div>
+                </div>
+                <!-- 右側の結果 -->
+                <div>
+                    <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-500 uppercase border-b">File B (追加箇所を強調)</div>
+                    <div id="outputB" class="p-4 font-mono text-sm bg-white overflow-x-auto min-h-[200px]"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-6 text-sm text-gray-600 justify-center">
+                <div class="flex items-center"><span class="w-4 h-4 bg-yellow-200 border border-yellow-400 inline-block mr-2"></span> 変更・削除があった箇所 (A)</div>
+                <div class="flex items-center"><span class="w-4 h-4 bg-yellow-200 border border-yellow-400 inline-block mr-2"></span> 変更・追加があった箇所 (B)</div>
+            </div>
+        </div>
+
+        <div id="messageBox" class="hidden mt-4 p-4 rounded-lg text-center font-medium"></div>
+    </div>
+
+    <script>
+        document.getElementById('compareBtn').addEventListener('click', function() {
+            const textA = document.getElementById('fileA').value;
+            const textB = document.getElementById('fileB').value;
+            const outputA = document.getElementById('outputA');
+            const outputB = document.getElementById('outputB');
+            const resultContainer = document.getElementById('resultContainer');
+
+            if (!textA || !textB) {
+                showMessage("両方のエリアにHTMLを入力してください。", "bg-red-100 text-red-700");
+                return;
+            }
+
+            // 行ごとに比較を実行
+            const diff = Diff.diffLines(textA, textB);
+            
+            outputA.innerHTML = '';
+            outputB.innerHTML = '';
+            let hasDifference = false;
+
+            diff.forEach((part) => {
+                const lines = part.value;
+                const count = (lines.match(/\n/g) || []).length || (lines.length > 0 ? 1 : 0);
+
+                if (part.removed) {
+                    // 左側(A)に削除された内容を表示、右側(B)は空行で埋める
+                    hasDifference = true;
+                    appendContent(outputA, lines, 'diff-removed diff-removed-line');
+                    appendPlaceholder(outputB, count);
+                } else if (part.added) {
+                    // 右側(B)に追加された内容を表示、左側(A)は空行で埋める
+                    hasDifference = true;
+                    appendPlaceholder(outputA, count);
+                    appendContent(outputB, lines, 'diff-added diff-added-line');
+                } else {
+                    // 両方に共通する内容を表示
+                    appendContent(outputA, lines, '');
+                    appendContent(outputB, lines, '');
+                }
+            });
+
+            resultContainer.classList.remove('hidden');
+            if (hasDifference) {
+                showMessage("違いが見つかりました。", "bg-green-100 text-green-700");
+            } else {
+                showMessage("内容は同一です。", "bg-blue-100 text-blue-700");
+            }
+        });
+
+        // テキストを1行ずつ要素として追加する関数
+        function appendContent(container, text, className) {
+            const lines = text.split('\n');
+            // 最後の空要素を取り除く（diffライブラリの特性上）
+            if (lines[lines.length - 1] === '') lines.pop();
+
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'diff-line ' + className;
+                div.textContent = line || ' '; // 空行も維持
+                container.appendChild(div);
+            });
+        }
+
+        // 行を合わせるためのプレースホルダー（空行）を追加する関数
+        function appendPlaceholder(container, count) {
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.className = 'diff-line diff-placeholder';
+                div.textContent = '.'; // 高さを維持するために透明な文字を入れる
+                container.appendChild(div);
+            }
+        }
+
+        function showMessage(msg, classes) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = msg;
+            messageBox.className = `mt-4 p-4 rounded-lg text-center font-medium ${classes}`;
+            messageBox.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
