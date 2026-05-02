@@ -145,6 +145,32 @@
         /* 通知トースト */
         #toast { position: fixed; bottom: 2rem; right: 2rem; background: #4f46e5; color: white; padding: 0.75rem 1.5rem; border-radius: 9999px; font-weight: bold; transform: translateY(150%); transition: transform 0.3s ease; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         #toast.visible { transform: translateY(0); }
+
+
+        /* --- マスコットキャラクター用の固定配置スタイル --- */
+        .mascot-container {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 9999;
+            width: 88px; /* サイズは適宜調整してください */
+            pointer-events: none; /* 下にある目次などのクリックを邪魔しない */
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        .mascot-container:hover {
+            opacity: 1.0;
+        }
+        .mascot-container img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        /* モバイルでは少し小さく、あるいは邪魔なら非表示にする設定 */
+        @media (max-width: 768px) {
+            .mascot-container { width: 80px; bottom: 5px; left: 5px; opacity: 0.6; }
+        }
+
     </style>
 </head>
 <body data-theme="standard">
@@ -316,6 +342,12 @@
                 <div class="w-full max-w-5xl mt-4 flex justify-between text-xs text-slate-400 font-mono"><span id="char-count">文字数: 0</span><span id="save-status">未保存</span></div>
             </main>
         </div>
+    </div>
+
+
+    <!-- マスコットキャラクターの表示要素 -->
+    <div class="mascot-container no-print">
+        <img src="E188355.png" alt="Mascot Character" onerror="this.style.display='none'">
     </div>
 
     <!-- ファイル読込用ダミー -->
@@ -664,7 +696,6 @@
 
 
         /* --- 配置処理（画像対応版） --- */
-        /* --- 配置処理（【修正】画像回り込み対応版） --- */
         function handleAlignment(cmd) {
             const sel = window.getSelection();
             let targetImg = null;
