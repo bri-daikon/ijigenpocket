@@ -262,14 +262,17 @@
 
                 <div id="toolbar-wrapper" class="max-w-6xl mx-auto mt-3">
                     <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-wrap gap-2 items-center text-slate-900">
-                        <select id="heading-selector" onchange="handleHeadingChange(this.value); this.selectedIndex=0;" class="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none">
-                            <option value="">見出し選択...</option>
-                            <option value="H1">見出し1</option><option value="H2">見出し2</option>
-                            <option value="H3">見出し3</option><option value="H4">見出し4</option>
-                            <option value="H5">見出し5</option><option value="H6">見出し6</option>
-                            <option value="div_h7">見出し7</option><option value="div_h8">見出し8</option>
-                            <option value="P">本文</option>
-                        </select>
+                        <div class="flex items-center gap-1">
+                            <select id="heading-selector" onchange="handleHeadingChange(this.value); this.selectedIndex=0;" class="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none">
+                                <option value="">見出し選択...</option>
+                                <option value="H1">見出し1</option><option value="H2">見出し2</option>
+                                <option value="H3">見出し3</option><option value="H4">見出し4</option>
+                                <option value="H5">見出し5</option><option value="H6">見出し6</option>
+                                <option value="div_h7">見出し7</option><option value="div_h8">見出し8</option>
+                                <option value="P">本文</option>
+                            </select>
+                            <button onclick="handleHeadingChange('P')" class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 shadow-sm transition" title="標準テキストに戻す">本文</button>
+                        </div>
 
                         <div class="flex items-center gap-1 bg-white border border-slate-200 rounded px-1">
                             <input type="color" id="text-color-picker" oninput="execCommandWithParam('foreColor', this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="文字色">
@@ -651,7 +654,21 @@
         }
 
         function handleHeadingChange(val) {
-            if (val.startsWith('div_')) {
+            if (val === 'P') {
+                // 本文（リセット）
+                document.execCommand('formatBlock', false, 'p');
+                // フォーマット後に現在の要素からスタイルやクラスを除去する
+                const sel = window.getSelection();
+                if (sel.rangeCount > 0) {
+                    let node = sel.getRangeAt(0).commonAncestorContainer;
+                    if (node.nodeType === 3) node = node.parentNode;
+                    let target = node.closest('p, div, h1, h2, h3, h4, h5, h6, .h7, .h8');
+                    if (target && target !== editor) {
+                        target.className = '';
+                        target.removeAttribute('style');
+                    }
+                }
+            } else if (val.startsWith('div_')) {
                 const cls = val.replace('div_', '');
                 const sel = window.getSelection();
                 if (sel.rangeCount > 0) {
@@ -665,6 +682,7 @@
             } else {
                 document.execCommand('formatBlock', false, val);
             }
+            
             setTimeout(() => {
                 const sel = window.getSelection();
                 if (sel.rangeCount > 0) {
@@ -683,7 +701,6 @@
             }, 10);
             editor.focus();
         }
-
         /* --- 編集機能 --- */
         function execCommand(cmd) { 
             editor.focus(); 
@@ -692,6 +709,7 @@
             document.execCommand(cmd, false, null); 
             updateTOC(); autoUpdateUI();
         }
+
         function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
 
 
