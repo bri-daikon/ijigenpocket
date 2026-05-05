@@ -172,6 +172,31 @@ document.addEventListener('DOMContentLoaded', () => {
         generateAndDisplay();
     }
 
+        // コピー機能
+        function copyToClipboard() {
+            const text = document.getElementById('odai-text').innerText;
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = `今日のお題：${text}\n#今日のお題 #異次元ポケット工房`;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            
+            // 簡易的な通知
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "コピーしました！";
+            setTimeout(() => btn.innerText = originalText, 2000);
+        }
+
+        // X(Twitter)共有機能
+        function shareOnX() {
+            const text = document.getElementById('odai-text').innerText;
+            const url = window.location.href;
+            const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('今日のお題は「' + text + '」です！')}&hashtags=今日のお題,異次元ポケット工房`;
+            window.open(shareUrl, '_blank');
+        }
+
     // イベントリスナーの登録
     generateBtn.addEventListener('click', generateAndDisplay);
 
