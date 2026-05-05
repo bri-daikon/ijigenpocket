@@ -4,16 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusEl = document.getElementById('data-status');
 
     // ＝＝＝ 設定 ＝＝＝
-    // 公開したGoogleスプレッドシートのCSV URL
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSdu0R7V11WF9P1gU5GxAJ3uzm-6BDa0VRdbcJaeNBUkuFV_sIDo8XuAsrNxerVuYHvYI0kfikJSU8W/pub?output=csv'; 
 
-    // CORSプロキシのリスト
     const CORS_PROXIES = [
         (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
         (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     ];
 
-    // 予備データ
     const fallbackThemes = [
         "星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情",
         "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶",
@@ -36,7 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // テキスト更新アニメーション
     function updateThemeText(newText) {
+        if (!themeDisplay) return;
         const span = themeDisplay.querySelector('span');
+        if (!span) return;
+
         span.classList.add('fade-out');
         
         setTimeout(() => {
@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 表示実行
     function generateAndDisplay() {
+        if (!generateBtn) return;
         generateBtn.classList.add('spinning');
         setTimeout(() => generateBtn.classList.remove('spinning'), 500);
 
@@ -135,27 +136,29 @@ document.addEventListener('DOMContentLoaded', () => {
         generateAndDisplay();
     }
 
-    // --- ここからが修正ポイント ---
+    // --- 公開用関数の登録 ---
 
-    // お題生成ボタンのイベント登録
-    generateBtn.addEventListener('click', generateAndDisplay);
-
-    // HTMLのonclickから呼べるように window オブジェクトに登録
+    // X(Twitter)共有機能
     window.shareOnX = () => {
-        const span = themeDisplay.querySelector('span');
-        const text = span.textContent;
-        // 読み込み中や準備中のときは何もしない
-        if (span.classList.contains('placeholder') || text === "読み込み中...") return;
+        const themeTextEl = document.querySelector('#theme-display span');
+        if (!themeTextEl) return;
+
+        const text = themeTextEl.textContent;
+        if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
         
         const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('今日のお題は「' + text + '」です！')}&hashtags=今日のお題,異次元ポケット工房`;
         window.open(shareUrl, '_blank');
     };
 
+    // クリップボードコピー機能
     window.copyToClipboard = (event) => {
-        const span = themeDisplay.querySelector('span');
-        const text = span.textContent;
-        if (span.classList.contains('placeholder') || text === "読み込み中...") return;
+        const themeTextEl = document.querySelector('#theme-display span');
+        if (!themeTextEl) return;
 
+        const text = themeTextEl.textContent;
+        if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
+
+        // コピー処理
         const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
         dummy.value = `今日のお題：${text}\n#今日のお題 #異次元ポケット工房`;
@@ -163,12 +166,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.execCommand('copy');
         document.body.removeChild(dummy);
         
-        // ボタンのテキストを一時的に変更（event.currentTargetで確実にボタンを掴む）
-        const btn = event.currentTarget || event.target;
-        const originalHTML = btn.innerHTML;
-        btn.innerText = "コピーしました！";
-        setTimeout(() => btn.innerHTML = originalHTML, 2000);
+        // ボタンのテキスト変更処理
+        // eventが未定義でも動くように window.event もチェック
+        const ev = event || window.event;
+        const btn = ev ? (ev.currentTarget || ev.target) : null;
+        
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerText = "コピーしました！";
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        }
     };
+
+    // 生成ボタンのイベント登録
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateAndDisplay);
+    }
 
     fetchThemes();
 });
