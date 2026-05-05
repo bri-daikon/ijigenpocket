@@ -3,83 +3,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generate-btn');
     const statusEl = document.getElementById('data-status');
 
-    // ＝＝＝ CEO確認事項 ＝＝＝
-    // 本番運用時は、ここに公開されたGoogleスプレッドシート(CSV形式)のURLを入れます。
-    // 例: const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/あなたのID/pub?output=csv';
+    // ＝＝＝ 設定 ＝＝＝
+    // 公開したGoogleスプレッドシートのCSV URL
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSdu0R7V11WF9P1gU5GxAJ3uzm-6BDa0VRdbcJaeNBUkuFV_sIDo8XuAsrNxerVuYHvYI0kfikJSU8W/pub?output=csv'; 
 
-    // CORSプロキシのリスト（file:///プロトコルで開いた場合の回避策）
+    // CORSプロキシのリスト
     const CORS_PROXIES = [
         (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
         (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     ];
 
-    // スプレッドシートが設定されていない場合の予備（フォールバック）データ
+    // 予備データ
     const fallbackThemes = [
-        "星降る夜の図書館",
-        "雨上がりの匂い",
-        "言葉にできない感情",
-        "忘れられた約束",
-        "朝焼けとコーヒー",
-        "深海に沈む記憶",
-        "踊り出すような喜び",
-        "窓辺で微睡む",
-        "秋風と金木犀",
-        "静かなる決意",
-        "ガラス越しの世界",
-        "名前のない花",
-        "夜明け前の静寂",
-        "空を切り裂く雷鳴",
-        "そっと手を伸ばす"
+        "星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情",
+        "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶",
+        "踊り出すような喜び", "窓辺で微睡む", "秋風と金木犀",
+        "静かなる決意", "ガラス越しの世界", "名前のない花",
+        "夜明け前の静寂", "空を切り裂く雷鳴", "そっと手を伸ばす"
     ];
 
     let currentThemes = [];
 
-    // お題の文字数に応じてフォントサイズを動的に調整する関数
+    // 文字数によるフォントサイズ調整
     function adjustFontSize(span, text) {
         const len = text.length;
-        if (len <= 8) {
-            span.style.fontSize = '3rem';
-        } else if (len <= 14) {
-            span.style.fontSize = '2.4rem';
-        } else if (len <= 20) {
-            span.style.fontSize = '1.8rem';
-        } else if (len <= 30) {
-            span.style.fontSize = '1.4rem';
-        } else {
-            span.style.fontSize = '1.2rem';
-        }
+        if (len <= 8) span.style.fontSize = '3rem';
+        else if (len <= 14) span.style.fontSize = '2.4rem';
+        else if (len <= 20) span.style.fontSize = '1.8rem';
+        else if (len <= 30) span.style.fontSize = '1.4rem';
+        else span.style.fontSize = '1.2rem';
     }
 
-    // アニメーションを伴ってテキストを更新する関数
+    // テキスト更新アニメーション
     function updateThemeText(newText) {
         const span = themeDisplay.querySelector('span');
-        
-        // フェードアウト
         span.classList.add('fade-out');
         
         setTimeout(() => {
-            // テキストを書き換えてフェードイン
             span.textContent = newText;
             span.classList.remove('placeholder', 'fade-out');
             span.classList.add('fade-in');
             adjustFontSize(span, newText);
             
-            // アニメーションクラスをクリーンアップ
             setTimeout(() => {
                 span.classList.remove('fade-in');
             }, 500);
         }, 500);
     }
 
-    // ランダムにお題を一つ選ぶ関数
+    // お題をランダム取得
     function getRandomTheme() {
         if (currentThemes.length === 0) return "お題がありません";
         const randomIndex = Math.floor(Math.random() * currentThemes.length);
         return currentThemes[randomIndex];
     }
 
-    // お題を生成して表示する
+    // 表示実行
     function generateAndDisplay() {
         generateBtn.classList.add('spinning');
         setTimeout(() => generateBtn.classList.remove('spinning'), 500);
@@ -88,13 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateThemeText(theme);
     }
 
-    // CSVテキストをパースしてお題の配列にする関数
+    // CSVパース
     function parseCSV(text) {
         return text.split('\n')
                    .map(line => {
-                       // \r を除去し、前後の空白・ダブルクォーテーションを取り除く
                        let cleaned = line.trim().replace(/\r/g, '');
-                       // CSVのクォート除去（"..." で囲まれている場合）
                        if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
                            cleaned = cleaned.slice(1, -1).replace(/""/g, '"');
                        }
@@ -103,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    .filter(line => line.length > 0);
     }
 
-    // データソースの状態を画面に表示する関数
+    // ステータス更新
     function updateStatus(message, isError = false) {
         if (statusEl) {
             statusEl.textContent = message;
@@ -111,95 +88,87 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 指定URLからfetchを試みる関数
+    // Fetch試行
     async function tryFetch(url) {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.text();
     }
 
-    // CSVデータを取得して配列にする関数
+    // データ読み込み
     async function fetchThemes() {
         if (!CSV_URL) {
-            console.log("CSV URLが設定されていないため、ローカルの予備データを使用します。");
             currentThemes = fallbackThemes;
-            updateStatus(`予備データを使用中（${currentThemes.length}件）`);
+            updateStatus(`予備データを使用中`);
             generateAndDisplay();
             return;
         }
 
         updateThemeText("読み込み中...");
 
-        // 1. まず直接fetchを試みる（HTTPサーバー経由で開いている場合は成功する）
         try {
-            console.log("直接フェッチを試行中...");
             const text = await tryFetch(CSV_URL);
             const parsed = parseCSV(text);
             if (parsed.length > 0) {
                 currentThemes = parsed;
                 updateStatus(`スプレッドシートから読み込み完了（${currentThemes.length}件）`);
-                console.log(`直接フェッチ成功: ${currentThemes.length}件のお題を読み込みました`);
                 generateAndDisplay();
                 return;
             }
-        } catch (error) {
-            console.warn("直接フェッチ失敗:", error.message);
-        }
+        } catch (e) {}
 
-        // 2. CORSプロキシ経由で試みる（file:///プロトコルの場合の回避策）
         for (let i = 0; i < CORS_PROXIES.length; i++) {
-            const proxyUrl = CORS_PROXIES[i](CSV_URL);
             try {
-                console.log(`CORSプロキシ ${i + 1} を試行中...`);
-                const text = await tryFetch(proxyUrl);
+                const text = await tryFetch(CORS_PROXIES[i](CSV_URL));
                 const parsed = parseCSV(text);
                 if (parsed.length > 0) {
                     currentThemes = parsed;
-                    updateStatus(`スプレッドシートから読み込み完了（${currentThemes.length}件）`);
-                    console.log(`プロキシ経由フェッチ成功: ${currentThemes.length}件のお題を読み込みました`);
+                    updateStatus(`スプレッドシートから読み込み完了`);
                     generateAndDisplay();
                     return;
                 }
-            } catch (error) {
-                console.warn(`CORSプロキシ ${i + 1} 失敗:`, error.message);
-            }
+            } catch (e) {}
         }
 
-        // 3. すべて失敗した場合はフォールバック
-        console.error("すべてのフェッチ方法が失敗しました。予備データを使用します。");
         currentThemes = fallbackThemes;
-        updateStatus("⚠ スプレッドシートの読み込みに失敗。予備データを使用中", true);
+        updateStatus("⚠ スプレッドシート読み込み失敗。予備データを使用中", true);
         generateAndDisplay();
     }
 
-        // コピー機能
-        function copyToClipboard() {
-            const text = document.getElementById('odai-text').innerText;
-            const dummy = document.createElement('textarea');
-            document.body.appendChild(dummy);
-            dummy.value = `今日のお題：${text}\n#今日のお題 #異次元ポケット工房`;
-            dummy.select();
-            document.execCommand('copy');
-            document.body.removeChild(dummy);
-            
-            // 簡易的な通知
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = "コピーしました！";
-            setTimeout(() => btn.innerText = originalText, 2000);
-        }
+    // --- ここからが修正ポイント ---
 
-        // X(Twitter)共有機能
-        function shareOnX() {
-            const text = document.getElementById('odai-text').innerText;
-            const url = window.location.href;
-            const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('今日のお題は「' + text + '」です！')}&hashtags=今日のお題,異次元ポケット工房`;
-            window.open(shareUrl, '_blank');
-        }
-
-    // イベントリスナーの登録
+    // お題生成ボタンのイベント登録
     generateBtn.addEventListener('click', generateAndDisplay);
 
-    // 初期ロード時の実行
+    // HTMLのonclickから呼べるように window オブジェクトに登録
+    window.shareOnX = () => {
+        const span = themeDisplay.querySelector('span');
+        const text = span.textContent;
+        // 読み込み中や準備中のときは何もしない
+        if (span.classList.contains('placeholder') || text === "読み込み中...") return;
+        
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('今日のお題は「' + text + '」です！')}&hashtags=今日のお題,異次元ポケット工房`;
+        window.open(shareUrl, '_blank');
+    };
+
+    window.copyToClipboard = (event) => {
+        const span = themeDisplay.querySelector('span');
+        const text = span.textContent;
+        if (span.classList.contains('placeholder') || text === "読み込み中...") return;
+
+        const dummy = document.createElement('textarea');
+        document.body.appendChild(dummy);
+        dummy.value = `今日のお題：${text}\n#今日のお題 #異次元ポケット工房`;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        
+        // ボタンのテキストを一時的に変更（event.currentTargetで確実にボタンを掴む）
+        const btn = event.currentTarget || event.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerText = "コピーしました！";
+        setTimeout(() => btn.innerHTML = originalHTML, 2000);
+    };
+
     fetchThemes();
 });
