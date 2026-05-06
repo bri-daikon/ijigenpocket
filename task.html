@@ -265,37 +265,67 @@
 
     // 通知テスト
     function testNotification() {
-        if (!("Notification" in window) || Notification.permission !== "granted") {
-            showMessage("通知が許可されていません。");
+        console.log("--- 通知テスト開始 ---");
+        if (!("Notification" in window)) {
+            console.error("Notification API が未サポートです");
+            showMessage("このブラウザはデスクトップ通知をサポートしていません。");
+            return;
+        }
+        console.log("現在の権限状態:", Notification.permission);
+        if (Notification.permission !== "granted") {
+            showMessage("通知が許可されていません。現在の状態: " + Notification.permission);
             return;
         }
         try {
+            console.log("Notification オブジェクトを作成中...");
             const n = new Notification("通知テスト", {
-                body: "通知は正常に機能しています！",
-                icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png",
+                body: "通知は正常に機能しています！ (送信時刻: " + new Date().toLocaleTimeString() + ")",
                 tag: "test-notification"
             });
+            n.onshow = () => {
+                console.log("通知が表示されました (onshow)");
+                showMessage("通知を送信しました。届かない場合は、Windowsの「通知とアクション」設定でブラウザの通知が「オン」になっているか確認してください。");
+            };
+            n.onerror = (err) => {
+                console.error("通知エラーイベント (onerror):", err);
+                showMessage("通知の表示中にエラーが発生しました。詳細はブラウザのコンソール（F12）を確認してください。");
+            };
             n.onclick = () => { window.focus(); n.close(); };
         } catch (e) {
-            console.error("Notification Error:", e);
-            showMessage("通知の送信に失敗しました。Secure Context (https://) が必要かもしれません。\nエラー: " + e.message);
+            console.error("Notification コンストラクタで例外発生:", e);
+            showMessage("通知の作成に失敗しました。\nエラー: " + e.message);
         }
     }
 
     function checkTodayDeadlines() {
-        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        console.log("--- 今日の締切チェック開始 ---");
+        if (!("Notification" in window) || Notification.permission !== "granted") {
+            console.log("通知未サポートまたは未許可のためスキップ");
+            return;
+        }
         
         const todayStr = getLocalDateString();
-        const todayTasks = tasks.filter(t => t.deadline === todayStr && !t.completed);
+        console.log("今日の判定文字列:", todayStr);
+        console.log("タスク総数:", tasks.length);
+
+        const todayTasks = tasks.filter(t => {
+            const match = (t.deadline === todayStr && !t.completed);
+            if (t.deadline === todayStr) console.log(`タスク「${t.text}」の日付が一致しました。完了状態: ${t.completed}`);
+            return match;
+        });
         
+        console.log("通知対象タスク数:", todayTasks.length);
+
         if (todayTasks.length > 0) {
             try {
                 const n = new Notification("本日の締切タスク", {
                     body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`,
                     icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png",
-                    tag: "today-deadline-" + todayStr, // 同じ日は1つの通知にまとめる
-                    requireInteraction: true // ユーザーがアクションするまで表示（対応ブラウザのみ）
+                    tag: "today-deadline-" + todayStr,
+                    requireInteraction: true
                 });
+                n.onshow = () => console.log("締切通知が表示されました");
+                n.onerror = (err) => console.error("締切通知エラー:", err);
                 n.onclick = () => { window.focus(); n.close(); };
             } catch (e) {
                 console.error("Deadline Notification Error:", e);
