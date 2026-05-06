@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     ];
 
-    const fallbackThemes = ["星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情", "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶", "踊り出すような喜び", "窓辺で微睡む", "秋風と金木犀", "静かなる決意", "ガラス越しの世界", "名前のない花", "夜明け前の静寂", "空を切り裂く雷鳴", "そっと手を伸ばす"];
+    const fallbackThemes = ["さて、今日のお題は？", "今日のお題！", "新しいお題を引いてね"];
     let currentThemes = [...fallbackThemes];
 
     function adjustFontSize(span, text) {
