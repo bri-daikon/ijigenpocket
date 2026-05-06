@@ -36,8 +36,11 @@
         button:hover { background-color: #2980b9; }
 
         /* 通知ボタン */
-        .notify-btn { background-color: #f39c12; font-size: 0.8rem; margin-bottom: 15px; width: 100%; }
+        .notify-btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .notify-btn { background-color: #f39c12; font-size: 0.8rem; width: 100%; border: none; padding: 10px; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; }
         .notify-btn:hover { background-color: #e67e22; }
+        .test-btn { background-color: #9b59b6; }
+        .test-btn:hover { background-color: #8e44ad; }
 
         /* フィルター操作 */
         .filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 12px; background: #eef7ff; border-radius: 6px; font-size: 0.85rem; }
@@ -109,10 +112,15 @@
 <div class="container" id="captureTarget">
     <h1>現在のタスク一覧</h1>
 
-    <!-- 通知許可ボタン -->
-    <button id="permissionBtn" class="notify-btn" onclick="requestNotificationPermission()" style="display:none;">
-        🔔 デスクトップ通知を有効にする
-    </button>
+    <!-- 通知エリア -->
+    <div id="notificationArea" class="notify-btn-group">
+        <button id="permissionBtn" class="notify-btn" onclick="requestNotificationPermission()" style="display:none;">
+            🔔 デスクトップ通知を有効にする
+        </button>
+        <button id="testNotifyBtn" class="notify-btn test-btn" onclick="testNotification()" style="display:none;">
+            🧪 通知テスト（正しく届くか確認）
+        </button>
+    </div>
 
     <div class="input-group" id="inputSection">
         <div class="row">
@@ -239,30 +247,59 @@
 
     // 通知許可のリクエスト
     function requestNotificationPermission() {
-        if (!("Notification" in window)) return;
+        if (!("Notification" in window)) {
+            showMessage("このブラウザはデスクトップ通知をサポートしていません。");
+            return;
+        }
         Notification.requestPermission().then(permission => {
             if (permission === "granted") {
-                document.getElementById('permissionBtn').style.display = 'none';
+                updateNotificationUI();
+                showMessage("通知が許可されました！「通知テスト」で確認してみてください。");
                 checkTodayDeadlines();
             } else if (permission === "denied") {
-                document.getElementById('permissionBtn').style.display = 'none';
-                showMessage("通知が拒否されました。設定を変更するにはブラウザの設定を確認してください。");
+                updateNotificationUI();
+                showMessage("通知が拒否されました。通知を受け取るにはブラウザの設定で許可してください。");
             }
         });
+    }
+
+    // 通知テスト
+    function testNotification() {
+        if (!("Notification" in window) || Notification.permission !== "granted") {
+            showMessage("通知が許可されていません。");
+            return;
+        }
+        try {
+            const n = new Notification("通知テスト", {
+                body: "通知は正常に機能しています！",
+                icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png",
+                tag: "test-notification"
+            });
+            n.onclick = () => { window.focus(); n.close(); };
+        } catch (e) {
+            console.error("Notification Error:", e);
+            showMessage("通知の送信に失敗しました。Secure Context (https://) が必要かもしれません。\nエラー: " + e.message);
+        }
     }
 
     function checkTodayDeadlines() {
         if (!("Notification" in window) || Notification.permission !== "granted") return;
         
-        // 修正: ローカル時刻での今日の日付を取得
         const todayStr = getLocalDateString();
         const todayTasks = tasks.filter(t => t.deadline === todayStr && !t.completed);
         
         if (todayTasks.length > 0) {
-            new Notification("本日の締切タスク", {
-                body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`,
-                icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png"
-            });
+            try {
+                const n = new Notification("本日の締切タスク", {
+                    body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`,
+                    icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png",
+                    tag: "today-deadline-" + todayStr, // 同じ日は1つの通知にまとめる
+                    requireInteraction: true // ユーザーがアクションするまで表示（対応ブラウザのみ）
+                });
+                n.onclick = () => { window.focus(); n.close(); };
+            } catch (e) {
+                console.error("Deadline Notification Error:", e);
+            }
         }
     }
 
@@ -283,21 +320,37 @@
         const month = String(now.getMonth() + 1).padStart(2, '0');
         document.getElementById('monthFilter').value = `${year}-${month}`;
 
-        if ("Notification" in window) {
-            if (Notification.permission === "default") {
-                document.getElementById('permissionBtn').style.display = 'block';
-            } else {
-                document.getElementById('permissionBtn').style.display = 'none';
-            }
-        } else {
-            document.getElementById('permissionBtn').style.display = 'none';
-        }
-
+        updateNotificationUI();
         updateTagUIs();
         renderTasks();
+        
         // ロード時に今日締め切りのものがあれば通知
-        setTimeout(() => checkTodayDeadlines(), 1000);
+        if (Notification.permission === "granted") {
+            setTimeout(() => checkTodayDeadlines(), 1000);
+        }
     };
+
+    function updateNotificationUI() {
+        const pBtn = document.getElementById('permissionBtn');
+        const tBtn = document.getElementById('testNotifyBtn');
+        if (!("Notification" in window)) {
+            pBtn.style.display = 'none';
+            tBtn.style.display = 'none';
+            return;
+        }
+
+        if (Notification.permission === "granted") {
+            pBtn.style.display = 'none';
+            tBtn.style.display = 'block';
+        } else if (Notification.permission === "default") {
+            pBtn.style.display = 'block';
+            tBtn.style.display = 'none';
+        } else {
+            // 拒否されている場合
+            pBtn.style.display = 'none';
+            tBtn.style.display = 'none';
+        }
+    }
 
     function updateTagUIs() { updateTagFilterOptions(); updateTagSelectionChoices(); }
     function updateTagSelectionChoices() {
