@@ -220,32 +220,135 @@ document.addEventListener('DOMContentLoaded', () => {
     window.copyToClipboard = (event) => {
         const themeTextEl = document.querySelector('#theme-display span');
         if (!themeTextEl) return;
+document.addEventListener('DOMContentLoaded', () => {
+    const themeDisplay = document.getElementById('theme-display');
+    const generateBtn = document.getElementById('generate-btn');
+    const statusEl = document.getElementById('data-status');
+
+    // ＝＝＝ 設定 ＝＝＝
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSdu0R7V11WF9P1gU5GxAJ3uzm-6BDa0VRdbcJaeNBUkuFV_sIDo8XuAsrNxerVuYHvYI0kfikJSU8W/pub?output=csv'; 
+    const SITE_URL = 'https://bri-daikon.github.io/ijigenpocket/odaiindex.html';
+
+    const CORS_PROXIES = [
+        (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    ];
+
+    const fallbackThemes = ["星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情", "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶", "踊り出すような喜び", "窓辺で微睡む", "秋風と金木犀", "静かなる決意", "ガラス越しの世界", "名前のない花", "夜明け前の静寂", "空を切り裂く雷鳴", "そっと手を伸ばす"];
+    let currentThemes = [...fallbackThemes];
+
+    function adjustFontSize(span, text) {
+        const len = text.length;
+        if (len <= 8) span.style.fontSize = '2.8rem';
+        else if (len <= 14) span.style.fontSize = '2.2rem';
+        else if (len <= 20) span.style.fontSize = '1.8rem';
+        else span.style.fontSize = '1.4rem';
+    }
+
+    function updateThemeText(newText) {
+        if (!themeDisplay) return;
+        const span = themeDisplay.querySelector('span');
+        if (!span) return;
+        span.classList.add('fade-out');
+        setTimeout(() => {
+            span.textContent = newText;
+            span.classList.remove('placeholder', 'fade-out');
+            span.classList.add('fade-in');
+            adjustFontSize(span, newText);
+            setTimeout(() => span.classList.remove('fade-in'), 500);
+        }, 500);
+    }
+
+    function generateAndDisplay() {
+        if (!generateBtn) return;
+        generateBtn.classList.add('spinning');
+        setTimeout(() => generateBtn.classList.remove('spinning'), 500);
+        const theme = currentThemes[Math.floor(Math.random() * currentThemes.length)];
+        updateThemeText(theme);
+    }
+
+    async function fetchThemes() {
+        generateAndDisplay();
+        try {
+            const res = await fetch(CSV_URL);
+            const text = await res.text();
+            if (text.includes('html>')) throw new Error();
+            currentThemes = text.split('\n').map(l => l.trim().replace(/^"|"$/g, '').replace(/""/g, '"')).filter(l => l.length > 0);
+            if (statusEl) statusEl.textContent = `同期完了（${currentThemes.length}件）`;
+        } catch (e) {
+            if (statusEl) statusEl.textContent = "予備データで動作中";
+        }
+    }
+
+    // --- X共有 ---
+    window.shareOnX = () => {
+        const text = themeDisplay.querySelector('span').textContent;
+        if (text === "準備中...") return;
+        const tweetText = `今日のお題は「${text}」です！`;
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent('今日のお題,異次元ポケット工房')}`, '_blank');
+    };
+
+    // --- 画像保存（ここが重要） ---
+    window.saveAsImage = async (event) => {
+        const captureArea = document.getElementById('capture-area'); // 撮影エリア全体をターゲットに
+        const themeTextEl = document.querySelector('#theme-display span');
+        if (!captureArea || !themeTextEl) return;
 
         const text = themeTextEl.textContent;
-        if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
+        if (text === "準備中...") return;
 
+        const btn = event.currentTarget;
+        const originalHTML = btn.innerHTML;
+        btn.innerText = "生成中...";
+        btn.disabled = true;
+
+        // 撮影に不要なものを隠す
+        if (generateBtn) generateBtn.style.visibility = 'hidden';
+
+        try {
+            const canvas = await html2canvas(captureArea, {
+                backgroundColor: "#0f172a", // 背景色を指定
+                scale: 2,                  // 高画質
+                useCORS: true,
+                borderRadius: 32           // 角丸の指定
+            });
+
+            if (generateBtn) generateBtn.style.visibility = 'visible';
+
+            const dataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `today_odai_${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            btn.innerText = "保存完了！";
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }, 2000);
+
+        } catch (e) {
+            if (generateBtn) generateBtn.style.visibility = 'visible';
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    };
+
+    // --- コピー ---
+    window.copyToClipboard = (e) => {
+        const text = themeDisplay.querySelector('span').textContent;
         const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
         dummy.value = `今日のお題：${text}\nURL：${SITE_URL}\n#今日のお題 #異次元ポケット工房`;
         dummy.select();
         document.execCommand('copy');
         document.body.removeChild(dummy);
-        
-        const ev = event || window.event;
-        const btn = ev ? (ev.currentTarget || ev.target) : null;
-        
-        if (btn) {
-            const originalHTML = btn.innerHTML;
-            btn.innerText = "コピーしました！";
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-            }, 2000);
-        }
+        const btn = e.currentTarget;
+        const original = btn.innerHTML;
+        btn.innerText = "コピー完了！";
+        setTimeout(() => btn.innerHTML = original, 2000);
     };
 
-    if (generateBtn) {
-        generateBtn.addEventListener('click', generateAndDisplay);
-    }
-
+    if (generateBtn) generateBtn.addEventListener('click', generateAndDisplay);
     fetchThemes();
 });
