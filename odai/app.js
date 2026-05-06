@@ -139,18 +139,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 公開用関数の登録 ---
 
-    // X(Twitter)共有機能
-    window.shareOnX = () => {
+    // X(Twitter)共有機能（画像生成・添付サポート付き）
+    window.shareOnX = async () => {
+        const card = document.querySelector('.card.glass');
         const themeTextEl = document.querySelector('#theme-display span');
-        if (!themeTextEl) return;
+        if (!card || !themeTextEl) return;
 
         const text = themeTextEl.textContent;
         if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
-        
-        const tweetText = `今日のお題は「${text}」です！`;
-        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent('今日のお題,異次元ポケット工房')}`;
-        window.open(shareUrl, '_blank');
+
+        // スクショに含まれないように「新しいお題を引く」ボタンを一時的に隠す
+        if (generateBtn) generateBtn.style.visibility = 'hidden';
+
+        try {
+            // お題カードを画像化
+            const canvas = await html2canvas(card, {
+                backgroundColor: null, // 背景透過を維持
+                scale: 2,             // 高画質にする
+                logging: false,
+                useCORS: true
+            });
+
+            if (generateBtn) generateBtn.style.visibility = 'visible';
+
+            const tweetText = `今日のお題は「${text}」です！`;
+            const hashtags = '今日のお題,異次元ポケット工房';
+
+            // Web Share API（スマホ共有メニュー）が画像共有に対応している場合
+            if (navigator.share && navigator.canShare) {
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'today_theme.png', { type: 'image/png' });
+                    const shareData = {
+                        text: tweetText + '\n' + SITE_URL + '\n#今日のお題 #異次元ポケット工房',
+                        files: [file]
+                    };
+
+                    if (navigator.canShare(shareData)) {
+                        try {
+                            await navigator.share(shareData);
+                            return; // 共有成功
+                        } catch (err) {
+                            console.warn("Web Share失敗、Intentへ切り替えます", err);
+                        }
+                    }
+                    openTwitterIntent(tweetText, hashtags);
+                });
+            } else {
+                // PCなどの場合：画像をダウンロード保存させ、ポスト画面を開く
+                const dataUrl = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = `today_odai_${new Date().getTime()}.png`;
+                link.href = dataUrl;
+                link.click();
+                
+                // 画像保存の隙を与えるため少し遅らせてXを開く
+                setTimeout(() => openTwitterIntent(tweetText, hashtags), 1000);
+            }
+        } catch (e) {
+            console.error("画像生成エラー:", e);
+            if (generateBtn) generateBtn.style.visibility = 'visible';
+            openTwitterIntent(`今日のお題は「${text}」です！`, '今日のお題,異次元ポケット工房');
+        }
     };
+
+    // 通常のTwitter Intentを開く補助関数
+    function openTwitterIntent(tweetText, hashtags) {
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent(hashtags)}`;
+        window.open(shareUrl, '_blank');
+    }
 
     // クリップボードコピー機能
     window.copyToClipboard = (event) => {
@@ -160,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = themeTextEl.textContent;
         if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
 
-        // コピー処理
         const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
         dummy.value = `今日のお題：${text}\nURL：${SITE_URL}\n#今日のお題 #異次元ポケット工房`;
@@ -168,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.execCommand('copy');
         document.body.removeChild(dummy);
         
-        // ボタンのテキスト変更処理
         const ev = event || window.event;
         const btn = ev ? (ev.currentTarget || ev.target) : null;
         
@@ -181,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 生成ボタンのイベント登録
     if (generateBtn) {
         generateBtn.addEventListener('click', generateAndDisplay);
     }
