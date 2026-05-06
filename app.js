@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ＝＝＝ 設定 ＝＝＝
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSdu0R7V11WF9P1gU5GxAJ3uzm-6BDa0VRdbcJaeNBUkuFV_sIDo8XuAsrNxerVuYHvYI0kfikJSU8W/pub?output=csv'; 
+    const SITE_URL = 'https://bri-daikon.github.io/ijigenpocket/odaiindex.html';
 
     const CORS_PROXIES = [
         (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
@@ -146,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = themeTextEl.textContent;
         if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
         
-        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent('今日のお題は「' + text + '」です！')}&hashtags=今日のお題,異次元ポケット工房`;
+        const tweetText = `今日のお題は「${text}」です！`;
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent('今日のお題,異次元ポケット工房')}`;
         window.open(shareUrl, '_blank');
     };
 
@@ -161,13 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // コピー処理
         const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
-        dummy.value = `今日のお題：${text}\n#今日のお題 #異次元ポケット工房`;
+        dummy.value = `今日のお題：${text}\nURL：${SITE_URL}\n#今日のお題 #異次元ポケット工房`;
         dummy.select();
         document.execCommand('copy');
         document.body.removeChild(dummy);
         
         // ボタンのテキスト変更処理
-        // eventが未定義でも動くように window.event もチェック
         const ev = event || window.event;
         const btn = ev ? (ev.currentTarget || ev.target) : null;
         
