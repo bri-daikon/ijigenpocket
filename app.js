@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
         (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     ];
 
-    // 予備データ
     const fallbackThemes = [
         "星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情",
         "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶",
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "夜明け前の静寂", "空を切り裂く雷鳴", "そっと手を伸ばす"
     ];
 
-    // 最初から予備データを入れておくことで「出ない」を防ぐ
     let currentThemes = [...fallbackThemes];
 
     // 文字数によるフォントサイズ調整
@@ -96,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch試行
     async function tryFetch(url) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4秒でタイムアウト
+        const timeoutId = setTimeout(() => controller.abort(), 4000); 
 
         try {
             const response = await fetch(url, { signal: controller.signal });
@@ -111,11 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // データ読み込み
     async function fetchThemes() {
-        // 最初にお題を一つ出しておく（予備データから）
         generateAndDisplay();
         updateStatus("最新のデータを取得中...");
 
-        // 1. 直接フェッチ試行
         try {
             const text = await tryFetch(CSV_URL);
             const parsed = parseCSV(text);
@@ -128,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("Direct fetch failed:", e);
         }
 
-        // 2. プロキシ経由で試行
         for (let i = 0; i < CORS_PROXIES.length; i++) {
             try {
                 const text = await tryFetch(CORS_PROXIES[i](CSV_URL));
@@ -148,7 +143,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 公開用関数の登録 ---
 
-    window.shareOnX = async () => {
+    // X(Twitter)共有機能（テキストのみ）
+    window.shareOnX = () => {
+        const themeTextEl = document.querySelector('#theme-display span');
+        if (!themeTextEl) return;
+
+        const text = themeTextEl.textContent;
+        if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
+        
+        const tweetText = `今日のお題は「${text}」です！`;
+        const hashtags = '今日のお題,異次元ポケット工房';
+        
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent(hashtags)}`;
+        window.open(shareUrl, '_blank');
+    };
+
+    // 画像として保存する機能（新設）
+    window.saveAsImage = async (event) => {
         const card = document.querySelector('.card.glass');
         const themeTextEl = document.querySelector('#theme-display span');
         if (!card || !themeTextEl) return;
@@ -157,10 +168,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (themeTextEl.classList.contains('placeholder') || text === "読み込み中...") return;
 
         if (typeof html2canvas === 'undefined') {
-            openTwitterIntent(text);
+            updateStatus("エラー: 画像生成ライブラリが読み込まれていません", true);
             return;
         }
 
+        // ボタンの表示変更
+        const btn = event.currentTarget || event.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerText = "生成中...";
+        btn.disabled = true;
+
+        // スクショ用にボタンを一時的に隠す
         if (generateBtn) generateBtn.style.visibility = 'hidden';
 
         try {
@@ -173,50 +191,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (generateBtn) generateBtn.style.visibility = 'visible';
 
-            const tweetText = `今日のお題は「${text}」です！`;
-            const hashtags = '今日のお題,異次元ポケット工房';
+            // 画像をダウンロード
+            const dataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `today_odai_${new Date().getTime()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            updateStatus("画像を保存しました！Xに添付して投稿してください。");
+            
+            // ボタンを戻す
+            btn.innerText = "保存完了！";
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }, 2000);
 
-            if (navigator.share && navigator.canShare) {
-                canvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        openTwitterIntent(tweetText, hashtags);
-                        return;
-                    }
-                    const file = new File([blob], 'today_theme.png', { type: 'image/png' });
-                    const shareData = {
-                        text: `${tweetText}\n${SITE_URL}\n#今日のお題 #異次元ポケット工房`,
-                        files: [file]
-                    };
-
-                    if (navigator.canShare(shareData)) {
-                        try {
-                            await navigator.share(shareData);
-                            return; 
-                        } catch (err) {
-                            console.warn("Share API Failed:", err);
-                        }
-                    }
-                    openTwitterIntent(tweetText, hashtags);
-                });
-            } else {
-                const dataUrl = canvas.toDataURL("image/png");
-                const link = document.createElement('a');
-                link.download = `today_odai_${new Date().getTime()}.png`;
-                link.href = dataUrl;
-                link.click();
-                setTimeout(() => openTwitterIntent(tweetText, hashtags), 1000);
-            }
         } catch (e) {
+            console.error("Capture Error:", e);
             if (generateBtn) generateBtn.style.visibility = 'visible';
-            openTwitterIntent(`今日のお題は「${text}」です！`, '今日のお題,異次元ポケット工房');
+            updateStatus("画像生成に失敗しました", true);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
         }
     };
 
-    function openTwitterIntent(tweetText, hashtags) {
-        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent(hashtags)}`;
-        window.open(shareUrl, '_blank');
-    }
-
+    // クリップボードコピー
     window.copyToClipboard = (event) => {
         const themeTextEl = document.querySelector('#theme-display span');
         if (!themeTextEl) return;
@@ -247,6 +247,5 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.addEventListener('click', generateAndDisplay);
     }
 
-    // 実行開始
     fetchThemes();
 });
