@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>現在のタスク一覧 Pro</title>
+    <!-- html2canvasライブラリの読み込み（画像保存用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 基本スタイル */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; line-height: 1.6; }
+        .container { max-width: 650px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
+        h1 { font-size: 1.5rem; text-align: center; color: #1a1a1a; margin-bottom: 25px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        
+        /* 入力フォーム */
+        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .row { display: flex; gap: 10px; }
+        input[type="text"], input[type="date"], input[type="month"], select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        input[type="text"] { flex-grow: 1; }
+        
+        /* タグ選択エリア */
+        .tag-selection { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -5px; margin-bottom: 5px; }
+        .tag-choice { 
+            cursor: pointer; 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 0.75rem; 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .tag-choice:hover { background: #eef7ff; border-color: #3498db; }
+
+        button { cursor: pointer; background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #2980b9; }
+
+        /* 通知ボタン */
+        .notify-btn { background-color: #f39c12; font-size: 0.8rem; margin-bottom: 15px; width: 100%; }
+        .notify-btn:hover { background-color: #e67e22; }
+
+        /* フィルター操作 */
+        .filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 12px; background: #eef7ff; border-radius: 6px; font-size: 0.85rem; }
+        .filter-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .filter-item { display: flex; align-items: center; gap: 5px; }
+
+        /* リスト表示 */
+        ul { list-style: none; padding: 0; }
+        li { display: flex; align-items: flex-start; padding: 15px 12px; border-bottom: 1px solid #eee; gap: 12px; transition: background 0.1s; }
+        li:hover { background-color: #fcfcfc; }
+        
+        .checkbox-container { margin-top: 4px; }
+        .task-info { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
+        .task-text { font-weight: 500; font-size: 1rem; }
+        .task-memo { font-size: 0.85rem; color: #777; background: #f9f9f9; padding: 4px 8px; border-left: 3px solid #ddd; margin-top: 2px; }
+        
+        /* 属性エリア */
+        .task-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .tag-badge { 
+            padding: 2px 10px; 
+            border-radius: 20px; 
+            font-size: 0.7rem; 
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .task-meta { font-size: 0.75rem; color: #666; display: flex; gap: 10px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+        
+        /* 残り日数バッジ */
+        .deadline-badge { font-weight: bold; color: #34495e; }
+        .urgent { color: #e74c3c; animation: blink 2s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .completed .task-text, .completed .task-memo, .completed .tag-badge, .completed .deadline-badge { text-decoration: line-through; color: #aaa; filter: grayscale(1); opacity: 0.6; animation: none; }
+        
+        /* 優先度別カラー */
+        .prio-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white; display: inline-block; font-weight: bold; }
+        .bg-high { background-color: #e74c3c; }
+        .bg-medium { background-color: #f39c12; }
+        .bg-low { background-color: #27ae60; }
+        
+        /* アクションボタン */
+        .btn-action-group { display: flex; flex-direction: column; gap: 5px; }
+        .delete-btn { background-color: #f1f2f6; color: #666; font-size: 0.75rem; padding: 5px 10px; border: none; border-radius: 4px; }
+        .delete-btn:hover { background-color: #dfe4ea; color: #e74c3c; }
+        .calendar-btn { background-color: #eef7ff; color: #3498db; font-size: 0.75rem; padding: 5px 10px; border: 1px solid #3498db; border-radius: 4px; text-decoration: none; text-align: center; }
+        .calendar-btn:hover { background-color: #3498db; color: white; }
+
+        /* データ操作エリア */
+        .data-actions { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #ccc; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .btn-secondary { background-color: #7f8c8d; font-size: 0.8rem; padding: 8px 12px; }
+        .btn-secondary:hover { background-color: #95a5a6; }
+        .btn-success { background-color: #27ae60; font-size: 0.8rem; padding: 8px 12px; }
+        .btn-success:hover { background-color: #2ecc71; }
+        #csvFile { display: none; }
+
+        /* カスタムメッセージボックス */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .modal-msg { margin-bottom: 20px; font-size: 1rem; }
+        .modal-buttons { display: flex; justify-content: center; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="captureTarget">
+    <h1>現在のタスク一覧</h1>
+
+    <!-- 通知許可ボタン -->
+    <button id="permissionBtn" class="notify-btn" onclick="requestNotificationPermission()" style="display:none;">
+        🔔 デスクトップ通知を有効にする
+    </button>
+
+    <div class="input-group" id="inputSection">
+        <div class="row">
+            <input type="text" id="taskInput" placeholder="タスク名を入力...">
+        </div>
+        <div class="row">
+            <input type="text" id="memoInput" placeholder="メモ・詳細（任意）">
+        </div>
+        <div class="row">
+            <input type="text" id="tagInput" placeholder="タグ（カンマ区切りで複数または下から選択）">
+        </div>
+        <div id="tagSelection" class="tag-selection"></div>
+        <div class="row">
+            <select id="prioritySelect">
+                <option value="高">優先度：高</option>
+                <option value="中" selected>優先度：中</option>
+                <option value="低">優先度：低</option>
+            </select>
+            <input type="date" id="dateInput">
+            <button onclick="addTask()">追加</button>
+        </div>
+    </div>
+
+    <div class="filters" id="filterSection">
+        <div class="filter-row">
+            <div class="filter-item">
+                <span>月：</span>
+                <input type="month" id="monthFilter" onchange="renderTasks()">
+            </div>
+            <div class="filter-item">
+                <span>タグ：</span>
+                <select id="tagFilter" onchange="renderTasks()">
+                    <option value="">すべて</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-row">
+            <div class="filter-item">
+                <label>
+                    <input type="checkbox" id="hideCompleted" onchange="renderTasks()"> 完了済みを隠す
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <ul id="taskList"></ul>
+
+    <div class="data-actions" id="actionSection">
+        <button class="btn-secondary" onclick="exportCSV()">CSV保存</button>
+        <button class="btn-secondary" onclick="document.getElementById('csvFile').click()">CSV読込</button>
+        <button class="btn-success" onclick="saveAsImage()">画像として保存</button>
+        <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+    </div>
+</div>
+
+<!-- カスタムモーダルUI -->
+<div id="modalOverlay" class="modal-overlay">
+    <div class="modal-content">
+        <div id="modalMsg" class="modal-msg"></div>
+        <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem('bizTasksV6')) || [];
+
+    const pastelColors = [
+        { bg: '#E3F2FD', text: '#1E88E5' },
+        { bg: '#F3E5F5', text: '#8E24AA' },
+        { bg: '#E8F5E9', text: '#2E7D32' },
+        { bg: '#FFF3E0', text: '#EF6C00' },
+        { bg: '#FCE4EC', text: '#C2185B' },
+        { bg: '#E0F2F1', text: '#00796B' },
+        { bg: '#FFFDE7', text: '#FBC02D' },
+        { bg: '#EFEBE9', text: '#5D4037' }
+    ];
+
+    function showMessage(msg, callback = null, showCancel = false) {
+        const overlay = document.getElementById('modalOverlay');
+        const msgDiv = document.getElementById('modalMsg');
+        const btnDiv = document.getElementById('modalButtons');
+        msgDiv.textContent = msg;
+        btnDiv.innerHTML = "";
+        const okBtn = document.createElement('button');
+        okBtn.textContent = "OK";
+        okBtn.onclick = () => { overlay.style.display = 'none'; if (callback) callback(true); };
+        btnDiv.appendChild(okBtn);
+        if (showCancel) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = "キャンセル";
+            cancelBtn.style.backgroundColor = "#ccc";
+            cancelBtn.onclick = () => { overlay.style.display = 'none'; if (callback) callback(false); };
+            btnDiv.appendChild(cancelBtn);
+        }
+        overlay.style.display = 'flex';
+    }
+
+    function getTagStyle(tagName) {
+        let hash = 0;
+        for (let i = 0; i < tagName.length; i++) { hash = tagName.charCodeAt(i) + ((hash << 5) - hash); }
+        return pastelColors[Math.abs(hash) % pastelColors.length];
+    }
+
+    function getRelativeDateString(deadlineStr) {
+        if (!deadlineStr || deadlineStr === "設定なし") return "";
+        const today = new Date(); today.setHours(0,0,0,0);
+        const d = new Date(deadlineStr); d.setHours(0,0,0,0);
+        const diff = Math.ceil((d - today) / (1000*60*60*24));
+        if (diff === 0) return { text: "今日まで", class: "urgent" };
+        if (diff === 1) return { text: "明日まで", class: "urgent" };
+        if (diff === 2) return { text: "明後日まで", class: "" };
+        if (diff < 0) return { text: "期限切れ", class: "urgent" };
+        return { text: `あと ${diff} 日`, class: "" };
+    }
+
+    // 通知許可のリクエスト
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) return;
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                document.getElementById('permissionBtn').style.display = 'none';
+                checkTodayDeadlines();
+            } else if (permission === "denied") {
+                document.getElementById('permissionBtn').style.display = 'none';
+                showMessage("通知が拒否されました。設定を変更するにはブラウザの設定を確認してください。");
+            }
+        });
+    }
+
+    function checkTodayDeadlines() {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayTasks = tasks.filter(t => t.deadline === todayStr && !t.completed);
+        if (todayTasks.length > 0) {
+            new Notification("本日の締切タスク", {
+                body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`
+            });
+        }
+    }
+
+    function getGoogleCalendarUrl(task) {
+        const title = encodeURIComponent(`[タスク] ${task.text}`);
+        const details = encodeURIComponent(`${task.memo}\n優先度: ${task.priority}\nタグ: ${task.tags.join(', ')}`);
+        let dates = "";
+        if (task.deadline && task.deadline !== "設定なし") {
+            const d = task.deadline.replace(/-/g, "");
+            dates = `&dates=${d}/${d}`;
+        }
+        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}${dates}`;
+    }
+
+    window.onload = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('monthFilter').value = `${year}-${month}`;
+
+        // 通知ボタンの表示制御: まだ設定されていない(default)場合のみ表示
+        const btn = document.getElementById('permissionBtn');
+        if ("Notification" in window) {
+            if (Notification.permission === "default") {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        } else {
+            btn.style.display = 'none';
+        }
+
+        updateTagUIs();
+        renderTasks();
+        setTimeout(() => checkTodayDeadlines(), 1000);
+    };
+
+    function updateTagUIs() { updateTagFilterOptions(); updateTagSelectionChoices(); }
+    function updateTagSelectionChoices() {
+        const container = document.getElementById('tagSelection');
+        container.innerHTML = "";
+        getAllUniqueTags().forEach(tag => {
+            const span = document.createElement('span');
+            span.className = "tag-choice";
+            span.textContent = `#${tag}`;
+            span.onclick = () => {
+                const input = document.getElementById('tagInput');
+                const current = input.value.split(/[,，、\s]+/).map(t => t.trim()).filter(t => t !== "");
+                if (!current.includes(tag)) { current.push(tag); input.value = current.join(', '); }
+            };
+            container.appendChild(span);
+        });
+    }
+    function getAllUniqueTags() {
+        const all = new Set();
+        tasks.forEach(t => t.tags?.forEach(tag => all.add(tag)));
+        return Array.from(all).sort();
+    }
+
+    function addTask() {
+        const input = document.getElementById('taskInput');
+        const memo = document.getElementById('memoInput');
+        const tag = document.getElementById('tagInput');
+        const priority = document.getElementById('prioritySelect');
+        const date = document.getElementById('dateInput');
+        if (!input.value.trim()) return;
+        const tags = tag.value.split(/[,，、\s]+/).map(t => t.trim()).filter(t => t !== "");
+        tasks.push({
+            id: Date.now(),
+            text: input.value,
+            memo: memo.value.trim(),
+            tags: tags,
+            priority: priority.value,
+            deadline: date.value || "設定なし",
+            completed: false
+        });
+        saveData(); updateTagUIs(); renderTasks();
+        input.value = ""; memo.value = ""; tag.value = "";
+    }
+    function toggleComplete(id) { tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t); saveData(); renderTasks(); }
+    function deleteTask(id) { showMessage("このタスクを削除しますか？", (ok) => { if (ok) { tasks = tasks.filter(t => t.id !== id); saveData(); updateTagUIs(); renderTasks(); } }, true); }
+    function saveData() { localStorage.setItem('bizTasksV6', JSON.stringify(tasks)); }
+
+    function updateTagFilterOptions() {
+        const filter = document.getElementById('tagFilter');
+        const current = filter.value;
+        filter.innerHTML = '<option value="">すべて</option>';
+        getAllUniqueTags().forEach(tag => {
+            const opt = document.createElement('option');
+            opt.value = tag; opt.textContent = tag;
+            if (tag === current) opt.selected = true;
+            filter.appendChild(opt);
+        });
+    }
+
+    function exportCSV() {
+        if (tasks.length === 0) return;
+        let csv = "タスク名,メモ,タグ,優先度,期限,完了状態\n";
+        tasks.forEach(t => {
+            const tags = t.tags ? t.tags.join(' ') : "";
+            csv += [`"${t.text}"`,`"${t.memo}"`,`"${tags}"`,`"${t.priority}"`,`"${t.deadline}"`,`"${t.completed ? '完了' : '未完了'}"`].join(",") + "\n";
+        });
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `tasks_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    }
+
+    function parseCSV(text) {
+        const res = []; const lines = text.split(/\r?\n/);
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim(); if (!line) continue;
+            const cols = []; let cur = ""; let quote = false;
+            for (let char of line) {
+                if (char === '"') quote = !quote;
+                else if (char === ',' && !quote) { cols.push(cur.trim()); cur = ""; }
+                else cur += char;
+            }
+            cols.push(cur.trim()); res.push(cols);
+        }
+        return res;
+    }
+
+    function importCSV(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const rows = parseCSV(e.target.result);
+                const newT = rows.map((c, i) => ({
+                    id: Date.now() + i, text: c[0] || "無題", memo: c[1] || "",
+                    tags: c[2] ? c[2].split(/\s+/) : [],
+                    priority: c[3] || "中", deadline: c[4] || "設定なし", completed: c[5] === '完了'
+                }));
+                if (newT.length) showMessage(`${newT.length}件読み込みますか？`, (ok) => { if (ok) { tasks = [...tasks, ...newT]; saveData(); updateTagUIs(); renderTasks(); } }, true);
+            } catch (err) { showMessage("CSV解析エラー"); }
+            event.target.value = "";
+        };
+        reader.readAsText(file);
+    }
+
+    function saveAsImage() {
+        const target = document.getElementById('captureTarget');
+        const ids = ['actionSection', 'inputSection', 'permissionBtn'];
+        ids.forEach(id => document.getElementById(id).style.display = 'none');
+        html2canvas(target, { backgroundColor: "#f0f2f5", scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `tasks_${Date.now()}.png`;
+            link.href = canvas.toDataURL(); link.click();
+            ids.forEach(id => {
+                if (id === 'permissionBtn') {
+                    if ("Notification" in window && Notification.permission === "default") document.getElementById(id).style.display = 'block';
+                } else {
+                    document.getElementById(id).style.display = 'flex';
+                }
+            });
+        });
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        const hide = document.getElementById('hideCompleted').checked;
+        const month = document.getElementById('monthFilter').value;
+        const tag = document.getElementById('tagFilter').value;
+        list.innerHTML = "";
+        const sorted = [...tasks].sort((a, b) => {
+            if (a.deadline === "設定なし") return 1; if (b.deadline === "設定なし") return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+        });
+        sorted.forEach(t => {
+            if (hide && t.completed) return;
+            if (month && t.deadline && t.deadline !== "設定なし" && t.deadline.substring(0, 7) !== month) return;
+            if (month && (!t.deadline || t.deadline === "設定なし")) return;
+            if (tag && !t.tags?.includes(tag)) return;
+            const rel = getRelativeDateString(t.deadline);
+            const li = document.createElement('li');
+            li.className = t.completed ? "completed" : "";
+            const pc = t.priority === "高" ? "bg-high" : (t.priority === "中" ? "bg-medium" : "bg-low");
+            li.innerHTML = `
+                <div class="checkbox-container"><input type="checkbox" ${t.completed ? "checked" : ""} onclick="toggleComplete(${t.id})"></div>
+                <div class="task-info">
+                    <span class="task-text">${t.text}</span>
+                    ${t.memo ? `<div class="task-memo">${t.memo}</div>` : ""}
+                    <div class="task-tags">${t.tags.map(tg => `<span class="tag-badge" style="background:${getTagStyle(tg).bg};color:${getTagStyle(tg).text};">#${tg}</span>`).join('')}</div>
+                    <div class="task-meta"><span class="prio-badge ${pc}">${t.priority}</span><span>📅 ${t.deadline}</span>${rel ? `<span class="deadline-badge ${rel.class}">${rel.text}</span>` : ""}</div>
+                </div>
+                <div class="btn-action-group"><a href="${getGoogleCalendarUrl(t)}" target="_blank" class="calendar-btn">🗓 カレンダー</a><button class="delete-btn" onclick="deleteTask(${t.id})">削除</button></div>
+            `;
+            list.appendChild(li);
+        });
+        if (!list.innerHTML) list.innerHTML = `<li style="color:#aaa; justify-content:center;">タスクはありません</li>`;
+    }
+</script>
+</body>
+</html>
