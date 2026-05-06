@@ -1,11 +1,11 @@
 :root {
-    --bg-color: #0f172a;
+    --bg-color: #030712;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --accent: #8b5cf6;
-    --accent-hover: #7c3aed;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --card-border: rgba(255, 255, 255, 0.1);
+    --accent-glow: rgba(139, 92, 246, 0.5);
+    --card-bg: rgba(15, 23, 42, 0.6);
+    --card-border: rgba(255, 255, 255, 0.08);
 }
 
 body {
@@ -17,7 +17,7 @@ body {
     justify-content: center;
     align-items: center;
     margin: 0;
-    position: relative;
+    overflow-x: hidden;
 }
 
 .background-effects {
@@ -32,59 +32,72 @@ body {
 .glow {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
+    filter: blur(120px);
     opacity: 0.15;
 }
 
-.glow-1 { width: 400px; height: 400px; background: var(--accent); top: -100px; right: -100px; }
-.glow-2 { width: 300px; height: 300px; background: #3b82f6; bottom: -50px; left: -50px; }
+.glow-1 { width: 50vw; height: 50vw; background: var(--accent); top: -10vw; right: -10vw; }
+.glow-2 { width: 40vw; height: 40vw; background: #3b82f6; bottom: -10vw; left: -10vw; }
 
 .container {
-    max-width: 650px;
+    max-width: 700px;
     width: 100%;
-    padding: 1.5rem;
+    padding: 2rem;
     z-index: 10;
 }
 
-/* 撮影用ラッパー: 画像になった時の「枠」になる部分 */
-.capture-wrapper {
-    padding: 3rem 2rem;
-    border-radius: 32px;
-    background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-    border: 4px solid transparent;
-    background-clip: padding-box;
-    position: relative;
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.1);
-}
-
-/* グラデーション枠線の擬似要素 */
-.capture-wrapper::after {
-    content: '';
-    position: absolute;
-    top: -4px; bottom: -4px; left: -4px; right: -4px;
-    background: linear-gradient(135deg, var(--accent), #3b82f6, var(--accent));
+/* 撮影用ラッパー: 実要素で枠を作る */
+.capture-frame {
+    padding: 4px; /* ここが枠の太さになる */
     border-radius: 36px;
-    z-index: -1;
+    background: linear-gradient(135deg, var(--accent), #3b82f6, #06b6d4, var(--accent));
+    background-size: 300% 300%;
+    animation: gradientMove 8s ease infinite;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.2);
 }
 
-.capture-header { text-align: center; margin-bottom: 2rem; }
-.capture-header h1 { font-size: 2.2rem; letter-spacing: 0.2em; margin: 0.5rem 0; }
-.subtitle { font-size: 0.8rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.4em; }
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.capture-wrapper {
+    padding: 4rem 2.5rem;
+    border-radius: 32px;
+    background: radial-gradient(circle at top right, #1e1b4b, #030712);
+    position: relative;
+    overflow: hidden;
+}
+
+.capture-header { text-align: center; margin-bottom: 3rem; }
+.capture-header h1 { 
+    font-size: 2.5rem; 
+    letter-spacing: 0.3em; 
+    margin: 0.5rem 0; 
+    font-weight: 700;
+    background: linear-gradient(to bottom, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle { font-size: 0.9rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5em; opacity: 0.8; }
 
 .card.glass {
     background: var(--card-bg);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 3rem 1.5rem;
+    border-radius: 24px;
+    padding: 4rem 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 2rem;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
 }
 
 .theme-text {
-    min-height: 100px;
+    min-height: 120px;
     width: 100%;
     display: flex;
     align-items: center;
@@ -93,36 +106,59 @@ body {
 }
 
 .theme-text span {
-    font-size: 2.8rem;
     font-weight: 700;
-    line-height: 1.4;
-    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    line-height: 1.5;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    display: inline-block;
 }
 
 .generate-btn {
     background: var(--accent);
     color: white;
     border: none;
-    padding: 0.8rem 1.5rem;
+    padding: 1rem 2rem;
     border-radius: 50px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s;
+    gap: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    background: var(--accent-hover);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
 }
 
 .capture-footer {
-    margin-top: 2rem;
-    text-align: right;
-    font-size: 0.7rem;
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.8rem;
     color: var(--text-secondary);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
 }
 
 /* アニメーション */
-.spinning .icon { animation: spin 0.5s ease-in-out; }
+.spinning .icon { animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.fade-out { opacity: 0; transform: translateY(10px); }
-.fade-in { opacity: 1; transform: translateY(0); }
-.placeholder { color: var(--text-secondary); font-size: 1.2rem; }
+
+.fade-out { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(10px); }
+.fade-in { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+.placeholder { color: var(--text-secondary); font-size: 1.2rem; font-weight: 400; }
+
+/* ポストボタンなどの装飾 */
+.action-btn {
+    transition: all 0.3s;
+}
+.action-btn:hover {
+    transform: translateY(-3px);
+}

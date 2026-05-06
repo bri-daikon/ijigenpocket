@@ -17,30 +17,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function adjustFontSize(span, text) {
         const len = text.length;
-        if (len <= 8) span.style.fontSize = '2.8rem';
-        else if (len <= 14) span.style.fontSize = '2.2rem';
+        if (len <= 6) span.style.fontSize = '3.5rem';
+        else if (len <= 10) span.style.fontSize = '2.8rem';
+        else if (len <= 15) span.style.fontSize = '2.2rem';
         else if (len <= 20) span.style.fontSize = '1.8rem';
-        else span.style.fontSize = '1.4rem';
+        else span.style.fontSize = '1.5rem';
     }
 
     function updateThemeText(newText) {
         if (!themeDisplay) return;
         const span = themeDisplay.querySelector('span');
         if (!span) return;
+        
         span.classList.add('fade-out');
+        
         setTimeout(() => {
             span.textContent = newText;
             span.classList.remove('placeholder', 'fade-out');
             span.classList.add('fade-in');
             adjustFontSize(span, newText);
-            setTimeout(() => span.classList.remove('fade-in'), 500);
-        }, 500);
+            
+            setTimeout(() => {
+                span.classList.remove('fade-in');
+            }, 600);
+        }, 400);
     }
 
     function generateAndDisplay() {
         if (!generateBtn) return;
         generateBtn.classList.add('spinning');
-        setTimeout(() => generateBtn.classList.remove('spinning'), 500);
+        setTimeout(() => generateBtn.classList.remove('spinning'), 800);
+        
         const theme = currentThemes[Math.floor(Math.random() * currentThemes.length)];
         updateThemeText(theme);
     }
@@ -48,48 +55,61 @@ document.addEventListener('DOMContentLoaded', () => {
     // パース用ヘルパー
     function parseCSV(text) {
         if (!text || text.includes('html>')) return [];
-        return text.split('\n')
-            .map(l => l.trim().replace(/\r/g, '').replace(/^"|"$/g, '').replace(/""/g, '"'))
-            .filter(l => l.length > 0);
+        return text.split(/\r?\n/)
+            .map(l => l.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
+            .filter(l => l.length > 0 && !l.startsWith('http')); // URL等を除外
     }
 
     async function fetchThemes() {
         // 最初にお題を一つ出しておく（予備データ）
         generateAndDisplay();
         
-        if (statusEl) statusEl.textContent = "最新のデータを同期中...";
+        if (statusEl) statusEl.textContent = "最新データを同期中...";
+
+        let success = false;
 
         // 1. 直接フェッチ試行
         try {
             const res = await fetch(CSV_URL);
-            const text = await res.text();
-            const parsed = parseCSV(text);
-            if (parsed.length > 0) {
-                currentThemes = parsed;
-                if (statusEl) statusEl.textContent = `同期完了（${currentThemes.length}件）`;
-                return;
+            if (res.ok) {
+                const text = await res.text();
+                const parsed = parseCSV(text);
+                if (parsed.length > 0) {
+                    currentThemes = parsed;
+                    success = true;
+                }
             }
         } catch (e) {
             console.warn("Direct fetch failed, trying proxies...");
         }
 
         // 2. プロキシ経由で試行
-        for (let i = 0; i < CORS_PROXIES.length; i++) {
-            try {
-                const res = await fetch(CORS_PROXIES[i](CSV_URL));
-                const text = await res.text();
-                const parsed = parseCSV(text);
-                if (parsed.length > 0) {
-                    currentThemes = parsed;
-                    if (statusEl) statusEl.textContent = `プロキシ経由で同期完了`;
-                    return;
+        if (!success) {
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                try {
+                    const res = await fetch(CORS_PROXIES[i](CSV_URL));
+                    if (res.ok) {
+                        const text = await res.text();
+                        const parsed = parseCSV(text);
+                        if (parsed.length > 0) {
+                            currentThemes = parsed;
+                            success = true;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Proxy ${i} failed`);
                 }
-            } catch (e) {
-                console.warn(`Proxy ${i} failed`);
             }
         }
 
-        if (statusEl) statusEl.textContent = "予備データで動作中";
+        if (success) {
+            if (statusEl) statusEl.textContent = `同期完了（${currentThemes.length}件）`;
+            // 最新データから再度お題を選び直す
+            generateAndDisplay();
+        } else {
+            if (statusEl) statusEl.textContent = "予備データで動作中";
+        }
     }
 
     // --- X共有 ---
@@ -99,7 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = themeTextEl.textContent;
         if (text === "準備中..." || text === "読み込み中...") return;
         const tweetText = `今日のお題は「${text}」です！`;
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent('今日のお題,異次元ポケット工房')}`, '_blank');
+        const tags = '今日のお題,異次元ポケット工房';
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(SITE_URL)}&hashtags=${encodeURIComponent(tags)}`, '_blank');
     };
 
     // --- 画像保存 ---
@@ -113,20 +134,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btn = event.currentTarget;
         const originalHTML = btn.innerHTML;
-        btn.innerText = "生成中...";
+        btn.innerHTML = '<span>生成中...</span>';
         btn.disabled = true;
 
-        if (generateBtn) generateBtn.style.visibility = 'hidden';
+        if (generateBtn) generateBtn.style.display = 'none';
 
         try {
+            // 少し待機してアニメーションを落ち着かせる
+            await new Promise(r => setTimeout(r, 100));
+
             const canvas = await html2canvas(captureArea, {
-                backgroundColor: "#0f172a", 
-                scale: 2,                  
+                backgroundColor: null, // 透明を維持
+                scale: 3,             // 高解像度
                 useCORS: true,
-                borderRadius: 32           
+                logging: false,
+                borderRadius: 36
             });
 
-            if (generateBtn) generateBtn.style.visibility = 'visible';
+            if (generateBtn) generateBtn.style.display = 'flex';
 
             const dataUrl = canvas.toDataURL("image/png");
             const link = document.createElement('a');
@@ -134,14 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
             link.href = dataUrl;
             link.click();
             
-            btn.innerText = "保存完了！";
+            btn.innerHTML = '<span>保存完了！</span>';
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }, 2000);
 
         } catch (e) {
-            if (generateBtn) generateBtn.style.visibility = 'visible';
+            console.error(e);
+            if (generateBtn) generateBtn.style.display = 'flex';
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
@@ -154,17 +180,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = themeTextEl.textContent;
         if (text === "準備中..." || text === "読み込み中...") return;
 
+        const copyText = `今日のお題：${text}\nURL：${SITE_URL}\n#今日のお題 #異次元ポケット工房`;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(copyText).then(() => {
+                const btn = e.currentTarget;
+                const original = btn.innerHTML;
+                btn.innerHTML = '<span>コピー完了！</span>';
+                setTimeout(() => btn.innerHTML = original, 2000);
+            }).catch(err => {
+                fallbackCopy(copyText, e.currentTarget);
+            });
+        } else {
+            fallbackCopy(copyText, e.currentTarget);
+        }
+    };
+
+    function fallbackCopy(text, btn) {
         const dummy = document.createElement('textarea');
         document.body.appendChild(dummy);
-        dummy.value = `今日のお題：${text}\nURL：${SITE_URL}\n#今日のお題 #異次元ポケット工房`;
+        dummy.value = text;
         dummy.select();
         document.execCommand('copy');
         document.body.removeChild(dummy);
-        const btn = e.currentTarget;
         const original = btn.innerHTML;
-        btn.innerText = "コピー完了！";
+        btn.innerHTML = '<span>コピー完了！</span>';
         setTimeout(() => btn.innerHTML = original, 2000);
-    };
+    }
 
     if (generateBtn) generateBtn.addEventListener('click', generateAndDisplay);
     fetchThemes();
