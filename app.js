@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     ];
 
+    // 予備データ
     const fallbackThemes = [
         "星降る夜の図書館", "雨上がりの匂い", "言葉にできない感情",
         "忘れられた約束", "朝焼けとコーヒー", "深海に沈む記憶",
@@ -20,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         "夜明け前の静寂", "空を切り裂く雷鳴", "そっと手を伸ばす"
     ];
 
-    let currentThemes = [];
+    // 最初から予備データを入れておくことで「出ない」を防ぐ
+    let currentThemes = [...fallbackThemes];
 
     // 文字数によるフォントサイズ調整
     function adjustFontSize(span, text) {
@@ -71,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // CSVパース
     function parseCSV(text) {
-        if (!text || text.includes('<!DOCTYPE html>')) return []; // HTMLエラーページが返ってきた場合は無効にする
+        if (!text || text.includes('<!DOCTYPE html>') || text.includes('<html')) return []; 
         return text.split('\n')
                    .map(line => {
                        let cleaned = line.trim().replace(/\r/g, '');
@@ -80,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                        }
                        return cleaned;
                    })
-                   .filter(line => line.length > 0 && !line.includes('html>')); // 不要なタグ混入防止
+                   .filter(line => line.length > 0);
     }
 
     // ステータス更新
@@ -94,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch試行
     async function tryFetch(url) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒でタイムアウト
+        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4秒でタイムアウト
 
         try {
             const response = await fetch(url, { signal: controller.signal });
@@ -109,7 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // データ読み込み
     async function fetchThemes() {
-        updateThemeText("読み込み中...");
+        // 最初にお題を一つ出しておく（予備データから）
+        generateAndDisplay();
+        updateStatus("最新のデータを取得中...");
 
         // 1. 直接フェッチ試行
         try {
@@ -117,8 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsed = parseCSV(text);
             if (parsed.length > 0) {
                 currentThemes = parsed;
-                updateStatus(`スプレッドシートから読み込み完了（${currentThemes.length}件）`);
-                generateAndDisplay();
+                updateStatus(`スプレッドシートから同期完了（${currentThemes.length}件）`);
                 return;
             }
         } catch (e) {
@@ -132,8 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = parseCSV(text);
                 if (parsed.length > 0) {
                     currentThemes = parsed;
-                    updateStatus(`プロキシ経由で読み込み完了`);
-                    generateAndDisplay();
+                    updateStatus(`最新データと同期しました`);
                     return;
                 }
             } catch (e) {
@@ -141,10 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. すべて失敗した場合はフォールバック
-        currentThemes = fallbackThemes;
-        updateStatus("⚠ 読み込み失敗。予備データを使用中", true);
-        generateAndDisplay();
+        updateStatus("⚠ オフライン/予備データで動作中", true);
     }
 
     // --- 公開用関数の登録 ---
@@ -179,6 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (navigator.share && navigator.canShare) {
                 canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        openTwitterIntent(tweetText, hashtags);
+                        return;
+                    }
                     const file = new File([blob], 'today_theme.png', { type: 'image/png' });
                     const shareData = {
                         text: `${tweetText}\n${SITE_URL}\n#今日のお題 #異次元ポケット工房`,
@@ -244,5 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.addEventListener('click', generateAndDisplay);
     }
 
+    // 実行開始
     fetchThemes();
 });
