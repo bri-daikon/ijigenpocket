@@ -216,6 +216,15 @@
         return pastelColors[Math.abs(hash) % pastelColors.length];
     }
 
+    // ローカル時刻での YYYY-MM-DD を取得する関数
+    function getLocalDateString() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
     function getRelativeDateString(deadlineStr) {
         if (!deadlineStr || deadlineStr === "設定なし") return "";
         const today = new Date(); today.setHours(0,0,0,0);
@@ -244,11 +253,15 @@
 
     function checkTodayDeadlines() {
         if (!("Notification" in window) || Notification.permission !== "granted") return;
-        const todayStr = new Date().toISOString().slice(0, 10);
+        
+        // 修正: ローカル時刻での今日の日付を取得
+        const todayStr = getLocalDateString();
         const todayTasks = tasks.filter(t => t.deadline === todayStr && !t.completed);
+        
         if (todayTasks.length > 0) {
             new Notification("本日の締切タスク", {
-                body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`
+                body: `${todayTasks.length}件が今日までです：\n${todayTasks.map(t => t.text).join(', ')}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/10691/10691830.png"
             });
         }
     }
@@ -270,20 +283,19 @@
         const month = String(now.getMonth() + 1).padStart(2, '0');
         document.getElementById('monthFilter').value = `${year}-${month}`;
 
-        // 通知ボタンの表示制御: まだ設定されていない(default)場合のみ表示
-        const btn = document.getElementById('permissionBtn');
         if ("Notification" in window) {
             if (Notification.permission === "default") {
-                btn.style.display = 'block';
+                document.getElementById('permissionBtn').style.display = 'block';
             } else {
-                btn.style.display = 'none';
+                document.getElementById('permissionBtn').style.display = 'none';
             }
         } else {
-            btn.style.display = 'none';
+            document.getElementById('permissionBtn').style.display = 'none';
         }
 
         updateTagUIs();
         renderTasks();
+        // ロード時に今日締め切りのものがあれば通知
         setTimeout(() => checkTodayDeadlines(), 1000);
     };
 
@@ -328,6 +340,9 @@
         });
         saveData(); updateTagUIs(); renderTasks();
         input.value = ""; memo.value = ""; tag.value = "";
+        
+        // 追加時に今日締め切りなら通知
+        checkTodayDeadlines();
     }
     function toggleComplete(id) { tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t); saveData(); renderTasks(); }
     function deleteTask(id) { showMessage("このタスクを削除しますか？", (ok) => { if (ok) { tasks = tasks.filter(t => t.id !== id); saveData(); updateTagUIs(); renderTasks(); } }, true); }
@@ -355,7 +370,7 @@
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `tasks_${new Date().toISOString().slice(0,10)}.csv`;
+        link.download = `tasks_${getLocalDateString()}.csv`;
         link.click();
     }
 
@@ -385,7 +400,7 @@
                     tags: c[2] ? c[2].split(/\s+/) : [],
                     priority: c[3] || "中", deadline: c[4] || "設定なし", completed: c[5] === '完了'
                 }));
-                if (newT.length) showMessage(`${newT.length}件読み込みますか？`, (ok) => { if (ok) { tasks = [...tasks, ...newT]; saveData(); updateTagUIs(); renderTasks(); } }, true);
+                if (newT.length) showMessage(`${newT.length}件読み込みますか？`, (ok) => { if (ok) { tasks = [...tasks, ...newT]; saveData(); updateTagUIs(); renderTasks(); checkTodayDeadlines(); } }, true);
             } catch (err) { showMessage("CSV解析エラー"); }
             event.target.value = "";
         };
