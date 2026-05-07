@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LINEスタンプメーカー</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
+  <style>
+    /* 市松模様の背景（透過確認用） */
+    .checkerboard {
+      background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/ENFmIDoP0T2AhXfUABgGSSkAAAD//5u2RkEAAAAASUVORK5CYII=");
+    }
+    
+    /* スクロールバーのカスタマイズ */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #fdf2f8; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #f9a8d4; }
+  </style>
+</head>
+<body class="min-h-screen bg-pink-50 font-sans text-gray-800 pb-20">
+
+  <!-- ヘッダー -->
+  <header class="bg-white shadow-sm py-4 px-6 border-b-4 border-pink-300 flex items-center justify-center sticky top-0 z-50">
+    <i data-lucide="image" class="text-pink-500 mr-2 w-7 h-7"></i>
+    <h1 class="text-2xl font-black text-pink-500 tracking-wider">LINEスタンプメーカー</h1>
+  </header>
+
+  <main class="max-w-5xl mx-auto mt-8 px-4">
+    
+    <!-- ステップナビゲーション -->
+    <div class="flex justify-center mb-8">
+      <div class="flex bg-white rounded-full p-2 shadow-md" id="step-indicators">
+        <!-- JSで動的に生成 -->
+      </div>
+    </div>
+
+    <!-- ================= Step 1: Upload ================= -->
+    <div id="step-1" class="step-container bg-white p-10 rounded-3xl shadow-xl border-4 border-pink-200 text-center flex flex-col items-center justify-center min-h-[400px]">
+      <div class="bg-pink-100 p-6 rounded-full mb-6">
+        <i data-lucide="upload" class="text-pink-500 w-12 h-12"></i>
+      </div>
+      <h2 class="text-2xl font-bold mb-4">ベースになる画像を選んでね！</h2>
+      <p class="text-gray-500 mb-8">1枚のイラストから、たくさんのスタンプを切り出せます。</p>
+      
+      <label class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-full cursor-pointer transition-transform transform hover:scale-105 shadow-lg flex items-center">
+        <i data-lucide="image" class="mr-2 w-5 h-5"></i>
+        パソコンから画像を選ぶ
+        <input type="file" accept="image/*" class="hidden" id="file-upload">
+      </label>
+    </div>
+
+    <!-- ================= Step 2: Split ================= -->
+    <div id="step-2" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-8">
+      
+      <!-- 分割エディタエリア -->
+      <div class="flex-1 flex flex-col items-center">
+        <h3 class="text-xl font-bold mb-4 text-pink-600 flex items-center">
+          <i data-lucide="scissors" class="mr-2 w-6 h-6"></i> 分割線を調整しよう
+        </h3>
+        
+        <div id="split-container" class="relative select-none border-2 border-gray-200 overflow-hidden rounded shadow-inner w-full max-w-[500px]">
+          <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
+          <div id="split-lines-container"></div>
+        </div>
+        <p class="text-sm text-gray-500 mt-4 text-center">
+          ※ 青い点線をドラッグして、分割する位置を調整できます。<br/>はみ出さないように囲んでね！
+        </p>
+      </div>
+
+      <!-- 分割設定メニュー -->
+      <div class="w-full md:w-80 bg-pink-50 p-6 rounded-2xl flex flex-col">
+        <h4 class="font-bold text-gray-700 mb-4">分割のテンプレート</h4>
+        
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <button onclick="initializeSplitLines(2, 2)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">2 × 2</button>
+          <button onclick="initializeSplitLines(3, 3)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">3 × 3</button>
+          <button onclick="initializeSplitLines(4, 4)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">4 × 4</button>
+          <button onclick="initializeSplitLines(5, 5)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">5 × 5</button>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <div>
+            <label class="block text-sm font-bold text-gray-600 mb-1">縦の数 (行): <span id="val-rows">3</span></label>
+            <input type="range" min="1" max="10" value="3" id="range-rows" class="w-full accent-pink-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-gray-600 mb-1">横の数 (列): <span id="val-cols">3</span></label>
+            <input type="range" min="1" max="10" value="3" id="range-cols" class="w-full accent-pink-500" />
+          </div>
+        </div>
+
+        <div class="mt-auto">
+          <button onclick="handleApplySplit()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex justify-center items-center">
+            <i data-lucide="scissors" class="mr-2 w-5 h-5"></i>
+            この位置で切り抜く！
+          </button>
+          <button onclick="setStep(1)" class="w-full mt-3 py-2 text-gray-500 hover:text-pink-500 text-sm font-bold">
+            やり直す
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Step 3: Edit & Transparency ================= -->
+    <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6 h-auto md:h-[600px]">
+      
+      <!-- 左サイド：一覧プレビュー -->
+      <div class="w-full md:w-64 border-r-2 border-pink-100 pr-4 overflow-y-auto custom-scrollbar">
+        <h4 class="font-bold text-gray-700 mb-3 sticky top-0 bg-white py-2 z-10">スタンプ一覧 (<span id="piece-count">0</span>個)</h4>
+        <div id="piece-list" class="grid grid-cols-2 gap-2">
+          <!-- JSで生成 -->
+        </div>
+      </div>
+
+      <!-- 中央：メインエディタ -->
+      <div class="flex-1 flex flex-col relative">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-pink-600 flex items-center">
+            <i data-lucide="droplet" class="mr-2 w-6 h-6"></i> 背景を透明にしよう
+          </h3>
+          <div class="text-sm font-bold bg-pink-100 text-pink-600 px-3 py-1 rounded-full">
+            対象: <span id="current-target">1</span> / <span id="total-targets">0</span>
+          </div>
+        </div>
+
+        <!-- スポイト用キャンバスエリア -->
+        <div class="flex-1 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard">
+          <canvas id="transparency-canvas" class="max-w-full max-h-full object-contain shadow-lg bg-white bg-opacity-0 transition-transform transform hover:scale-[1.02] cursor-crosshair" title="クリックして透明にする色を選択"></canvas>
+          
+          <!-- 操作ヒント -->
+          <div class="absolute bottom-4 left-4 right-4 bg-white bg-opacity-90 p-3 rounded-xl shadow-sm text-sm flex items-start gap-2 pointer-events-none">
+            <i data-lucide="mouse-pointer-2" class="text-pink-500 shrink-0 mt-0.5 w-4 h-4"></i>
+            <p class="text-gray-700 font-medium">画像の<span class="text-pink-600 font-bold">透明にしたい背景部分</span>をクリックしてください。</p>
+          </div>
+        </div>
+
+        <!-- 調整コントローラー -->
+        <div class="mt-4 bg-pink-50 p-4 rounded-2xl flex flex-col gap-4">
+          <div>
+            <div class="flex justify-between mb-1">
+              <label class="text-sm font-bold text-gray-700">透明にする色の広さ（しきい値）</label>
+              <span id="threshold-val" class="text-sm font-bold text-pink-600">30</span>
+            </div>
+            <input type="range" min="0" max="150" id="threshold-range" class="w-full accent-pink-500" />
+            <p class="text-xs text-gray-500 mt-1">値を大きくすると、似た色も一緒に透明になります。</p>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="handleAutoTransparency()" class="flex-1 bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
+              <i data-lucide="refresh-cw" class="mr-2 w-4 h-4"></i>
+              自動で背景を消す（簡易）
+            </button>
+            <button onclick="applyTransparency(appState.selectedPieceIndex, null, 30)" class="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition">
+              元に戻す
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-between">
+          <button onclick="setStep(2)" class="py-2 px-6 text-gray-500 hover:text-pink-500 font-bold">戻る</button>
+          <button onclick="setStep(4)" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105">
+            次へ：完成！
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Step 4: Download ================= -->
+    <div id="step-4" class="step-container hidden bg-white p-10 rounded-3xl shadow-xl border-4 border-pink-200 text-center">
+      <h2 class="text-3xl font-black text-pink-500 mb-2">🎉 スタンプ完成！ 🎉</h2>
+      <p class="text-gray-600 font-medium mb-8">LINEスタンプ用のサイズ（370×320）に調整されています。</p>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4 mb-10">
+        <button onclick="downloadAllAsZip()" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-10 rounded-full shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center text-lg">
+          <i data-lucide="download" class="mr-2 w-6 h-6"></i>
+          まとめてZIPダウンロード
+        </button>
+        <button onclick="setStep(3)" class="bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 font-bold py-4 px-8 rounded-full shadow-sm transition">
+          微調整に戻る
+        </button>
+      </div>
+
+      <div class="bg-gray-50 p-6 rounded-2xl text-left">
+        <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">個別ダウンロード</h3>
+        <div id="download-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <!-- JSで生成 -->
+        </div>
+      </div>
+
+      <div class="mt-10">
+        <button onclick="resetApp()" class="text-sm font-bold text-gray-400 hover:text-gray-600 underline">
+          最初からやり直す
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ==========================================
+    // アプリケーションの状態管理 (State)
+    // ==========================================
+    const appState = {
+      step: 1,
+      sourceImage: null,
+      gridRows: 3,
+      gridCols: 3,
+      splitLinesX: [], // 0~1の割合
+      splitLinesY: [], // 0~1の割合
+      pieces: [],      // { id, originalDataUrl, processedDataUrl, transparentColor, threshold }
+      selectedPieceIndex: 0
+    };
+
+    const stepsInfo = [
+      { id: 1, label: '1. 画像選択', icon: 'upload' },
+      { id: 2, label: '2. 分割', icon: 'scissors' },
+      { id: 3, label: '3. 透過・編集', icon: 'droplet' },
+      { id: 4, label: '4. ダウンロード', icon: 'download' }
+    ];
+
+    // ==========================================
+    // ユーティリティ関数
+    // ==========================================
+    
+    // 画像ファイルをImageオブジェクトに変換
+    const loadImage = (source) => {
+      return new Promise((resolve, reject) => {
+        if (typeof source === 'string') {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = source;
+        } else {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(source);
+        }
+      });
+    };
+
+    // Lucideアイコンの初期化・更新
+    const updateIcons = () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    };
+
+    // ==========================================
+    // UI制御関数
+    // ==========================================
+
+    // ステップインジケーターの描画
+    function updateStepIndicators() {
+      const container = document.getElementById('step-indicators');
+      container.innerHTML = '';
+      stepsInfo.forEach(s => {
+        const isActive = appState.step === s.id;
+        const isPast = appState.step > s.id;
+        const div = document.createElement('div');
+        
+        let classes = "flex items-center px-4 py-2 rounded-full transition-all ";
+        if (isActive) classes += "bg-pink-500 text-white font-bold shadow-sm";
+        else if (isPast) classes += "text-pink-600";
+        else classes += "text-gray-400";
+        
+        div.className = classes;
+        div.innerHTML = `<i data-lucide="${s.icon}" class="mr-2 w-[18px] h-[18px]"></i> <span class="hidden sm:inline">${s.label}</span>`;
+        container.appendChild(div);
+      });
+      updateIcons();
+    }
+
+    // 画面(ステップ)の切り替え
+    function setStep(newStep) {
+      appState.step = newStep;
+      document.querySelectorAll('.step-container').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`step-${newStep}`).classList.remove('hidden');
+      updateStepIndicators();
+      
+      if (newStep === 2) renderStep2();
+      if (newStep === 3) renderStep3();
+      if (newStep === 4) renderStep4();
+    }
+
+    function resetApp() {
+      appState.sourceImage = null;
+      appState.pieces = [];
+      document.getElementById('file-upload').value = '';
+      setStep(1);
+    }
+
+    // ==========================================
+    // Step 1: ファイルアップロード処理
+    // ==========================================
+    document.getElementById('file-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        appState.sourceImage = await loadImage(file);
+        initializeSplitLines(3, 3);
+        setStep(2);
+      } catch (error) {
+        alert("画像の読み込みに失敗しました。");
+      }
+    });
+
+    // ==========================================
+    // Step 2: 分割処理とドラッグUI
+    // ==========================================
+    function initializeSplitLines(rows, cols) {
+      appState.gridRows = rows;
+      appState.gridCols = cols;
+      
+      appState.splitLinesX = [];
+      for (let i = 1; i < cols; i++) appState.splitLinesX.push(i / cols);
+      
+      appState.splitLinesY = [];
+      for (let i = 1; i < rows; i++) appState.splitLinesY.push(i / rows);
+      
+      if (appState.step === 2) renderStep2();
+    }
+
+    // Step2のUI更新
+    function renderStep2() {
+      document.getElementById('range-rows').value = appState.gridRows;
+      document.getElementById('val-rows').textContent = appState.gridRows;
+      document.getElementById('range-cols').value = appState.gridCols;
+      document.getElementById('val-cols').textContent = appState.gridCols;
+
+      const container = document.getElementById('split-container');
+      const imgPreview = document.getElementById('source-image-preview');
+      
+      container.style.aspectRatio = `${appState.sourceImage.width} / ${appState.sourceImage.height}`;
+      imgPreview.src = appState.sourceImage.src;
+      
+      renderSplitLines();
+    }
+
+    // 分割線の描画とドラッグ処理
+    let draggingLine = null; // { type: 'x'|'y', index: 0 }
+
+    function handleLineMouseDown(type, index, e) {
+      e.preventDefault();
+      draggingLine = { type, index };
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      if (!draggingLine) return;
+      const container = document.getElementById('split-container');
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+      if (draggingLine.type === 'x') {
+        appState.splitLinesX[draggingLine.index] = x;
+      } else {
+        appState.splitLinesY[draggingLine.index] = y;
+      }
+      renderSplitLines();
+    });
+
+    window.addEventListener('mouseup', () => {
+      draggingLine = null;
+    });
+
+    function renderSplitLines() {
+      const container = document.getElementById('split-lines-container');
+      container.innerHTML = '';
+      
+      // 縦線 (X座標)
+      appState.splitLinesX.forEach((posX, i) => {
+        const line = document.createElement('div');
+        line.className = "absolute top-0 bottom-0 cursor-col-resize group z-10 flex justify-center";
+        line.style.left = `${posX * 100}%`;
+        line.style.width = '10px';
+        line.style.transform = 'translateX(-50%)';
+        line.innerHTML = `
+          <div class="h-full w-[2px] bg-blue-400 border-x border-white group-hover:bg-pink-400 group-hover:w-[4px] transition-all ${draggingLine?.type==='x' && draggingLine?.index===i ? '!bg-pink-500' : ''}"></div>
+          <div class="absolute top-1/2 -mt-3 bg-white border border-blue-400 rounded-full w-6 h-6 flex items-center justify-center shadow-sm text-blue-500 text-[10px] opacity-0 group-hover:opacity-100 pointer-events-none">↔</div>
+        `;
+        line.onmousedown = (e) => handleLineMouseDown('x', i, e);
+        container.appendChild(line);
+      });
+
+      // 横線 (Y座標)
+      appState.splitLinesY.forEach((posY, i) => {
+        const line = document.createElement('div');
+        line.className = "absolute left-0 right-0 cursor-row-resize group z-10 flex flex-col items-center";
+        line.style.top = `${posY * 100}%`;
+        line.style.height = '10px';
+        line.style.transform = 'translateY(-50%)';
+        line.innerHTML = `
+          <div class="w-full h-[2px] bg-blue-400 border-y border-white group-hover:bg-pink-400 group-hover:h-[4px] transition-all ${draggingLine?.type==='y' && draggingLine?.index===i ? '!bg-pink-500' : ''}"></div>
+          <div class="absolute left-1/2 -ml-3 bg-white border border-blue-400 rounded-full w-6 h-6 flex items-center justify-center shadow-sm text-blue-500 text-[10px] opacity-0 group-hover:opacity-100 pointer-events-none">↕</div>
+        `;
+        line.onmousedown = (e) => handleLineMouseDown('y', i, e);
+        container.appendChild(line);
+      });
+    }
+
+    // スライダーイベント
+    document.getElementById('range-rows').addEventListener('input', (e) => initializeSplitLines(parseInt(e.target.value), appState.gridCols));
+    document.getElementById('range-cols').addEventListener('input', (e) => initializeSplitLines(appState.gridRows, parseInt(e.target.value)));
+
+    // 分割実行
+    async function handleApplySplit() {
+      if (!appState.sourceImage) return;
+      
+      const xPositions = [0, ...[...appState.splitLinesX].sort((a,b)=>a-b), 1];
+      const yPositions = [0, ...[...appState.splitLinesY].sort((a,b)=>a-b), 1];
+      
+      appState.pieces = [];
+      let idCounter = 1;
+
+      // LINEスタンプのサイズ定義
+      const STAMP_WIDTH = 370;
+      const STAMP_HEIGHT = 320;
+
+      for (let row = 0; row < yPositions.length - 1; row++) {
+        for (let col = 0; col < xPositions.length - 1; col++) {
+          const startX = xPositions[col] * appState.sourceImage.width;
+          const endX = xPositions[col + 1] * appState.sourceImage.width;
+          const startY = yPositions[row] * appState.sourceImage.height;
+          const endY = yPositions[row + 1] * appState.sourceImage.height;
+          
+          const width = endX - startX;
+          const height = endY - startY;
+
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = STAMP_WIDTH;
+          tempCanvas.height = STAMP_HEIGHT;
+          const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+          const scale = Math.min(STAMP_WIDTH / width, STAMP_HEIGHT / height);
+          const drawWidth = width * scale;
+          const drawHeight = height * scale;
+          const dx = (STAMP_WIDTH - drawWidth) / 2;
+          const dy = (STAMP_HEIGHT - drawHeight) / 2;
+
+          ctx.drawImage(appState.sourceImage, startX, startY, width, height, dx, dy, drawWidth, drawHeight);
+          
+          const dataUrl = tempCanvas.toDataURL('image/png');
+          appState.pieces.push({
+            id: idCounter++,
+            originalDataUrl: dataUrl,
+            processedDataUrl: dataUrl,
+            transparentColor: null,
+            threshold: 30
+          });
+        }
+      }
+      appState.selectedPieceIndex = 0;
+      setStep(3);
+    }
+
+    // ==========================================
+    // Step 3: 背景透過機能
+    // ==========================================
+    
+    function renderStep3() {
+      document.getElementById('piece-count').textContent = appState.pieces.length;
+      document.getElementById('total-targets').textContent = appState.pieces.length;
+      document.getElementById('current-target').textContent = appState.selectedPieceIndex + 1;
+      
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      document.getElementById('threshold-range').value = piece.threshold;
+      document.getElementById('threshold-val').textContent = piece.threshold;
+
+      // 左側リスト描画
+      const listContainer = document.getElementById('piece-list');
+      listContainer.innerHTML = '';
+      appState.pieces.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = `cursor-pointer rounded-xl border-4 overflow-hidden relative checkerboard ${appState.selectedPieceIndex === i ? 'border-pink-500 shadow-md' : 'border-transparent hover:border-pink-200'}`;
+        div.onclick = () => {
+          appState.selectedPieceIndex = i;
+          renderStep3();
+        };
+        div.innerHTML = `
+          <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-square" />
+          <div class="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">${i + 1}</div>
+        `;
+        listContainer.appendChild(div);
+      });
+
+      // メインキャンバス描画
+      const canvas = document.getElementById('transparency-canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = piece.processedDataUrl;
+    }
+
+    // 透過処理メインロジック
+    async function applyTransparency(pieceIndex, color, threshold) {
+      const piece = appState.pieces[pieceIndex];
+      const img = await loadImage(piece.originalDataUrl);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      
+      if (color) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        const [tr, tg, tb] = color;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i+3];
+          if (a === 0) continue; 
+          
+          const r = data[i];
+          const g = data[i+1];
+          const b = data[i+2];
+          
+          const distance = Math.sqrt(Math.pow(r - tr, 2) + Math.pow(g - tg, 2) + Math.pow(b - tb, 2));
+          if (distance <= threshold) {
+            data[i+3] = 0; 
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+      
+      piece.transparentColor = color;
+      piece.threshold = threshold;
+      piece.processedDataUrl = canvas.toDataURL('image/png');
+      
+      if (appState.step === 3 && appState.selectedPieceIndex === pieceIndex) {
+        renderStep3();
+      }
+    }
+
+    // キャンバスクリック (スポイト)
+    document.getElementById('transparency-canvas').addEventListener('click', (e) => {
+      const canvas = e.target;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      
+      loadImage(piece.originalDataUrl).then(tempImg => {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = tempImg.width;
+        tempCanvas.height = tempImg.height;
+        const tCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        tCtx.drawImage(tempImg, 0, 0);
+        
+        const pixel = tCtx.getImageData(x, y, 1, 1).data;
+        if (pixel[3] > 0) {
+          applyTransparency(appState.selectedPieceIndex, [pixel[0], pixel[1], pixel[2]], piece.threshold);
+        }
+      });
+    });
+
+    // しきい値スライダーの変更
+    document.getElementById('threshold-range').addEventListener('change', (e) => {
+      const val = parseInt(e.target.value);
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      applyTransparency(appState.selectedPieceIndex, piece.transparentColor, val);
+    });
+
+    // 簡易自動透過
+    async function handleAutoTransparency() {
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      const img = await loadImage(piece.originalDataUrl);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // 左上のピクセル色を基準
+      const r = imageData.data[0];
+      const g = imageData.data[1];
+      const b = imageData.data[2];
+      
+      applyTransparency(appState.selectedPieceIndex, [r, g, b], 40);
+    }
+
+    // ==========================================
+    // Step 4: ダウンロード
+    // ==========================================
+    function renderStep4() {
+      const list = document.getElementById('download-list');
+      list.innerHTML = '';
+      
+      appState.pieces.forEach((piece, index) => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col items-center bg-white p-2 rounded-xl shadow-sm border border-gray-200";
+        div.innerHTML = `
+          <div class="w-full aspect-[37/32] mb-2 rounded bg-gray-100 flex items-center justify-center overflow-hidden checkerboard">
+            <img src="${piece.processedDataUrl}" class="max-w-full max-h-full object-contain" />
+          </div>
+          <button onclick="downloadSingle('${piece.processedDataUrl}', 'stamp_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-gray-200 hover:bg-pink-100 hover:text-pink-600 font-bold py-1 px-3 rounded w-full transition">
+            DL (${index + 1})
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function downloadSingle(dataUrl, filename) {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename;
+      link.click();
+    }
+
+    async function downloadAllAsZip() {
+      if (!window.JSZip) return alert("ZIP生成ライブラリを読み込んでいます。少々お待ちください。");
+      
+      const zip = new window.JSZip();
+      appState.pieces.forEach((piece, index) => {
+        const base64Data = piece.processedDataUrl.split(',')[1];
+        zip.file(`stamp_${String(index + 1).padStart(2, '0')}.png`, base64Data, { base64: true });
+      });
+      
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = "stamps.zip";
+      link.click();
+    }
+
+    // 初期化処理
+    document.addEventListener('DOMContentLoaded', () => {
+      updateStepIndicators();
+      updateIcons();
+    });
+
+  </script>
+</body>
+</html>
