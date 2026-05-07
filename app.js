@@ -148,7 +148,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 scale: 3,             // 高解像度
                 useCORS: true,
                 logging: false,
-                borderRadius: 36
+                borderRadius: 36,
+                onclone: (clonedDoc) => {
+                    const headerH1 = clonedDoc.querySelector('.capture-header h1');
+                    if (headerH1) {
+                        headerH1.style.background = 'none';
+                        headerH1.style.webkitBackgroundClip = 'initial';
+                        headerH1.style.webkitTextFillColor = '#fff';
+                        headerH1.style.color = '#fff';
+                    }
+                    // アニメーションを停止させてグラデーションを固定する
+                    const frame = clonedDoc.querySelector('.capture-frame');
+                    if (frame) {
+                        frame.style.animation = 'none';
+                        frame.style.backgroundSize = '100% 100%';
+                    }
+                }
             });
 
             if (generateBtn) generateBtn.style.display = 'flex';
