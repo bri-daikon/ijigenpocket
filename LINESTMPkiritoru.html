@@ -21,9 +21,9 @@
     }
     
     /* スクロールバーのカスタマイズ */
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #fdf2f8; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #fdf2f8; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #f9a8d4; }
   </style>
 </head>
@@ -63,22 +63,38 @@
     <div id="step-2" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-8">
       
       <!-- 分割エディタエリア -->
-      <div class="flex-1 flex flex-col items-center">
+      <div class="flex-1 flex flex-col items-center min-w-0">
         <h3 class="text-xl font-bold mb-4 text-pink-600 flex items-center">
           <i data-lucide="scissors" class="mr-2 w-6 h-6"></i> 分割線を調整しよう
         </h3>
         
-        <div id="split-container" class="relative select-none border-2 border-gray-200 overflow-hidden rounded shadow-inner w-full max-w-[500px]">
-          <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
-          <div id="split-lines-container"></div>
+        <!-- ズームコントローラー -->
+        <div class="flex justify-between items-center w-full max-w-[500px] mb-2 px-2">
+          <span class="text-sm font-bold text-gray-500">ズームして細部を確認</span>
+          <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <button onclick="changeZoom2(-0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+            <span id="zoom-val-2" class="w-14 text-center text-sm font-bold text-gray-700">100%</span>
+            <button onclick="changeZoom2(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          </div>
         </div>
+
+        <!-- 画像エリア (スクロール可能) -->
+        <div class="w-full max-w-[500px] h-[400px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
+          <div class="min-w-full min-h-full flex items-start justify-start p-4">
+            <div id="split-container" class="relative select-none bg-white shadow-sm origin-top-left transition-all duration-200 shrink-0">
+              <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
+              <div id="split-lines-container"></div>
+            </div>
+          </div>
+        </div>
+        
         <p class="text-sm text-gray-500 mt-4 text-center">
           ※ 青い点線をドラッグして、分割する位置を調整できます。<br/>はみ出さないように囲んでね！
         </p>
       </div>
 
       <!-- 分割設定メニュー -->
-      <div class="w-full md:w-80 bg-pink-50 p-6 rounded-2xl flex flex-col">
+      <div class="w-full md:w-80 bg-pink-50 p-6 rounded-2xl flex flex-col shrink-0">
         <h4 class="font-bold text-gray-700 mb-4">分割のテンプレート</h4>
         
         <div class="grid grid-cols-2 gap-3 mb-6">
@@ -115,7 +131,7 @@
     <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6 h-auto md:h-[600px]">
       
       <!-- 左サイド：一覧プレビュー -->
-      <div class="w-full md:w-64 border-r-2 border-pink-100 pr-4 overflow-y-auto custom-scrollbar">
+      <div class="w-full md:w-64 border-r-2 border-pink-100 pr-4 overflow-y-auto custom-scrollbar shrink-0">
         <h4 class="font-bold text-gray-700 mb-3 sticky top-0 bg-white py-2 z-10">スタンプ一覧 (<span id="piece-count">0</span>個)</h4>
         <div id="piece-list" class="grid grid-cols-2 gap-2">
           <!-- JSで生成 -->
@@ -123,7 +139,7 @@
       </div>
 
       <!-- 中央：メインエディタ -->
-      <div class="flex-1 flex flex-col relative">
+      <div class="flex-1 flex flex-col relative min-w-0">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-bold text-pink-600 flex items-center">
             <i data-lucide="droplet" class="mr-2 w-6 h-6"></i> 背景を透明にしよう
@@ -134,13 +150,29 @@
         </div>
 
         <!-- スポイト用キャンバスエリア -->
-        <div class="flex-1 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard">
-          <canvas id="transparency-canvas" class="max-w-full max-h-full object-contain shadow-lg bg-white bg-opacity-0 transition-transform transform hover:scale-[1.02] cursor-crosshair" title="クリックして透明にする色を選択"></canvas>
+        <div class="flex-1 bg-gray-100 rounded-2xl flex flex-col overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard">
+          
+          <!-- キャンバス用ズームコントローラー -->
+          <div class="absolute top-4 right-4 z-10 flex items-center gap-2 bg-white rounded-lg p-1 shadow-md border border-gray-200">
+            <button onclick="changeZoom3(-0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+            <span id="zoom-val-3" class="w-14 text-center text-sm font-bold text-gray-700">100%</span>
+            <button onclick="changeZoom3(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          </div>
+
+          <!-- キャンバス本体 (スクロール可能) -->
+          <div class="flex-1 overflow-auto custom-scrollbar p-8">
+            <div class="min-w-full min-h-full flex items-center justify-center">
+              <canvas id="transparency-canvas" class="cursor-crosshair shadow-xl bg-white bg-opacity-0 transition-all duration-200 shrink-0" title="クリックして透明にする色を選択"></canvas>
+            </div>
+          </div>
           
           <!-- 操作ヒント -->
-          <div class="absolute bottom-4 left-4 right-4 bg-white bg-opacity-90 p-3 rounded-xl shadow-sm text-sm flex items-start gap-2 pointer-events-none">
+          <div class="absolute bottom-4 left-4 right-4 bg-white bg-opacity-90 p-3 rounded-xl shadow-sm text-sm flex items-start gap-2 pointer-events-none border border-gray-100">
             <i data-lucide="mouse-pointer-2" class="text-pink-500 shrink-0 mt-0.5 w-4 h-4"></i>
-            <p class="text-gray-700 font-medium">画像の<span class="text-pink-600 font-bold">透明にしたい背景部分</span>をクリックしてください。</p>
+            <p class="text-gray-700 font-medium">
+              画像の<span class="text-pink-600 font-bold">透明にしたい背景部分</span>をクリックしてください。<br/>
+              <span class="text-xs text-gray-500">※ 複数の場所を順番にクリックして、どんどん透明にできます！</span>
+            </p>
           </div>
         </div>
 
@@ -155,21 +187,27 @@
             <p class="text-xs text-gray-500 mt-1">値を大きくすると、似た色も一緒に透明になります。</p>
           </div>
 
+          <!-- アンチエイリアス（エッジの滑らかさ）チェックボタン -->
+          <div class="flex items-center">
+            <input type="checkbox" id="smooth-edge-check" class="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-500">
+            <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">境界線をなめらかにする（アンチエイリアス）</label>
+          </div>
+
           <div class="flex gap-2">
             <button onclick="handleAutoTransparency()" class="flex-1 bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
               <i data-lucide="refresh-cw" class="mr-2 w-4 h-4"></i>
-              自動で背景を消す（簡易）
+              自動で背景を消す
             </button>
-            <button onclick="applyTransparency(appState.selectedPieceIndex, null, 30)" class="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition">
-              元に戻す
+            <button onclick="undoTransparency()" class="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition">
+              透過をすべて元に戻す
             </button>
           </div>
         </div>
 
         <div class="mt-4 flex justify-between">
           <button onclick="setStep(2)" class="py-2 px-6 text-gray-500 hover:text-pink-500 font-bold">戻る</button>
-          <button onclick="setStep(4)" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105">
-            次へ：完成！
+          <button onclick="setStep(4)" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105 flex items-center">
+            次へ：完成！ <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
           </button>
         </div>
       </div>
@@ -215,10 +253,12 @@
       sourceImage: null,
       gridRows: 3,
       gridCols: 3,
-      splitLinesX: [], // 0~1の割合
-      splitLinesY: [], // 0~1の割合
-      pieces: [],      // { id, originalDataUrl, processedDataUrl, transparentColor, threshold }
-      selectedPieceIndex: 0
+      splitLinesX: [],
+      splitLinesY: [],
+      pieces: [],
+      selectedPieceIndex: 0,
+      zoom2: 1.0, // 分割画面のズーム倍率
+      zoom3: 1.0  // 透過画面のズーム倍率
     };
 
     const stepsInfo = [
@@ -232,7 +272,6 @@
     // ユーティリティ関数
     // ==========================================
     
-    // 画像ファイルをImageオブジェクトに変換
     const loadImage = (source) => {
       return new Promise((resolve, reject) => {
         if (typeof source === 'string') {
@@ -253,7 +292,6 @@
       });
     };
 
-    // Lucideアイコンの初期化・更新
     const updateIcons = () => {
       if (window.lucide) {
         window.lucide.createIcons();
@@ -264,7 +302,6 @@
     // UI制御関数
     // ==========================================
 
-    // ステップインジケーターの描画
     function updateStepIndicators() {
       const container = document.getElementById('step-indicators');
       container.innerHTML = '';
@@ -285,7 +322,6 @@
       updateIcons();
     }
 
-    // 画面(ステップ)の切り替え
     function setStep(newStep) {
       appState.step = newStep;
       document.querySelectorAll('.step-container').forEach(el => el.classList.add('hidden'));
@@ -312,6 +348,14 @@
       if (!file) return;
       try {
         appState.sourceImage = await loadImage(file);
+        
+        // 画像が大きすぎる場合は初期ズームを縮小
+        appState.zoom2 = 1.0;
+        const maxWidth = 450;
+        if (appState.sourceImage.width > maxWidth) {
+           appState.zoom2 = maxWidth / appState.sourceImage.width;
+        }
+
         initializeSplitLines(3, 3);
         setStep(2);
       } catch (error) {
@@ -320,7 +364,7 @@
     });
 
     // ==========================================
-    // Step 2: 分割処理とドラッグUI
+    // Step 2: 分割処理とドラッグUI・ズーム
     // ==========================================
     function initializeSplitLines(rows, cols) {
       appState.gridRows = rows;
@@ -335,19 +379,30 @@
       if (appState.step === 2) renderStep2();
     }
 
-    // Step2のUI更新
+    // ズーム（拡大縮小）機能 - Step 2
+    function updateZoom2Display() {
+      const container = document.getElementById('split-container');
+      // 画像の元サイズにズーム倍率を掛けてコンテナの幅・高さを決定
+      container.style.width = `${appState.sourceImage.width * appState.zoom2}px`;
+      container.style.height = `${appState.sourceImage.height * appState.zoom2}px`;
+      document.getElementById('zoom-val-2').textContent = Math.round(appState.zoom2 * 100) + '%';
+    }
+
+    function changeZoom2(delta) {
+      appState.zoom2 = Math.max(0.2, Math.min(5.0, appState.zoom2 + delta)); // 20% 〜 500%
+      updateZoom2Display();
+    }
+
     function renderStep2() {
       document.getElementById('range-rows').value = appState.gridRows;
       document.getElementById('val-rows').textContent = appState.gridRows;
       document.getElementById('range-cols').value = appState.gridCols;
       document.getElementById('val-cols').textContent = appState.gridCols;
 
-      const container = document.getElementById('split-container');
       const imgPreview = document.getElementById('source-image-preview');
-      
-      container.style.aspectRatio = `${appState.sourceImage.width} / ${appState.sourceImage.height}`;
       imgPreview.src = appState.sourceImage.src;
       
+      updateZoom2Display();
       renderSplitLines();
     }
 
@@ -413,7 +468,6 @@
       });
     }
 
-    // スライダーイベント
     document.getElementById('range-rows').addEventListener('input', (e) => initializeSplitLines(parseInt(e.target.value), appState.gridCols));
     document.getElementById('range-cols').addEventListener('input', (e) => initializeSplitLines(appState.gridRows, parseInt(e.target.value)));
 
@@ -455,22 +509,39 @@
           ctx.drawImage(appState.sourceImage, startX, startY, width, height, dx, dy, drawWidth, drawHeight);
           
           const dataUrl = tempCanvas.toDataURL('image/png');
+          
+          // ★ 追加: 透過の履歴を保存するための配列 clicks を追加
           appState.pieces.push({
             id: idCounter++,
             originalDataUrl: dataUrl,
             processedDataUrl: dataUrl,
-            transparentColor: null,
-            threshold: 30
+            threshold: 30,
+            smoothEdge: true,
+            clicks: [] 
           });
         }
       }
       appState.selectedPieceIndex = 0;
+      appState.zoom3 = 1.0; // ズーム倍率リセット
       setStep(3);
     }
 
     // ==========================================
-    // Step 3: 背景透過機能
+    // Step 3: 背景透過機能・ズーム
     // ==========================================
+
+    // ズーム（拡大縮小）機能 - Step 3
+    function updateZoom3Display() {
+      const canvas = document.getElementById('transparency-canvas');
+      canvas.style.width = `${canvas.width * appState.zoom3}px`;
+      canvas.style.height = `${canvas.height * appState.zoom3}px`;
+      document.getElementById('zoom-val-3').textContent = Math.round(appState.zoom3 * 100) + '%';
+    }
+
+    function changeZoom3(delta) {
+      appState.zoom3 = Math.max(0.2, Math.min(5.0, appState.zoom3 + delta));
+      updateZoom3Display();
+    }
     
     function renderStep3() {
       document.getElementById('piece-count').textContent = appState.pieces.length;
@@ -480,6 +551,7 @@
       const piece = appState.pieces[appState.selectedPieceIndex];
       document.getElementById('threshold-range').value = piece.threshold;
       document.getElementById('threshold-val').textContent = piece.threshold;
+      document.getElementById('smooth-edge-check').checked = piece.smoothEdge;
 
       // 左側リスト描画
       const listContainer = document.getElementById('piece-list');
@@ -507,12 +579,13 @@
         canvas.height = img.height;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
+        updateZoom3Display(); // ズーム反映
       };
       img.src = piece.processedDataUrl;
     }
 
-    // 透過処理メインロジック
-    async function applyTransparency(pieceIndex, color, threshold) {
+    // 透過処理メインロジック（複数履歴対応版）
+    async function applyTransparency(pieceIndex) {
       const piece = appState.pieces[pieceIndex];
       const img = await loadImage(piece.originalDataUrl);
       
@@ -522,29 +595,57 @@
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0);
       
-      if (color) {
+      // 履歴(clicks)が1つ以上あれば、順番に全て透過を適用していく
+      if (piece.clicks && piece.clicks.length > 0) {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        const [tr, tg, tb] = color;
+        const width = canvas.width;
+        const height = canvas.height;
+        const featherRange = piece.smoothEdge ? 20 : 0;
         
-        for (let i = 0; i < data.length; i += 4) {
-          const a = data[i+3];
-          if (a === 0) continue; 
+        for (const click of piece.clicks) {
+          const [tr, tg, tb] = click.color;
           
-          const r = data[i];
-          const g = data[i+1];
-          const b = data[i+2];
+          // フラッドフィル用の訪問済みマップとスタック
+          const visited = new Uint8Array(width * height);
+          const stack = [Math.floor(click.pos.x), Math.floor(click.pos.y)];
           
-          const distance = Math.sqrt(Math.pow(r - tr, 2) + Math.pow(g - tg, 2) + Math.pow(b - tb, 2));
-          if (distance <= threshold) {
-            data[i+3] = 0; 
+          while(stack.length > 0) {
+            const y = stack.pop();
+            const x = stack.pop();
+            
+            if (x < 0 || x >= width || y < 0 || y >= height) continue;
+            
+            const idx1D = y * width + x;
+            if (visited[idx1D]) continue;
+            visited[idx1D] = 1;
+            
+            const idx = idx1D * 4;
+            const a = data[idx+3];
+            if (a === 0) continue; 
+            
+            const r = data[idx];
+            const g = data[idx+1];
+            const b = data[idx+2];
+            
+            const distance = Math.sqrt(Math.pow(r - tr, 2) + Math.pow(g - tg, 2) + Math.pow(b - tb, 2));
+            if (distance <= piece.threshold) {
+              data[idx+3] = 0; // 透過
+              // 隣接ピクセルを探索スタックに追加
+              stack.push(x - 1, y);
+              stack.push(x + 1, y);
+              stack.push(x, y - 1);
+              stack.push(x, y + 1);
+            } else if (piece.smoothEdge && distance <= piece.threshold + featherRange) {
+              // しきい値のすぐ外側を半透明にする
+              const ratio = (distance - piece.threshold) / featherRange;
+              data[idx+3] = Math.min(a, Math.floor(a * ratio));
+            }
           }
         }
         ctx.putImageData(imageData, 0, 0);
       }
       
-      piece.transparentColor = color;
-      piece.threshold = threshold;
       piece.processedDataUrl = canvas.toDataURL('image/png');
       
       if (appState.step === 3 && appState.selectedPieceIndex === pieceIndex) {
@@ -552,15 +653,16 @@
       }
     }
 
-    // キャンバスクリック (スポイト)
+    // キャンバスクリック (スポイト＆履歴追加)
     document.getElementById('transparency-canvas').addEventListener('click', (e) => {
       const canvas = e.target;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      // ズームしていても正確に元画像の座標を取得
+      const x = Math.floor((e.clientX - rect.left) * scaleX);
+      const y = Math.floor((e.clientY - rect.top) * scaleY);
 
       const piece = appState.pieces[appState.selectedPieceIndex];
       
@@ -572,18 +674,35 @@
         tCtx.drawImage(tempImg, 0, 0);
         
         const pixel = tCtx.getImageData(x, y, 1, 1).data;
+        // 透明な部分をクリックした場合は無視する
         if (pixel[3] > 0) {
-          applyTransparency(appState.selectedPieceIndex, [pixel[0], pixel[1], pixel[2]], piece.threshold);
+          // ★ 追加: クリックした座標と色を履歴に記憶させる
+          piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: {x, y} });
+          applyTransparency(appState.selectedPieceIndex);
         }
       });
     });
 
-    // しきい値スライダーの変更
+    // スライダー・チェックボックス操作時の再計算（履歴にも反映）
     document.getElementById('threshold-range').addEventListener('change', (e) => {
       const val = parseInt(e.target.value);
       const piece = appState.pieces[appState.selectedPieceIndex];
-      applyTransparency(appState.selectedPieceIndex, piece.transparentColor, val);
+      piece.threshold = val;
+      applyTransparency(appState.selectedPieceIndex);
     });
+
+    document.getElementById('smooth-edge-check').addEventListener('change', (e) => {
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      piece.smoothEdge = e.target.checked;
+      applyTransparency(appState.selectedPieceIndex);
+    });
+
+    // 元に戻す機能（履歴のクリア）
+    function undoTransparency() {
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      piece.clicks = []; // 記憶したクリック履歴をすべて消去
+      applyTransparency(appState.selectedPieceIndex);
+    }
 
     // 簡易自動透過
     async function handleAutoTransparency() {
@@ -596,12 +715,13 @@
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
-      // 左上のピクセル色を基準
+      // 左上のピクセル色を基準にし、左上(x:0, y:0)から広げる履歴を追加
       const r = imageData.data[0];
       const g = imageData.data[1];
       const b = imageData.data[2];
       
-      applyTransparency(appState.selectedPieceIndex, [r, g, b], 40);
+      piece.clicks.push({ color: [r, g, b], pos: {x: 0, y: 0} });
+      applyTransparency(appState.selectedPieceIndex);
     }
 
     // ==========================================
