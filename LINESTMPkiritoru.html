@@ -35,7 +35,8 @@
     <h1 class="text-2xl font-black text-pink-500 tracking-wider">LINEスタンプメーカー</h1>
   </header>
 
-  <main class="max-w-5xl mx-auto mt-8 px-4">
+  <!-- 全体の最大幅を max-w-5xl から max-w-6xl に拡張して横に広くしました -->
+  <main class="max-w-6xl mx-auto mt-6 px-4">
     
     <!-- ステップナビゲーション -->
     <div class="flex justify-center mb-8">
@@ -68,8 +69,8 @@
           <i data-lucide="scissors" class="mr-2 w-6 h-6"></i> 分割線を調整しよう
         </h3>
         
-        <!-- ズームコントローラー -->
-        <div class="flex justify-between items-center w-full max-w-[500px] mb-2 px-2">
+        <!-- ズームコントローラー (幅の制限を解除しました) -->
+        <div class="flex justify-between items-center w-full mb-2 px-2">
           <span class="text-sm font-bold text-gray-500">ズームして細部を確認</span>
           <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
             <button onclick="changeZoom2(-0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
@@ -78,8 +79,8 @@
           </div>
         </div>
 
-        <!-- 画像エリア (スクロール可能) -->
-        <div class="w-full max-w-[500px] h-[400px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
+        <!-- 画像エリア (スクロール可能) - 高さと幅を大きく広げました -->
+        <div class="w-full h-[60vh] min-h-[400px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
           <div class="min-w-full min-h-full flex items-start justify-start p-4">
             <div id="split-container" class="relative select-none bg-white shadow-sm origin-top-left transition-all duration-200 shrink-0">
               <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
@@ -128,10 +129,12 @@
     </div>
 
     <!-- ================= Step 3: Edit & Transparency ================= -->
-    <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6 h-auto md:h-[600px]">
+    <!-- 高さを画面高の80% (vh) に対応させて大きく広げました -->
+    <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6 h-auto md:h-[80vh] md:min-h-[600px]">
       
       <!-- 左サイド：一覧プレビュー -->
-      <div class="w-full md:w-64 border-r-2 border-pink-100 pr-4 overflow-y-auto custom-scrollbar shrink-0">
+      <!-- リスト側の幅も少しだけ広げました -->
+      <div class="w-full md:w-72 border-r-2 border-pink-100 pr-4 overflow-y-auto custom-scrollbar shrink-0">
         <h4 class="font-bold text-gray-700 mb-3 sticky top-0 bg-white py-2 z-10">スタンプ一覧 (<span id="piece-count">0</span>個)</h4>
         <div id="piece-list" class="grid grid-cols-2 gap-2">
           <!-- JSで生成 -->
@@ -140,7 +143,7 @@
 
       <!-- 中央：メインエディタ -->
       <div class="flex-1 flex flex-col relative min-w-0">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-4 shrink-0">
           <h3 class="text-xl font-bold text-pink-600 flex items-center">
             <i data-lucide="droplet" class="mr-2 w-6 h-6"></i> 背景を透明にしよう
           </h3>
@@ -150,7 +153,7 @@
         </div>
 
         <!-- スポイト用キャンバスエリア -->
-        <div class="flex-1 bg-gray-100 rounded-2xl flex flex-col overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard">
+        <div class="flex-1 bg-gray-100 rounded-2xl flex flex-col overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard min-h-0">
           
           <!-- キャンバス用ズームコントローラー -->
           <div class="absolute top-4 right-4 z-10 flex items-center gap-2 bg-white rounded-lg p-1 shadow-md border border-gray-200">
@@ -159,8 +162,8 @@
             <button onclick="changeZoom3(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
           </div>
 
-          <!-- キャンバス本体 (スクロール可能) -->
-          <div class="flex-1 overflow-auto custom-scrollbar p-8">
+          <!-- キャンバス本体 (スクロール可能) - 余白を p-8 から p-2 に減らし領域を拡大 -->
+          <div class="flex-1 overflow-auto custom-scrollbar p-2">
             <div class="min-w-full min-h-full flex items-center justify-center">
               <canvas id="transparency-canvas" class="cursor-crosshair shadow-xl bg-white bg-opacity-0 transition-all duration-200 shrink-0" title="クリックして透明にする色を選択"></canvas>
             </div>
@@ -177,7 +180,7 @@
         </div>
 
         <!-- 調整コントローラー -->
-        <div class="mt-4 bg-pink-50 p-4 rounded-2xl flex flex-col gap-4">
+        <div class="mt-4 bg-pink-50 p-4 rounded-2xl flex flex-col gap-4 shrink-0">
           <div>
             <div class="flex justify-between mb-1">
               <label class="text-sm font-bold text-gray-700">透明にする色の広さ（しきい値）</label>
@@ -204,7 +207,7 @@
           </div>
         </div>
 
-        <div class="mt-4 flex justify-between">
+        <div class="mt-4 flex justify-between shrink-0">
           <button onclick="setStep(2)" class="py-2 px-6 text-gray-500 hover:text-pink-500 font-bold">戻る</button>
           <button onclick="setStep(4)" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105 flex items-center">
             次へ：完成！ <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
