@@ -134,7 +134,7 @@
     <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6">
       
       <!-- 左サイド：一覧プレビュー -->
-      <!-- ★変更点：親コンテナのボーダーを右側の高さに合わせて一番下まで伸ばし、中のリスト部分は画面に追従(Sticky)するようにしました -->
+      <!-- 親コンテナのボーダーを右側の高さに合わせて一番下まで伸ばし、中のリスト部分は画面に追従(Sticky)するようにしました -->
       <div class="w-full md:w-80 border-r-2 border-pink-100 pr-4 shrink-0 relative">
         <div class="sticky top-24 flex flex-col" style="max-height: calc(100vh - 120px);">
           <h4 class="font-bold text-gray-700 mb-3 bg-white py-2 z-10 shrink-0">スタンプ一覧 (<span id="piece-count">0</span>個)</h4>
@@ -209,13 +209,19 @@
             <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">境界線をなめらかにする（アンチエイリアス）</label>
           </div>
 
-          <div class="flex gap-2">
-            <button onclick="handleAutoTransparency()" class="flex-1 bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
-              <i data-lucide="refresh-cw" class="mr-2 w-4 h-4"></i>
-              自動で背景を消す
+          <!-- ★変更：1つ前に戻すボタンを追加し、フレックスで並べました -->
+          <div class="flex flex-wrap gap-2">
+            <button onclick="handleAutoTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
+              <i data-lucide="sparkles" class="mr-2 w-4 h-4"></i>
+              自動で消す
             </button>
-            <button onclick="undoTransparency()" class="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition">
-              透過をすべて元に戻す
+            <button onclick="undoLastTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-blue-400 text-blue-600 font-bold py-2 rounded-xl hover:bg-blue-100 transition flex justify-center items-center">
+              <i data-lucide="undo" class="mr-2 w-4 h-4"></i>
+              1つ戻す
+            </button>
+            <button onclick="undoTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition flex justify-center items-center">
+              <i data-lucide="rotate-ccw" class="mr-2 w-4 h-4"></i>
+              すべて戻す
             </button>
           </div>
         </div>
@@ -741,6 +747,15 @@
       piece.smoothEdge = e.target.checked;
       applyTransparency(appState.selectedPieceIndex);
     });
+
+    // ★追加: 1手戻す機能（直近の履歴を1つ削除）
+    function undoLastTransparency() {
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      if (piece.clicks && piece.clicks.length > 0) {
+        piece.clicks.pop(); // 最後のクリック履歴を削除
+        applyTransparency(appState.selectedPieceIndex);
+      }
+    }
 
     // 元に戻す機能（履歴のクリア）
     function undoTransparency() {
