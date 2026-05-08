@@ -20,19 +20,19 @@
       background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/ENFmIDoP0T2AhXfUABgGSSkAAAD//5u2RkEAAAAASUVORK5CYII=");
     }
     
-    /* スクロールバーのカスタマイズ */
+    /* スクロールバーのカスタマイズ (スタイリッシュなグレー系に変更) */
     .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #fdf2f8; border-radius: 5px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbcfe8; border-radius: 5px; border: 2px solid #fdf2f8; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #f9a8d4; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="min-h-screen bg-pink-50 font-sans text-gray-800 pb-20">
+<body class="min-h-screen bg-slate-50 font-sans text-gray-800 pb-20">
 
   <!-- ヘッダー -->
-  <header class="bg-white shadow-sm py-4 px-6 border-b-4 border-pink-300 flex items-center justify-center sticky top-0 z-50">
-    <i data-lucide="image" class="text-pink-500 mr-2 w-7 h-7"></i>
-    <h1 class="text-2xl font-black text-pink-500 tracking-wider">LINEスタンプメーカー</h1>
+  <header class="bg-white shadow-sm py-4 px-6 border-b-4 border-slate-800 flex items-center justify-center sticky top-0 z-50">
+    <i data-lucide="layers" class="text-slate-800 mr-2 w-7 h-7"></i>
+    <h1 class="text-2xl font-black text-slate-800 tracking-wider">LINE STAMP MAKER</h1>
   </header>
 
   <!-- 全体の幅を max-w-[98%] にして横いっぱいに広げています -->
@@ -40,20 +40,20 @@
     
     <!-- ステップナビゲーション -->
     <div class="flex justify-center mb-8">
-      <div class="flex bg-white rounded-full p-2 shadow-md" id="step-indicators">
+      <div class="flex bg-white rounded-lg p-2 shadow-sm border border-slate-200" id="step-indicators">
         <!-- JSで動的に生成 -->
       </div>
     </div>
 
     <!-- ================= Step 1: Upload ================= -->
-    <div id="step-1" class="step-container bg-white p-10 rounded-3xl shadow-xl border-4 border-pink-200 text-center flex flex-col items-center justify-center min-h-[400px]">
-      <div class="bg-pink-100 p-6 rounded-full mb-6">
-        <i data-lucide="upload" class="text-pink-500 w-12 h-12"></i>
+    <div id="step-1" class="step-container bg-white p-10 rounded-xl shadow-md border border-slate-200 text-center flex flex-col items-center justify-center min-h-[400px]">
+      <div class="bg-slate-100 p-6 rounded-2xl mb-6">
+        <i data-lucide="upload-cloud" class="text-slate-700 w-12 h-12"></i>
       </div>
-      <h2 class="text-2xl font-bold mb-4">ベースになる画像を選んでね！</h2>
-      <p class="text-gray-500 mb-8">1枚のイラストから、たくさんのスタンプを切り出せます。</p>
+      <h2 class="text-2xl font-bold mb-4 text-slate-800">ベースになる画像を選択</h2>
+      <p class="text-slate-500 mb-8">1枚のイラストから、複数のスタンプを切り出します。</p>
       
-      <label class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-full cursor-pointer transition-transform transform hover:scale-105 shadow-lg flex items-center">
+      <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg cursor-pointer transition-colors shadow flex items-center">
         <i data-lucide="image" class="mr-2 w-5 h-5"></i>
         パソコンから画像を選ぶ
         <input type="file" accept="image/*" class="hidden" id="file-upload">
@@ -61,26 +61,26 @@
     </div>
 
     <!-- ================= Step 2: Split ================= -->
-    <div id="step-2" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-8">
+    <div id="step-2" class="step-container hidden bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col md:flex-row gap-8">
       
       <!-- 分割エディタエリア -->
       <div class="flex-1 flex flex-col items-center min-w-0">
-        <h3 class="text-xl font-bold mb-4 text-pink-600 flex items-center">
-          <i data-lucide="scissors" class="mr-2 w-6 h-6"></i> 分割線を調整しよう
+        <h3 class="text-xl font-bold mb-4 text-slate-800 flex items-center">
+          <i data-lucide="scissors" class="mr-2 w-6 h-6"></i> 分割線の調整
         </h3>
         
         <!-- ズームコントローラー -->
         <div class="flex justify-between items-center w-full mb-2 px-2">
-          <span class="text-sm font-bold text-gray-500">ズームして細部を確認</span>
-          <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-            <button onclick="changeZoom2(-0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
-            <span id="zoom-val-2" class="w-14 text-center text-sm font-bold text-gray-700">100%</span>
-            <button onclick="changeZoom2(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          <span class="text-sm font-bold text-slate-500">ズームして細部を確認</span>
+          <div class="flex items-center gap-2 bg-slate-100 rounded-md p-1 border border-slate-200">
+            <button onclick="changeZoom2(-0.2)" class="p-1 bg-white rounded hover:bg-slate-200 text-slate-600 transition-colors"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+            <span id="zoom-val-2" class="w-14 text-center text-sm font-bold text-slate-700">100%</span>
+            <button onclick="changeZoom2(0.2)" class="p-1 bg-white rounded hover:bg-slate-200 text-slate-600 transition-colors"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
           </div>
         </div>
 
-        <!-- 画像エリア (スクロール可能) - 大きくなった時のスクロール問題を解消 -->
-        <div id="step2-scroll-area" class="w-full min-h-[600px] lg:min-h-[800px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
+        <!-- 画像エリア (スクロール可能) -->
+        <div id="step2-scroll-area" class="w-full min-h-[600px] lg:min-h-[800px] overflow-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 custom-scrollbar relative">
           <div id="split-wrapper" class="min-w-full min-h-full flex items-center justify-center p-4 transition-all duration-200">
             <div id="split-container" class="relative select-none bg-white shadow-sm origin-top-left transition-all duration-200 shrink-0">
               <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
@@ -89,40 +89,40 @@
           </div>
         </div>
         
-        <p class="text-sm text-gray-500 mt-4 text-center">
-          ※ 青い点線をドラッグして、分割する位置を調整できます。<br/>はみ出さないように囲んでね！
+        <p class="text-sm text-slate-500 mt-4 text-center">
+          ※ 青い点線をドラッグして、分割する位置を調整できます。<br/>はみ出さないように囲んでください。
         </p>
       </div>
 
       <!-- 分割設定メニュー -->
       <div class="w-full md:w-80 shrink-0 relative">
-        <div class="sticky top-24 bg-pink-50 p-6 rounded-2xl flex flex-col">
-          <h4 class="font-bold text-gray-700 mb-4">分割のテンプレート</h4>
+        <div class="sticky top-24 bg-slate-50 border border-slate-200 p-6 rounded-xl flex flex-col">
+          <h4 class="font-bold text-slate-800 mb-4">分割テンプレート</h4>
           
           <div class="grid grid-cols-2 gap-3 mb-6">
-            <button onclick="initializeSplitLines(2, 2)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">2 × 2</button>
-            <button onclick="initializeSplitLines(3, 3)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">3 × 3</button>
-            <button onclick="initializeSplitLines(4, 4)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">4 × 4</button>
-            <button onclick="initializeSplitLines(5, 5)" class="bg-white border-2 border-pink-300 rounded-xl py-2 font-bold text-pink-600 hover:bg-pink-100 transition">5 × 5</button>
+            <button onclick="initializeSplitLines(2, 2)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">2 × 2</button>
+            <button onclick="initializeSplitLines(3, 3)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">3 × 3</button>
+            <button onclick="initializeSplitLines(4, 4)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">4 × 4</button>
+            <button onclick="initializeSplitLines(5, 5)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">5 × 5</button>
           </div>
 
           <div class="space-y-4 mb-8">
             <div>
-              <label class="block text-sm font-bold text-gray-600 mb-1">縦の数 (行): <span id="val-rows">3</span></label>
-              <input type="range" min="1" max="10" value="3" id="range-rows" class="w-full accent-pink-500" />
+              <label class="block text-sm font-bold text-slate-700 mb-1">縦の数 (行): <span id="val-rows">3</span></label>
+              <input type="range" min="1" max="10" value="3" id="range-rows" class="w-full accent-blue-600" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-600 mb-1">横の数 (列): <span id="val-cols">3</span></label>
-              <input type="range" min="1" max="10" value="3" id="range-cols" class="w-full accent-pink-500" />
+              <label class="block text-sm font-bold text-slate-700 mb-1">横の数 (列): <span id="val-cols">3</span></label>
+              <input type="range" min="1" max="10" value="3" id="range-cols" class="w-full accent-blue-600" />
             </div>
           </div>
 
           <div class="mt-auto">
-            <button onclick="handleApplySplit()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform hover:scale-105 flex justify-center items-center">
+            <button onclick="handleApplySplit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg shadow transition-colors flex justify-center items-center">
               <i data-lucide="scissors" class="mr-2 w-5 h-5"></i>
-              この位置で切り抜く！
+              この位置で切り抜く
             </button>
-            <button onclick="setStep(1)" class="w-full mt-3 py-2 text-gray-500 hover:text-pink-500 text-sm font-bold">
+            <button onclick="setStep(1)" class="w-full mt-3 py-2 text-slate-500 hover:text-blue-600 text-sm font-bold transition-colors">
               やり直す
             </button>
           </div>
@@ -131,13 +131,12 @@
     </div>
 
     <!-- ================= Step 3: Edit & Transparency ================= -->
-    <div id="step-3" class="step-container hidden bg-white p-6 rounded-3xl shadow-xl border-4 border-pink-200 flex flex-col md:flex-row gap-6">
+    <div id="step-3" class="step-container hidden bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col md:flex-row gap-6">
       
       <!-- 左サイド：一覧プレビュー -->
-      <!-- 親コンテナのボーダーを右側の高さに合わせて一番下まで伸ばし、中のリスト部分は画面に追従(Sticky)するようにしました -->
-      <div class="w-full md:w-80 border-r-2 border-pink-100 pr-4 shrink-0 relative">
+      <div class="w-full md:w-80 border-r border-slate-200 pr-4 shrink-0 relative">
         <div class="sticky top-24 flex flex-col" style="max-height: calc(100vh - 120px);">
-          <h4 class="font-bold text-gray-700 mb-3 bg-white py-2 z-10 shrink-0">スタンプ一覧 (<span id="piece-count">0</span>個)</h4>
+          <h4 class="font-bold text-slate-800 mb-3 bg-white py-2 z-10 shrink-0">スタンプ一覧 (<span id="piece-count">0</span>)</h4>
           <div class="overflow-y-auto custom-scrollbar flex-1 pr-2 pb-4">
             <div id="piece-list" class="grid grid-cols-2 gap-2">
               <!-- JSで生成 -->
@@ -149,77 +148,77 @@
       <!-- 中央：メインエディタ -->
       <div class="flex-1 flex flex-col relative min-w-0">
         <div class="flex justify-between items-center mb-4 shrink-0">
-          <h3 class="text-xl font-bold text-pink-600 flex items-center">
-            <i data-lucide="droplet" class="mr-2 w-6 h-6"></i> 背景を透明にしよう
+          <h3 class="text-xl font-bold text-slate-800 flex items-center">
+            <i data-lucide="droplet" class="mr-2 w-6 h-6"></i> 背景透過エディタ
           </h3>
-          <div class="text-sm font-bold bg-pink-100 text-pink-600 px-3 py-1 rounded-full">
+          <div class="text-sm font-bold bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-md">
             対象: <span id="current-target">1</span> / <span id="total-targets">0</span>
           </div>
         </div>
 
         <!-- スポイト用キャンバスエリア -->
-        <div id="canvas-container" class="flex-1 bg-gray-100 rounded-2xl flex flex-col overflow-hidden border-2 border-dashed border-gray-300 relative checkerboard min-h-[600px] lg:min-h-[800px] transition-colors duration-300">
+        <div id="canvas-container" class="flex-1 bg-slate-100 rounded-lg flex flex-col overflow-hidden border border-dashed border-slate-400 relative checkerboard min-h-[600px] lg:min-h-[800px] transition-colors duration-300">
           
           <!-- 背景色切り替え機能 -->
-          <div class="absolute top-4 left-4 z-10 flex items-center gap-1 bg-white rounded-lg p-1 shadow-md border border-gray-200">
-            <span class="text-xs font-bold text-gray-500 px-2">確認用背景:</span>
-            <button onclick="changeCanvasBg('checker')" id="bg-btn-checker" class="p-1 px-3 text-xs font-bold bg-pink-100 text-pink-700 rounded hover:bg-pink-200 transition">市松模様</button>
-            <button onclick="changeCanvasBg('black')" id="bg-btn-black" class="p-1 px-3 text-xs font-bold bg-white text-gray-700 rounded hover:bg-gray-100 transition">黒</button>
-            <button onclick="changeCanvasBg('white')" id="bg-btn-white" class="p-1 px-3 text-xs font-bold bg-white text-gray-700 rounded hover:bg-gray-100 transition">白</button>
+          <div class="absolute top-4 left-4 z-10 flex items-center gap-1 bg-white rounded-md p-1 shadow-sm border border-slate-200">
+            <span class="text-xs font-bold text-slate-500 px-2">確認用背景:</span>
+            <button onclick="changeCanvasBg('checker')" id="bg-btn-checker" class="p-1 px-3 text-xs font-bold bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors">市松模様</button>
+            <button onclick="changeCanvasBg('black')" id="bg-btn-black" class="p-1 px-3 text-xs font-bold bg-white text-slate-700 rounded hover:bg-slate-100 transition-colors">黒</button>
+            <button onclick="changeCanvasBg('white')" id="bg-btn-white" class="p-1 px-3 text-xs font-bold bg-white text-slate-700 rounded hover:bg-slate-100 transition-colors">白</button>
           </div>
 
           <!-- キャンバス用ズームコントローラー -->
-          <div class="absolute top-4 right-4 z-10 flex items-center gap-2 bg-white rounded-lg p-1 shadow-md border border-gray-200">
-            <button onclick="changeZoom3(-0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
-            <span id="zoom-val-3" class="w-14 text-center text-sm font-bold text-gray-700">100%</span>
-            <button onclick="changeZoom3(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          <div class="absolute top-4 right-4 z-10 flex items-center gap-2 bg-white rounded-md p-1 shadow-sm border border-slate-200">
+            <button onclick="changeZoom3(-0.2)" class="p-1 bg-white rounded hover:bg-slate-100 text-slate-600 transition-colors"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+            <span id="zoom-val-3" class="w-14 text-center text-sm font-bold text-slate-700">100%</span>
+            <button onclick="changeZoom3(0.2)" class="p-1 bg-white rounded hover:bg-slate-100 text-slate-600 transition-colors"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
           </div>
 
-          <!-- キャンバス本体 (スクロール可能) - 大きくなった時のスクロール問題を解消 -->
+          <!-- キャンバス本体 (スクロール可能) -->
           <div id="step3-scroll-area" class="flex-1 overflow-auto custom-scrollbar p-2 mt-12">
             <div id="transparency-wrapper" class="min-w-full min-h-full flex items-center justify-center p-4 transition-all duration-200">
-              <canvas id="transparency-canvas" class="cursor-crosshair shadow-xl bg-white bg-opacity-0 transition-all duration-200 shrink-0" title="クリックして透明にする色を選択"></canvas>
+              <canvas id="transparency-canvas" class="cursor-crosshair shadow-md bg-white bg-opacity-0 transition-all duration-200 shrink-0" title="クリックして透明にする色を選択"></canvas>
             </div>
           </div>
         </div>
 
         <!-- 調整コントローラー -->
-        <div class="mt-4 bg-pink-50 p-4 rounded-2xl flex flex-col gap-4 shrink-0">
+        <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-4 shrink-0">
           
-          <div class="bg-white p-3 rounded-xl shadow-sm border border-pink-100 text-sm flex items-start gap-2">
-            <i data-lucide="mouse-pointer-2" class="text-pink-500 shrink-0 mt-0.5 w-4 h-4"></i>
-            <p class="text-gray-700 font-medium">
-              画像の<span class="text-pink-600 font-bold">透明にしたい背景部分</span>をクリックしてください。<br/>
-              <span class="text-xs text-gray-500">※ 複数の場所を順番にクリックして、どんどん透明にできます！</span>
+          <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-sm flex items-start gap-2">
+            <i data-lucide="mouse-pointer-2" class="text-blue-600 shrink-0 mt-0.5 w-4 h-4"></i>
+            <p class="text-slate-700 font-medium">
+              画像の<span class="text-blue-600 font-bold">透明にしたい背景部分</span>をクリックしてください。<br/>
+              <span class="text-xs text-slate-500">※ 複数の場所を順番にクリックして、連続で透明化できます。</span>
             </p>
           </div>
 
           <div>
             <div class="flex justify-between mb-1">
-              <label class="text-sm font-bold text-gray-700">透明にする色の広さ（しきい値）</label>
-              <span id="threshold-val" class="text-sm font-bold text-pink-600">10</span>
+              <label class="text-sm font-bold text-slate-700">カラー許容値（しきい値）</label>
+              <span id="threshold-val" class="text-sm font-bold text-blue-600">10</span>
             </div>
-            <input type="range" min="0" max="150" value="10" id="threshold-range" class="w-full accent-pink-500" />
-            <p class="text-xs text-gray-500 mt-1">値を大きくすると、似た色も一緒に透明になります。</p>
+            <input type="range" min="0" max="150" value="10" id="threshold-range" class="w-full accent-blue-600" />
+            <p class="text-xs text-slate-500 mt-1">値を大きくすると、似た色も一緒に透明になります。</p>
           </div>
 
           <!-- アンチエイリアス（エッジの滑らかさ）チェックボタン -->
           <div class="flex items-center">
-            <input type="checkbox" id="smooth-edge-check" class="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-500">
-            <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">境界線をなめらかにする（アンチエイリアス）</label>
+            <input type="checkbox" id="smooth-edge-check" class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-600 accent-blue-600">
+            <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-slate-700 cursor-pointer">境界線のアンチエイリアス処理（滑らかにする）</label>
           </div>
 
-          <!-- 1つ前に戻すボタンを追加し、フレックスで並べました -->
+          <!-- 1つ前に戻すボタンなど -->
           <div class="flex flex-wrap gap-2">
-            <button onclick="handleAutoTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
+            <button onclick="handleAutoTransparency()" class="flex-1 min-w-[120px] bg-white border border-blue-400 text-blue-600 font-bold py-2 rounded-lg hover:bg-blue-50 transition-colors flex justify-center items-center shadow-sm">
               <i data-lucide="sparkles" class="mr-2 w-4 h-4"></i>
-              自動で消す
+              自動透過
             </button>
-            <button onclick="undoLastTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-blue-400 text-blue-600 font-bold py-2 rounded-xl hover:bg-blue-100 transition flex justify-center items-center">
+            <button onclick="undoLastTransparency()" class="flex-1 min-w-[120px] bg-white border border-slate-400 text-slate-700 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm">
               <i data-lucide="undo" class="mr-2 w-4 h-4"></i>
               1つ戻す
             </button>
-            <button onclick="undoTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-gray-300 text-gray-600 font-bold py-2 rounded-xl hover:bg-gray-100 transition flex justify-center items-center">
+            <button onclick="undoTransparency()" class="flex-1 min-w-[120px] bg-white border border-slate-300 text-slate-500 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm">
               <i data-lucide="rotate-ccw" class="mr-2 w-4 h-4"></i>
               すべて戻す
             </button>
@@ -227,38 +226,38 @@
         </div>
 
         <div class="mt-4 flex justify-between shrink-0">
-          <button onclick="setStep(2)" class="py-2 px-6 text-gray-500 hover:text-pink-500 font-bold">戻る</button>
-          <button onclick="setStep(4)" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105 flex items-center">
-            次へ：完成！ <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
+          <button onclick="setStep(2)" class="py-2 px-6 text-slate-500 hover:text-blue-600 font-bold transition-colors">戻る</button>
+          <button onclick="setStep(4)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-8 rounded-lg shadow transition-colors flex items-center">
+            次へ：完成 <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
           </button>
         </div>
       </div>
     </div>
 
     <!-- ================= Step 4: Download ================= -->
-    <div id="step-4" class="step-container hidden bg-white p-10 rounded-3xl shadow-xl border-4 border-pink-200 text-center">
-      <h2 class="text-3xl font-black text-pink-500 mb-2">🎉 スタンプ完成！ 🎉</h2>
-      <p class="text-gray-600 font-medium mb-8">LINEスタンプ用のサイズ（370×320）に調整されています。</p>
+    <div id="step-4" class="step-container hidden bg-white p-10 rounded-xl shadow-md border border-slate-200 text-center">
+      <h2 class="text-3xl font-black text-slate-800 mb-2">COMPLETE!</h2>
+      <p class="text-slate-500 font-medium mb-8">LINEスタンプ用のサイズ（370×320）に調整が完了しました。</p>
 
       <div class="flex flex-col sm:flex-row justify-center gap-4 mb-10">
-        <button onclick="downloadAllAsZip()" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-10 rounded-full shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center text-lg">
+        <button onclick="downloadAllAsZip()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg shadow transition-colors flex items-center justify-center text-lg">
           <i data-lucide="download" class="mr-2 w-6 h-6"></i>
-          まとめてZIPダウンロード
+          一括ZIPダウンロード
         </button>
-        <button onclick="setStep(3)" class="bg-white border-2 border-pink-500 text-pink-500 hover:bg-pink-50 font-bold py-4 px-8 rounded-full shadow-sm transition">
+        <button onclick="setStep(3)" class="bg-white border border-slate-800 text-slate-800 hover:bg-slate-50 font-bold py-4 px-8 rounded-lg shadow-sm transition-colors">
           微調整に戻る
         </button>
       </div>
 
-      <div class="bg-gray-50 p-6 rounded-2xl text-left">
-        <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">個別ダウンロード</h3>
+      <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl text-left">
+        <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-300 pb-2">個別ダウンロード</h3>
         <div id="download-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <!-- JSで生成 -->
         </div>
       </div>
 
       <div class="mt-10">
-        <button onclick="resetApp()" class="text-sm font-bold text-gray-400 hover:text-gray-600 underline">
+        <button onclick="resetApp()" class="text-sm font-bold text-slate-400 hover:text-slate-600 underline transition-colors">
           最初からやり直す
         </button>
       </div>
@@ -284,7 +283,7 @@
     };
 
     const stepsInfo = [
-      { id: 1, label: '1. 画像選択', icon: 'upload' },
+      { id: 1, label: '1. 画像選択', icon: 'upload-cloud' },
       { id: 2, label: '2. 分割', icon: 'scissors' },
       { id: 3, label: '3. 透過・編集', icon: 'droplet' },
       { id: 4, label: '4. ダウンロード', icon: 'download' }
@@ -332,10 +331,10 @@
         const isPast = appState.step > s.id;
         const div = document.createElement('div');
         
-        let classes = "flex items-center px-4 py-2 rounded-full transition-all ";
-        if (isActive) classes += "bg-pink-500 text-white font-bold shadow-sm";
-        else if (isPast) classes += "text-pink-600";
-        else classes += "text-gray-400";
+        let classes = "flex items-center px-4 py-2 rounded-md transition-all ";
+        if (isActive) classes += "bg-slate-800 text-white font-bold shadow-sm";
+        else if (isPast) classes += "text-blue-600";
+        else classes += "text-slate-400";
         
         div.className = classes;
         div.innerHTML = `<i data-lucide="${s.icon}" class="mr-2 w-[18px] h-[18px]"></i> <span class="hidden sm:inline">${s.label}</span>`;
@@ -412,11 +411,10 @@
       container.style.height = `${newHeight}px`;
       document.getElementById('zoom-val-2').textContent = Math.round(appState.zoom2 * 100) + '%';
       
-      // ★ スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点（はみ出さない仕様）に変更
+      // スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点に変更
       const scrollArea = document.getElementById('step2-scroll-area');
       const wrapper = document.getElementById('split-wrapper');
       if (scrollArea && wrapper) {
-        // パディングのゆとり(約32px)を足して判定
         if (newWidth + 32 > scrollArea.clientWidth || newHeight + 32 > scrollArea.clientHeight) {
           wrapper.classList.remove('items-center', 'justify-center');
           wrapper.classList.add('items-start', 'justify-start');
@@ -484,7 +482,7 @@
         line.style.width = '10px';
         line.style.transform = 'translateX(-50%)';
         line.innerHTML = `
-          <div class="h-full w-[2px] bg-blue-400 border-x border-white group-hover:bg-pink-400 group-hover:w-[4px] transition-all ${draggingLine?.type==='x' && draggingLine?.index===i ? '!bg-pink-500' : ''}"></div>
+          <div class="h-full w-[2px] bg-blue-400 border-x border-white group-hover:bg-blue-500 group-hover:w-[4px] transition-all ${draggingLine?.type==='x' && draggingLine?.index===i ? '!bg-blue-600' : ''}"></div>
           <div class="absolute top-1/2 -mt-3 bg-white border border-blue-400 rounded-full w-6 h-6 flex items-center justify-center shadow-sm text-blue-500 text-[10px] opacity-0 group-hover:opacity-100 pointer-events-none">↔</div>
         `;
         line.onmousedown = (e) => handleLineMouseDown('x', i, e);
@@ -499,7 +497,7 @@
         line.style.height = '10px';
         line.style.transform = 'translateY(-50%)';
         line.innerHTML = `
-          <div class="w-full h-[2px] bg-blue-400 border-y border-white group-hover:bg-pink-400 group-hover:h-[4px] transition-all ${draggingLine?.type==='y' && draggingLine?.index===i ? '!bg-pink-500' : ''}"></div>
+          <div class="w-full h-[2px] bg-blue-400 border-y border-white group-hover:bg-blue-500 group-hover:h-[4px] transition-all ${draggingLine?.type==='y' && draggingLine?.index===i ? '!bg-blue-600' : ''}"></div>
           <div class="absolute left-1/2 -ml-3 bg-white border border-blue-400 rounded-full w-6 h-6 flex items-center justify-center shadow-sm text-blue-500 text-[10px] opacity-0 group-hover:opacity-100 pointer-events-none">↕</div>
         `;
         line.onmousedown = (e) => handleLineMouseDown('y', i, e);
@@ -549,8 +547,6 @@
           
           const dataUrl = tempCanvas.toDataURL('image/png');
           
-          // 透過の履歴を保存するための配列 clicks を追加
-          // threshold の初期値を 10 に設定
           appState.pieces.push({
             id: idCounter++,
             originalDataUrl: dataUrl,
@@ -562,7 +558,7 @@
         }
       }
       appState.selectedPieceIndex = 0;
-      appState.zoom3 = 1.0; // ズーム倍率リセット
+      appState.zoom3 = 1.0; 
       setStep(3);
     }
 
@@ -581,20 +577,20 @@
       container.classList.remove('checkerboard');
       container.style.backgroundColor = '';
       
-      btnChecker.className = "p-1 px-3 text-xs font-bold bg-white text-gray-700 rounded hover:bg-gray-100 transition";
-      btnBlack.className = "p-1 px-3 text-xs font-bold bg-white text-gray-700 rounded hover:bg-gray-100 transition";
-      btnWhite.className = "p-1 px-3 text-xs font-bold bg-white text-gray-700 rounded hover:bg-gray-100 transition";
+      btnChecker.className = "p-1 px-3 text-xs font-bold bg-white text-slate-700 rounded hover:bg-slate-100 transition-colors";
+      btnBlack.className = "p-1 px-3 text-xs font-bold bg-white text-slate-700 rounded hover:bg-slate-100 transition-colors";
+      btnWhite.className = "p-1 px-3 text-xs font-bold bg-white text-slate-700 rounded hover:bg-slate-100 transition-colors";
 
       // 適用
       if (type === 'checker') {
         container.classList.add('checkerboard');
-        btnChecker.className = "p-1 px-3 text-xs font-bold bg-pink-100 text-pink-700 rounded hover:bg-pink-200 transition";
+        btnChecker.className = "p-1 px-3 text-xs font-bold bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors";
       } else if (type === 'black') {
-        container.style.backgroundColor = '#1a1a1a'; // 真っ黒より少し見やすい黒
-        btnBlack.className = "p-1 px-3 text-xs font-bold bg-gray-800 text-white rounded hover:bg-gray-900 transition";
+        container.style.backgroundColor = '#1e293b'; // slate-800
+        btnBlack.className = "p-1 px-3 text-xs font-bold bg-slate-800 text-white rounded hover:bg-slate-900 transition-colors";
       } else if (type === 'white') {
         container.style.backgroundColor = '#ffffff';
-        btnWhite.className = "p-1 px-3 text-xs font-bold bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition";
+        btnWhite.className = "p-1 px-3 text-xs font-bold bg-slate-200 text-slate-800 rounded hover:bg-slate-300 transition-colors";
       }
     }
 
@@ -608,11 +604,10 @@
       canvas.style.height = `${newHeight}px`;
       document.getElementById('zoom-val-3').textContent = Math.round(appState.zoom3 * 100) + '%';
       
-      // ★ スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点に変更
+      // スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点に変更
       const scrollArea = document.getElementById('step3-scroll-area');
       const wrapper = document.getElementById('transparency-wrapper');
       if (scrollArea && wrapper) {
-        // パディングのゆとり(約32px)を足して判定
         if (newWidth + 32 > scrollArea.clientWidth || newHeight + 32 > scrollArea.clientHeight) {
           wrapper.classList.remove('items-center', 'justify-center');
           wrapper.classList.add('items-start', 'justify-start');
@@ -643,14 +638,14 @@
       listContainer.innerHTML = '';
       appState.pieces.forEach((p, i) => {
         const div = document.createElement('div');
-        div.className = `cursor-pointer rounded-xl border-4 overflow-hidden relative checkerboard ${appState.selectedPieceIndex === i ? 'border-pink-500 shadow-md' : 'border-transparent hover:border-pink-200'}`;
+        div.className = `cursor-pointer rounded-lg border-2 overflow-hidden relative checkerboard transition-colors ${appState.selectedPieceIndex === i ? 'border-blue-500 shadow' : 'border-transparent hover:border-slate-300'}`;
         div.onclick = () => {
           appState.selectedPieceIndex = i;
           renderStep3();
         };
         div.innerHTML = `
           <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-square" />
-          <div class="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">${i + 1}</div>
+          <div class="absolute top-1 left-1 bg-slate-900 bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">${i + 1}</div>
         `;
         listContainer.appendChild(div);
       });
@@ -669,7 +664,7 @@
       img.src = piece.processedDataUrl;
     }
 
-    // 透過処理メインロジック（複数履歴対応版）
+    // 透過処理メインロジック
     async function applyTransparency(pieceIndex) {
       const piece = appState.pieces[pieceIndex];
       const img = await loadImage(piece.originalDataUrl);
@@ -680,7 +675,6 @@
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0);
       
-      // 履歴(clicks)が1つ以上あれば、順番に全て透過を適用していく
       if (piece.clicks && piece.clicks.length > 0) {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
@@ -691,7 +685,6 @@
         for (const click of piece.clicks) {
           const [tr, tg, tb] = click.color;
           
-          // フラッドフィル用の訪問済みマップとスタック
           const visited = new Uint8Array(width * height);
           const stack = [Math.floor(click.pos.x), Math.floor(click.pos.y)];
           
@@ -715,14 +708,12 @@
             
             const distance = Math.sqrt(Math.pow(r - tr, 2) + Math.pow(g - tg, 2) + Math.pow(b - tb, 2));
             if (distance <= piece.threshold) {
-              data[idx+3] = 0; // 透過
-              // 隣接ピクセルを探索スタックに追加
+              data[idx+3] = 0; 
               stack.push(x - 1, y);
               stack.push(x + 1, y);
               stack.push(x, y - 1);
               stack.push(x, y + 1);
             } else if (piece.smoothEdge && distance <= piece.threshold + featherRange) {
-              // しきい値のすぐ外側を半透明にする
               const ratio = (distance - piece.threshold) / featherRange;
               data[idx+3] = Math.min(a, Math.floor(a * ratio));
             }
@@ -745,7 +736,6 @@
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
-      // ズームしていても正確に元画像の座標を取得
       const x = Math.floor((e.clientX - rect.left) * scaleX);
       const y = Math.floor((e.clientY - rect.top) * scaleY);
 
@@ -759,16 +749,13 @@
         tCtx.drawImage(tempImg, 0, 0);
         
         const pixel = tCtx.getImageData(x, y, 1, 1).data;
-        // 透明な部分をクリックした場合は無視する
         if (pixel[3] > 0) {
-          // クリックした座標と色を履歴に記憶させる
           piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: {x, y} });
           applyTransparency(appState.selectedPieceIndex);
         }
       });
     });
 
-    // スライダー・チェックボックス操作時の再計算（履歴にも反映）
     document.getElementById('threshold-range').addEventListener('change', (e) => {
       const val = parseInt(e.target.value);
       const piece = appState.pieces[appState.selectedPieceIndex];
@@ -782,23 +769,20 @@
       applyTransparency(appState.selectedPieceIndex);
     });
 
-    // 1手戻す機能（直近の履歴を1つ削除）
     function undoLastTransparency() {
       const piece = appState.pieces[appState.selectedPieceIndex];
       if (piece.clicks && piece.clicks.length > 0) {
-        piece.clicks.pop(); // 最後のクリック履歴を削除
+        piece.clicks.pop(); 
         applyTransparency(appState.selectedPieceIndex);
       }
     }
 
-    // 元に戻す機能（履歴のクリア）
     function undoTransparency() {
       const piece = appState.pieces[appState.selectedPieceIndex];
-      piece.clicks = []; // 記憶したクリック履歴をすべて消去
+      piece.clicks = []; 
       applyTransparency(appState.selectedPieceIndex);
     }
 
-    // 簡易自動透過
     async function handleAutoTransparency() {
       const piece = appState.pieces[appState.selectedPieceIndex];
       const img = await loadImage(piece.originalDataUrl);
@@ -809,7 +793,6 @@
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
-      // 左上のピクセル色を基準にし、左上(x:0, y:0)から広げる履歴を追加
       const r = imageData.data[0];
       const g = imageData.data[1];
       const b = imageData.data[2];
@@ -827,12 +810,12 @@
       
       appState.pieces.forEach((piece, index) => {
         const div = document.createElement('div');
-        div.className = "flex flex-col items-center bg-white p-2 rounded-xl shadow-sm border border-gray-200";
+        div.className = "flex flex-col items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200";
         div.innerHTML = `
-          <div class="w-full aspect-[37/32] mb-2 rounded bg-gray-100 flex items-center justify-center overflow-hidden checkerboard">
+          <div class="w-full aspect-[37/32] mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
             <img src="${piece.processedDataUrl}" class="max-w-full max-h-full object-contain" />
           </div>
-          <button onclick="downloadSingle('${piece.processedDataUrl}', 'stamp_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-gray-200 hover:bg-pink-100 hover:text-pink-600 font-bold py-1 px-3 rounded w-full transition">
+          <button onclick="downloadSingle('${piece.processedDataUrl}', 'stamp_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
             DL (${index + 1})
           </button>
         `;
