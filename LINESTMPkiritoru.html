@@ -79,9 +79,9 @@
           </div>
         </div>
 
-        <!-- 画像エリア (スクロール可能) - 高さを min-h-[600px] lg:min-h-[800px] に拡大 -->
-        <div class="w-full min-h-[600px] lg:min-h-[800px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
-          <div class="min-w-full min-h-full flex items-start justify-start p-4">
+        <!-- 画像エリア (スクロール可能) - 大きくなった時のスクロール問題を解消 -->
+        <div id="step2-scroll-area" class="w-full min-h-[600px] lg:min-h-[800px] overflow-auto border-2 border-gray-200 rounded-xl shadow-inner bg-gray-50 custom-scrollbar relative">
+          <div id="split-wrapper" class="min-w-full min-h-full flex items-center justify-center p-4 transition-all duration-200">
             <div id="split-container" class="relative select-none bg-white shadow-sm origin-top-left transition-all duration-200 shrink-0">
               <img id="source-image-preview" src="" alt="Source" class="absolute top-0 left-0 w-full h-full object-contain pointer-events-none" />
               <div id="split-lines-container"></div>
@@ -175,9 +175,9 @@
             <button onclick="changeZoom3(0.2)" class="p-1 bg-white rounded hover:bg-pink-100 text-gray-600"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
           </div>
 
-          <!-- キャンバス本体 (スクロール可能) -->
-          <div class="flex-1 overflow-auto custom-scrollbar p-2 mt-12">
-            <div class="min-w-full min-h-full flex items-center justify-center">
+          <!-- キャンバス本体 (スクロール可能) - 大きくなった時のスクロール問題を解消 -->
+          <div id="step3-scroll-area" class="flex-1 overflow-auto custom-scrollbar p-2 mt-12">
+            <div id="transparency-wrapper" class="min-w-full min-h-full flex items-center justify-center p-4 transition-all duration-200">
               <canvas id="transparency-canvas" class="cursor-crosshair shadow-xl bg-white bg-opacity-0 transition-all duration-200 shrink-0" title="クリックして透明にする色を選択"></canvas>
             </div>
           </div>
@@ -209,7 +209,7 @@
             <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">境界線をなめらかにする（アンチエイリアス）</label>
           </div>
 
-          <!-- ★変更：1つ前に戻すボタンを追加し、フレックスで並べました -->
+          <!-- 1つ前に戻すボタンを追加し、フレックスで並べました -->
           <div class="flex flex-wrap gap-2">
             <button onclick="handleAutoTransparency()" class="flex-1 min-w-[120px] bg-white border-2 border-pink-400 text-pink-600 font-bold py-2 rounded-xl hover:bg-pink-100 transition flex justify-center items-center">
               <i data-lucide="sparkles" class="mr-2 w-4 h-4"></i>
@@ -404,10 +404,27 @@
     // ズーム（拡大縮小）機能 - Step 2
     function updateZoom2Display() {
       const container = document.getElementById('split-container');
+      const newWidth = appState.sourceImage.width * appState.zoom2;
+      const newHeight = appState.sourceImage.height * appState.zoom2;
+      
       // 画像の元サイズにズーム倍率を掛けてコンテナの幅・高さを決定
-      container.style.width = `${appState.sourceImage.width * appState.zoom2}px`;
-      container.style.height = `${appState.sourceImage.height * appState.zoom2}px`;
+      container.style.width = `${newWidth}px`;
+      container.style.height = `${newHeight}px`;
       document.getElementById('zoom-val-2').textContent = Math.round(appState.zoom2 * 100) + '%';
+      
+      // ★ スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点（はみ出さない仕様）に変更
+      const scrollArea = document.getElementById('step2-scroll-area');
+      const wrapper = document.getElementById('split-wrapper');
+      if (scrollArea && wrapper) {
+        // パディングのゆとり(約32px)を足して判定
+        if (newWidth + 32 > scrollArea.clientWidth || newHeight + 32 > scrollArea.clientHeight) {
+          wrapper.classList.remove('items-center', 'justify-center');
+          wrapper.classList.add('items-start', 'justify-start');
+        } else {
+          wrapper.classList.remove('items-start', 'justify-start');
+          wrapper.classList.add('items-center', 'justify-center');
+        }
+      }
     }
 
     function changeZoom2(delta) {
@@ -584,9 +601,26 @@
     // ズーム（拡大縮小）機能 - Step 3
     function updateZoom3Display() {
       const canvas = document.getElementById('transparency-canvas');
-      canvas.style.width = `${canvas.width * appState.zoom3}px`;
-      canvas.style.height = `${canvas.height * appState.zoom3}px`;
+      const newWidth = canvas.width * appState.zoom3;
+      const newHeight = canvas.height * appState.zoom3;
+      
+      canvas.style.width = `${newWidth}px`;
+      canvas.style.height = `${newHeight}px`;
       document.getElementById('zoom-val-3').textContent = Math.round(appState.zoom3 * 100) + '%';
+      
+      // ★ スクロール制御: 画像が枠より大きくなったら中央揃えを解除して左上起点に変更
+      const scrollArea = document.getElementById('step3-scroll-area');
+      const wrapper = document.getElementById('transparency-wrapper');
+      if (scrollArea && wrapper) {
+        // パディングのゆとり(約32px)を足して判定
+        if (newWidth + 32 > scrollArea.clientWidth || newHeight + 32 > scrollArea.clientHeight) {
+          wrapper.classList.remove('items-center', 'justify-center');
+          wrapper.classList.add('items-start', 'justify-start');
+        } else {
+          wrapper.classList.remove('items-start', 'justify-start');
+          wrapper.classList.add('items-center', 'justify-center');
+        }
+      }
     }
 
     function changeZoom3(delta) {
@@ -630,7 +664,7 @@
         canvas.height = img.height;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        updateZoom3Display(); // ズーム反映
+        updateZoom3Display(); // ズーム反映とスクロール判定
       };
       img.src = piece.processedDataUrl;
     }
@@ -748,7 +782,7 @@
       applyTransparency(appState.selectedPieceIndex);
     });
 
-    // ★追加: 1手戻す機能（直近の履歴を1つ削除）
+    // 1手戻す機能（直近の履歴を1つ削除）
     function undoLastTransparency() {
       const piece = appState.pieces[appState.selectedPieceIndex];
       if (piece.clicks && piece.clicks.length > 0) {
