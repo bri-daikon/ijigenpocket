@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VividStack - Image Composer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fabric.js for Canvas manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <!-- Google Fonts for more choices -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Sawarabi+Mincho&family=Shippori+Mincho&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .canvas-container {
+            margin: 0 auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e5e7eb;
+            background-color: white;
+        }
+        .tool-panel {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        /* スクロールバーの見た目 */
+        .tool-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        .tool-panel::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-7xl mx-auto">
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-black text-blue-700 tracking-tight">VividStack</h1>
+        <p class="text-gray-600">画像を配置して、文字やスタンプを添えましょう</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Control Panel -->
+        <div class="lg:col-span-1 space-y-6 tool-panel bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            
+            <!-- 1. Import & View Section -->
+            <section>
+                <h2 class="font-bold text-lg mb-3 text-blue-600">1. 画像と表示設定</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ワークエリアのサイズ（画質）</label>
+                    <select id="canvasSizeSelect" onchange="changeCanvasSize()" class="block w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="800x600">低画質 (800 x 600)</option>
+                        <option value="1920x1080">高画質 (1920 x 1080)</option>
+                        <option value="3840x2160">最高画質 (3840 x 2160)</option>
+                    </select>
+                </div>
+
+                <!-- 背景画像設定 -->
+                <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">背景画像を設定</label>
+                    <input type="file" id="bgLoader" accept="image/*" onchange="handleBackgroundUpload(event)" class="block w-full text-xs text-gray-500
+                        file:mr-2 file:py-1 file:px-3
+                        file:rounded-full file:border-0
+                        file:text-xs file:font-semibold
+                        file:bg-gray-200 file:text-gray-700
+                        hover:file:bg-gray-300 mb-3">
+                    
+                    <!-- Blur Control -->
+                    <div id="blurControl" class="mb-2 hidden">
+                        <label class="block text-[11px] font-bold text-gray-600 mb-1">背景のぼかし強度</label>
+                        <input type="range" id="bgBlurSlider" min="0" max="1" step="0.1" value="0" oninput="applyBlur()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    </div>
+
+                    <button onclick="removeBackground()" class="text-[10px] text-red-500 hover:underline">背景を削除して白に戻す</button>
+                </div>
+
+                <label class="block text-sm font-bold text-gray-700 mb-1">合成する画像を追加</label>
+                <input type="file" id="imageLoader" accept="image/*" multiple class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100 mb-4">
+                
+                <div class="space-y-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="filenameToggle" onchange="toggleFilenameVisibility()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="filenameToggle" class="text-sm font-medium text-blue-800 cursor-pointer">ファイル名を表示</label>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="gridToggle" onchange="toggleGrid()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="gridToggle" class="text-sm font-medium text-blue-800 cursor-pointer">グリッドを表示 (吸着あり)</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Text & Stamps -->
+            <section>
+                <h2 class="font-bold text-lg mb-3 text-green-600">2. 文字とスタンプ</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">フォント選択</label>
+                        <select id="fontSelect" onchange="changeFont()" class="block w-full p-2 border border-gray-300 rounded-md text-sm">
+                            <option value="Noto Sans JP" style="font-family: 'Noto Sans JP';">標準 (ゴシック)</option>
+                            <option value="Noto Serif JP" style="font-family: 'Noto Serif JP';">明朝体</option>
+                            <option value="M PLUS Rounded 1c" style="font-family: 'M PLUS Rounded 1c';">丸文字</option>
+                            <option value="Sawarabi Mincho" style="font-family: 'Sawarabi Mincho';">さわらび明朝</option>
+                            <option value="Impact" style="font-family: 'Impact';">Impact (太字強調)</option>
+                            <option value="Courier New" style="font-family: 'Courier New';">Typewriter</option>
+                        </select>
+                    </div>
+                    <button onclick="addText()" class="w-full py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">テキスト追加</button>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="addStamp('⭐')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">⭐</button>
+                        <button onclick="addStamp('❤️')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">❤️</button>
+                        <button onclick="addStamp('✅')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">✅</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Alignment Controls -->
+            <section>
+                <h2 class="font-bold text-lg mb-3 text-purple-600">3. 整列 (複数選択時)</h2>
+                <div class="space-y-2">
+                    <button onclick="alignHorizontal()" class="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition text-sm">横に等間隔整列</button>
+                    <button onclick="alignVertical()" class="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition text-sm">縦に等間隔整列</button>
+                </div>
+            </section>
+
+            <!-- 4. Object Control -->
+            <section>
+                <h2 class="font-bold text-lg mb-3 text-red-600">4. 操作</h2>
+                <button onclick="selectAll()" class="w-full py-2 bg-gray-800 text-white rounded hover:bg-black transition mb-2">全オブジェクトを選択</button>
+                
+                <button onclick="rotateSelected()" class="w-full py-2 border-2 border-gray-800 text-gray-800 rounded hover:bg-gray-100 transition mb-4 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+                    右に90度回転
+                </button>
+
+                <button onclick="deleteSelected()" class="w-full py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition">選択消去</button>
+                <button onclick="clearCanvas()" class="w-full py-2 mt-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition">全クリア</button>
+            </section>
+
+            <!-- 5. Export -->
+            <section class="pt-4 border-t border-gray-100">
+                <button onclick="downloadImage()" class="w-full py-4 bg-blue-700 text-white font-bold rounded-lg shadow-lg hover:bg-blue-800 transition">
+                    画像を保存する
+                </button>
+            </section>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="lg:col-span-3 flex flex-col items-center">
+            <div id="canvas-wrapper" class="w-full h-[70vh] bg-gray-200 p-4 rounded-xl overflow-auto border-2 border-dashed border-gray-300">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 flex flex-wrap justify-center gap-4 text-center">
+                <span>💡 <strong>VividStack</strong> へようこそ！</span>
+                <span>💡 <strong>読み込み</strong>: 自動できれいに整列されます</span>
+                <span>💡 <strong>背景ぼかし</strong>: 画像設定後にスライダーで調整できます</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let canvas;
+    const gridSize = 50;
+    let backgroundImageObject = null; // 背景画像を保持
+
+    window.onload = function() {
+        initCanvas();
+        document.getElementById('imageLoader').addEventListener('change', handleImageUpload);
+    };
+
+    function initCanvas() {
+        canvas = new fabric.Canvas('mainCanvas', {
+            width: 800,
+            height: 600,
+            backgroundColor: '#ffffff'
+        });
+
+        // スナップ機能
+        canvas.on('object:moving', function(options) {
+            if (document.getElementById('gridToggle').checked) {
+                options.target.set({
+                    left: Math.round(options.target.left / gridSize) * gridSize,
+                    top: Math.round(options.target.top / gridSize) * gridSize
+                });
+            }
+        });
+
+        canvas.on('selection:created', updateFontDropdown);
+        canvas.on('selection:updated', updateFontDropdown);
+    }
+
+    // 背景画像のアップロード処理
+    function handleBackgroundUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            fabric.Image.fromURL(event.target.result, (img) => {
+                backgroundImageObject = img;
+                document.getElementById('blurControl').classList.remove('hidden');
+                document.getElementById('bgBlurSlider').value = 0;
+                applyBackground();
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 背景画像を適用
+    function applyBackground() {
+        if (!backgroundImageObject) return;
+
+        canvas.setBackgroundImage(backgroundImageObject, canvas.renderAll.bind(canvas), {
+            scaleX: canvas.width / backgroundImageObject.width,
+            scaleY: canvas.height / backgroundImageObject.height,
+            originX: 'left',
+            originY: 'top'
+        });
+    }
+
+    // 背景ぼかしを適用
+    function applyBlur() {
+        if (!backgroundImageObject) return;
+        
+        const blurValue = parseFloat(document.getElementById('bgBlurSlider').value);
+        backgroundImageObject.filters = [];
+        
+        if (blurValue > 0) {
+            backgroundImageObject.filters.push(new fabric.Image.filters.Blur({
+                blur: blurValue
+            }));
+        }
+        
+        backgroundImageObject.applyFilters();
+        canvas.renderAll();
+    }
+
+    // 背景を削除
+    function removeBackground() {
+        backgroundImageObject = null;
+        canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
+        canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+        document.getElementById('bgLoader').value = '';
+        document.getElementById('blurControl').classList.add('hidden');
+        document.getElementById('bgBlurSlider').value = 0;
+        alertBox("背景を削除しました");
+    }
+
+    function updateFontDropdown() {
+        const activeObject = canvas.getActiveObject();
+        if (activeObject && activeObject.type === 'i-text') {
+            document.getElementById('fontSelect').value = activeObject.fontFamily;
+        }
+    }
+
+    function changeFont() {
+        const font = document.getElementById('fontSelect').value;
+        const activeObject = canvas.getActiveObject();
+        if (activeObject && activeObject.type === 'i-text') {
+            activeObject.set('fontFamily', font);
+            canvas.renderAll();
+        }
+    }
+
+    function rotateSelected() {
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length === 0) {
+            alertBox("オブジェクトを選択してください");
+            return;
+        }
+        activeObjects.forEach(obj => {
+            const currentAngle = obj.angle || 0;
+            obj.rotate(currentAngle + 90);
+        });
+        canvas.renderAll();
+    }
+
+    function selectAll() {
+        const objs = canvas.getObjects().filter(obj => obj.name !== 'gridLine');
+        if (objs.length === 0) {
+            alertBox("選択できるオブジェクトがありません");
+            return;
+        }
+        const selection = new fabric.ActiveSelection(objs, { canvas: canvas });
+        canvas.setActiveObject(selection);
+        canvas.renderAll();
+    }
+
+    function changeCanvasSize() {
+        const sizeValue = document.getElementById('canvasSizeSelect').value;
+        const [width, height] = sizeValue.split('x').map(Number);
+        canvas.setWidth(width);
+        canvas.setHeight(height);
+        
+        applyBackground();
+        
+        if (document.getElementById('gridToggle').checked) toggleGrid(true);
+        canvas.renderAll();
+        alertBox(`サイズを ${width} x ${height} に変更しました`);
+    }
+
+    function toggleGrid(forceRefresh = false) {
+        const isGridVisible = document.getElementById('gridToggle').checked;
+        const objects = canvas.getObjects().filter(obj => obj.name === 'gridLine');
+        objects.forEach(obj => canvas.remove(obj));
+
+        if (isGridVisible || forceRefresh) {
+            for (let i = 0; i <= (canvas.width / gridSize); i++) {
+                const lineV = new fabric.Line([i * gridSize, 0, i * gridSize, canvas.height], {
+                    stroke: '#e5e7eb', selectable: false, evented: false, name: 'gridLine'
+                });
+                canvas.add(lineV); canvas.sendToBack(lineV);
+            }
+            for (let i = 0; i <= (canvas.height / gridSize); i++) {
+                const lineH = new fabric.Line([0, i * gridSize, canvas.width, i * gridSize], {
+                    stroke: '#e5e7eb', selectable: false, evented: false, name: 'gridLine'
+                });
+                canvas.add(lineH); canvas.sendToBack(lineH);
+            }
+        }
+        canvas.renderAll();
+    }
+
+    // 画像読み込みと自動整列
+    async function handleImageUpload(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const showName = document.getElementById('filenameToggle').checked;
+        const margin = 20; 
+        
+        const loadPromises = files.map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    fabric.Image.fromURL(event.target.result, (img) => {
+                        const fileNameNoExt = file.name.replace(/\.[^/.]+$/, "");
+                        resolve({ img: img, fileName: fileNameNoExt });
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        const imageDataList = await Promise.all(loadPromises);
+
+        const count = imageDataList.length;
+        const cols = Math.ceil(Math.sqrt(count)); 
+        const rows = Math.ceil(count / cols);    
+
+        const availableWidth = canvas.width - (margin * (cols + 1));
+        const availableHeight = canvas.height - (margin * (rows + 1));
+        const targetCellWidth = availableWidth / cols;
+        const targetCellHeight = availableHeight / rows;
+
+        imageDataList.forEach((data, i) => {
+            const img = data.img;
+            const scale = Math.min(targetCellWidth / img.width, (targetCellHeight - 30) / img.height);
+            img.scale(scale);
+
+            const textLabel = new fabric.Text(data.fileName, {
+                fontSize: Math.max(10, 14 * scale),
+                fontFamily: 'sans-serif',
+                originX: 'center',
+                fill: '#555555',
+                visible: showName,
+                name: 'filenameLabel',
+                top: img.getScaledHeight() + 5,
+                left: img.getScaledWidth() / 2
+            });
+
+            const group = new fabric.Group([img, textLabel], {
+                name: 'imageGroup',
+                originX: 'left',
+                originY: 'top'
+            });
+
+            const colIdx = i % cols;
+            const rowIdx = Math.floor(i / cols);
+            
+            group.set({
+                left: margin + colIdx * (targetCellWidth + margin),
+                top: margin + rowIdx * (targetCellHeight + margin)
+            });
+
+            group.setCoords();
+            canvas.add(group);
+        });
+
+        canvas.renderAll();
+        e.target.value = '';
+        alertBox(`${count}枚の画像を読み込み、整列しました`);
+    }
+
+    function toggleFilenameVisibility() {
+        const isVisible = document.getElementById('filenameToggle').checked;
+        canvas.getObjects().forEach(obj => {
+            if (obj.name === 'imageGroup') {
+                const label = obj.item(1);
+                if (label && label.name === 'filenameLabel') label.set('visible', isVisible);
+            }
+        });
+        canvas.renderAll();
+    }
+
+    function addText() {
+        const font = document.getElementById('fontSelect').value;
+        const text = new fabric.IText('テキスト入力', {
+            left: 100, top: 100, fontFamily: font, fontSize: 40, fill: '#333333'
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+    }
+
+    function addStamp(emoji) {
+        const stamp = new fabric.Text(emoji, { left: 150, top: 150, fontSize: 60 });
+        canvas.add(stamp); canvas.setActiveObject(stamp);
+    }
+
+    function deleteSelected() {
+        canvas.getActiveObjects().forEach(obj => canvas.remove(obj));
+        canvas.discardActiveObject();
+        canvas.renderAll();
+    }
+
+    function clearCanvas() {
+        if(confirm('すべて削除しますか？')) {
+            canvas.clear();
+            canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+            backgroundImageObject = null;
+            document.getElementById('bgLoader').value = '';
+            document.getElementById('blurControl').classList.add('hidden');
+            document.getElementById('bgBlurSlider').value = 0;
+            if (document.getElementById('gridToggle').checked) toggleGrid();
+        }
+    }
+
+    function alignHorizontal() {
+        const objs = canvas.getActiveObjects();
+        if (objs.length < 2) return alertBox("2つ以上選択してください");
+        objs.sort((a, b) => a.left - b.left);
+        const dist = objs[objs.length-1].left - objs[0].left;
+        const step = dist / (objs.length - 1);
+        objs.forEach((obj, i) => {
+            obj.set({ left: objs[0].left + (step * i), top: objs[0].top });
+            obj.setCoords();
+        });
+        canvas.renderAll();
+    }
+
+    function alignVertical() {
+        const objs = canvas.getActiveObjects();
+        if (objs.length < 2) return alertBox("2つ以上選択してください");
+        objs.sort((a, b) => a.top - b.top);
+        const dist = objs[objs.length-1].top - objs[0].top;
+        const step = dist / (objs.length - 1);
+        objs.forEach((obj, i) => {
+            obj.set({ top: objs[0].top + (step * i), left: objs[0].left });
+            obj.setCoords();
+        });
+        canvas.renderAll();
+    }
+
+    function downloadImage() {
+        const gridState = document.getElementById('gridToggle').checked;
+        if (gridState) { document.getElementById('gridToggle').checked = false; toggleGrid(); }
+        canvas.discardActiveObject();
+        canvas.renderAll();
+        const dataURL = canvas.toDataURL({ format: 'png', quality: 1.0, multiplier: 1 });
+        const link = document.createElement('a');
+        link.download = `composed-image-${Date.now()}.png`;
+        link.href = dataURL;
+        link.click();
+        if (gridState) { document.getElementById('gridToggle').checked = true; toggleGrid(); }
+    }
+
+    function alertBox(message) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-fade-in-out text-sm";
+        msgDiv.innerText = message;
+        document.body.appendChild(msgDiv);
+        setTimeout(() => msgDiv.remove(), 2500);
+    }
+</script>
+
+<style>
+    @keyframes fade-in-out {
+        0% { opacity: 0; transform: translate(-50%, 20px); }
+        10% { opacity: 1; transform: translate(-50%, 0); }
+        90% { opacity: 1; transform: translate(-50%, 0); }
+        100% { opacity: 0; transform: translate(-50%, -20px); }
+    }
+    .animate-fade-in-out {
+        animation: fade-in-out 2.5s ease-in-out forwards;
+    }
+</style>
+
+</body>
+</html>
