@@ -249,6 +249,30 @@
         </button>
       </div>
 
+      <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl text-left mb-6">
+        <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-300 pb-2">メタデータ画像（メイン・タブ）</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+            <span class="text-xs font-bold text-slate-500 mb-2">main.png (240x240)</span>
+            <div class="w-32 h-32 mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
+              <img id="main-preview" src="" class="max-w-full max-h-full object-contain" />
+            </div>
+            <button onclick="downloadSingle(appState.mainImageDataUrl, 'main.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
+              DL (main)
+            </button>
+          </div>
+          <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+            <span class="text-xs font-bold text-slate-500 mb-2">tab.png (96x74)</span>
+            <div class="w-32 h-32 mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
+              <img id="tab-preview" src="" class="max-w-full max-h-full object-contain" />
+            </div>
+            <button onclick="downloadSingle(appState.tabImageDataUrl, 'tab.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
+              DL (tab)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl text-left">
         <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-300 pb-2">個別ダウンロード</h3>
         <div id="download-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -279,7 +303,9 @@
       pieces: [],
       selectedPieceIndex: 0,
       zoom2: 1.0, // 分割画面のズーム倍率
-      zoom3: 1.0  // 透過画面のズーム倍率
+      zoom3: 1.0,  // 透過画面のズーム倍率
+      mainImageDataUrl: null,
+      tabImageDataUrl: null
     };
 
     const stepsInfo = [
@@ -801,13 +827,45 @@
       applyTransparency(appState.selectedPieceIndex);
     }
 
+    // 画像を指定サイズにリサイズし、10pxの余白を設けて中央配置する
+    async function generateResizedImage(sourceDataUrl, targetWidth, targetHeight, margin = 10) {
+      const img = await loadImage(sourceDataUrl);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+
+      const innerWidth = targetWidth - (margin * 2);
+      const innerHeight = targetHeight - (margin * 2);
+
+      const scale = Math.min(innerWidth / img.width, innerHeight / img.height);
+      const drawWidth = img.width * scale;
+      const drawHeight = img.height * scale;
+
+      const dx = (targetWidth - drawWidth) / 2;
+      const dy = (targetHeight - drawHeight) / 2;
+
+      ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+      return canvas.toDataURL('image/png');
+    }
+
     // ==========================================
     // Step 4: ダウンロード
     // ==========================================
-    function renderStep4() {
+    async function renderStep4() {
       const list = document.getElementById('download-list');
       list.innerHTML = '';
       
+      // メイン画像とタブ画像の生成
+      if (appState.pieces.length > 0) {
+        const firstPieceUrl = appState.pieces[0].processedDataUrl;
+        appState.mainImageDataUrl = await generateResizedImage(firstPieceUrl, 240, 240, 10);
+        appState.tabImageDataUrl = await generateResizedImage(firstPieceUrl, 96, 74, 10);
+        
+        document.getElementById('main-preview').src = appState.mainImageDataUrl;
+        document.getElementById('tab-preview').src = appState.tabImageDataUrl;
+      }
+
       appState.pieces.forEach((piece, index) => {
         const div = document.createElement('div');
         div.className = "flex flex-col items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200";
@@ -834,6 +892,15 @@
       if (!window.JSZip) return alert("ZIP生成ライブラリを読み込んでいます。少々お待ちください。");
       
       const zip = new window.JSZip();
+      
+      // メイン画像とタブ画像をZIPに含める
+      if (appState.mainImageDataUrl) {
+        zip.file("main.png", appState.mainImageDataUrl.split(',')[1], { base64: true });
+      }
+      if (appState.tabImageDataUrl) {
+        zip.file("tab.png", appState.tabImageDataUrl.split(',')[1], { base64: true });
+      }
+
       appState.pieces.forEach((piece, index) => {
         const base64Data = piece.processedDataUrl.split(',')[1];
         zip.file(`stamp_${String(index + 1).padStart(2, '0')}.png`, base64Data, { base64: true });
