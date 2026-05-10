@@ -7,38 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 比較用のライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.2.0/diff.min.js"></script>
-    <style>
-        .diff-added {
-            background-color: #fef08a; /* 黄色のマーカー（追加） */
-            display: block;
-            width: 100%;
-        }
-        .diff-removed {
-            background-color: #fef08a; /* 黄色のマーカー（削除） */
-            display: block;
-            width: 100%;
-        }
-        .diff-placeholder {
-            color: transparent;
-            user-select: none;
-            display: block;
-        }
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.5rem; /* 行の高さを固定してズレを防ぐ */
-        }
-        .diff-line {
-            min-height: 1.5rem;
-            border-left: 3px solid transparent;
-            padding-left: 0.5rem;
-        }
-        .diff-added-line { border-left-color: #eab308; }
-        .diff-removed-line { border-left-color: #eab308; }
-    </style>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/htmlcompare.css">
 </head>
-<body class="bg-gray-50 min-h-screen p-4 md:p-8 font-sans">
+<body>
 
+<div class="content-wrapper">
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
         <header class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-gray-800">HTML比較しよう</h1>
@@ -87,86 +61,9 @@
 
         <div id="messageBox" class="hidden mt-4 p-4 rounded-lg text-center font-medium"></div>
     </div>
+</div>
 
-    <script>
-        document.getElementById('compareBtn').addEventListener('click', function() {
-            const textA = document.getElementById('fileA').value;
-            const textB = document.getElementById('fileB').value;
-            const outputA = document.getElementById('outputA');
-            const outputB = document.getElementById('outputB');
-            const resultContainer = document.getElementById('resultContainer');
-
-            if (!textA || !textB) {
-                showMessage("両方のエリアにHTMLを入力してください。", "bg-red-100 text-red-700");
-                return;
-            }
-
-            // 行ごとに比較を実行
-            const diff = Diff.diffLines(textA, textB);
-            
-            outputA.innerHTML = '';
-            outputB.innerHTML = '';
-            let hasDifference = false;
-
-            diff.forEach((part) => {
-                const lines = part.value;
-                const count = (lines.match(/\n/g) || []).length || (lines.length > 0 ? 1 : 0);
-
-                if (part.removed) {
-                    // 左側(A)に削除された内容を表示、右側(B)は空行で埋める
-                    hasDifference = true;
-                    appendContent(outputA, lines, 'diff-removed diff-removed-line');
-                    appendPlaceholder(outputB, count);
-                } else if (part.added) {
-                    // 右側(B)に追加された内容を表示、左側(A)は空行で埋める
-                    hasDifference = true;
-                    appendPlaceholder(outputA, count);
-                    appendContent(outputB, lines, 'diff-added diff-added-line');
-                } else {
-                    // 両方に共通する内容を表示
-                    appendContent(outputA, lines, '');
-                    appendContent(outputB, lines, '');
-                }
-            });
-
-            resultContainer.classList.remove('hidden');
-            if (hasDifference) {
-                showMessage("違いが見つかりました。", "bg-green-100 text-green-700");
-            } else {
-                showMessage("内容は同一です。", "bg-blue-100 text-blue-700");
-            }
-        });
-
-        // テキストを1行ずつ要素として追加する関数
-        function appendContent(container, text, className) {
-            const lines = text.split('\n');
-            // 最後の空要素を取り除く（diffライブラリの特性上）
-            if (lines[lines.length - 1] === '') lines.pop();
-
-            lines.forEach(line => {
-                const div = document.createElement('div');
-                div.className = 'diff-line ' + className;
-                div.textContent = line || ' '; // 空行も維持
-                container.appendChild(div);
-            });
-        }
-
-        // 行を合わせるためのプレースホルダー（空行）を追加する関数
-        function appendPlaceholder(container, count) {
-            for (let i = 0; i < count; i++) {
-                const div = document.createElement('div');
-                div.className = 'diff-line diff-placeholder';
-                div.textContent = '.'; // 高さを維持するために透明な文字を入れる
-                container.appendChild(div);
-            }
-        }
-
-        function showMessage(msg, classes) {
-            const messageBox = document.getElementById('messageBox');
-            messageBox.textContent = msg;
-            messageBox.className = `mt-4 p-4 rounded-lg text-center font-medium ${classes}`;
-            messageBox.classList.remove('hidden');
-        }
-    </script>
+<script src="js/common.js"></script>
+<script src="js/htmlcompare.js"></script>
 </body>
 </html>

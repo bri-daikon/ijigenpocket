@@ -1,0 +1,132 @@
+/**
+ * 共通ナビゲーションスタイル
+ */
+:root {
+    --nav-bg: rgba(255, 255, 255, 0.8);
+    --nav-text: #1e293b;
+    --nav-accent: #3b82f6;
+    --nav-border: rgba(226, 232, 240, 0.8);
+    --nav-height: 60px;
+}
+
+#common-nav {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--nav-height);
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--nav-border);
+    z-index: 9999;
+    transition: all 0.3s ease;
+    font-family: 'Noto Sans JP', sans-serif;
+}
+
+#common-nav.scrolled {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--nav-text);
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+}
+
+.nav-logo:hover {
+    color: var(--nav-accent);
+}
+
+.nav-spacer {
+    flex: 1;
+}
+
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.nav-dropbtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--nav-border);
+    padding: 8px 16px;
+    border-radius: 99px;
+    font-size: 0.9rem;
+    color: var(--nav-text);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-dropbtn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.nav-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background-color: #ffffff;
+    min-width: 220px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--nav-border);
+    padding: 8px;
+}
+
+.nav-dropdown:hover .nav-dropdown-content {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-dropdown-content a {
+    color: var(--nav-text);
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.nav-dropdown-content a:hover {
+    background-color: #f1f5f9;
+    color: var(--nav-accent);
+}
+
+.nav-dropdown-content a.active {
+    background-color: #eff6ff;
+    color: var(--nav-accent);
+    font-weight: 600;
+}
+
+/* ダークモード対応が必要な場合のための配慮 */
+@media (prefers-color-scheme: dark) {
+    /* 必要に応じて追加 */
+}
