@@ -272,39 +272,25 @@ async function handleImageUpload(e) {
     const imageDataList = await Promise.all(loadPromises);
     const count = imageDataList.length;
     
-    // キャンバスサイズに合わせて1行の枚数を決定
-    const sizeValue = document.getElementById('canvasSizeSelect').value;
-    let cols = 3; // 低画質 (800x600) のデフォルト
-    if (sizeValue === '1200x900') cols = 5;
-    else if (sizeValue === '1920x1080') cols = 10;
-    else if (sizeValue === '3840x2160') cols = 18;
-
-    // 枚数が少ない場合はその枚数に合わせる
-    const actualCols = Math.min(count, cols);
-    const rows = Math.ceil(count / actualCols);
-    
-    const margin = count > 12 ? 8 : (count > 4 ? 12 : 15); 
+    const margin = gridSize; // グリッド1マス分 (50px)
     const labelHeight = showName ? 18 : 0; 
+    const targetHeight = 250; // 基準となる画像の高さ
 
-    const availableWidth = canvas.width - (margin * 2); 
-    const availableHeight = canvas.height - (margin * 2); 
-    
-    const targetCellWidth = (availableWidth - (margin * (actualCols - 1))) / actualCols;
-    const targetCellHeight = (availableHeight - (margin * (rows - 1))) / rows;
+    let currentX = margin;
+    let currentY = margin;
+    let rowMaxHeight = 0;
 
-    // 全体の配置範囲を計算して中央に寄せるためのオフセット
-    const totalGridWidth = actualCols * targetCellWidth + (actualCols - 1) * margin;
-    const totalGridHeight = rows * targetCellHeight + (rows - 1) * margin;
-    const offsetX = (canvas.width - totalGridWidth) / 2;
-    const offsetY = (canvas.height - totalGridHeight) / 2;
+    // 全体を中央寄せするための計算用
+    const groups = [];
 
     imageDataList.forEach((data, i) => {
         const img = data.img;
-        const scale = Math.min(targetCellWidth / img.width, (targetCellHeight - labelHeight) / img.height);
+        // 基準の高さに合わせてリサイズ（横長すぎたり縦長すぎる場合は調整が入る）
+        const scale = targetHeight / img.height;
         img.scale(scale);
 
         const textLabel = new fabric.Text(data.fileName, {
-            fontSize: Math.max(10, 14 * scale),
+            fontSize: 14,
             fontFamily: 'sans-serif',
             originX: 'center',
             fill: '#555555',
@@ -320,19 +306,30 @@ async function handleImageUpload(e) {
             originY: 'top'
         });
 
-        const colIdx = i % actualCols;
-        const rowIdx = Math.floor(i / actualCols);
-        
+        // 1行に収まらない場合は改行
+        if (currentX + group.getScaledWidth() + margin > canvas.width) {
+            currentX = margin;
+            currentY += rowMaxHeight + margin + labelHeight;
+            rowMaxHeight = 0;
+        }
+
         group.set({
-            left: offsetX + colIdx * (targetCellWidth + margin),
-            top: offsetY + rowIdx * (targetCellHeight + margin)
+            left: currentX,
+            top: currentY
         });
 
         group.setCoords();
         canvas.add(group);
+        groups.push(group);
+
+        currentX += group.getScaledWidth() + margin;
+        rowMaxHeight = Math.max(rowMaxHeight, group.getScaledHeight());
     });
 
+    // 読み込み後にズームを更新して全体が見えるようにする
     canvas.renderAll();
+    if (document.getElementById('zoomFitToggle').checked) updateCanvasZoom();
+    
     e.target.value = '';
     alertBox(`${count}枚の画像を読み込み、整列しました`);
 }
