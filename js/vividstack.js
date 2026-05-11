@@ -6,6 +6,9 @@ window.onload = function() {
     initCanvas();
     const loader = document.getElementById('imageLoader');
     if (loader) loader.addEventListener('change', handleImageUpload);
+    
+    // ウィンドウリサイズ時にズームを更新
+    window.addEventListener('resize', updateCanvasZoom);
 };
 
 function initCanvas() {
@@ -13,6 +16,14 @@ function initCanvas() {
         width: 800,
         height: 600,
         backgroundColor: '#ffffff'
+    });
+
+    // オブジェクト追加時にアスペクト比固定設定を適用
+    canvas.on('object:added', function(e) {
+        const obj = e.target;
+        if (obj && obj.name !== 'gridLine') {
+            setupObjectControls(obj);
+        }
     });
 
     // スナップ機能
@@ -27,6 +38,30 @@ function initCanvas() {
 
     canvas.on('selection:created', updateFontDropdown);
     canvas.on('selection:updated', updateFontDropdown);
+    
+    // 初期ズーム状態を適用
+    setTimeout(updateCanvasZoom, 100);
+}
+
+// オブジェクトのコントロール設定（アスペクト比固定など）
+function setupObjectControls(obj) {
+    // 等倍リサイズのみを許可（角のハンドルのみ表示し、辺のハンドルを隠す）
+    obj.set({
+        lockUniScaling: true,
+        transparentCorners: false,
+        cornerColor: '#3b82f6',
+        cornerSize: 10,
+        cornerStrokeColor: '#ffffff',
+        cornerStyle: 'circle'
+    });
+    
+    // 辺のハンドル（中央上下左右）を非表示にする
+    obj.setControlsVisibility({
+        mt: false, // middle top
+        mb: false, // middle bottom
+        ml: false, // middle left
+        mr: false  // middle right
+    });
 }
 
 // 背景画像のアップロード処理
@@ -143,9 +178,39 @@ function changeCanvasSize() {
     
     if (document.getElementById('gridToggle').checked) toggleGrid(true);
     canvas.renderAll();
+    updateCanvasZoom(); // サイズ変更後にズームを更新
     alertBox(`サイズを ${width} x ${height} に変更しました`);
 }
 window.changeCanvasSize = changeCanvasSize;
+
+function updateCanvasZoom() {
+    const isFit = document.getElementById('zoomFitToggle').checked;
+    const wrapper = document.getElementById('canvas-wrapper');
+    const container = canvas.getElement().parentElement;
+
+    if (isFit) {
+        // ラッパーのサイズに合わせて縮小率を計算
+        const padding = 32;
+        const availableWidth = wrapper.clientWidth - padding;
+        const availableHeight = wrapper.clientHeight - padding;
+        
+        const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
+        
+        // CSSのみで表示サイズを変更する
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = 'center center';
+        
+        // ラッパー内の配置を調整（スクロールが出ないようにする）
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.justifyContent = 'center';
+    } else {
+        container.style.transform = 'none';
+        container.style.transformOrigin = 'unset';
+        wrapper.style.display = 'block';
+    }
+}
+window.updateCanvasZoom = updateCanvasZoom;
 
 function toggleGrid(forceRefresh = false) {
     const isGridVisible = document.getElementById('gridToggle').checked;
@@ -322,6 +387,57 @@ function alignVertical() {
     canvas.renderAll();
 }
 window.alignVertical = alignVertical;
+
+function cropToSelection() {
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return alertBox("切り抜きたい範囲のオブジェクトを選択してください");
+
+    // 選択されているオブジェクトの範囲を計算
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    activeObjects.forEach(obj => {
+        const bound = obj.getBoundingRect();
+        minX = Math.min(minX, bound.left);
+        minY = Math.min(minY, bound.top);
+        maxX = Math.max(maxX, bound.left + bound.width);
+        maxY = Math.max(maxY, bound.top + bound.height);
+    });
+
+    // 遊び（パディング）を追加
+    const padding = 20;
+    minX -= padding; minY -= padding;
+    maxX += padding; maxY += padding;
+
+    // キャンバスのサイズを更新
+    const newWidth = Math.max(100, maxX - minX);
+    const newHeight = Math.max(100, maxY - minY);
+
+    // 全オブジェクトを移動させて新しい原点に合わせる
+    const allObjects = canvas.getObjects().filter(o => o.name !== 'gridLine');
+    allObjects.forEach(obj => {
+        obj.set({
+            left: obj.left - minX,
+            top: obj.top - minY
+        });
+        obj.setCoords();
+    });
+
+    // 背景画像がある場合はそれも移動・調整が必要だが、複雑なため警告のみ
+    if (backgroundImageObject) {
+        alertBox("背景画像の位置調整は手動で行ってください");
+    }
+
+    canvas.setWidth(newWidth);
+    canvas.setHeight(newHeight);
+    
+    // グリッドのリフレッシュ
+    if (document.getElementById('gridToggle').checked) toggleGrid(true);
+    
+    canvas.renderAll();
+    updateCanvasZoom();
+    alertBox(`キャンバスを ${Math.round(newWidth)} x ${Math.round(newHeight)} に切り抜きました`);
+}
+window.cropToSelection = cropToSelection;
 
 function downloadImage() {
     const gridState = document.getElementById('gridToggle').checked;
