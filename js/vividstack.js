@@ -272,20 +272,28 @@ async function handleImageUpload(e) {
     const imageDataList = await Promise.all(loadPromises);
     const count = imageDataList.length;
     
-    // 枚数が多い場合はマージンを小さくして画像を大きく表示する
+    // キャンバスサイズに合わせて1行の枚数を決定
+    const sizeValue = document.getElementById('canvasSizeSelect').value;
+    let cols = 3; // 低画質 (800x600) のデフォルト
+    if (sizeValue === '1200x900') cols = 5;
+    else if (sizeValue === '1920x1080') cols = 10;
+    else if (sizeValue === '3840x2160') cols = 18;
+
+    // 枚数が少ない場合はその枚数に合わせる
+    const actualCols = Math.min(count, cols);
+    const rows = Math.ceil(count / actualCols);
+    
     const margin = count > 12 ? 8 : (count > 4 ? 12 : 15); 
     const labelHeight = showName ? 18 : 0; 
 
-    const cols = Math.ceil(Math.sqrt(count)); 
-    const rows = Math.ceil(count / cols);    
     const availableWidth = canvas.width - (margin * 2); 
     const availableHeight = canvas.height - (margin * 2); 
     
-    const targetCellWidth = (availableWidth - (margin * (cols - 1))) / cols;
+    const targetCellWidth = (availableWidth - (margin * (actualCols - 1))) / actualCols;
     const targetCellHeight = (availableHeight - (margin * (rows - 1))) / rows;
 
     // 全体の配置範囲を計算して中央に寄せるためのオフセット
-    const totalGridWidth = cols * targetCellWidth + (cols - 1) * margin;
+    const totalGridWidth = actualCols * targetCellWidth + (actualCols - 1) * margin;
     const totalGridHeight = rows * targetCellHeight + (rows - 1) * margin;
     const offsetX = (canvas.width - totalGridWidth) / 2;
     const offsetY = (canvas.height - totalGridHeight) / 2;
@@ -312,8 +320,8 @@ async function handleImageUpload(e) {
             originY: 'top'
         });
 
-        const colIdx = i % cols;
-        const rowIdx = Math.floor(i / cols);
+        const colIdx = i % actualCols;
+        const rowIdx = Math.floor(i / actualCols);
         
         group.set({
             left: offsetX + colIdx * (targetCellWidth + margin),
