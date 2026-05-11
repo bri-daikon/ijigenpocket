@@ -189,24 +189,36 @@ function updateCanvasZoom() {
     const container = canvas.getElement().parentElement;
 
     if (isFit) {
-        // ラッパーのサイズに合わせて縮小率を計算
-        const padding = 32;
+        // ラッパーのサイズに合わせて倍率を計算
+        const padding = 40;
         const availableWidth = wrapper.clientWidth - padding;
         const availableHeight = wrapper.clientHeight - padding;
         
         const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
         
-        // CSSのみで表示サイズを変更する
-        container.style.transform = `scale(${scale})`;
-        container.style.transformOrigin = 'center center';
+        // Fabric.jsのズームを設定（座標計算を正しく保つ）
+        canvas.setZoom(scale);
         
-        // ラッパー内の配置を調整（スクロールが出ないようにする）
+        // CSS上の表示サイズのみを変更（画質は落とさない）
+        canvas.setDimensions({
+            width: canvas.width * scale,
+            height: canvas.height * scale
+        }, { cssOnly: true });
+
+        // スクロールバーを消して中央寄せ
+        wrapper.style.overflow = 'hidden';
         wrapper.style.display = 'flex';
         wrapper.style.alignItems = 'center';
         wrapper.style.justifyContent = 'center';
     } else {
-        container.style.transform = 'none';
-        container.style.transformOrigin = 'unset';
+        // 元に戻す
+        canvas.setZoom(1);
+        canvas.setDimensions({
+            width: canvas.width,
+            height: canvas.height
+        }, { cssOnly: true });
+
+        wrapper.style.overflow = 'auto';
         wrapper.style.display = 'block';
     }
 }
@@ -272,6 +284,12 @@ async function handleImageUpload(e) {
     const targetCellWidth = (availableWidth - (margin * (cols - 1))) / cols;
     const targetCellHeight = (availableHeight - (margin * (rows - 1))) / rows;
 
+    // 全体の配置範囲を計算して中央に寄せるためのオフセット
+    const totalGridWidth = cols * targetCellWidth + (cols - 1) * margin;
+    const totalGridHeight = rows * targetCellHeight + (rows - 1) * margin;
+    const offsetX = (canvas.width - totalGridWidth) / 2;
+    const offsetY = (canvas.height - totalGridHeight) / 2;
+
     imageDataList.forEach((data, i) => {
         const img = data.img;
         const scale = Math.min(targetCellWidth / img.width, (targetCellHeight - labelHeight) / img.height);
@@ -298,8 +316,8 @@ async function handleImageUpload(e) {
         const rowIdx = Math.floor(i / cols);
         
         group.set({
-            left: margin + colIdx * (targetCellWidth + margin),
-            top: margin + rowIdx * (targetCellHeight + margin)
+            left: offsetX + colIdx * (targetCellWidth + margin),
+            top: offsetY + rowIdx * (targetCellHeight + margin)
         });
 
         group.setCoords();
