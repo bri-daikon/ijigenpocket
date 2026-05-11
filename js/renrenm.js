@@ -1,22 +1,28 @@
 const fileInput = document.getElementById('file-input');
 const dropArea = document.getElementById('drop-area');
 const sortableList = document.getElementById('sortable-list');
+const fixedList = document.getElementById('fixed-list');
+const fixedSection = document.getElementById('fixed-section');
 const listSection = document.getElementById('list-section');
 const downloadBtn = document.getElementById('download-btn');
 const resetBtn = document.getElementById('reset-btn');
 const countBadge = document.getElementById('count-badge');
 const loadingOverlay = document.getElementById('loading-overlay');
 
-// ファイルを保持する配列
-let fileRegistry = new Map();
+// ファイルレジストリ
+let seqFileMap = new Map();
+let fixedFileMap = new Map();
 let nextId = 0;
 
-// Sortableの初期化
+// 除外対象のファイル名
+const EXCLUDED_FILENAMES = ['main.png', 'tab.png'];
+
+// Sortableの初期化 (連番リストのみ)
 const sortable = new Sortable(sortableList, {
-    animation: 250,
+    animation: 300,
     handle: '.drag-handle',
     ghostClass: 'bg-indigo-50',
-    onEnd: updateNumbers // 並び替えが終わったら数字を更新
+    onEnd: updateNumbers
 });
 
 // イベント設定
@@ -41,12 +47,8 @@ if (dropArea) {
 
 if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-        if(confirm('リストをクリアしますか？')) {
-            fileRegistry.clear();
-            sortableList.innerHTML = '';
-            listSection.classList.add('hidden');
-            dropArea.classList.remove('hidden');
-            fileInput.value = '';
+        if(confirm('すべてのリストをクリアしますか？')) {
+            location.reload(); 
         }
     });
 }
@@ -60,72 +62,107 @@ function handleFiles(files) {
         if (!file.type.startsWith('image/')) return;
         
         const id = `file-${nextId++}`;
-        fileRegistry.set(id, file);
-        addToList(id, file);
+        
+        // 特定の名前かチェック
+        if (EXCLUDED_FILENAMES.includes(file.name.toLowerCase())) {
+            fixedFileMap.set(id, file);
+            addFixedItem(id, file);
+        } else {
+            seqFileMap.set(id, file);
+            addSeqItem(id, file);
+        }
     });
 
-    listSection.classList.remove('hidden');
-    dropArea.classList.add('hidden');
+    if (listSection) listSection.classList.remove('hidden');
+    if (dropArea) dropArea.classList.add('hidden');
     updateNumbers();
 }
 
-// リストに項目を追加
-function addToList(id, file) {
+// 連番用アイテム追加
+function addSeqItem(id, file) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm drag-handle cursor-grab active:cursor-grabbing hover:bg-white transition-colors';
+    li.className = 'flex items-center gap-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm drag-handle cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all group';
     li.dataset.id = id;
 
-    // 簡易プレビューURL作成
     const previewUrl = URL.createObjectURL(file);
 
     li.innerHTML = `
-        <div class="flex-shrink-0 w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-mono font-bold num-display">
+        <div class="flex-shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-mono font-black text-xl num-display">
             --
         </div>
-        <img src="${previewUrl}" class="w-12 h-12 object-cover rounded-md bg-slate-200">
-        <div class="flex-grow min-w-0">
-            <p class="text-xs text-slate-400 truncate">${file.name}</p>
-            <p class="text-sm font-bold text-indigo-600 font-mono new-name-display">00.ext</p>
+        <div class="relative flex-shrink-0">
+            <img src="${previewUrl}" class="w-32 h-32 object-cover rounded-xl bg-slate-100 border border-slate-100 shadow-inner">
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-xl pointer-events-none"></div>
         </div>
-        <button class="text-slate-300 hover:text-red-500 p-2" onclick="removeItem('${id}')">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div class="flex-grow min-w-0">
+            <p class="text-xs text-slate-400 truncate mb-1">元: ${file.name}</p>
+            <p class="text-xl font-black text-indigo-600 font-mono new-name-display tracking-tight">00.ext</p>
+        </div>
+        <button class="text-slate-300 hover:text-red-500 p-3 transition-colors" onclick="removeItem('${id}', 'seq')">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     `;
     sortableList.appendChild(li);
 }
 
+// 固定用アイテム追加
+function addFixedItem(id, file) {
+    if (fixedSection) fixedSection.classList.remove('hidden');
+    const li = document.createElement('li');
+    li.className = 'flex items-center gap-4 bg-amber-50 p-3 rounded-xl border border-amber-100 shadow-sm';
+    li.dataset.id = id;
+
+    const previewUrl = URL.createObjectURL(file);
+
+    li.innerHTML = `
+        <img src="${previewUrl}" class="w-16 h-16 object-cover rounded-lg bg-white border border-amber-200">
+        <div class="flex-grow min-w-0">
+            <p class="text-xs text-amber-600 font-bold">名前固定</p>
+            <p class="text-sm font-black text-slate-700 font-mono truncate">${file.name}</p>
+        </div>
+        <button class="text-amber-300 hover:text-red-500 p-2" onclick="removeItem('${id}', 'fixed')">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    `;
+    fixedList.appendChild(li);
+}
+
 // 番号表示の更新
 function updateNumbers() {
     const items = sortableList.querySelectorAll('li');
-    countBadge.textContent = items.length;
+    if (countBadge) countBadge.textContent = items.length;
 
     items.forEach((item, index) => {
         const num = (index + 1).toString().padStart(2, '0');
         const fileId = item.dataset.id;
-        const file = fileRegistry.get(fileId);
+        const file = seqFileMap.get(fileId);
         const ext = file.name.split('.').pop();
 
-        item.querySelector('.num-display').textContent = num;
-        item.querySelector('.new-name-display').textContent = `${num}.${ext}`;
+        const numDisplay = item.querySelector('.num-display');
+        const newNameDisplay = item.querySelector('.new-name-display');
+        if (numDisplay) numDisplay.textContent = num;
+        if (newNameDisplay) newNameDisplay.textContent = `${num}.${ext}`;
     });
 }
 
-// 個別削除
-window.removeItem = function(id) {
-    const el = sortableList.querySelector(`[data-id="${id}"]`);
+// アイテム削除
+window.removeItem = function(id, type) {
+    const list = type === 'seq' ? sortableList : fixedList;
+    const map = type === 'seq' ? seqFileMap : fixedFileMap;
+    
+    const el = list.querySelector(`[data-id="${id}"]`);
     if (el) {
-        // メモリ解放
         const img = el.querySelector('img');
-        URL.revokeObjectURL(img.src);
-        
+        if(img) URL.revokeObjectURL(img.src);
         el.remove();
-        fileRegistry.delete(id);
+        map.delete(id);
     }
     
-    if (fileRegistry.size === 0) {
-        listSection.classList.add('hidden');
-        dropArea.classList.remove('hidden');
+    if (seqFileMap.size === 0 && fixedFileMap.size === 0) {
+        if (listSection) listSection.classList.add('hidden');
+        if (dropArea) dropArea.classList.remove('hidden');
     } else {
+        if (fixedFileMap.size === 0 && fixedSection) fixedSection.classList.add('hidden');
         updateNumbers();
     }
 };
@@ -133,21 +170,25 @@ window.removeItem = function(id) {
 // ダウンロード実行
 if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
-        const items = sortableList.querySelectorAll('li');
-        if (items.length === 0) return;
+        const seqItems = sortableList.querySelectorAll('li');
+        if (seqItems.length === 0 && fixedFileMap.size === 0) return;
 
-        loadingOverlay.classList.remove('hidden');
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
         const zip = new JSZip();
 
         try {
-            items.forEach((item, index) => {
+            // 1. 連番ファイルの処理
+            seqItems.forEach((item, index) => {
                 const fileId = item.dataset.id;
-                const file = fileRegistry.get(fileId);
+                const file = seqFileMap.get(fileId);
                 const ext = file.name.split('.').pop();
-                
-                // 新しいファイル名：数字のみ (例: 01.jpg)
                 const newName = `${(index + 1).toString().padStart(2, '0')}.${ext}`;
                 zip.file(newName, file);
+            });
+
+            // 2. 固定ファイルの処理
+            fixedFileMap.forEach((file) => {
+                zip.file(file.name, file);
             });
 
             const content = await zip.generateAsync({ type: 'blob' });
@@ -155,7 +196,7 @@ if (downloadBtn) {
             
             const a = document.createElement('a');
             a.href = downloadUrl;
-            a.download = `renamed_images_${new Date().getTime()}.zip`;
+            a.download = `assets_pack_${new Date().getTime()}.zip`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -163,9 +204,9 @@ if (downloadBtn) {
 
         } catch (error) {
             console.error(error);
-            alert('ZIPの作成中にエラーが発生しました。');
+            alert('エラーが発生しました。');
         } finally {
-            loadingOverlay.classList.add('hidden');
+            if (loadingOverlay) loadingOverlay.classList.add('hidden');
         }
     });
 }

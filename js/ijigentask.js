@@ -227,6 +227,7 @@ function renderTasks() {
     const hide = hideCompletedEl ? hideCompletedEl.checked : false;
     const month = monthFilterEl ? monthFilterEl.value : "";
     const tag = tagFilterEl ? tagFilterEl.value : "";
+    const showAllMonths = document.getElementById('showAllMonths')?.checked || false;
     
     list.innerHTML = "";
     const sorted = [...tasks].sort((a, b) => {
@@ -235,8 +236,10 @@ function renderTasks() {
     });
     sorted.forEach(t => {
         if (hide && t.completed) return;
-        if (month && t.deadline && t.deadline !== "設定なし" && t.deadline.substring(0, 7) !== month) return;
-        if (month && (!t.deadline || t.deadline === "設定なし")) return;
+        if (!showAllMonths) {
+            if (month && t.deadline && t.deadline !== "設定なし" && t.deadline.substring(0, 7) !== month) return;
+            if (month && (!t.deadline || t.deadline === "設定なし")) return;
+        }
         if (tag && !t.tags?.includes(tag)) return;
         const rel = getRelativeDateString(t.deadline);
         const li = document.createElement('li');
@@ -257,3 +260,14 @@ function renderTasks() {
     if (!list.innerHTML) list.innerHTML = `<li style="color:#aaa; justify-content:center;">タスクはありません</li>`;
 }
 window.renderTasks = renderTasks;
+
+function toggleMonthFilter() {
+    const showAll = document.getElementById('showAllMonths').checked;
+    const monthFilter = document.getElementById('monthFilter');
+    if (monthFilter) {
+        monthFilter.disabled = showAll;
+        monthFilter.style.opacity = showAll ? "0.5" : "1";
+    }
+    renderTasks();
+}
+window.toggleMonthFilter = toggleMonthFilter;
