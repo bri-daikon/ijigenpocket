@@ -17,7 +17,7 @@ let editingEventId = null;
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 window.onload = () => {
-    const savedTheme = localStorage.getItem('weby_theme') || 'default';
+    const savedTheme = localStorage.getItem('weby_theme') || 'premium-glass';
     setTheme(savedTheme);
     const themeSelect = document.getElementById('themeSelect');
     if (themeSelect) themeSelect.value = savedTheme;
@@ -282,7 +282,8 @@ function renderMonth(container, date, eventList) {
         const currentStr = getLocalDateString(current);
         const cell = document.createElement('div');
         cell.className = `day-cell p-1 hover:brightness-95 transition ${current.getMonth() !== month ? 'cell-off' : ''}`;
-        cell.innerHTML = `<div class="flex justify-between mb-1 p-1"><span class="day-number text-xs font-bold ${current.toDateString() === new Date().toDateString() ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}">${current.getDate()}</span></div>`;
+        const isToday = current.toDateString() === new Date().toDateString();
+        cell.innerHTML = `<div class="flex justify-between mb-1 p-1"><span class="day-number text-xs font-bold ${isToday ? 'today' : ''}">${current.getDate()}</span></div>`;
         
         const dayEvents = eventList.filter(e => isDateInRange(currentStr, e.start, e.end));
         sortEvents(dayEvents).forEach(e => cell.appendChild(createEventElement(e, currentStr)));
