@@ -253,7 +253,13 @@ function renderTasks() {
                 <div class="task-tags">${t.tags.map(tg => `<span class="tag-badge" style="background:${getTagStyle(tg).bg};color:${getTagStyle(tg).text};">#${tg}</span>`).join('')}</div>
                 <div class="task-meta"><span class="prio-badge ${pc}">${t.priority}</span><span>📅 ${t.deadline}</span>${rel ? `<span class="deadline-badge ${rel.class}">${rel.text}</span>` : ""}</div>
             </div>
-            <div class="btn-action-group"><a href="${getGoogleCalendarUrl(t)}" target="_blank" class="calendar-btn">🗓 カレンダー</a><button class="delete-btn" onclick="deleteTask(${t.id})">削除</button></div>
+            <div class="btn-action-group">
+                <div class="flex gap-1">
+                    <a href="${getGoogleCalendarUrl(t)}" target="_blank" class="calendar-btn" title="Googleカレンダーに登録">🗓 Google</a>
+                    <a href="SSCalendar.html" class="calendar-btn site-calendar-btn" title="自作カレンダーで表示">📅 連携</a>
+                </div>
+                <button class="delete-btn" onclick="deleteTask(${t.id})">削除</button>
+            </div>
         `;
         list.appendChild(li);
     });

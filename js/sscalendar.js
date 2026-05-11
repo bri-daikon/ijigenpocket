@@ -6,8 +6,13 @@ let categories = JSON.parse(localStorage.getItem('weby_categories') || JSON.stri
     { id: 'work', name: '仕事', color: '#3b82f6' },
     { id: 'private', name: 'プライベート', color: '#22c55e' },
     { id: 'important', name: '重要', color: '#ef4444' },
+    { id: 'task', name: 'タスク', color: '#8b5cf6' },
     { id: 'other', name: 'その他', color: '#9ca3af' }
 ]));
+// タスクカテゴリが未登録の場合は追加
+if (!categories.find(c => c.id === 'task')) {
+    categories.push({ id: 'task', name: 'タスク', color: '#8b5cf6' });
+}
 let editingEventId = null;
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -208,11 +213,28 @@ function render() {
         else downloadBtn.classList.add('hidden');
     }
 
-    if (currentView === 'month') renderMonth(container, referenceDate);
-    else if (currentView === 'week' || currentView === '2weeks' || currentView === 'day') renderWeek(container, referenceDate, (currentView === 'week' ? 7 : (currentView === '2weeks' ? 14 : 1)));
-    else if (currentView === 'hourly') renderHourly(container, referenceDate);
-    else if (currentView === '3months') renderMultiMonth(container, referenceDate, 3);
-    else if (currentView === 'year') renderMultiMonth(container, referenceDate, 12);
+    // タスクデータを読み込んでイベントに変換
+    const tasks = JSON.parse(localStorage.getItem('bizTasksV6') || '[]');
+    const taskEvents = tasks
+        .filter(t => !t.completed && t.deadline && t.deadline !== "設定なし")
+        .map(t => ({
+            id: `task_${t.id}`,
+            title: `📌 ${t.text}`,
+            start: t.deadline,
+            end: t.deadline,
+            isAllDay: true,
+            category: 'task',
+            description: t.memo,
+            isTask: true
+        }));
+    
+    const allEvents = [...events, ...taskEvents];
+
+    if (currentView === 'month') renderMonth(container, referenceDate, allEvents);
+    else if (currentView === 'week' || currentView === '2weeks' || currentView === 'day') renderWeek(container, referenceDate, (currentView === 'week' ? 7 : (currentView === '2weeks' ? 14 : 1)), allEvents);
+    else if (currentView === 'hourly') renderHourly(container, referenceDate, allEvents);
+    else if (currentView === '3months') renderMultiMonth(container, referenceDate, 3, allEvents);
+    else if (currentView === 'year') renderMultiMonth(container, referenceDate, 12, allEvents);
 
     lucide.createIcons();
 }
@@ -243,7 +265,7 @@ function createEventElement(e, currentStr, showDesc = false) {
     return ev;
 }
 
-function renderMonth(container, date) {
+function renderMonth(container, date, eventList) {
     const year = date.getFullYear(); const month = date.getMonth();
     const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0);
     const startOffset = firstDay.getDay(); const totalCells = Math.ceil((lastDay.getDate() + startOffset) / 7) * 7;
@@ -262,7 +284,7 @@ function renderMonth(container, date) {
         cell.className = `day-cell p-1 hover:brightness-95 transition ${current.getMonth() !== month ? 'cell-off' : ''}`;
         cell.innerHTML = `<div class="flex justify-between mb-1 p-1"><span class="day-number text-xs font-bold ${current.toDateString() === new Date().toDateString() ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : ''}">${current.getDate()}</span></div>`;
         
-        const dayEvents = events.filter(e => isDateInRange(currentStr, e.start, e.end));
+        const dayEvents = eventList.filter(e => isDateInRange(currentStr, e.start, e.end));
         sortEvents(dayEvents).forEach(e => cell.appendChild(createEventElement(e, currentStr)));
         
         cell.onclick = () => openModal(currentStr); grid.appendChild(cell);
@@ -270,7 +292,7 @@ function renderMonth(container, date) {
     card.appendChild(grid); container.appendChild(card);
 }
 
-function renderWeek(container, date, daysCount) {
+function renderWeek(container, date, daysCount, eventList) {
     let start = new Date(date); if (daysCount > 1) start.setDate(date.getDate() - date.getDay());
     const card = document.createElement('div'); card.className = 'calendar-card divide-y divide-inherit';
     for (let i = 0; i < daysCount; i++) {
@@ -281,7 +303,7 @@ function renderWeek(container, date, daysCount) {
         info.innerHTML = `<span class="text-xs font-bold ${current.getDay() === 0 ? 'text-red-500' : (current.getDay() === 6 ? 'text-blue-500' : '')}">${WEEKDAYS[current.getDay()]}</span><span class="text-3xl font-black">${current.getDate()}</span>`;
         const evArea = document.createElement('div'); evArea.className = 'p-3 flex flex-col gap-1 cursor-pointer w-full';
         
-        const dayEvents = events.filter(e => isDateInRange(currentStr, e.start, e.end));
+        const dayEvents = eventList.filter(e => isDateInRange(currentStr, e.start, e.end));
         if (dayEvents.length === 0) evArea.innerHTML = `<span class="opacity-30 text-xs italic">予定なし</span>`;
         else sortEvents(dayEvents).forEach(e => evArea.appendChild(createEventElement(e, currentStr, true)));
         
@@ -290,9 +312,9 @@ function renderWeek(container, date, daysCount) {
     container.appendChild(card);
 }
 
-function renderHourly(container, date) {
+function renderHourly(container, date, eventList) {
     const dateStr = getLocalDateString(date);
-    const rawDayEvents = events.filter(e => !e.isAllDay && isDateInRange(dateStr, e.start, e.end));
+    const rawDayEvents = eventList.filter(e => !e.isAllDay && isDateInRange(dateStr, e.start, e.end));
     const dayEvents = rawDayEvents.map(e => {
         let sMin = 0; let eMin = 1440;
         if (e.start === dateStr && e.startTime) { const [h, m] = e.startTime.split(':').map(Number); sMin = h * 60 + m; } else if (e.start < dateStr) { sMin = 0; }
@@ -337,7 +359,7 @@ function renderHourly(container, date) {
         overlay.appendChild(block);
     });
 
-    const allDayRaw = events.filter(e => e.isAllDay && isDateInRange(dateStr, e.start, e.end));
+    const allDayRaw = eventList.filter(e => e.isAllDay && isDateInRange(dateStr, e.start, e.end));
     const allDay = sortEvents(allDayRaw);
     if (allDay.length) {
         const bar = document.createElement('div'); bar.className = 'bg-black/5 border-b border-inherit p-3 flex flex-wrap gap-2';
@@ -352,7 +374,7 @@ function renderHourly(container, date) {
     card.appendChild(overlay); container.appendChild(card);
 }
 
-function renderMultiMonth(container, date, count) {
+function renderMultiMonth(container, date, count, eventList) {
     const grid = document.createElement('div'); grid.className = `grid gap-8 ${count === 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`;
     for (let i = 0; i < count; i++) {
         const curr = new Date(date.getFullYear(), date.getMonth() + i, 1);
@@ -364,7 +386,7 @@ function renderMultiMonth(container, date, count) {
         for (let j = 0; j < offset; j++) mini.innerHTML += '<div class="bg-black/5"></div>';
         for (let d = 1; d <= days; d++) {
             const currentDay = new Date(curr.getFullYear(), curr.getMonth(), d); const dStr = getLocalDateString(currentDay);
-            const dayEvents = events.filter(e => isDateInRange(dStr, e.start, e.end)); const has = dayEvents.length > 0;
+            const dayEvents = eventList.filter(e => isDateInRange(dStr, e.start, e.end)); const has = dayEvents.length > 0;
             const isToday = currentDay.toDateString() === new Date().toDateString();
             let styleAttr = ""; let classList = "text-center py-3 cursor-pointer transition hover:brightness-95 ";
             if (has) { const cat = categories.find(c => c.id === dayEvents[0].category) || categories[0]; styleAttr = `style="background-color: ${cat.color}22; border-bottom: 3px solid ${cat.color};"`; classList += "font-bold "; } else { classList += "bg-white/90 "; }
@@ -402,6 +424,12 @@ function saveEvent() {
 window.saveEvent = saveEvent;
 
 function editEvent(id) {
+    if (id.startsWith('task_')) {
+        if (confirm('これはタスク管理ツールのタスクです。タスク管理画面を開きますか？')) {
+            window.location.href = 'ijigentask.html';
+        }
+        return;
+    }
     const ev = events.find(e => e.id === id); if (!ev) return;
     editingEventId = id; document.getElementById('modalTitle').innerText = '予定を編集';
     document.getElementById('eventTitle').value = ev.title; document.getElementById('eventCategory').value = categories.some(c => c.id === ev.category) ? ev.category : categories[0].id;
