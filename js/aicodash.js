@@ -4,22 +4,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Simulate real-time updates for AI employees
     const cards = document.querySelectorAll('.card');
     
+    const statuses = ['Online', 'Busy', 'Thinking', 'Coding', 'Researching', 'Testing', 'Reviewing'];
+    const projects = [
+        'KakeruKun Integration',
+        'UI Glassmorphism Fix',
+        'Common Nav Audit',
+        'SSCalendar v2 Update',
+        'VividStack Layer Fix',
+        'LINE Stamp Optimizer',
+        'Lead Generation API'
+    ];
+    
     function simulateActivity() {
-        cards.forEach(card => {
+        cards.forEach((card, index) => {
             const progressFill = card.querySelector('.progress-fill');
             const progressText = card.querySelector('.task-progress span:last-child');
+            const taskLabel = card.querySelector('.task-progress span:first-child');
             const statusBadge = card.querySelector('.status-badge');
             
             if (progressFill && progressText) {
-                // Get current percentage
                 let currentVal = parseInt(progressText.innerText);
                 
-                // Randomly increment (sometimes reset if near 100)
-                if (currentVal >= 99) {
+                if (currentVal >= 100) {
                     currentVal = 0;
                     if (statusBadge) updateStatus(statusBadge);
+                    if (taskLabel) {
+                        const randomProject = projects[Math.floor(Math.random() * projects.length)];
+                        taskLabel.innerText = randomProject;
+                    }
                 } else {
-                    currentVal += Math.floor(Math.random() * 2);
+                    currentVal += Math.floor(Math.random() * 3);
+                    if (currentVal > 100) currentVal = 100;
                 }
                 
                 progressText.innerText = currentVal + '%';
@@ -28,21 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const statuses = ['Online', 'Busy', 'Thinking', 'Coding', 'Researching', 'Testing'];
-    
     function updateStatus(badge) {
         const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
         badge.innerText = randomStatus;
         
-        // Add a brief glow effect when status changes
+        // Change colors based on status
+        badge.className = 'status-badge ' + (randomStatus === 'Coding' || randomStatus === 'Busy' ? 'status-active' : 'status-active');
+        
         badge.style.transform = 'scale(1.1)';
         setTimeout(() => {
             badge.style.transform = 'scale(1)';
         }, 300);
     }
 
-    // Run simulation every 3 seconds
-    setInterval(simulateActivity, 3000);
+    // Run simulation every 2.5 seconds
+    setInterval(simulateActivity, 2500);
 
     // Add click effect to nav links
     const navLinks = document.querySelectorAll('.nav-link');
