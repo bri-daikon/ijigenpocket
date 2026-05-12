@@ -339,16 +339,16 @@ function exportHTML() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>\${title}</title>
-    <style>\${exportStyles}</style>
+    <title>${title}</title>
+    <style>${exportStyles}</style>
 </head>
 <body>
     <aside>
         <div class="toc-title">📋 目次</div>
-        \${tocHtml}
+        ${tocHtml}
     </aside>
     <main>
-        \${pagesHtml}
+        ${pagesHtml}
     </main>
 </body>
 </html>`;
@@ -381,7 +381,7 @@ function exportWord() {
                 }
             </style>
         </head>
-        <body><h1>\${title}</h1>\${content}</body>
+        <body><h1>${title}</h1>${content}</body>
         </html>
     `;
     const blob = new Blob(['\ufeff', wordContent], { type: 'application/msword;charset=utf-8' });
@@ -398,7 +398,7 @@ function insertFold() {
     editor.focus();
     const selectedHtml = getSelectedHtmlAndRemove();
     const content = selectedHtml || "折りたたみ内の内容をここに...";
-    const html = `<details><summary>クリックで開閉</summary><div>\${content}</div></details><p><br></p>`;
+    const html = `<details><summary>クリックで開閉</summary><div>${content}</div></details><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -580,10 +580,10 @@ function insertLink() {
     list.innerHTML = '';
     const headers = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
     headers.forEach((h, i) => {
-        if (!h.id) h.id = `h-\${i}`;
+        if (!h.id) h.id = `h-${i}`;
         const btn = document.createElement('button');
         btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1 text-slate-700";
-        btn.textContent = h.textContent.trim() || `無題の見出し \${i+1}`;
+        btn.textContent = h.textContent.trim() || `無題の見出し ${i+1}`;
         btn.onclick = (e) => {
             e.preventDefault();
             if (!savedSelectionRange) return;
@@ -591,7 +591,7 @@ function insertLink() {
             const currentSel = window.getSelection();
             currentSel.removeAllRanges();
             currentSel.addRange(savedSelectionRange);
-            document.execCommand('createLink', false, `#\${h.id}`);
+            document.execCommand('createLink', false, `#${h.id}`);
             closeModal('link-modal');
             autoUpdateUI();
         };
@@ -653,7 +653,7 @@ function insertTRPGBox(type) {
     }
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(borderColor, 0.4);
-    const html = `<div class="\${className}" style="background-color:\${borderColor}11; border-color:\${borderColor}; color:\${textColor}"><strong>【\${label}】</strong><div class="mt-1">\${content}</div></div><p><br></p>`;
+    const html = `<div class="${className}" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -664,7 +664,7 @@ function insertBorderBox() {
     const content = selectedHtml || "内容を入力...";
     const col = document.getElementById('bg-color-picker').value;
     const textColor = darkenColor(col, 0.4);
-    const html = `<div class="box-custom" style="border-color:\${col}; background-color:\${col}22; color:\${textColor}; border-width: 2px;">\${content}</div><p><br></p>`;
+    const html = `<div class="box-custom" style="border-color:${col}; background-color:${col}22; color:${textColor}; border-width: 2px;">${content}</div><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -675,7 +675,7 @@ function insertKPInfo() {
     const content = selectedHtml || "内容...";
     const borderColor = "#fde047";
     const textColor = darkenColor(borderColor, 0.6);
-    const html = `<div class="kp-info" style="background-color:\${borderColor}22; border-color:\${borderColor}; color:\${textColor}; border-width: 2px;"><strong>【KP情報】</strong><div class="mt-1">\${content}</div></div><p><br></p>`;
+    const html = `<div class="kp-info" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px;"><strong>【KP情報】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -686,7 +686,7 @@ function insertQuote() {
     const content = selectedHtml || "内容...";
     const borderColor = "#94a3b8";
     const textColor = darkenColor(borderColor, 0.4);
-    const html = `<div class="quote" style="background-color:\${borderColor}22; border-color:\${borderColor}; color:\${textColor}; border-width: 2px;">\${content}</div><p><br></p>`;
+    const html = `<div class="quote" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px;">${content}</div><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -697,15 +697,15 @@ function insertSpecialBox(label) {
     let defaultCol = "#64748b";
     let defaultContent = "詳細...";
     switch(label) {
-        case '許諾': defaultCol = "#94a3b8"; defaultContent = \`本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」\`; break;
-        case '諸注意': defaultCol = "#f59e0b"; defaultContent = \`・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり\`; break;
-        case 'HO': defaultCol = "#6366f1"; defaultContent = \`公開HO：<br>貴方は……である。\`; break;
-        case 'エネミー': defaultCol = "#ef4444"; defaultContent = \`名前：<br>STR: / CON: / SIZ: / DEX: / POW: / INT: / EDU: / APP:<br>耐久力: / マジックポイント:<br>ダメージボーナス: / ビルド: / 移動: <br>攻撃：<br>装甲：<br>技能：\`; break;
-        case 'クレジット': defaultCol = "#64748b"; defaultContent = \`著者：<br>協力：<br>画像：\`; break;
+        case '許諾': defaultCol = "#94a3b8"; defaultContent = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`; break;
+        case '諸注意': defaultCol = "#f59e0b"; defaultContent = `・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり`; break;
+        case 'HO': defaultCol = "#6366f1"; defaultContent = `公開HO：<br>貴方は……である。`; break;
+        case 'エネミー': defaultCol = "#ef4444"; defaultContent = `名前：<br>STR: / CON: / SIZ: / DEX: / POW: / INT: / EDU: / APP:<br>耐久力: / マジックポイント:<br>ダメージボーナス: / ビルド: / 移動: <br>攻撃：<br>装甲：<br>技能：`; break;
+        case 'クレジット': defaultCol = "#64748b"; defaultContent = `著者：<br>協力：<br>画像：`; break;
     }
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(defaultCol, 0.5);
-    const html = `<div class="box-special" style="border-top-color:\${defaultCol}; background-color:\${defaultCol}22; color:\${textColor}"><strong>■ \${label}</strong><div class="mt-2 text-sm">\${content}</div></div><p><br></p>`;
+    const html = `<div class="box-special" style="border-top-color:${defaultCol}; background-color:${defaultCol}22; color:${textColor}"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -719,7 +719,7 @@ function handleImageUpload(input) {
         reader.onload = e => {
             restoreRange(); 
             // デフォルトは中央配置で挿入
-            const imgHtml = `<img src="\${e.target.result}" class="img-center">`;
+            const imgHtml = `<img src="${e.target.result}" class="img-center">`;
             document.execCommand('insertHTML', false, imgHtml);
             
             autoUpdateUI(); 
@@ -734,16 +734,16 @@ function updateTOC() {
     const hs = Array.from(editor.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8'));
     tocContainer.innerHTML = hs.length ? '' : '<p class="p-4 text-slate-400 italic">見出しなし</p>';
     hs.forEach((h, i) => {
-        if (!h.id) h.id = `h-\${i}`;
+        if (!h.id) h.id = `h-${i}`;
         const link = document.createElement('a');
-        link.href = `#\${h.id}`;
+        link.href = `#${h.id}`;
         link.textContent = h.textContent.trim() || '無題';
         link.className = 'block py-2 px-4 hover:bg-slate-50 truncate border-r-4 border-transparent text-slate-600';
         let lv = 0;
         if (h.tagName.startsWith('H')) lv = parseInt(h.tagName[1]) - 1;
         else if (h.classList.contains('h7')) lv = 6;
         else if (h.classList.contains('h8')) lv = 7;
-        link.style.paddingLeft = `\${lv + 1}em`;
+        link.style.paddingLeft = `${lv + 1}em`;
         link.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
         tocContainer.appendChild(link);
     });
@@ -752,7 +752,7 @@ function updateTOC() {
     if (currentSectionSpan && hs.length > 0) currentSectionSpan.textContent = hs[hs.length - 1].textContent;
 }
 
-function updateCharCount() { charCountDisplay.textContent = \`文字数: \${(editor.innerText || "").length}\`; }
+function updateCharCount() { charCountDisplay.textContent = (editor.innerText || "").replace(/\n/g, "").length; }
 
 /* --- 表の挿入 --- */
 function openTableModal() {
@@ -764,7 +764,7 @@ function openTableModal() {
             const sq = document.createElement('div');
             sq.className = 'grid-square';
             sq.onmouseover = () => {
-                document.getElementById('table-size-display').textContent = \`\${c} x \${r}\`;
+                document.getElementById('table-size-display').textContent = `${c} x ${r}`;
                 Array.from(container.children).forEach((child, i) => {
                     const curR = Math.floor(i / 10) + 1, curC = (i % 10) + 1;
                     if (curR <= r && curC <= c) child.classList.add('active');
@@ -781,7 +781,7 @@ function openTableModal() {
                         const bgColor = (i === 0) ? col : '#ffffff';
                         const textColor = (i === 0) ? '#ffffff' : 'inherit';
                         const fontWeight = (i === 0) ? 'bold' : 'normal';
-                        table += `<td style="border:1px solid #ccc; padding:8px; background-color:\${bgColor}; color:\${textColor}; font-weight:\${fontWeight}; min-height:1.5em;">&nbsp;</td>`;
+                        table += `<td style="border:1px solid #ccc; padding:8px; background-color:${bgColor}; color:${textColor}; font-weight:${fontWeight}; min-height:1.5em;">&nbsp;</td>`;
                     }
                     table += '</tr>';
                 }
@@ -824,6 +824,26 @@ window.onload = () => {
 };
 
 
-const throttle = (fn, wait) => { let time = Date.now(); return () => { if ((time + wait - Date.now()) < 0) { fn(); time = Date.now(); } } };
-editor.oninput = throttle(() => { autoUpdateUI(); }, 1000);
+const throttle = (fn, wait) => {
+    let lastTime = 0;
+    let timer = null;
+    return (...args) => {
+        const now = Date.now();
+        if (now - lastTime >= wait) {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            fn(...args);
+            lastTime = now;
+        } else if (!timer) {
+            timer = setTimeout(() => {
+                fn(...args);
+                lastTime = Date.now();
+                timer = null;
+            }, wait - (now - lastTime));
+        }
+    };
+};
+editor.addEventListener('input', throttle(() => { autoUpdateUI(); }, 500));
 titleInput.oninput = () => { autoUpdateUI(); };
