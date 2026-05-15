@@ -228,7 +228,8 @@
                         </p>
                     </div>
                     <div class="editor-btns">
-                        <button id="editor-reset-btn" class="btn btn-secondary" style="background: #e11d48;">Reset (Undo Fills)</button>
+                        <button id="editor-undo-btn" class="btn btn-secondary" style="background: #6366f1;">Undo (元に戻す)</button>
+                        <button id="editor-reset-btn" class="btn btn-secondary" style="background: #e11d48;">Reset (初期状態)</button>
                         <button id="editor-cancel-btn" class="btn btn-secondary">Cancel</button>
                         <button id="editor-save-btn" class="btn btn-primary">Save Changes</button>
                     </div>
@@ -449,7 +450,9 @@
 
                     const scale = Math.min(280 / sw, 280 / sh);
                     stampData[id] = {
+                        originalProcessed: null, 
                         rawCanvas: processedCanvas,
+                        history: [], // Undo history
                         scale: scale,
                         x: (320 - sw * scale) / 2,
                         y: (320 - sh * scale) / 2
@@ -542,10 +545,24 @@
                 const ctx = data.rawCanvas.getContext('2d', {willReadFrequently: true});
                 const pixel = ctx.getImageData(rx, ry, 1, 1).data;
                 if (pixel[3] === 0) return;
+
+                // Save to history before modifying
+                saveToHistory(currentEditId);
+
                 applyFloodFillAt(ctx, rx, ry, rgbToHex(pixel[0], pixel[1], pixel[2]), parseInt(bgToleranceInput.value));
                 drawEditor();
             }
         };
+
+        function saveToHistory(id) {
+            const data = stampData[id];
+            const canvas = document.createElement('canvas');
+            canvas.width = data.rawCanvas.width;
+            canvas.height = data.rawCanvas.height;
+            canvas.getContext('2d').drawImage(data.rawCanvas, 0, 0);
+            data.history.push(canvas);
+            if (data.history.length > 20) data.history.shift(); // Limit history size
+        }
 
         function setEditorBg(className) {
             editorCanvas.className = '';
@@ -621,11 +638,21 @@
         };
 
         document.getElementById('editor-reset-btn').onclick = () => {
-            if (!confirm('マニュアル透過をリセットして初期状態に戻しますか？')) return;
             const data = stampData[currentEditId];
+            saveToHistory(currentEditId); // Save state before resetting to allow undoing the reset
             const ctx = data.rawCanvas.getContext('2d');
             ctx.clearRect(0, 0, data.rawCanvas.width, data.rawCanvas.height);
             ctx.drawImage(data.originalProcessed, 0, 0);
+            drawEditor();
+        };
+
+        document.getElementById('editor-undo-btn').onclick = () => {
+            const data = stampData[currentEditId];
+            if (data.history.length === 0) return;
+            const lastState = data.history.pop();
+            const ctx = data.rawCanvas.getContext('2d');
+            ctx.clearRect(0, 0, data.rawCanvas.width, data.rawCanvas.height);
+            ctx.drawImage(lastState, 0, 0);
             drawEditor();
         };
 
