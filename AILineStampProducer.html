@@ -107,12 +107,13 @@
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.85);
             z-index: 1000;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
+            overflow-y: auto; /* Allow scrolling if screen is small */
         }
+        body.modal-open { overflow: hidden; } /* Stop background scroll */
         .editor-container {
             background: #333;
             padding: 20px;
@@ -221,9 +222,16 @@
                             <input type="checkbox" id="show-guide" checked onchange="drawEditor()">
                             <label for="show-guide">Show 10px Guide (Red Line)</label>
                         </div>
-                        <p style="color: #aaa; font-size: 0.8em;">Click on the image to remove background color at that point.</p>
+                        <div class="control-group" style="color: #fff;">
+                            <input type="checkbox" id="show-guide" checked onchange="drawEditor()">
+                            <label for="show-guide">Show 10px Guide (Red Line)</label>
+                        </div>
+                        <p style="color: #aaa; font-size: 0.8em;">
+                            🖱️ <b>Click</b>: Remove color | 🖱️ <b>Drag</b>: Move image
+                        </p>
                     </div>
                     <div class="editor-btns">
+                        <button id="editor-reset-btn" class="btn btn-secondary" style="background: #e11d48;">Reset (Undo Fills)</button>
                         <button id="editor-cancel-btn" class="btn btn-secondary">Cancel</button>
                         <button id="editor-save-btn" class="btn btn-primary">Save Changes</button>
                     </div>
@@ -455,11 +463,18 @@
 
                     const scale = Math.min(280 / sw, 280 / sh);
                     stampData[id] = {
-                        rawCanvas: processedCanvas, // Store processed as base
+                        originalProcessed: null, // We'll store a copy for reset
+                        rawCanvas: processedCanvas,
                         scale: scale,
                         x: (320 - sw * scale) / 2,
                         y: (320 - sh * scale) / 2
                     };
+
+                    // Backup for reset
+                    const backup = document.createElement('canvas');
+                    backup.width = sw; backup.height = sh;
+                    backup.getContext('2d').drawImage(processedCanvas, 0, 0);
+                    stampData[id].originalProcessed = backup;
 
                     updateStampCanvas(id);
 
@@ -481,29 +496,94 @@
         }
 
         // Editor Functions
+        let isDraggingStamp = false;
+        let lastMousePos = { x: 0, y: 0 };
+
         function openEditor(id) {
             currentEditId = id;
             const data = stampData[id];
             editorScale.value = data.scale;
             scaleVal.innerText = Math.round(data.scale * 100) + '%';
             editorModal.style.display = 'flex';
+            document.body.classList.add('modal-open');
             drawEditor();
         }
 
         function drawEditor() {
             const data = stampData[currentEditId];
             editorCtx.clearRect(0, 0, 320, 320);
+            
+            // Draw a subtle border for the stamp content area
+            editorCtx.strokeStyle = '#ddd';
+            editorCtx.setLineDash([2, 2]);
+            editorCtx.strokeRect(data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
+            editorCtx.setLineDash([]);
+
             editorCtx.drawImage(data.rawCanvas, data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
             
             // Draw 10px Guide
             if (document.getElementById('show-guide').checked) {
-                editorCtx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                editorCtx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
                 editorCtx.lineWidth = 1;
-                editorCtx.setLineDash([5, 2]);
                 editorCtx.strokeRect(10, 10, 300, 300);
-                editorCtx.setLineDash([]);
             }
         }
+
+        editorCanvas.onmousedown = e => {
+            const rect = editorCanvas.getBoundingClientRect();
+            lastMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            isDraggingStamp = true;
+        };
+
+        window.addEventListener('mousemove', e => {
+            if (!isDraggingStamp || currentEditId === null) return;
+            const rect = editorCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const dx = mouseX - lastMousePos.x;
+            const dy = mouseY - lastMousePos.y;
+            
+            const data = stampData[currentEditId];
+            data.x += dx;
+            data.y += dy;
+            
+            lastMousePos = { x: mouseX, y: mouseY };
+            drawEditor();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingStamp = false;
+        });
+
+        editorCanvas.onclick = e => {
+            // Only flood fill if we didn't drag much
+            // (Simple click vs drag detection)
+        };
+        
+        // Replace previous onclick with more robust logic
+        let mouseDownTime = 0;
+        editorCanvas.addEventListener('mousedown', () => mouseDownTime = Date.now());
+        editorCanvas.addEventListener('click', e => {
+            if (Date.now() - mouseDownTime > 200) return; // Ignore clicks that were long drags
+            
+            const rect = editorCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const data = stampData[currentEditId];
+
+            const rx = (mouseX - data.x) / data.scale;
+            const ry = (mouseY - data.y) / data.scale;
+
+            if (rx >= 0 && rx < data.rawCanvas.width && ry >= 0 && ry < data.rawCanvas.height) {
+                const ctx = data.rawCanvas.getContext('2d', {willReadFrequently: true});
+                const pixel = ctx.getImageData(rx, ry, 1, 1).data;
+                if (pixel[3] === 0) return; // Already transparent
+                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                applyFloodFillAt(ctx, rx, ry, hex, parseInt(bgToleranceInput.value));
+                drawEditor();
+            }
+        });
 
         function setEditorBg(className) {
             editorCanvas.className = '';
@@ -512,7 +592,6 @@
 
         editorScale.oninput = () => {
             const data = stampData[currentEditId];
-            const oldScale = data.scale;
             data.scale = parseFloat(editorScale.value);
             scaleVal.innerText = Math.round(data.scale * 100) + '%';
             
@@ -521,27 +600,6 @@
             data.y = (320 - data.rawCanvas.height * data.scale) / 2;
             
             drawEditor();
-        };
-
-        editorCanvas.onclick = e => {
-            const rect = editorCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            const data = stampData[currentEditId];
-
-            // Convert click to raw canvas coordinates
-            const rx = (mouseX - data.x) / data.scale;
-            const ry = (mouseY - data.y) / data.scale;
-
-            if (rx >= 0 && rx < data.rawCanvas.width && ry >= 0 && ry < data.rawCanvas.height) {
-                const ctx = data.rawCanvas.getContext('2d', {willReadFrequently: true});
-                const pixel = ctx.getImageData(rx, ry, 1, 1).data;
-                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
-                
-                // Perform flood fill from this point
-                applyFloodFillAt(ctx, rx, ry, hex, parseInt(bgToleranceInput.value));
-                drawEditor();
-            }
         };
 
         function applyFloodFillAt(ctx, startX, startY, targetHex, tolerance) {
@@ -584,13 +642,22 @@
         document.getElementById('editor-save-btn').onclick = () => {
             updateStampCanvas(currentEditId);
             editorModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
         };
 
         document.getElementById('editor-cancel-btn').onclick = () => {
-            // Re-draw the original to discard temporary changes if we wanted "undo", 
-            // but for now let's just close. Manual fill is destructive to the rawCanvas in this implementation.
             updateStampCanvas(currentEditId);
             editorModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        };
+
+        document.getElementById('editor-reset-btn').onclick = () => {
+            if (!confirm('マニュアル透過をリセットして初期状態に戻しますか？')) return;
+            const data = stampData[currentEditId];
+            const ctx = data.rawCanvas.getContext('2d');
+            ctx.clearRect(0, 0, data.rawCanvas.width, data.rawCanvas.height);
+            ctx.drawImage(data.originalProcessed, 0, 0);
+            drawEditor();
         };
 
         function applyFloodFill(ctx, targetHex, tolerance) {
