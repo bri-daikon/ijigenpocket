@@ -121,16 +121,31 @@
             max-width: 90%;
         }
         #editor-canvas {
-            background: #fff;
-            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
             cursor: crosshair;
             margin-bottom: 20px;
             border-radius: 8px;
             max-width: 100%;
             height: auto;
         }
+        #editor-canvas.bg-white { background: #fff; background-image: none; }
+        #editor-canvas.bg-black { background: #000; background-image: none; }
+        #editor-canvas.bg-check { 
+            background: #fff; 
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .bg-toggle {
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .bg-toggle:hover { background: #555; }
+
         .editor-controls {
             display: flex;
             flex-direction: column;
@@ -189,12 +204,22 @@
             <div id="editor-modal">
                 <div class="editor-container">
                     <h3 id="editor-title" style="color: #fff; margin-bottom: 15px;">Edit Stamp</h3>
-                    <canvas id="editor-canvas" width="320" height="320"></canvas>
+                    <canvas id="editor-canvas" width="320" height="320" class="bg-check"></canvas>
                     <div class="editor-controls">
                         <div class="control-group">
                             <label>Size (Scale):</label>
                             <input type="range" id="editor-scale" min="0.1" max="2.0" step="0.01" value="1.0">
                             <span id="scale-val">100%</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Editor BG:</label>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-check')">Check</button>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-white')">White</button>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-black')">Black</button>
+                        </div>
+                        <div class="control-group" style="color: #fff;">
+                            <input type="checkbox" id="show-guide" checked onchange="drawEditor()">
+                            <label for="show-guide">Show 10px Guide (Red Line)</label>
                         </div>
                         <p style="color: #aaa; font-size: 0.8em;">Click on the image to remove background color at that point.</p>
                     </div>
@@ -469,6 +494,20 @@
             const data = stampData[currentEditId];
             editorCtx.clearRect(0, 0, 320, 320);
             editorCtx.drawImage(data.rawCanvas, data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
+            
+            // Draw 10px Guide
+            if (document.getElementById('show-guide').checked) {
+                editorCtx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                editorCtx.lineWidth = 1;
+                editorCtx.setLineDash([5, 2]);
+                editorCtx.strokeRect(10, 10, 300, 300);
+                editorCtx.setLineDash([]);
+            }
+        }
+
+        function setEditorBg(className) {
+            editorCanvas.className = '';
+            editorCanvas.classList.add(className);
         }
 
         editorScale.oninput = () => {
