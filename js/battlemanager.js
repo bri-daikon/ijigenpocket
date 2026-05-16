@@ -96,7 +96,7 @@ function renderManager() {
     for (let r = 1; r <= config.numRounds; r++) {
         const th = document.createElement('th');
         const isCurrent = config.currentRound === r;
-        th.className = `p-4 border-r text-center cursor-pointer min-w-[140px] w-[140px] transition-all hover:bg-white/10 ${isCurrent ? 'bg-blue-600 text-white shadow-inner' : ''}`;
+        th.className = `p-4 border-r text-center cursor-pointer min-w-[140px] w-[140px] transition-all hover:bg-white/10 ${isCurrent ? 'bg-blue-600 text-white shadow-inner current-round-col' : ''}`;
         th.innerHTML = `<div class="text-[10px] opacity-70">ROUND</div><div class="text-xl font-black">${r}</div>`;
         th.onclick = () => { config.currentRound = r; renderManager(); };
         header.appendChild(th);
@@ -127,7 +127,8 @@ function renderManager() {
             for (let r = 1; r <= config.numRounds; r++) {
                 const td = document.createElement('td');
                 const isCurrent = config.currentRound === r;
-                td.className = `p-2 border-r align-top w-[140px] ${isCurrent ? 'bg-blue-500/10' : ''}`;
+                td.className = `p-2 border-r align-top w-[140px] cursor-pointer hover:bg-white/5 transition-colors ${isCurrent ? 'current-round-col' : ''}`;
+                td.onclick = () => { config.currentRound = r; renderManager(); };
                 
                 const container = document.createElement('div');
                 container.className = "flex flex-col gap-1";
@@ -137,7 +138,7 @@ function renderManager() {
                     if (entry) {
                         const badge = document.createElement('div');
                         badge.className = `status-badge ${cat.color} text-white text-[10px] px-3 py-1.5 rounded-lg flex justify-between items-center group shadow-sm animate-in zoom-in-95 duration-200 overflow-hidden`;
-                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1">${entry.content}</span><button onclick="removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none">✕</button>`;
+                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1">${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none">✕</button>`;
                         container.appendChild(badge);
                     } else {
                         const empty = document.createElement('div');
