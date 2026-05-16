@@ -79,7 +79,10 @@ window.deployManager = () => {
 
 function renderManager() {
     const select = document.getElementById('action-person-select');
-    if (!select) return; // Guard for dynamic rendering
+    if (!select) return; 
+    
+    const currentSelectedPerson = select.value; // 現在の選択を保存
+    
     select.innerHTML = '';
     config.names.forEach((name, i) => {
         const opt = document.createElement('option');
@@ -87,6 +90,11 @@ function renderManager() {
         opt.textContent = name;
         select.appendChild(opt);
     });
+    
+    // 選択を復元（存在する場合）
+    if (currentSelectedPerson !== "" && currentSelectedPerson !== null) {
+        select.value = currentSelectedPerson;
+    }
 
     document.getElementById('action-start-round').value = config.currentRound;
     document.getElementById('action-end-round').value = config.currentRound;
