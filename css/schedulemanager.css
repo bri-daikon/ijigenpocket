@@ -1,0 +1,113 @@
+body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(150,150,150,0.3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(150,150,150,0.5); }
+
+/* セレクトボックスの選択肢を見やすく修正 */
+select option {
+    background-color: #1e293b;
+    color: #f1f5f9;
+}
+body.bg-slate-50 select option {
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
+/* 時間列（左側）を固定 */
+.sticky-time-col { 
+    position: sticky; 
+    left: 0; 
+    z-index: 45; 
+    box-shadow: 4px 0 10px -5px rgba(0,0,0,0.3);
+    background-color: #0f172a; /* bg-slate-900 */
+    width: 140px;
+    min-width: 140px;
+    font-size: 13px;
+}
+
+/* ヘッダー行（上部）を固定 */
+thead.sticky {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+/* テーブル自体の幅をコンテンツに合わせる */
+.schedule-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* スケジュールバー（バッジ） */
+.schedule-bar {
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    right: 2px;
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+    transition: all 0.2s;
+    display: block; /* 改行を許容 */
+    overflow-wrap: break-word;
+    white-space: normal;
+    z-index: 10;
+}
+
+.schedule-bar:active { cursor: grabbing; }
+.schedule-bar:hover { transform: scale(1.02); z-index: 10; }
+
+.schedule-bar .delete-btn {
+    opacity: 0;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+.schedule-bar:hover .delete-btn { opacity: 1; }
+
+/* グリッドのセル */
+.schedule-table td {
+    position: relative;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    min-width: 180px;
+    vertical-align: middle;
+    padding: 4px 6px;
+    height: 50px;
+}
+
+/* 日付区切り線の強調 */
+.day-divider {
+    border-top: 2px solid rgba(99, 102, 241, 0.4) !important;
+}
+
+/* ドロップ先のハイライト */
+.drop-target {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.header-person {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ドラッグ中の透明度 */
+.dragging { opacity: 0.4; }
+
+/* 30分ごとのストライプ（時間表示用） */
+.time-row-even { background-color: rgba(255,255,255,0.02); }
+.time-row-odd { background-color: transparent; }
