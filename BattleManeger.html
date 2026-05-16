@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weby TRPG Combat Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(150,150,150,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(150,150,150,0.5); }
+        
+        .rainbow-theme {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* キャラクター名列を左側に固定 */
+        .sticky-col { 
+            position: sticky; 
+            left: 0; 
+            z-index: 30; 
+            box-shadow: 4px 0 10px -5px rgba(0,0,0,0.3);
+        }
+
+        /* セレクトボックスの選択肢（option）がテーマに関わらず読めるように修正 */
+        select option {
+            background-color: #1e293b;
+            color: #f1f5f9;
+        }
+        body.bg-slate-50 select option { background-color: #ffffff; color: #0f172a; }
+        body.bg-pink-50 select option { background-color: #fdf2f8; color: #312e81; }
+        body.bg-amber-50 select option { background-color: #fffbeb; color: #431407; }
+        body.rainbow-theme select option { background-color: #4c1d95; color: #ffffff; }
+
+        /* バッジの高さ固定用 */
+        .status-badge {
+            min-height: 28px;
+            white-space: nowrap; /* 文字が勝手に改行されないように */
+        }
+        .empty-lane {
+            height: 28px;
+        }
+        
+        /* テーブル自体の幅をコンテンツに合わせる */
+        .combat-table {
+            width: max-content;
+            min-width: 100%;
+        }
+
+        /* キャラクターごとの交互背景色用 */
+        .person-group-even { background-color: rgba(255, 255, 255, 0.03); }
+        .person-group-odd { background-color: transparent; }
+        /* ライトテーマ等のための調整 */
+        body.bg-slate-50 .person-group-even { background-color: rgba(0, 0, 0, 0.03); }
+        body.bg-pink-50 .person-group-even { background-color: rgba(255, 255, 255, 0.4); }
+        body.bg-amber-50 .person-group-even { background-color: rgba(0, 0, 0, 0.03); }
+    </style>
+</head>
+<body class="transition-colors duration-500 min-h-screen p-4 pb-32">
+
+    <div id="theme-container" class="max-w-7xl mx-auto border-b p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-blue-500">⚔️</span> TRPG Combat Manager
+            </h1>
+            <p class="text-[10px] opacity-60">Powered by Weby</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs" id="theme-buttons"></div>
+    </div>
+
+    <!-- セットアップセクション -->
+    <div id="setup-section" class="max-w-2xl mx-auto backdrop-blur-md bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">🚀 戦闘セッションの開始</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">参加人数 (PC/NPC)</label>
+                <input type="number" id="input-num-people" value="3" min="1" max="20" oninput="generateNameFields()" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">最大ラウンド数</label>
+                <input type="number" id="input-num-rounds" value="10" min="1" max="50" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <label class="block text-sm font-medium opacity-80 mb-3">参加者の名前</label>
+            <div id="names-input-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 pt-6 border-t border-white/10">
+            <button onclick="deployManager()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-95">マネージャーを展開する</button>
+            
+            <div class="mt-4 p-4 rounded-2xl bg-black/10 border border-white/5">
+                <label class="block text-xs font-medium opacity-60 mb-2 uppercase tracking-wider">過去のセッションを読み込む / 削除</label>
+                <div class="flex gap-2">
+                    <select id="session-select" class="flex-1 p-2 rounded-lg bg-white/10 border border-white/20 text-sm focus:outline-none"></select>
+                    <button onclick="loadSession()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all">読込</button>
+                    <button onclick="deleteSession()" class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all">削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインマネージャー -->
+    <div id="main-manager" class="hidden max-w-full mx-auto animate-in fade-in duration-500">
+        <div class="backdrop-blur-xl bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-xl">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">対象者</label>
+                    <select id="action-person-select" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"></select>
+                </div>
+                <div class="lg:col-span-3">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">カテゴリー</label>
+                    <div class="flex gap-1 bg-black/20 p-1 rounded-xl">
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="status" class="hidden peer" checked><span class="peer-checked:bg-slate-500 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">状態</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="buff" class="hidden peer"><span class="peer-checked:bg-green-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">バフ</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="debuff" class="hidden peer"><span class="peer-checked:bg-red-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">デバフ</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="other" class="hidden peer"><span class="peer-checked:bg-amber-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">他</span></label>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">開始Rd</label>
+                        <input type="number" id="action-start-round" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">終了Rd</label>
+                        <input type="number" id="action-end-round" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                </div>
+                <div class="lg:col-span-3">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">状況の内容</label>
+                    <input type="text" id="action-content" placeholder="例: 防御、毒など" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="lg:col-span-2">
+                    <button onclick="applyAction()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95">適用する</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-3xl border border-white/10 shadow-2xl bg-black/10 backdrop-blur-sm">
+            <table class="combat-table border-collapse text-left table-fixed">
+                <thead>
+                    <tr id="round-headers" class="bg-white/5 border-b border-white/10"></tr>
+                </thead>
+                <tbody id="status-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 flex flex-wrap justify-between items-center gap-6 p-6 rounded-3xl bg-white/5 border border-white/10">
+            <div class="flex gap-3 items-center">
+                <input type="text" id="save-name" placeholder="セッション名を入力" class="p-3 rounded-xl bg-white/10 border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-64">
+                <button onclick="saveSession()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">保存する</button>
+                <!-- 状況のみリセットボタンを追加 -->
+                <button onclick="clearEntries()" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">状況のみリセット</button>
+            </div>
+            <button onclick="newSession()" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all border border-white/10">新しいセッションを始める</button>
+        </div>
+    </div>
+
+    <!-- フッタークレジット -->
+    <footer class="fixed bottom-0 left-0 w-full p-4 text-center backdrop-blur-sm bg-black/20 border-t border-white/10 z-50">
+        <p class="text-xs opacity-70 tracking-wide">
+            Product by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" class="underline hover:text-blue-400 transition-colors">https://ijigenpocket.booth.pm/</a>
+        </p>
+    </footer>
+
+    <div id="message-box" style="opacity:0" class="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-300 font-bold"></div>
+
+    <script>
+        let currentSessionId = null;
+        let config = { numPeople: 3, numRounds: 10, names: [], currentRound: 1 };
+        let statusEntries = [];
+        let currentTheme = 'dark';
+
+        const themes = {
+            dark: { class: "bg-slate-900 text-slate-100 border-slate-700", label: "Dark" },
+            light: { class: "bg-slate-50 text-slate-900 border-slate-300", label: "Light" },
+            pop: { class: "bg-pink-50 text-indigo-900 border-pink-200", label: "Pop" },
+            classic: { class: "bg-amber-50 text-orange-950 border-amber-200 font-serif", label: "Classic" },
+            rainbow: { class: "rainbow-theme text-white border-white/20", label: "Rainbow" }
+        };
+
+        const categories = [
+            { id: 'status', label: '状態', color: 'bg-slate-500' },
+            { id: 'buff', label: 'バフ', color: 'bg-green-600' },
+            { id: 'debuff', label: 'デバフ', color: 'bg-red-600' },
+            { id: 'other', label: 'その他', color: 'bg-amber-600' }
+        ];
+
+        function showMsg(text, type = 'info') {
+            const msg = document.getElementById('message-box');
+            msg.textContent = text;
+            msg.className = `fixed bottom-24 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-300 font-bold ${type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`;
+            msg.style.opacity = '1';
+            msg.style.transform = 'translate(-50%, -20px)';
+            setTimeout(() => { 
+                msg.style.opacity = '0'; 
+                msg.style.transform = 'translate(-50%, 0px)';
+            }, 3000);
+        }
+
+        window.changeTheme = (themeKey) => {
+            currentTheme = themeKey;
+            const theme = themes[themeKey];
+            document.body.className = theme.class + " transition-colors duration-500 min-h-screen p-4 pb-32";
+            document.getElementById('theme-container').className = theme.class + " max-w-7xl mx-auto border p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4";
+        };
+
+        function initThemes() {
+            const container = document.getElementById('theme-buttons');
+            Object.keys(themes).forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = "px-4 py-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 transition-all";
+                btn.textContent = themes[key].label;
+                btn.onclick = () => changeTheme(key);
+                container.appendChild(btn);
+            });
+        }
+
+        window.generateNameFields = () => {
+            const container = document.getElementById('names-input-container');
+            const count = parseInt(document.getElementById('input-num-people').value) || 1;
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `PC/NPC ${i + 1} の名前`;
+                input.id = `name-input-${i}`;
+                input.className = "p-3 rounded-xl bg-white/5 border border-white/10 text-sm outline-none focus:ring-2 focus:ring-blue-500";
+                container.appendChild(input);
+            }
+        };
+
+        window.deployManager = () => {
+            const numPeople = parseInt(document.getElementById('input-num-people').value) || 1;
+            const numRounds = parseInt(document.getElementById('input-num-rounds').value) || 10;
+            const names = [];
+            for (let i = 0; i < numPeople; i++) {
+                const el = document.getElementById(`name-input-${i}`);
+                names.push(el && el.value ? el.value : `PC ${i + 1}`);
+            }
+            config = { numPeople, numRounds, names, currentRound: 1 };
+            statusEntries = [];
+            renderManager();
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('main-manager').classList.remove('hidden');
+        };
+
+        function renderManager() {
+            const select = document.getElementById('action-person-select');
+            select.innerHTML = '';
+            config.names.forEach((name, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('action-start-round').value = config.currentRound;
+            document.getElementById('action-end-round').value = config.currentRound;
+
+            const header = document.getElementById('round-headers');
+            header.innerHTML = '<th class="p-4 border-r sticky-col bg-inherit w-[220px] min-w-[220px] z-40 font-bold uppercase tracking-widest text-[10px] opacity-60">キャラクター / 項目</th>';
+            for (let r = 1; r <= config.numRounds; r++) {
+                const th = document.createElement('th');
+                const isCurrent = config.currentRound === r;
+                th.className = `p-4 border-r text-center cursor-pointer min-w-[140px] w-[140px] transition-all hover:bg-white/10 ${isCurrent ? 'bg-blue-600 text-white shadow-inner' : ''}`;
+                th.innerHTML = `<div class="text-[10px] opacity-70">ROUND</div><div class="text-xl font-black">${r}</div>`;
+                th.onclick = () => { config.currentRound = r; renderManager(); };
+                header.appendChild(th);
+            }
+
+            const body = document.getElementById('status-table-body');
+            body.innerHTML = '';
+            config.names.forEach((name, pIdx) => {
+                const groupClass = pIdx % 2 === 0 ? "person-group-even" : "person-group-odd";
+                
+                categories.forEach((cat, cIdx) => {
+                    const tr = document.createElement('tr');
+                    const borderTopClass = cIdx === 0 ? "border-t-2 border-white/20" : "";
+                    tr.className = `border-b border-white/5 hover:bg-white/10 transition-colors ${groupClass} ${borderTopClass}`;
+                    
+                    const tdLabel = document.createElement('td');
+                    tdLabel.className = "p-4 border-r sticky-col bg-inherit z-20";
+                    if (cIdx === 0) {
+                        tdLabel.innerHTML = `<div class="font-black text-base truncate">${name}</div><div class="text-[9px] opacity-40 font-bold uppercase tracking-tighter mt-1">${cat.label}</div>`;
+                    } else {
+                        tdLabel.innerHTML = `<div class="text-[9px] opacity-40 font-bold text-right uppercase tracking-tighter">${cat.label}</div>`;
+                    }
+                    tr.appendChild(tdLabel);
+
+                    const rowEntries = statusEntries.filter(e => e.personIndex == pIdx && e.category == cat.id);
+                    const uniqueContents = [...new Set(rowEntries.map(e => e.content))].sort();
+
+                    for (let r = 1; r <= config.numRounds; r++) {
+                        const td = document.createElement('td');
+                        const isCurrent = config.currentRound === r;
+                        td.className = `p-2 border-r align-top w-[140px] ${isCurrent ? 'bg-blue-500/10' : ''}`;
+                        
+                        const container = document.createElement('div');
+                        container.className = "flex flex-col gap-1";
+
+                        uniqueContents.forEach(content => {
+                            const entry = rowEntries.find(e => e.content === content && r >= e.startRound && r <= e.endRound);
+                            if (entry) {
+                                const badge = document.createElement('div');
+                                badge.className = `status-badge ${cat.color} text-white text-[10px] px-3 py-1.5 rounded-lg flex justify-between items-center group shadow-sm animate-in zoom-in-95 duration-200 overflow-hidden`;
+                                badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1">${entry.content}</span><button onclick="removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none">✕</button>`;
+                                container.appendChild(badge);
+                            } else {
+                                const empty = document.createElement('div');
+                                empty.className = "empty-lane";
+                                container.appendChild(empty);
+                            }
+                        });
+                        
+                        td.appendChild(container);
+                        tr.appendChild(td);
+                    }
+                    body.appendChild(tr);
+                });
+            });
+        }
+
+        window.applyAction = () => {
+            const pIdx = document.getElementById('action-person-select').value;
+            const cat = document.querySelector('input[name="action-cat"]:checked').value;
+            const start = parseInt(document.getElementById('action-start-round').value);
+            const end = parseInt(document.getElementById('action-end-round').value);
+            const content = document.getElementById('action-content').value;
+
+            if (!content) return showMsg("内容を入力してください", "error");
+            if (start > end) return showMsg("開始ラウンドが終了より後になっています", "error");
+
+            statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+            statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+            renderManager();
+            document.getElementById('action-content').value = '';
+            showMsg("適用しました");
+        };
+
+        window.removeEntry = (id) => {
+            statusEntries = statusEntries.filter(e => e.id !== id);
+            renderManager();
+        };
+
+        // 状況（エントリ）のみをリセットする関数
+        window.clearEntries = () => {
+            if (confirm("名前とラウンド設定は維持したまま、すべての状況（バフ・デバフなど）をクリアして新しい戦闘を開始しますか？")) {
+                statusEntries = [];
+                config.currentRound = 1;
+                renderManager();
+                showMsg("状況をリセットしました");
+            }
+        };
+
+        const STORAGE_KEY = 'weby_trpg_manager_v1';
+
+        window.saveSession = () => {
+            const name = document.getElementById('save-name').value || `Session_${new Date().toLocaleTimeString()}`;
+            const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const sessionData = { id: currentSessionId || Date.now().toString(), sessionName: name, config, statusEntries, currentTheme, timestamp: Date.now() };
+            const idx = sessions.findIndex(s => s.id === sessionData.id);
+            if (idx > -1) sessions[idx] = sessionData; else sessions.push(sessionData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+            currentSessionId = sessionData.id;
+            updateSessionList();
+            showMsg("保存しました");
+        };
+
+        function updateSessionList() {
+            const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const select = document.getElementById('session-select');
+            select.innerHTML = sessions.length ? '' : '<option value="">-- 保存データなし --</option>';
+            sessions.sort((a, b) => b.timestamp - a.timestamp).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.sessionName} (${new Date(s.timestamp).toLocaleDateString()})`;
+                select.appendChild(opt);
+            });
+        }
+
+        window.loadSession = () => {
+            const id = document.getElementById('session-select').value;
+            if (!id) return;
+            const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const session = sessions.find(s => s.id === id);
+            if (session) {
+                config = session.config; statusEntries = session.statusEntries || []; currentTheme = session.currentTheme || 'dark'; currentSessionId = session.id;
+                document.getElementById('save-name').value = session.sessionName;
+                changeTheme(currentTheme); renderManager();
+                document.getElementById('setup-section').classList.add('hidden');
+                document.getElementById('main-manager').classList.remove('hidden');
+                showMsg("読み込みました");
+            }
+        };
+
+        window.deleteSession = () => {
+            const id = document.getElementById('session-select').value;
+            if (!id) return showMsg("削除するデータを選択してください", "error");
+            const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const session = sessions.find(s => s.id === id);
+            if (confirm(`セッション「${session.sessionName}」を完全に削除しますか？`)) {
+                const newSessions = sessions.filter(s => s.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newSessions));
+                updateSessionList();
+                showMsg("削除しました");
+            }
+        };
+
+        window.newSession = () => {
+            if (confirm("新規作成画面に戻りますか？")) {
+                currentSessionId = null;
+                document.getElementById('setup-section').classList.remove('hidden');
+                document.getElementById('main-manager').classList.add('hidden');
+                generateNameFields();
+            }
+        };
+
+        window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); };
+    </script>
+</body>
+</html>
