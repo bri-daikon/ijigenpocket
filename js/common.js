@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "LINEスタンプメーカー", url: "LINESTMPkiritoru.html" },
         { name: "タスク管理", url: "ijigentask.html" },
         { name: "SSCalendar", url: "SSCalendar.html" },
-        { name: "HTML比較", url: "HtmlCompare.html" }
+        { name: "HTML比較", url: "HtmlCompare.html" },
+        { name: "バトルマネージャー", url: "BattleManager.html" }
     ];
 
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
