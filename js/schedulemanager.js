@@ -2,6 +2,17 @@ let currentSessionId = null;
 let config = { numPeople: 4, numDays: 3, dayStartH: 9, dayStartM: 0, dayEndH: 22, dayEndM: 0, names: [], viewMode: 'hourly', currentBlock: 'all' };
 let scheduleEntries = [];
 let currentTheme = 'dark';
+let selectedColumnIndex = -1;
+let editingEntryId = null;
+
+const THEMES = {
+    dark: { label: 'BLACK', bodyClass: 'theme-dark bg-slate-900 text-slate-100', hex: '#0f172a', btnClass: 'bg-slate-800 border-slate-600 hover:bg-slate-700 text-white' },
+    light: { label: 'WHITE', bodyClass: 'theme-light bg-slate-50 text-slate-900', hex: '#f8fafc', btnClass: 'bg-white border-slate-300 hover:bg-slate-100 text-slate-900' },
+    navy: { label: 'NAVY', bodyClass: 'theme-navy bg-blue-950 text-blue-50', hex: '#172554', btnClass: 'bg-blue-900 border-blue-700 hover:bg-blue-800 text-white' },
+    forest: { label: 'FOREST', bodyClass: 'theme-forest bg-emerald-950 text-emerald-50', hex: '#022c22', btnClass: 'bg-emerald-900 border-emerald-700 hover:bg-emerald-800 text-white' },
+    wine: { label: 'WINE', bodyClass: 'theme-wine bg-rose-950 text-rose-50', hex: '#4c0519', btnClass: 'bg-rose-900 border-rose-700 hover:bg-rose-800 text-white' },
+    purple: { label: 'PURPLE', bodyClass: 'theme-purple bg-fuchsia-950 text-fuchsia-50', hex: '#4a044e', btnClass: 'bg-fuchsia-900 border-fuchsia-700 hover:bg-fuchsia-800 text-white' }
+};
 
 const TIME_BLOCKS = [
     { id: 'early-morning', label: '早朝', sh: 3, eh: 9 },
@@ -24,9 +35,40 @@ function showMsg(text, type = 'info') {
 }
 
 window.changeTheme = (themeKey) => {
+    if (!THEMES[themeKey]) return;
     currentTheme = themeKey;
-    document.body.className = (themeKey === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-slate-900 text-slate-100') + " transition-colors duration-500 min-h-screen p-4 pb-32";
+    document.body.className = THEMES[themeKey].bodyClass + " transition-colors duration-500 min-h-screen p-4 pb-32";
+    
+    // Update theme container
+    const tc = document.getElementById('theme-container');
+    if (tc) tc.className = `max-w-7xl mx-auto border-b border-white/10 p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4 theme-bg-color`;
+    
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        if (btn.dataset.theme === themeKey) {
+            btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        } else {
+            btn.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        }
+    });
 };
+
+function initThemes() {
+    const container = document.getElementById('theme-buttons');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    Object.keys(THEMES).forEach(key => {
+        const t = THEMES[key];
+        const btn = document.createElement('button');
+        btn.dataset.theme = key;
+        btn.className = `theme-btn px-4 py-1 rounded-full border text-[11px] font-bold transition-all ${t.btnClass}`;
+        btn.textContent = t.label;
+        btn.onclick = () => changeTheme(key);
+        container.appendChild(btn);
+    });
+    
+    changeTheme('dark');
+}
 
 function initSelects() {
     const hourSelects = ['input-day-start-h', 'input-day-end-h', 'action-start-h', 'action-end-h'];
@@ -149,11 +191,15 @@ window.syncEndTime = () => {
 
 function renderManager() {
     const header = document.getElementById('timeline-headers');
-    header.innerHTML = '<th class="p-4 border-r sticky-time-col bg-slate-900 z-50 font-bold uppercase tracking-widest text-[10px] opacity-60">時間軸</th>';
-    config.names.forEach(name => {
+    header.innerHTML = '<th class="p-4 border-r sticky-time-col theme-bg-color z-50 font-bold uppercase tracking-widest text-[10px] opacity-60">時間軸</th>';
+    config.names.forEach((name, i) => {
         const th = document.createElement('th');
-        th.className = "p-4 border-r text-center min-w-[160px] w-[160px] header-person bg-slate-900";
+        th.className = "p-4 border-r text-center min-w-[160px] w-[160px] header-person cursor-pointer hover-highlight";
+        if (i % 2 === 0) th.classList.add('col-even');
+        else th.classList.add('col-odd');
+        if (i === selectedColumnIndex) th.classList.add('col-selected');
         th.textContent = name;
+        th.onclick = () => selectColumn(i);
         header.appendChild(th);
     });
 
@@ -183,12 +229,19 @@ function renderBlockRows(body) {
 
             config.names.forEach((_, pIdx) => {
                 const td = document.createElement('td');
+                if (pIdx % 2 === 0) td.classList.add('col-even');
+                else td.classList.add('col-odd');
+                if (pIdx === selectedColumnIndex) td.classList.add('col-selected');
                 td.dataset.pIdx = pIdx;
                 td.dataset.day = d;
                 td.dataset.blockId = block.id;
                 td.ondragover = (e) => { e.preventDefault(); td.classList.add('drop-target'); };
                 td.ondragleave = () => td.classList.remove('drop-target');
                 td.ondrop = (e) => handleDrop(e, pIdx, d, null, block.id);
+                td.onclick = (e) => {
+                    if (e.target.closest('.schedule-bar')) return;
+                    populateInput(pIdx, d, null, block.id);
+                };
 
                 const container = document.createElement('div');
                 container.className = "flex flex-row flex-wrap gap-1 items-start h-full";
@@ -205,7 +258,8 @@ function renderBlockRows(body) {
                     bar.style.position = 'static'; 
                     bar.draggable = true;
                     bar.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
-                    bar.innerHTML = `<span class="text-[10px] block w-full">${entry.content}</span><button onclick="removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1">✕</button>`;
+                    bar.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
+                    bar.innerHTML = `<span class="text-[10px] block w-full pointer-events-none">${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1 z-50">✕</button>`;
                     container.appendChild(bar);
                 });
 
@@ -257,12 +311,19 @@ function renderHourlyRows(body) {
             // 各参加者のセル
             config.names.forEach((_, pIdx) => {
                 const td = document.createElement('td');
+                if (pIdx % 2 === 0) td.classList.add('col-even');
+                else td.classList.add('col-odd');
+                if (pIdx === selectedColumnIndex) td.classList.add('col-selected');
                 td.dataset.pIdx = pIdx;
                 td.dataset.day = d;
                 td.dataset.min = m;
                 td.ondragover = (e) => { e.preventDefault(); td.classList.add('drop-target'); };
                 td.ondragleave = () => td.classList.remove('drop-target');
                 td.ondrop = (e) => handleDrop(e, pIdx, d, m);
+                td.onclick = (e) => {
+                    if (e.target.closest('.schedule-bar')) return;
+                    populateInput(pIdx, d, m, null);
+                };
 
                 const container = document.createElement('div');
                 container.className = "flex flex-col gap-0.5";
@@ -279,6 +340,7 @@ function renderHourlyRows(body) {
                     bar.style.backgroundColor = entry.color || '#6366f1';
                     bar.draggable = true;
                     bar.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
+                    bar.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
                     
                     // スパン表示のための高さ計算
                     const durationMins = entry.endMin - entry.startMin;
@@ -291,7 +353,7 @@ function renderHourlyRows(body) {
                     bar.style.left = `calc(${eIdx * width}% + 2px)`;
                     
                     const durationText = durationMins >= 60 ? `${durationMins/60}h` : `${durationMins}m`;
-                    bar.innerHTML = `<span class="text-[10px] block w-full">${entry.content} <small class="opacity-70">(${durationText})</small></span><button onclick="removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1">✕</button>`;
+                    bar.innerHTML = `<span class="text-[10px] block w-full pointer-events-none">${entry.content} <small class="opacity-70 pointer-events-none">(${durationText})</small></span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1 z-50">✕</button>`;
                     container.appendChild(bar);
                 });
 
@@ -306,7 +368,7 @@ function renderHourlyRows(body) {
 function renderDailyRows(body) {
     for (let d = 1; d <= config.numDays; d++) {
         const tr = document.createElement('tr');
-        tr.className = "border-b border-white/5";
+        tr.className = d % 2 === 0 ? "time-row-even border-b border-white/5" : "time-row-odd border-b border-white/5";
 
         const tdDay = document.createElement('td');
         tdDay.className = "p-4 border-r sticky-time-col font-bold text-center text-indigo-400";
@@ -315,11 +377,18 @@ function renderDailyRows(body) {
 
         config.names.forEach((_, pIdx) => {
             const td = document.createElement('td');
+            if (pIdx % 2 === 0) td.classList.add('col-even');
+            else td.classList.add('col-odd');
+            if (pIdx === selectedColumnIndex) td.classList.add('col-selected');
             td.dataset.pIdx = pIdx;
             td.dataset.day = d;
             td.ondragover = (e) => { e.preventDefault(); td.classList.add('drop-target'); };
             td.ondragleave = () => td.classList.remove('drop-target');
             td.ondrop = (e) => handleDrop(e, pIdx, d, null);
+            td.onclick = (e) => {
+                if (e.target.closest('.schedule-bar')) return;
+                populateInput(pIdx, d, null, null);
+            };
 
             const container = document.createElement('div');
             container.className = "flex flex-row flex-wrap gap-1 items-start";
@@ -338,7 +407,8 @@ function renderDailyRows(body) {
                 item.style.position = 'static';
                 item.draggable = true;
                 item.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
-                item.innerHTML = `<span class="text-[10px] block w-full">${h}:${min.toString().padStart(2,'0')} ${entry.content}</span><button onclick="removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1">✕</button>`;
+                item.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
+                item.innerHTML = `<span class="text-[10px] block w-full pointer-events-none">${h}:${min.toString().padStart(2,'0')} ${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="delete-btn absolute top-1 right-1 z-50">✕</button>`;
                 container.appendChild(item);
             });
 
@@ -374,19 +444,84 @@ window.applyAction = () => {
     if (!content) return showMsg("内容を入力してください", "error");
     if (startMin >= endMin) return showMsg("終了時間は開始時間より後にしてください", "error");
 
-    scheduleEntries.push({
-        id: Date.now().toString(),
-        personIndex: pIdx,
-        day,
-        startMin,
-        endMin,
-        content,
-        color
-    });
+    if (editingEntryId) {
+        const entry = scheduleEntries.find(e => e.id === editingEntryId);
+        if (entry) {
+            entry.personIndex = pIdx;
+            entry.day = day;
+            entry.startMin = startMin;
+            entry.endMin = endMin;
+            entry.content = content;
+            entry.color = color;
+        }
+        cancelEdit(); // Reset form state
+        showMsg("更新しました");
+    } else {
+        scheduleEntries.push({
+            id: Date.now().toString(),
+            personIndex: pIdx,
+            day,
+            startMin,
+            endMin,
+            content,
+            color
+        });
+        document.getElementById('action-content').value = '';
+        showMsg("追加しました");
+    }
 
     renderManager();
+};
+
+window.populateInput = (pIdx, day, startMin, blockId) => {
+    document.getElementById('action-person-select').value = pIdx;
+    document.getElementById('action-day-select').value = day;
+    
+    if (config.viewMode === 'block' && blockId) {
+        document.getElementById('action-block-select').value = blockId;
+    } else if (startMin !== null) {
+        const h = Math.floor(startMin / 60);
+        const m = startMin % 60;
+        document.getElementById('action-start-h').value = h;
+        document.getElementById('action-start-m').value = m;
+        syncEndTime();
+    }
+};
+
+window.editEntry = (id) => {
+    const entry = scheduleEntries.find(e => e.id === id);
+    if (!entry) return;
+    
+    editingEntryId = id;
+    document.getElementById('action-person-select').value = entry.personIndex;
+    document.getElementById('action-day-select').value = entry.day;
+    document.getElementById('action-content').value = entry.content;
+    document.getElementById('action-color').value = entry.color || '#6366f1';
+    
+    if (config.viewMode === 'block') {
+        const block = TIME_BLOCKS.find(b => b.sh * 60 === entry.startMin);
+        if (block) document.getElementById('action-block-select').value = block.id;
+    } else {
+        document.getElementById('action-start-h').value = Math.floor(entry.startMin / 60);
+        document.getElementById('action-start-m').value = entry.startMin % 60;
+        document.getElementById('action-end-h').value = Math.floor(entry.endMin / 60);
+        document.getElementById('action-end-m').value = entry.endMin % 60;
+    }
+    
+    document.getElementById('btn-apply-action').textContent = '更新する';
+    document.getElementById('btn-apply-action').className = "flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.remove('hidden');
+    
+    document.getElementById('main-manager').scrollIntoView({ behavior: 'smooth' });
+    showMsg("予定を編集します");
+};
+
+window.cancelEdit = () => {
+    editingEntryId = null;
     document.getElementById('action-content').value = '';
-    showMsg("追加しました");
+    document.getElementById('btn-apply-action').textContent = '適用する';
+    document.getElementById('btn-apply-action').className = "w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.add('hidden');
 };
 
 window.removeEntry = (id) => {
@@ -444,6 +579,26 @@ window.switchView = (mode) => {
     renderManager();
 };
 
+window.selectColumn = (idx) => {
+    // 選択をトグルする
+    if (selectedColumnIndex === idx) {
+        selectedColumnIndex = -1;
+    } else {
+        selectedColumnIndex = idx;
+    }
+
+    // DOMのクラスを更新して色を反映
+    document.querySelectorAll('.header-person').forEach((th, i) => {
+        if (i === selectedColumnIndex) th.classList.add('col-selected');
+        else th.classList.remove('col-selected');
+    });
+
+    document.querySelectorAll('td[data-p-idx]').forEach(td => {
+        if (parseInt(td.dataset.pIdx) === selectedColumnIndex) td.classList.add('col-selected');
+        else td.classList.remove('col-selected');
+    });
+};
+
 const STORAGE_KEY = 'weby_schedule_manager_v2';
 
 window.saveSession = () => {
@@ -479,7 +634,8 @@ window.loadSession = () => {
     if (session) {
         config = session.config; scheduleEntries = session.scheduleEntries || []; currentSessionId = session.id;
         document.getElementById('save-name').value = session.sessionName;
-        updateFormOptions(); renderManager();
+        updateFormOptions(); 
+        switchView(config.viewMode);
         document.getElementById('setup-section').classList.add('hidden');
         document.getElementById('main-manager').classList.remove('hidden');
         showMsg("読み込みました");
@@ -501,7 +657,53 @@ window.deleteSession = () => {
 
 window.newSession = () => { if (confirm("最初から作り直しますか？")) location.reload(); };
 
+window.saveAsImage = () => {
+    const captureArea = document.getElementById('schedule-capture-area');
+    if (!captureArea) return showMsg("エラー：キャプチャエリアが見つかりません", "error");
+
+    showMsg("画像を生成中です...");
+
+    // 保存用に一時的にスタイルを変更して全体を描画させる
+    const originalHeight = captureArea.style.height || '';
+    const originalMaxHeight = captureArea.style.maxHeight || '';
+    const originalOverflow = captureArea.style.overflow || '';
+    
+    // スクロールで隠れている部分も全て含めるために高さをリセット
+    captureArea.classList.remove('h-[600px]');
+    captureArea.style.height = 'auto';
+    captureArea.style.maxHeight = 'none';
+    captureArea.style.overflow = 'visible';
+
+    html2canvas(captureArea, {
+        backgroundColor: THEMES[currentTheme].hex,
+        scale: 2 // 高画質化
+    }).then(canvas => {
+        // スタイルを元に戻す
+        captureArea.classList.add('h-[600px]');
+        captureArea.style.height = originalHeight;
+        captureArea.style.maxHeight = originalMaxHeight;
+        captureArea.style.overflow = originalOverflow;
+
+        // ダウンロード
+        const link = document.createElement('a');
+        const saveName = document.getElementById('save-name').value || `Schedule_${new Date().toLocaleTimeString().replace(/:/g, '-')}`;
+        link.download = `${saveName}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        showMsg("画像を保存しました");
+    }).catch(err => {
+        console.error(err);
+        captureArea.classList.add('h-[600px]');
+        captureArea.style.height = originalHeight;
+        captureArea.style.maxHeight = originalMaxHeight;
+        captureArea.style.overflow = originalOverflow;
+        showMsg("画像の生成に失敗しました", "error");
+    });
+};
+
 window.onload = () => { 
+    initThemes();
     initSelects();
     generateNameFields(); 
     updateSessionList(); 
