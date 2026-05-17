@@ -9,9 +9,22 @@ select option {
     background-color: #1e293b;
     color: #f1f5f9;
 }
-body.bg-slate-50 select option {
+body.theme-light select option {
     background-color: #ffffff;
     color: #0f172a;
+}
+
+:root {
+    --theme-bg: #0f172a;
+}
+body.theme-light { --theme-bg: #f8fafc; }
+body.theme-navy { --theme-bg: #172554; }
+body.theme-forest { --theme-bg: #022c22; }
+body.theme-wine { --theme-bg: #4c0519; }
+body.theme-purple { --theme-bg: #4a044e; }
+
+.theme-bg-color {
+    background-color: var(--theme-bg) !important;
 }
 
 /* 時間列（左側）を固定 */
@@ -20,7 +33,7 @@ body.bg-slate-50 select option {
     left: 0; 
     z-index: 45; 
     box-shadow: 4px 0 10px -5px rgba(0,0,0,0.3);
-    background-color: #0f172a; /* bg-slate-900 */
+    background-color: var(--theme-bg);
     width: 140px;
     min-width: 140px;
     font-size: 13px;
@@ -88,6 +101,19 @@ thead.sticky {
     padding: 4px 6px;
     height: 50px;
 }
+body.theme-light .schedule-table td {
+    border-right: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+body.theme-light #timeline-headers,
+body.theme-light .schedule-table th {
+    border-color: rgba(0,0,0,0.1) !important;
+}
+
+/* ホバーハイライト */
+.hover-highlight { transition: background-color 0.2s; }
+.hover-highlight:hover { background-color: rgba(255, 255, 255, 0.1); }
+body.theme-light .hover-highlight:hover { background-color: rgba(0, 0, 0, 0.05); }
 
 /* 日付区切り線の強調 */
 .day-divider {
@@ -109,5 +135,36 @@ thead.sticky {
 .dragging { opacity: 0.4; }
 
 /* 30分ごとのストライプ（時間表示用） */
-.time-row-even { background-color: rgba(255,255,255,0.02); }
-.time-row-odd { background-color: transparent; }
+.time-row-even { background-color: rgba(255,255,255,0.06); }
+.time-row-odd { background-color: rgba(0,0,0,0.2); }
+body.theme-light .time-row-even { background-color: rgba(0,0,0,0.05); }
+body.theme-light .time-row-odd { background-color: transparent; }
+
+/* 場所（列）ごとのストライプ */
+.col-even {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+.col-odd {
+    background-color: transparent;
+}
+body.theme-light .col-even {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+body.theme-light .col-odd {
+    background-color: transparent;
+}
+
+/* 選択された列（場所）のハイライト */
+.col-selected {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+body.theme-light .col-selected {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+.header-person.col-selected {
+    background-color: rgba(99, 102, 241, 0.4) !important;
+    border-bottom: 3px solid #6366f1;
+}
+body.theme-light .header-person.col-selected {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+}
