@@ -2,6 +2,7 @@ let currentSessionId = null;
 let config = { numPeople: 3, numRounds: 10, names: [], currentRound: 1 };
 let statusEntries = [];
 let currentTheme = 'dark';
+let editingEntryId = null;
 
 const themes = {
     dark: { class: "bg-slate-900 text-slate-100 border-slate-700", label: "Dark" },
@@ -136,7 +137,18 @@ function renderManager() {
                 const td = document.createElement('td');
                 const isCurrent = config.currentRound === r;
                 td.className = `p-2 border-r align-top w-[140px] cursor-pointer hover:bg-white/5 transition-colors ${isCurrent ? 'current-round-col' : ''}`;
-                td.onclick = () => { config.currentRound = r; renderManager(); };
+                
+                // ドラッグ＆ドロップとクリックイベントの追加
+                td.ondragover = (e) => { e.preventDefault(); td.classList.add('bg-white/10'); };
+                td.ondragleave = () => td.classList.remove('bg-white/10');
+                td.ondrop = (e) => handleDrop(e, pIdx, cat.id, r);
+                
+                td.onclick = (e) => { 
+                    if (e.target.closest('.status-badge')) return;
+                    config.currentRound = r; 
+                    populateInput(pIdx, cat.id, r);
+                    renderManager(); 
+                };
                 
                 const container = document.createElement('div');
                 container.className = "flex flex-col gap-1";
@@ -146,7 +158,10 @@ function renderManager() {
                     if (entry) {
                         const badge = document.createElement('div');
                         badge.className = `status-badge ${cat.color} text-white text-[10px] px-3 py-1.5 rounded-lg flex justify-between items-center group shadow-sm animate-in zoom-in-95 duration-200 overflow-hidden`;
-                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1">${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none">✕</button>`;
+                        badge.draggable = true;
+                        badge.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
+                        badge.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
+                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1 pointer-events-none">${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none z-50">✕</button>`;
                         container.appendChild(badge);
                     } else {
                         const empty = document.createElement('div');
@@ -173,11 +188,87 @@ window.applyAction = () => {
     if (!content) return showMsg("内容を入力してください", "error");
     if (start > end) return showMsg("開始ラウンドが終了より後になっています", "error");
 
-    statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
-    statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+    if (editingEntryId) {
+        const entry = statusEntries.find(e => e.id === editingEntryId);
+        if (entry) {
+            entry.personIndex = pIdx;
+            entry.category = cat;
+            entry.startRound = start;
+            entry.endRound = end;
+            entry.content = content;
+        }
+        cancelEdit();
+        showMsg("更新しました");
+    } else {
+        statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+        statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+        document.getElementById('action-content').value = '';
+        showMsg("適用しました");
+    }
+
     renderManager();
+};
+
+function handleDrop(e, pIdx, catId, r) {
+    e.preventDefault();
+    const entryId = e.dataTransfer.getData("entryId");
+    const entry = statusEntries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    const duration = entry.endRound - entry.startRound;
+    entry.personIndex = pIdx;
+    entry.category = catId;
+    entry.startRound = r;
+    entry.endRound = r + duration;
+
+    renderManager();
+    showMsg("移動しました");
+}
+
+window.populateInput = (pIdx, catId, round) => {
+    document.getElementById('action-person-select').value = pIdx;
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${catId}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    document.getElementById('action-start-round').value = round;
+    document.getElementById('action-end-round').value = round;
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
+    contentInput.select();
+};
+
+window.editEntry = (id) => {
+    const entry = statusEntries.find(e => e.id === id);
+    if (!entry) return;
+    
+    editingEntryId = id;
+    document.getElementById('action-person-select').value = entry.personIndex;
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${entry.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    document.getElementById('action-start-round').value = entry.startRound;
+    document.getElementById('action-end-round').value = entry.endRound;
+    document.getElementById('action-content').value = entry.content;
+    
+    document.getElementById('btn-apply-action').textContent = '更新する';
+    document.getElementById('btn-apply-action').className = "flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.remove('hidden');
+    
+    document.getElementById('main-manager').scrollIntoView({ behavior: 'smooth' });
+    showMsg("状態を編集します");
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
+    contentInput.select();
+};
+
+window.cancelEdit = () => {
+    editingEntryId = null;
     document.getElementById('action-content').value = '';
-    showMsg("適用しました");
+    document.getElementById('btn-apply-action').textContent = '適用する';
+    document.getElementById('btn-apply-action').className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.add('hidden');
 };
 
 window.removeEntry = (id) => {
