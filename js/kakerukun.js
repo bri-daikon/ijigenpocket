@@ -120,7 +120,12 @@ function autoUpdateUI() {
 // 保存を実行
 function executeDirectSave() {
     const title = titleInput.value.trim() || 'シナリオ';
-    const content = { title, content: editor.innerHTML };
+    const content = { 
+        title, 
+        content: editor.innerHTML,
+        lineLimit: document.getElementById('page-line-limit')?.value || '35',
+        charLimit: document.getElementById('page-char-limit')?.value || '40'
+    };
     const jsonStr = JSON.stringify(content, null, 2);
     
     saveStatus.textContent = "保存ダイアログを確認中...";
@@ -160,8 +165,18 @@ function loadProjectFallback(input) {
                 const data = JSON.parse(e.target.result);
                 editor.innerHTML = data.content;
                 titleInput.value = data.title;
+                if (data.lineLimit) {
+                    const limitInput = document.getElementById('page-line-limit');
+                    if (limitInput) limitInput.value = data.lineLimit;
+                }
+                if (data.charLimit) {
+                    const limitInput = document.getElementById('page-char-limit');
+                    if (limitInput) limitInput.value = data.charLimit;
+                }
                 updateTOC(); 
                 updateCharCount();
+                updateEditorWidth();
+                updatePageBreakGuides();
                 saveStatus.textContent = "読み込み完了";
                 saveStatus.classList.remove('text-amber-500');
                 showToast("読み込みました");
@@ -219,7 +234,8 @@ function exportHTML() {
             const sizeRatio = fontSize / 16;
 
             // 段組みに合わせて1行あたりの文字数を緩和して計算
-            const textLines = Math.ceil(text.length / (layout === '2' ? 35 : 70)) || 1;
+            const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
+            const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
             
             if (tag === 'H1') weight = 3;
             else if (tag === 'H2') weight = 2;
@@ -398,7 +414,8 @@ function exportWord() {
             const fontSize = parseInt(window.getComputedStyle(node).fontSize) || 16;
             const sizeRatio = fontSize / 16;
 
-            const textLines = Math.ceil(text.length / (layout === '2' ? 35 : 70)) || 1;
+            const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
+            const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
             
             if (tag === 'H1') weight = 3;
             else if (tag === 'H2') weight = 2;
@@ -875,7 +892,7 @@ window.onload = () => {
             sel.addRange(range);
         }
     });
-    updateTOC(); updateCharCount(); updatePageBreakGuides();
+    updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides();
 };
 
 
@@ -926,7 +943,8 @@ function updatePageBreakGuides() {
             const fontSize = parseInt(window.getComputedStyle(node).fontSize) || 16;
             const sizeRatio = fontSize / 16;
 
-            const textLines = Math.ceil(text.length / (layout === '2' ? 35 : 70)) || 1;
+            const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
+            const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
             
             if (tag === 'H1') weight = 3;
             else if (tag === 'H2') weight = 2;
@@ -1009,7 +1027,8 @@ function exportPDF() {
             const fontSize = parseInt(window.getComputedStyle(node).fontSize) || 16;
             const sizeRatio = fontSize / 16;
 
-            const textLines = Math.ceil(text.length / (layout === '2' ? 35 : 70)) || 1;
+            const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
+            const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
             
             if (tag === 'H1') weight = 3;
             else if (tag === 'H2') weight = 2;
@@ -1119,4 +1138,18 @@ function exportPDF() {
     const win = window.open("", "_blank");
     win.document.write(htmlContent);
     win.document.close();
+}
+
+/* --- エディタ幅制御ロジック --- */
+function updateEditorWidth() {
+    const editor = document.getElementById('editor');
+    const limitInput = document.getElementById('page-char-limit');
+    if (!editor || !limitInput) return;
+    const maxChars = parseInt(limitInput.value) || 40;
+    
+    // エディタのmax-widthを設定 (文字数 * 1em + 左右パディング 6rem)
+    const wrapper = editor.parentElement;
+    if (wrapper) {
+        wrapper.style.maxWidth = `calc(${maxChars}em + 6rem)`;
+    }
 }
