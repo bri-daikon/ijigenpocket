@@ -92,14 +92,23 @@
                             <button onclick="setTheme('sepia')" class="p-2 hover:bg-white rounded transition" title="セピア">👁️</button>
                         </div>
 
+                        <!-- 目安行数入力 -->
+                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
+                            <span class="text-[9px] font-bold text-slate-500 px-1">目安行数</span>
+                            <input type="number" id="page-line-limit" value="35" min="10" max="100" class="w-12 bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 text-center outline-none" oninput="updatePageBreakGuides()">
+                        </div>
+
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
-                            <select id="export-layout-select" class="bg-white border-none rounded px-2 py-1 text-[10px] font-bold outline-none text-slate-600">
+                            <select id="export-layout-select" onchange="updatePageBreakGuides()" class="bg-white border-none rounded px-2 py-1 text-[10px] font-bold outline-none text-slate-600">
                                 <option value="1">1段組</option>
                                 <option value="2">2段組</option>
                             </select>
                             <button onclick="exportHTML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-3 rounded shadow transition">HTML</button>
                         </div>
-                        <button onclick="exportWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">Word</button>
+                        <div class="flex gap-1">
+                            <button onclick="exportWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">Word</button>
+                            <button onclick="exportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">PDF</button>
+                        </div>
                     </div>
                 </div>
 
@@ -199,7 +208,10 @@
             </header>
 
             <main class="p-4 sm:p-10 flex-1 flex flex-col items-center overflow-y-auto">
-                <div id="editor" contenteditable="true" class="w-full max-w-5xl border rounded-xl shadow-xl bg-white" placeholder="本文を入力..."><p><br></p></div>
+                <div class="relative w-full max-w-5xl">
+                    <div id="editor" contenteditable="true" class="w-full border rounded-xl shadow-xl bg-white" placeholder="本文を入力..."><p><br></p></div>
+                    <div id="page-break-guides-container" class="absolute inset-0 pointer-events-none no-print overflow-hidden rounded-xl"></div>
+                </div>
                 <div class="w-full max-w-5xl mt-4 flex justify-between text-xs text-slate-400 font-mono"><span>文字数: <span id="char-count">0</span></span><span id="save-status">未保存</span></div>
             </main>
         </div>
