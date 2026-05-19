@@ -287,34 +287,51 @@ async function handleApplySplit() {
       const width = endX - startX;
       const height = endY - startY;
 
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = STAMP_WIDTH;
-      tempCanvas.height = STAMP_HEIGHT;
-      const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+      // 1. 分割された元画像をそのまま保存する Canvas (リサイズしない)
+      const rawCanvas = document.createElement('canvas');
+      rawCanvas.width = width;
+      rawCanvas.height = height;
+      rawCanvas.getContext('2d').drawImage(appState.sourceImage, startX, startY, width, height, 0, 0, width, height);
 
-      const scale = Math.min(STAMP_WIDTH / width, STAMP_HEIGHT / height);
-      const drawWidth = width * scale;
-      const drawHeight = height * scale;
-      const dx = (STAMP_WIDTH - drawWidth) / 2;
-      const dy = (STAMP_HEIGHT - drawHeight) / 2;
+      // 元画像のバックアップ（リセット用）
+      const originalCanvas = document.createElement('canvas');
+      originalCanvas.width = width;
+      originalCanvas.height = height;
+      originalCanvas.getContext('2d').drawImage(rawCanvas, 0, 0);
 
-      ctx.drawImage(appState.sourceImage, startX, startY, width, height, dx, dy, drawWidth, drawHeight);
-      
-      const dataUrl = tempCanvas.toDataURL('image/png');
-      
-      appState.pieces.push({
+      // 初期倍率（10pxの余白内にピッタリ収まる倍率）
+      const defaultScale = Math.min((STAMP_WIDTH - 20) / width, (STAMP_HEIGHT - 20) / height);
+      const piece = {
         id: idCounter++,
-        originalDataUrl: dataUrl,
-        processedDataUrl: dataUrl,
+        rawCanvas: rawCanvas,
+        originalCanvas: originalCanvas,
+        scale: defaultScale,
+        x: (STAMP_WIDTH - width * defaultScale) / 2,
+        y: (STAMP_HEIGHT - height * defaultScale) / 2,
         threshold: 10,
         smoothEdge: true,
-        clicks: [] 
-      });
+        clicks: [],
+        history: [],
+        processedDataUrl: ''
+      };
+      
+      compileProcessedDataUrl(piece);
+      appState.pieces.push(piece);
     }
   }
   appState.selectedPieceIndex = 0;
   appState.zoom3 = 1.0; 
   setStep(3);
+}
+
+// 370x320の画像を合成してデータURL化し保存する
+function compileProcessedDataUrl(piece) {
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = 370;
+  tempCanvas.height = 320;
+  const ctx = tempCanvas.getContext('2d');
+  ctx.drawImage(piece.rawCanvas, piece.x, piece.y, piece.rawCanvas.width * piece.scale, piece.rawCanvas.height * piece.scale);
+  piece.processedDataUrl = tempCanvas.toDataURL('image/png');
 }
 
 // ==========================================
@@ -392,13 +409,19 @@ function renderStep3() {
   if (currentTarget) currentTarget.textContent = appState.selectedPieceIndex + 1;
   
   const piece = appState.pieces[appState.selectedPieceIndex];
+  if (!piece) return;
+
   const thresholdRange = document.getElementById('threshold-range');
   const thresholdVal = document.getElementById('threshold-val');
   const smoothEdgeCheck = document.getElementById('smooth-edge-check');
+  const scaleRange = document.getElementById('stamp-scale-range');
+  const scaleVal = document.getElementById('stamp-scale-val');
 
   if (thresholdRange) thresholdRange.value = piece.threshold;
   if (thresholdVal) thresholdVal.textContent = piece.threshold;
   if (smoothEdgeCheck) smoothEdgeCheck.checked = piece.smoothEdge;
+  if (scaleRange) scaleRange.value = piece.scale;
+  if (scaleVal) scaleVal.textContent = Math.round(piece.scale * 100) + '%';
 
   // 左側リスト描画
   const listContainer = document.getElementById('piece-list');
@@ -412,7 +435,7 @@ function renderStep3() {
         renderStep3();
       };
       div.innerHTML = `
-        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-square" />
+        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-[37/32]" />
         <div class="absolute top-1 left-1 bg-slate-900 bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">${i + 1}</div>
       `;
       listContainer.appendChild(div);
@@ -420,37 +443,50 @@ function renderStep3() {
   }
 
   // メインキャンバス描画
+  drawPieceCanvas(appState.selectedPieceIndex);
+  updateZoom3Display();
+}
+
+// 370x320メインキャンバスを描画する（画像 + ガイド線）
+function drawPieceCanvas(pieceIndex) {
+  const piece = appState.pieces[pieceIndex];
+  if (!piece) return;
   const canvas = document.getElementById('transparency-canvas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-      updateZoom3Display(); // ズーム反映とスクロール判定
-    };
-    img.src = piece.processedDataUrl;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  
+  canvas.width = 370;
+  canvas.height = 320;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // 1. ユーザーが配置したスケール・座標で rawCanvas を描画
+  ctx.drawImage(piece.rawCanvas, piece.x, piece.y, piece.rawCanvas.width * piece.scale, piece.rawCanvas.height * piece.scale);
+  
+  // 2. 10pxの余白ガイド線を描画
+  const showGuide = document.getElementById('show-guide-check')?.checked ?? true;
+  if (showGuide) {
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)'; // 赤の半透明
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(10, 10, 350, 300);
+    ctx.setLineDash([]);
   }
 }
 
 // 透過処理メインロジック
 async function applyTransparency(pieceIndex) {
   const piece = appState.pieces[pieceIndex];
-  const img = await loadImage(piece.originalDataUrl);
+  if (!piece) return;
   
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
+  const ctx = piece.rawCanvas.getContext('2d', { willReadFrequently: true });
+  ctx.clearRect(0, 0, piece.rawCanvas.width, piece.rawCanvas.height);
+  ctx.drawImage(piece.originalCanvas, 0, 0);
   
   if (piece.clicks && piece.clicks.length > 0) {
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, piece.rawCanvas.width, piece.rawCanvas.height);
     const data = imageData.data;
-    const width = canvas.width;
-    const height = canvas.height;
+    const width = piece.rawCanvas.width;
+    const height = piece.rawCanvas.height;
     const featherRange = piece.smoothEdge ? 20 : 0;
     
     for (const click of piece.clicks) {
@@ -493,40 +529,114 @@ async function applyTransparency(pieceIndex) {
     ctx.putImageData(imageData, 0, 0);
   }
   
-  piece.processedDataUrl = canvas.toDataURL('image/png');
+  compileProcessedDataUrl(piece);
   
   if (appState.step === 3 && appState.selectedPieceIndex === pieceIndex) {
-    renderStep3();
+    drawPieceCanvas(pieceIndex);
+    const thumbs = document.querySelectorAll('#piece-list img');
+    if (thumbs[pieceIndex]) {
+      thumbs[pieceIndex].src = piece.processedDataUrl;
+    }
   }
 }
 
-// キャンバスクリック (スポイト＆履歴追加)
+// 位置・サイズスライダー変更処理
+function handleStampScaleChange(val) {
+  const piece = appState.pieces[appState.selectedPieceIndex];
+  if (!piece) return;
+  piece.scale = parseFloat(val);
+  
+  const scaleVal = document.getElementById('stamp-scale-val');
+  if (scaleVal) scaleVal.textContent = Math.round(piece.scale * 100) + '%';
+  
+  drawPieceCanvas(appState.selectedPieceIndex);
+  updateLeftPanelPreview(appState.selectedPieceIndex);
+}
+
+function updateLeftPanelPreview(pieceIndex) {
+  const piece = appState.pieces[pieceIndex];
+  compileProcessedDataUrl(piece);
+  
+  const thumbs = document.querySelectorAll('#piece-list img');
+  if (thumbs[pieceIndex]) {
+    thumbs[pieceIndex].src = piece.processedDataUrl;
+  }
+}
+
+function saveToHistory(piece) {
+  const canvas = document.createElement('canvas');
+  canvas.width = piece.rawCanvas.width;
+  canvas.height = piece.rawCanvas.height;
+  canvas.getContext('2d').drawImage(piece.rawCanvas, 0, 0);
+  piece.history.push(canvas);
+  if (piece.history.length > 20) piece.history.shift(); // 履歴サイズ制限
+}
+
+// ドラッグおよびクリックイベントリスナー設定
+let isDraggingPiece = false;
+let dragStartPos = { x: 0, y: 0 };
+let totalDragDistance = 0;
+
 const transparencyCanvas = document.getElementById('transparency-canvas');
 if (transparencyCanvas) {
-  transparencyCanvas.addEventListener('click', (e) => {
-    const canvas = e.target;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+  transparencyCanvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDraggingPiece = true;
+    dragStartPos = { x: e.clientX, y: e.clientY };
+    totalDragDistance = 0;
+  });
 
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
-
+  window.addEventListener('mousemove', (e) => {
+    if (!isDraggingPiece) return;
     const piece = appState.pieces[appState.selectedPieceIndex];
+    if (!piece) return;
     
-    loadImage(piece.originalDataUrl).then(tempImg => {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = tempImg.width;
-      tempCanvas.height = tempImg.height;
-      const tCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-      tCtx.drawImage(tempImg, 0, 0);
+    const rect = transparencyCanvas.getBoundingClientRect();
+    const scaleX = 370 / rect.width;
+    const scaleY = 320 / rect.height;
+    
+    const dx = (e.clientX - dragStartPos.x) * scaleX;
+    const dy = (e.clientY - dragStartPos.y) * scaleY;
+    
+    piece.x += dx;
+    piece.y += dy;
+    
+    totalDragDistance += Math.sqrt(dx * dx + dy * dy);
+    dragStartPos = { x: e.clientX, y: e.clientY };
+    
+    drawPieceCanvas(appState.selectedPieceIndex);
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (!isDraggingPiece) return;
+    isDraggingPiece = false;
+    
+    // ドラッグ移動量がごく小さい場合は、透過スポイトクリック処理と判定
+    if (totalDragDistance < 5) {
+      const rect = transparencyCanvas.getBoundingClientRect();
+      const scaleX = 370 / rect.width;
+      const scaleY = 320 / rect.height;
+      const canvasX = (e.clientX - rect.left) * scaleX;
+      const canvasY = (e.clientY - rect.top) * scaleY;
       
-      const pixel = tCtx.getImageData(x, y, 1, 1).data;
-      if (pixel[3] > 0) {
-        piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: {x, y} });
-        applyTransparency(appState.selectedPieceIndex);
+      const piece = appState.pieces[appState.selectedPieceIndex];
+      // rawCanvas 内の座標に変換
+      const rx = (canvasX - piece.x) / piece.scale;
+      const ry = (canvasY - piece.y) / piece.scale;
+      
+      if (rx >= 0 && rx < piece.rawCanvas.width && ry >= 0 && ry < piece.rawCanvas.height) {
+        const ctx = piece.rawCanvas.getContext('2d', { willReadFrequently: true });
+        const pixel = ctx.getImageData(Math.floor(rx), Math.floor(ry), 1, 1).data;
+        if (pixel[3] > 0) {
+          saveToHistory(piece);
+          
+          piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: { x: rx, y: ry } });
+          applyTransparency(appState.selectedPieceIndex);
+        }
       }
-    });
+    } else {
+      updateLeftPanelPreview(appState.selectedPieceIndex);
+    }
   });
 }
 
@@ -551,33 +661,45 @@ if (smoothEdgeCheck) {
 
 function undoLastTransparency() {
   const piece = appState.pieces[appState.selectedPieceIndex];
-  if (piece.clicks && piece.clicks.length > 0) {
-    piece.clicks.pop(); 
-    applyTransparency(appState.selectedPieceIndex);
+  if (piece && piece.history.length > 0) {
+    const prevCanvas = piece.history.pop();
+    const ctx = piece.rawCanvas.getContext('2d');
+    ctx.clearRect(0, 0, piece.rawCanvas.width, piece.rawCanvas.height);
+    ctx.drawImage(prevCanvas, 0, 0);
+    
+    if (piece.clicks.length > 0) {
+      piece.clicks.pop();
+    }
+    
+    compileProcessedDataUrl(piece);
+    drawPieceCanvas(appState.selectedPieceIndex);
+    updateLeftPanelPreview(appState.selectedPieceIndex);
   }
 }
 
 function undoTransparency() {
   const piece = appState.pieces[appState.selectedPieceIndex];
+  if (!piece) return;
   piece.clicks = []; 
-  applyTransparency(appState.selectedPieceIndex);
+  piece.history = [];
+  
+  const ctx = piece.rawCanvas.getContext('2d');
+  ctx.clearRect(0, 0, piece.rawCanvas.width, piece.rawCanvas.height);
+  ctx.drawImage(piece.originalCanvas, 0, 0);
+  
+  compileProcessedDataUrl(piece);
+  drawPieceCanvas(appState.selectedPieceIndex);
+  updateLeftPanelPreview(appState.selectedPieceIndex);
 }
 
 async function handleAutoTransparency() {
   const piece = appState.pieces[appState.selectedPieceIndex];
-  const img = await loadImage(piece.originalDataUrl);
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (!piece) return;
+  const ctx = piece.originalCanvas.getContext('2d', { willReadFrequently: true });
+  const pixel = ctx.getImageData(0, 0, 1, 1).data;
   
-  const r = imageData.data[0];
-  const g = imageData.data[1];
-  const b = imageData.data[2];
-  
-  piece.clicks.push({ color: [r, g, b], pos: {x: 0, y: 0} });
+  saveToHistory(piece);
+  piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: { x: 0, y: 0 } });
   applyTransparency(appState.selectedPieceIndex);
 }
 
