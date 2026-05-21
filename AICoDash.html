@@ -19,33 +19,45 @@
         <nav>
             <ul class="nav-menu">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active">
+                    <a href="#" class="nav-link active" data-view="dashboard">
                         <span class="material-icons-round">dashboard</span>
-                        <span>Dashboard</span>
+                        <span>ダッシュボード</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="#" class="nav-link" data-view="employees">
                         <span class="material-icons-round">groups</span>
-                        <span>AI Employees</span>
+                        <span>AI社員管理</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="#" class="nav-link" data-view="org-chart">
+                        <span class="material-icons-round">account_tree</span>
+                        <span>AI組織図</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="meeting">
+                        <span class="material-icons-round">forum</span>
+                        <span>会議室</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-view="projects">
                         <span class="material-icons-round">assignment</span>
-                        <span>Projects</span>
+                        <span>プロジェクト</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="#" class="nav-link" data-view="marketplace">
                         <span class="material-icons-round">storefront</span>
-                        <span>Marketplace</span>
+                        <span>マーケットプレイス</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="#" class="nav-link" data-view="analytics">
                         <span class="material-icons-round">insights</span>
-                        <span>Analytics</span>
+                        <span>分析</span>
                     </a>
                 </li>
             </ul>
@@ -53,7 +65,7 @@
         <div class="nav-footer">
             <a href="#" class="nav-link">
                 <span class="material-icons-round">settings</span>
-                <span>Settings</span>
+                <span>設定</span>
             </a>
         </div>
     </aside>
@@ -62,293 +74,314 @@
     <main class="main-content">
         <header class="header">
             <div class="title-group">
-                <h1 class="animate-fade-in">[AI Command Center]</h1>
+                <h1 class="animate-fade-in">AI指令センター</h1>
                 <p class="text-dim">ようこそ、CEO。現在のプロジェクトは順調に進行しています。</p>
             </div>
             <div class="user-profile">
                 <div class="avatar-mini"></div>
                 <div class="user-info">
-                    <div style="font-weight: 600; font-size: 0.9rem;">[CEO User]</div>
-                    <div style="font-size: 0.7rem; color: var(--text-dim);">Administrator</div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">CEOユーザー</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim);">管理者</div>
                 </div>
             </div>
         </header>
 
-        <!-- Stats Overview -->
-        <section class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
-            <div class="card animate-fade-in" style="animation-delay: 0.1s;">
-                <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">Active Projects</div>
-                <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';">18</div>
-            </div>
-            <div class="card animate-fade-in" style="animation-delay: 0.2s;">
-                <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">Tool Assets</div>
-                <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';">42</div>
-            </div>
-            <div class="card animate-fade-in" style="animation-delay: 0.3s;">
-                <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">AI Employees</div>
-                <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';">8</div>
-            </div>
-            <div class="card animate-fade-in" style="animation-delay: 0.4s;">
-                <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">System Health</div>
-                <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit'; color: var(--success);">Stable</div>
-            </div>
-        </section>
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view-section active">
+            <!-- Stats Overview -->
+            <section class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+                <div class="card animate-fade-in" style="animation-delay: 0.1s;">
+                    <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">進行中のプロジェクト</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';">18</div>
+                </div>
+                <div class="card animate-fade-in" style="animation-delay: 0.2s;">
+                    <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">ツールアセット</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';">42</div>
+                </div>
+                <div class="card animate-fade-in" style="animation-delay: 0.3s;">
+                    <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">AI社員数</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit';" id="stats-employee-count">4</div>
+                </div>
+                <div class="card animate-fade-in" style="animation-delay: 0.4s;">
+                    <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.5rem;">システム健全性</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; font-family: 'Outfit'; color: var(--success);">安定</div>
+                </div>
+            </section>
 
-        <h2 style="margin-bottom: 1.5rem; font-family: 'Outfit';">AI社員ステータス</h2>
-        
-        <div class="dashboard-grid">
-            <!-- PM -->
-            <div class="card animate-fade-in" style="animation-delay: 0.5s;">
-                <div class="card-header">
-                    <div class="avatar">
-                        <img src="img/avatar_pm.png" alt="PM" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=PM'">
-                    </div>
-                    <div>
-                        <h3>[Product Manager]</h3>
-                        <span class="status-badge status-active">Finalized</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p>エモ・クラゲ 40種の画像生成が完了。新設された自作エディタによる、精密な余白調整（10pxルール）と透過処理の最終工程を進行中。</p>
-                    <div class="task-progress">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
-                            <span>Project Completion</span>
-                            <span>100%</span>
-                        </div>
-                        <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
-                    </div>
-                </div>
+            <!-- Dashboard AI Employees List (Summary) -->
+            <div class="dashboard-grid" id="dashboard-employees-grid" style="margin-bottom: 3rem;">
+                <!-- Dynamically populated via JS -->
             </div>
 
-            <!-- Designer -->
-            <div class="card animate-fade-in" style="animation-delay: 0.6s;">
-                <div class="card-header">
-                    <div class="avatar">
-                        <img src="img/avatar_designer.png" alt="Designer" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Designer'">
+            <!-- Product Portfolio Section -->
+            <h2 style="margin: 3rem 0 1.5rem; font-family: 'Outfit';">[Product Portfolio]</h2>
+            <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                <!-- KakeruKun -->
+                <div class="card animate-fade-in" style="animation-delay: 0.9s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">edit_note</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Writing</span>
                     </div>
-                    <div>
-                        <h3>[UI/UX Designer]</h3>
-                        <span class="status-badge status-active">Complete</span>
-                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">シナリオ書けるくん</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGシナリオ制作に特化したエディタ。自動目次や文字数カウントを備えた執筆ハブ。</p>
+                    <a href="KakeruKun.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border); padding: 8px 16px; text-decoration: none; display: flex; align-items: center; gap: 8px; border-radius: 8px; font-size: 0.9rem; color: var(--text-color); transition: all 0.3s ease;">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
                 </div>
-                <div class="card-body">
-                    <p>4x5レイアウトに最適化されたエモ・クラゲ40ポーズの色彩・デザインを確定させました。資産として登録済み。</p>
-                    <div class="task-progress">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
-                            <span>Design Asset Finalized</span>
-                            <span>100%</span>
-                        </div>
-                        <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
+
+                <!-- SSCalendar -->
+                <div class="card animate-fade-in" style="animation-delay: 1.0s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--primary-color); font-size: 2rem;">calendar_month</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Tool</span>
                     </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">SSCalendar</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">シンプルで使いやすい、ツールスイート標準のカレンダー。スケジュール管理の要。</p>
+                    <a href="SSCalendar.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- LINESTMPkiritoru -->
+                <div class="card animate-fade-in" style="animation-delay: 1.1s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--success); font-size: 2rem;">crop</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Utility</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LINEスタンプ切り抜き</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">アップロードした画像をLINEスタンプの規定サイズに一括で切り抜く便利ツール。</p>
+                    <a href="LINESTMPkiritoru.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- VividStack -->
+                <div class="card animate-fade-in" style="animation-delay: 1.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--accent-color); font-size: 2rem;">layers</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Design</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">VividStack</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">画像をレイヤー状に重ね、直感的な合成を可能にするクリエイティブツール。</p>
+                    <a href="VividStack.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- LStylist -->
+                <div class="card animate-fade-in" style="animation-delay: 1.3s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: #d1d5db; font-size: 2rem;">format_paint</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Style</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LStylist</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">セッションログのキャラクター発言を色分けし、読みやすく整形するツール。</p>
+                    <a href="LStylist.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- ijigentask -->
+                <div class="card animate-fade-in" style="animation-delay: 1.4s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">task_alt</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">System</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">AIタスク管理</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">AI社員との連携を意識した、効率的な開発タスク管理ダッシュボード。</p>
+                    <a href="ijigentask.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- HtmlCompare -->
+                <div class="card animate-fade-in" style="animation-delay: 1.5s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--text-dim); font-size: 2rem;">difference</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Utility</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">HtmlCompare</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">HTMLコードの差分を瞬時に検出し、最適化を支援する開発者用ツール。</p>
+                    <a href="HtmlCompare.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- LineStampProducer -->
+                <div class="card animate-fade-in" style="animation-delay: 1.6s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">auto_awesome</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Factory</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LINEスタンプ工場</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">AIによるキャラクター生成から、背景透過・サイズ調整までを自動化する制作ハブ。</p>
+                    <a href="AILineStampProducer.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">precision_manufacturing</span>
+                        <span>Enter Factory</span>
+                    </a>
+                </div>
+
+                <!-- DGenerator -->
+                <div class="card animate-fade-in" style="animation-delay: 1.7s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: #ef4444; font-size: 2rem;">casino</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Game</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">DGenerator</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGやゲーム開発に最適な、ダイスロールとデータ生成の統合エンジン。</p>
+                    <a href="DGenerator.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>Launch Tool</span>
+                    </a>
+                </div>
+
+                <!-- BattleManager -->
+                <div class="card animate-fade-in" style="animation-delay: 1.8s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: #3b82f6; font-size: 2rem;">swords</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Combat</span>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">バトルマネージャー</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGの戦闘を管理するツール。キャラクターの状態やラウンドごとのバフ・デバフを可視化します。</p>
+                    <a href="BattleManager.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">open_in_new</span>
+                        <span>ツールを起動</span>
+                    </a>
+                </div>
+
+                <!-- ScheduleManager -->
+                <div class="card animate-fade-in" style="animation-delay: 1.9s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="material-icons-round" style="color: #6366f1; font-size: 2rem;">auto_graph</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                            <span style="font-size: 0.7rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 2px 8px; border-radius: 10px; font-weight: bold;">NEW</span>
+                            <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">計画</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">スケジュールマネージャー</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">場所と時間枠（ブロック）を組み合わせて予定を管理。自由なスパン表示と直感的なドラッグ移動を実現。</p>
+                    <a href="ScheduleManager.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
+                        <span class="material-icons-round">view_timeline</span>
+                        <span>プランナーを開く</span>
+                    </a>
                 </div>
             </div>
+        </div>
 
-            <!-- Developer -->
-            <div class="card animate-fade-in" style="animation-delay: 0.7s;">
-                <div class="card-header">
-                    <div class="avatar">
-                        <img src="img/avatar_developer.png" alt="Developer" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;">
-                    </div>
-                    <div>
-                        <h3>[Lead Engineer]</h3>
-                        <span class="status-badge status-active">Standby</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p>『AILineStampProducer』に強力な個別エディタ、Undo機能、精密ガイドを実装。外部ソフト不要の完結型制作環境へと進化させました。</p>
-                    <div class="task-progress">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
-                            <span>Tool Engine Ready</span>
-                            <span>100%</span>
+        <!-- AI Employees View -->
+        <div id="employees-view" class="view-section">
+            <h2 style="margin-bottom: 1.5rem; font-family: 'Outfit';">AI社員の雇用とチーム編成</h2>
+            <div class="employees-layout">
+                <!-- Hire Form -->
+                <div class="form-card">
+                    <h3 style="margin-bottom: 1.5rem; font-family: 'Outfit';">新規AI社員を雇用</h3>
+                    <form id="hire-form" onsubmit="event.preventDefault();">
+                        <div class="form-group">
+                            <label for="ai-name">名前</label>
+                            <input type="text" id="ai-name" class="form-control" placeholder="例: カケル" required>
                         </div>
-                        <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Marketer -->
-            <div class="card animate-fade-in" style="animation-delay: 0.8s;">
-                <div class="card-header">
-                    <div class="avatar">
-                        <img src="img/avatar_marketer.png" alt="Marketer" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;">
-                    </div>
-                    <div>
-                        <h3>[Marketing Specialist]</h3>
-                        <span class="status-badge status-active">Analyzing</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p>TRPGユーザーコミュニティでの需要を調査中。高評価のフィードバックを確認。</p>
-                    <div class="task-progress">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
-                            <span>Target Analytics</span>
-                            <span>75%</span>
+                        <div class="form-group">
+                            <label for="ai-role">役割 (Role)</label>
+                            <input type="text" id="ai-role" class="form-control" placeholder="例: シナリオライター" required>
                         </div>
-                        <div class="progress-bar"><div class="progress-fill" style="width: 75%;"></div></div>
+                        <div class="form-group">
+                            <label for="ai-department">アサイン部門</label>
+                            <select id="ai-department" class="form-control" required>
+                                <option value="planning">企画部門 (Planning)</option>
+                                <option value="development">開発部門 (Development)</option>
+                                <option value="design">デザイン部門 (Design)</option>
+                                <option value="marketing">マーケティング部門 (Marketing)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ai-avatar-seed">アバターのシード値</label>
+                            <input type="text" id="ai-avatar-seed" class="form-control" placeholder="例: Writer1">
+                        </div>
+                        <div class="form-group">
+                            <label for="ai-description">自己紹介 / 業務内容</label>
+                            <textarea id="ai-description" class="form-control" rows="3" placeholder="例: TRPGシナリオ執筆およびテキスト校正を担当。"></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <span class="material-icons-round">person_add</span>
+                            <span>雇用契約を締結</span>
+                        </button>
+                    </form>
+                </div>
+                <!-- Employees List -->
+                <div>
+                    <h3 style="margin-bottom: 1.5rem; font-family: 'Outfit';">雇用中のAI社員一同</h3>
+                    <div class="dashboard-grid" id="employees-list-grid">
+                        <!-- Dynamic list generated by JS -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Product Portfolio Section -->
-        <h2 style="margin: 3rem 0 1.5rem; font-family: 'Outfit';">[Product Portfolio]</h2>
-        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-            <!-- KakeruKun -->
-            <div class="card animate-fade-in" style="animation-delay: 0.9s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">edit_note</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Writing</span>
+        <!-- Org Chart View -->
+        <div id="org-chart-view" class="view-section">
+            <h2 style="margin-bottom: 1.5rem; font-family: 'Outfit';">AI組織図 (Org Chart)</h2>
+            <div class="org-container">
+                <div class="org-tree" id="org-tree-content">
+                    <!-- Dynamic rendering by JS -->
                 </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">シナリオ書けるくん</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGシナリオ制作に特化したエディタ。自動目次や文字数カウントを備えた執筆ハブ。</p>
-                <a href="KakeruKun.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
             </div>
+        </div>
 
-            <!-- SSCalendar -->
-            <div class="card animate-fade-in" style="animation-delay: 1.0s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--primary-color); font-size: 2rem;">calendar_month</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Tool</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">SSCalendar</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">シンプルで使いやすい、ツールスイート標準のカレンダー。スケジュール管理の要。</p>
-                <a href="SSCalendar.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- LINESTMPkiritoru -->
-            <div class="card animate-fade-in" style="animation-delay: 1.1s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--success); font-size: 2rem;">crop</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Utility</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LINEスタンプ切り抜き</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">アップロードした画像をLINEスタンプの規定サイズに一括で切り抜く便利ツール。</p>
-                <a href="LINESTMPkiritoru.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- VividStack -->
-            <div class="card animate-fade-in" style="animation-delay: 1.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--accent-color); font-size: 2rem;">layers</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Design</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">VividStack</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">画像をレイヤー状に重ね、直感的な合成を可能にするクリエイティブツール。</p>
-                <a href="VividStack.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- LStylist -->
-            <div class="card animate-fade-in" style="animation-delay: 1.3s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: #d1d5db; font-size: 2rem;">format_paint</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Style</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LStylist</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">セッションログのキャラクター発言を色分けし、読みやすく整形するツール。</p>
-                <a href="LStylist.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- ijigentask -->
-            <div class="card animate-fade-in" style="animation-delay: 1.4s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">task_alt</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">System</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">AIタスク管理</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">AI社員との連携を意識した、効率的な開発タスク管理ダッシュボード。</p>
-                <a href="ijigentask.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- HtmlCompare -->
-            <div class="card animate-fade-in" style="animation-delay: 1.5s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--text-dim); font-size: 2rem;">difference</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Utility</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">HtmlCompare</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">HTMLコードの差分を瞬時に検出し、最適化を支援する開発者用ツール。</p>
-                <a href="HtmlCompare.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- LineStampProducer -->
-            <div class="card animate-fade-in" style="animation-delay: 1.6s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">auto_awesome</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Factory</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">LINEスタンプ工場</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">AIによるキャラクター生成から、背景透過・サイズ調整までを自動化する制作ハブ。</p>
-                <a href="AILineStampProducer.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">precision_manufacturing</span>
-                    <span>Enter Factory</span>
-                </a>
-            </div>
-
-            <!-- DGenerator -->
-            <div class="card animate-fade-in" style="animation-delay: 1.7s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: #ef4444; font-size: 2rem;">casino</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Game</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">DGenerator</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGやゲーム開発に最適な、ダイスロールとデータ生成の統合エンジン。</p>
-                <a href="DGenerator.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- BattleManager -->
-            <div class="card animate-fade-in" style="animation-delay: 1.8s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: #3b82f6; font-size: 2rem;">swords</span>
-                    <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Combat</span>
-                </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">バトルマネージャー</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">TRPGの戦闘を管理するツール。キャラクターの状態やラウンドごとのバフ・デバフを可視化します。</p>
-                <a href="BattleManager.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">open_in_new</span>
-                    <span>Launch Tool</span>
-                </a>
-            </div>
-
-            <!-- ScheduleManager -->
-            <div class="card animate-fade-in" style="animation-delay: 1.9s;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="material-icons-round" style="color: #6366f1; font-size: 2rem;">auto_graph</span>
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                        <span style="font-size: 0.7rem; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 2px 8px; border-radius: 10px; font-weight: bold;">NEW</span>
-                        <span style="font-size: 0.7rem; color: var(--text-dim); border: 1px solid var(--glass-border); padding: 2px 8px; border-radius: 10px;">Planning</span>
+        <!-- Meeting Room View -->
+        <div id="meeting-room-view" class="view-section">
+            <h2 style="margin-bottom: 1.5rem; font-family: 'Outfit';">AI会議室 (Meeting Room)</h2>
+            <div class="chat-window">
+                <div class="chat-header-actions">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="material-icons-round" style="color: var(--secondary-color); font-size: 2rem;">forum</span>
+                        <div>
+                            <h3 style="font-size: 1.1rem;" id="chat-topic-display">会議アジェンダ: AIスタンプ工場の自動化プロセス向上</h3>
+                            <p style="font-size: 0.75rem; color: var(--text-dim);">参加者: 企画部門、開発部門、デザイン部門、マーケティング部門</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <select id="meeting-topic-select" class="form-control" style="width: auto; padding: 0.4rem 1rem;">
+                            <option value="stamp">AIスタンプ工場の自動化</option>
+                            <option value="kakeru">シナリオ書けるくんのUI/UX改善</option>
+                            <option value="marketing">新製品のSNSマーケティング戦略</option>
+                            <option value="schedule">スケジュール管理の最適化</option>
+                        </select>
+                        <button id="btn-toggle-meeting" class="btn-submit" style="width: auto; padding: 0.4rem 1.5rem; font-size: 0.9rem; height: 38px;">
+                            <span class="material-icons-round">play_arrow</span>
+                            <span>会議を開始</span>
+                        </button>
                     </div>
                 </div>
-                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">スケジュールマネージャー</h3>
-                <p style="font-size: 0.8rem; margin-bottom: 1.5rem;">場所と時間枠（ブロック）を組み合わせて予定を管理。自由なスパン表示と直感的なドラッグ移動を実現。</p>
-                <a href="ScheduleManager.html" class="nav-link" style="justify-content: center; background: var(--surface-color); border: 1px solid var(--glass-border);">
-                    <span class="material-icons-round">view_timeline</span>
-                    <span>Open Planner</span>
-                </a>
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chat-messages-container">
+                    <div class="chat-message">
+                        <div class="chat-avatar">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=System" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="chat-bubble-wrapper">
+                            <span class="chat-sender-name">システム</span>
+                            <div class="chat-bubble" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.05); color: var(--text-dim);">
+                                アジェンダを選択し、「会議を開始」ボタンを押すと、AI社員たちによる会議がスタートします。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- User interaction (optional chat) -->
+                <div class="chat-input-area">
+                    <input type="text" id="chat-user-input" class="chat-input" placeholder="CEOとして会議に介入し、指示を出す...">
+                    <button id="btn-send-message" class="btn-send">
+                        <span class="material-icons-round">send</span>
+                    </button>
+                </div>
             </div>
+        </div>
     </main>
 
     <script src="js/aicodash.js"></script>
