@@ -7,34 +7,17 @@
     <!-- Tailwind CSSの導入 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: #f8fafc; /* 薄いグレーがかった白 */
-        }
-        .hero-overlay {
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(248, 250, 252, 1));
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(186, 230, 253, 0.5); /* 淡いブルーの境界線 */
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.5);
-        }
-    </style>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/index.css">
 </head>
 <body class="text-slate-800">
 
     <!-- ヒーローセクション -->
-    <header class="relative h-[60vh] flex items-center justify-center overflow-hidden">
-        <!-- 背景画像 -->
+    <header class="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
         <div class="absolute inset-0 z-0">
-            <img src="Default_Stained_glass_of_rosesLight_shines_in_0.jpg" alt="背景画像" class="w-full h-full object-cover opacity-80" onerror="this.src='https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2000&auto=format&fit=crop'">
+            <div class="w-full h-full bg-blue-50"></div>
+            <!-- 背景画像（代替表示設定済み） -->
+            <img src="Default_Stained_glass_of_rosesLight_shines_in_0.jpg" alt="背景画像" class="absolute inset-0 w-full h-full object-cover opacity-60" onerror="this.style.display='none'">
             <div class="absolute inset-0 hero-overlay"></div>
         </div>
 
@@ -42,137 +25,330 @@
             <h1 class="text-4xl md:text-6xl font-bold text-blue-900 mb-4 tracking-wider">
                 異次元ポケット工房
             </h1>
-            <p class="text-lg md:text-xl text-blue-700 font-light">
-                ここは異次元ポケットのHTML工房です
+            <p class="text-lg md:text-xl text-blue-700 font-light mb-8">
+                あなたの創作を支える、ちょっと便利な道具箱
             </p>
+            
+            <!-- ダッシュボードへのクイックアクセス -->
+            <div class="mb-8 flex justify-center gap-4">
+                <a href="AICoDash.html" class="px-8 py-3 bg-blue-600 text-white rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    管理ダッシュボードを開く
+                </a>
+            </div>
+
+            <!-- 検索バー -->
+            <div class="max-w-md mx-auto relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-blue-400 group-focus-within:text-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input type="text" id="toolSearch" placeholder="ツールを検索..." 
+                       class="w-full pl-12 pr-4 py-3 bg-white/80 backdrop-blur rounded-full border border-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm transition-all text-sm md:text-base">
+            </div>
         </div>
     </header>
 
-    <!-- メインコンテンツ（リンク集） -->
-    <main class="max-w-5xl mx-auto px-6 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- リンクカード 1 -->
-            <a href="https://ijigenpocket.booth.pm/items/8182943" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">クリファンチェック表</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    あなたをクリファンを入力して表にまとめます！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">crifan.html</p>
-            </a>
-
-            <!-- リンクカード 2 -->
-            <a href="https://ijigenpocket.booth.pm/items/8195764" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">ディスプレイジェネレーター</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    立ち絵を好きに簡単ディスプレイ！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">Display Generator.html</p>
-            </a>
-
-            <!-- リンクカード 3 -->
-            <a href="https://ijigenpocket.booth.pm/items/8198065" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">LogStylist</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    ココフォリアログをスタイリッシュに再作成！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">LogStylist.html</p>
-            </a>
-
-            <!-- リンクカード 4 -->
-            <a href="FriendsEntry.html" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">FriendsEntry</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    トモコレ用のお友達エントリーシートを作成できます！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">FriendsEntry.html</p>
-            </a>
-
-            <!-- リンクカード 5 -->
-            <a href="https://ijigenpocket.booth.pm/items/8235735" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <!-- ハサミのアイコンに変更しました -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243 4.243 3 3 0 014.243-4.243zm0-11.516a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">ScrapKiritan</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    スクショを簡単トリミング！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">ScrapKiritan.html</p>
-            </a>
-
-            <!-- リンクカード 6: SSCalendar -->
-            <a href="https://ijigenpocket.booth.pm/items/8261260" class="glass-card p-8 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <!-- カレンダーのアイコン -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-blue-900 mb-3">SSCalendar</h2>
-                <p class="text-slate-600 mb-4 leading-relaxed">
-                    スケジュール管理してみない？予定を簡単入力できるカレンダー！
-                </p>
-                <p class="text-slate-400 text-xs mt-auto">SSCalendar.html</p>
-            </a>
-
-            <!-- リンクカード 7 -->
-            <a href="https://ijigenpocket.booth.pm/items/8298632" class="glass-card p-6 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- カテゴリー1: TRPG・創作支援 -->
+        <section class="mb-16 tool-section" data-category="creative">
+            <h2 class="section-title text-2xl font-bold text-blue-900 mb-8 flex items-center">
+                <span class="mr-3 p-2 bg-blue-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h10a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                </div>
-                <h2 class="text-lg font-bold text-blue-900 mb-2">書けるくん</h2>
-                <p class="text-slate-600 text-sm mb-4 leading-relaxed">
-                    TRPGのシナリオ執筆をサポート！
-                </p>
-                <p class="text-slate-400 text-[10px] mt-auto">KakeruKun.html</p>
-            </a>
+                </span>
+                TRPG・創作支援
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- クリファンチェック表 -->
+                <a href="crifancheck.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">クリファンチェック表</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">入力して表にまとめます！ダイスの結果管理に。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">crifan.html</span>
+                </a>
 
-            <!-- リンクカード 8: HTML比較くん -->
-            <a href="HtmlCompare.html" class="glass-card p-6 rounded-2xl flex flex-col items-center text-center group">
-                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <!-- 比較をイメージしたアイコン -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <!-- ディスプレイジェネレーター -->
+                <a href="DGenerator.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">ディスプレイジェネレーター</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">立ち絵を並べて簡単にディスプレイ画像を作成！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">Display Generator.html</span>
+                </a>
+
+                <!-- LogStylist -->
+                <a href="LStylist.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">LogStylist</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">ココフォリアログを見やすく美しく再構成。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">LogStylist.html</span>
+                </a>
+
+                <!-- 書けるくん -->
+                <a href="KakeruKun.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">書けるくん</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">TRPGのシナリオ執筆やメモを強力にサポート！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">KakeruKun.html</span>
+                </a>
+
+                <!-- 今日のお題 -->
+                <a href="odaiindex.html" class="glass-card p-6 rounded-2xl border border-amber-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">今日のお題</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">創作のきっかけに。毎日ランダムにお題を提示！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">odaiindex.html</span>
+                </a>
+
+                <!-- FriendsEntry -->
+                <a href="FriendsEntry.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">FriendsEntry</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">トモコレや創作交流用のキャラクターシート作成。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">FriendsEntry.html</span>
+                </a>
+
+                <!-- バトルマネージャー -->
+                <a href="BattleManager.html" class="glass-card p-6 rounded-2xl border border-blue-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">バトルマネージャー</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">TRPGの戦闘を管理。状態やバフ・デバフをラウンドごとに可視化！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">BattleManager.html</span>
+                </a>
+
+                <!-- タイムスケジュールマネージャー -->
+                <a href="ScheduleManager.html" class="glass-card p-6 rounded-2xl border border-indigo-200 flex flex-col group tool-card bg-indigo-50/20">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <h3 class="text-lg font-bold text-slate-800">タイムスケジュールマネージャー</h3>
+                        <span class="ml-2 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-md font-bold animate-pulse">NEW</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">場所・時間ごとの予定を柔軟に管理。ブロック表示やドラッグ移動に対応！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">ScheduleManager.html</span>
+                </a>
+            </div>
+            </div>
+        </section>
+
+        <!-- カテゴリー2: 画像・ファイル加工 -->
+        <section class="mb-16 tool-section" data-category="image">
+            <h2 class="section-title text-2xl font-bold text-rose-900 mb-8 flex items-center">
+                <span class="mr-3 p-2 bg-rose-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                </div>
-                <h2 class="text-lg font-bold text-blue-900 mb-2">HTML比較ツール</h2>
-                <p class="text-slate-600 text-sm mb-4 leading-relaxed">
-                    HTMLファイルの変更箇所を比較！
-                </p>
-                <p class="text-slate-400 text-[10px] mt-auto">HtmlCompare.html</p>
-            </a>
+                </span>
+                画像・ファイル加工
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- AI Line Stamp Producer (NEW!) -->
+                <a href="AILineStampProducer.html" class="glass-card p-6 rounded-2xl border border-rose-300 flex flex-col group tool-card bg-rose-50/30">
+                    <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <h3 class="text-lg font-bold text-slate-800">AIスタンプ工房</h3>
+                        <span class="ml-2 px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-md font-bold animate-bounce">ULTIMATE</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">AIで生成したグリッド画像を一括で分割・透過・個別編集！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">AILineStampProducer.html</span>
+                </a>
 
+                <!-- 連番リネーム -->
+                <a href="RenReNm.html" class="glass-card p-6 rounded-2xl border border-rose-200 flex flex-col group tool-card bg-rose-50/20">
+                    <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <h3 class="text-lg font-bold text-slate-800">連番リネーム</h3>
+                        <span class="ml-2 px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-md font-bold animate-pulse">NEW</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">ファイルをまとめて一気に番号順へリネーム！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">RenReNm.html</span>
+                </a>
+
+                <!-- ScrapKiritan -->
+                <a href="ScrapKiritan.html" class="glass-card p-6 rounded-2xl border border-rose-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243 4.243 3 3 0 014.243-4.243zm0-11.516a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">ScrapKiritan</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">スクショを感覚的に素早くトリミング加工。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">ScrapKiritan.html</span>
+                </a>
+
+                <!-- VividStack -->
+                <a href="VividStack.html" class="glass-card p-6 rounded-2xl border border-rose-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">VividStack</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">複数の画像を重ねて、より鮮やかで幻想的に加工。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">VividStack.html</span>
+                </a>
+
+                <!-- LINEスタンプメーカー -->
+                <a href="LINESTMPkiritoru.html" class="glass-card p-6 rounded-2xl border border-rose-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243 4.243 3 3 0 014.243-4.243zm0-11.516a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">LINEスタンプメーカー</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">画像をLINEスタンプ規定サイズに切り抜き加工！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">LINESTMPkiritoru.html</span>
+                </a>
+
+                <!-- あおぞら・フィルター -->
+                <a href="AozoraFilter.html" class="glass-card p-6 rounded-2xl border border-sky-300 flex flex-col group tool-card bg-sky-50/30">
+                    <div class="w-12 h-12 bg-sky-100 text-sky-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-sky-500 group-hover:text-white transition-all shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <h3 class="text-lg font-bold text-slate-800">あおぞら・フィルター</h3>
+                        <span class="ml-2 px-1.5 py-0.5 bg-sky-500 text-white text-[10px] rounded-md font-bold animate-pulse">NEW</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">スライダー操作でお天気や時間帯による空気感を微調整できる画像加工ツール。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">AozoraFilter.html</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- カテゴリー3: 効率化・ツール -->
+        <section class="mb-16 tool-section" data-category="util">
+            <h2 class="section-title text-2xl font-bold text-indigo-900 mb-8 flex items-center">
+                <span class="mr-3 p-2 bg-indigo-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                効率化・ツール
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- タスク管理 -->
+                <a href="ijigentask.html" class="glass-card p-6 rounded-2xl border border-indigo-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">タスク管理</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">ToDoを整理して、制作の進捗を賢くコントロール。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">ijigentask.html</span>
+                </a>
+
+                <!-- SSCalendar -->
+                <a href="SSCalendar.html" class="glass-card p-6 rounded-2xl border border-indigo-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">SSCalendar</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">卓予定や〆切を直感的に管理できるカレンダー。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">SSCalendar.html</span>
+                </a>
+
+                <!-- HTML比較 -->
+                <a href="HtmlCompare.html" class="glass-card p-6 rounded-2xl border border-indigo-100 flex flex-col group tool-card">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">HTML比較</h3>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">2つのHTMLの違いを比較して変更点をチェック！</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">HtmlCompare.html</span>
+                </a>
+
+                <!-- AI指令センター (AICoDash) -->
+                <a href="AICoDash.html" class="glass-card p-6 rounded-2xl border border-indigo-300 flex flex-col group tool-card bg-indigo-50/30">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <h3 class="text-lg font-bold text-slate-800">AI指令センター</h3>
+                        <span class="ml-2 px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-md font-bold animate-pulse">NEW</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4 leading-relaxed">AI社員の管理、Webツール開発、HPデザインの統括ダッシュボード。</p>
+                    <span class="text-slate-400 text-[10px] mt-auto font-mono">AICoDash.html</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- 検索結果がゼロの時のメッセージ -->
+        <div id="noResults" class="hidden text-center py-20">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-400 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <p class="text-slate-500 font-medium">お探しのツールは見つかりませんでした</p>
+            <button onclick="clearSearch()" class="mt-4 text-blue-600 hover:underline text-sm font-medium">検索をリセット</button>
         </div>
+
     </main>
 
-    <footer class="text-center py-10 text-blue-400 text-sm font-light">
-        &copy; 2026 異次元ポケット工房 | <a href="https://ijigenpocket.booth.pm/" class="hover:underline">BOOTH Shop</a>
+    <footer class="text-center py-16 text-slate-400 text-sm font-light">
+        <p class="mb-4">&copy; 2026 異次元ポケット工房</p>
+        <div class="flex items-center justify-center space-x-4">
+            <a href="https://ijigenpocket.booth.pm/" target="_blank" class="hover:text-blue-500 transition-colors border-b border-transparent hover:border-blue-500 pb-0.5">BOOTH</a>
+            <span class="text-slate-300">|</span>
+            <span class="text-slate-500">Product by 異次元ポケット</span>
+        </div>
     </footer>
 
+    <script src="js/common.js"></script>
+    <script src="js/index.js"></script>
 </body>
 </html>
