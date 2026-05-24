@@ -65,6 +65,37 @@ function changeSelectionFontSize(deltaPx) {
     autoUpdateUI();
 }
 
+function updateEditorStyles() {
+    const fontFamily = document.getElementById('font-family-select').value;
+    const lineHeight = document.getElementById('line-height-select').value;
+    
+    let fontCSS = '';
+    if (fontFamily === 'sans-serif') {
+        fontCSS = "system-ui, -apple-system, sans-serif";
+    } else if (fontFamily === 'serif') {
+        fontCSS = 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif';
+    } else if (fontFamily === 'monospace') {
+        fontCSS = 'Consolas, Monaco, "Courier New", monospace';
+    } else if (fontFamily === 'yu-gothic') {
+        fontCSS = '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif';
+    } else if (fontFamily === 'yu-mincho') {
+        fontCSS = '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif';
+    } else if (fontFamily === 'meiryo') {
+        fontCSS = '"Meiryo", "MS PGothic", sans-serif';
+    } else if (fontFamily === 'rounded-gothic') {
+        fontCSS = '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif';
+    } else if (fontFamily === 'ms-pgothic') {
+        fontCSS = '"MS PGothic", "MS UI Gothic", sans-serif';
+    } else if (fontFamily === 'ms-pmincho') {
+        fontCSS = '"MS PMincho", serif';
+    }
+    
+    editor.style.fontFamily = fontCSS;
+    editor.style.lineHeight = lineHeight;
+    
+    autoUpdateUI();
+}
+
 /* --- ヘルパー: 色を濃くする --- */
 function darkenColor(hex, percent) {
     let r = parseInt(hex.slice(1, 3), 16);
@@ -98,7 +129,17 @@ function getSelectedHtmlAndRemove() {
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function setTheme(theme) { document.body.setAttribute('data-theme', theme); localStorage.setItem('weby_theme', theme); }
-function toggleToolbar() { document.getElementById('toolbar-wrapper').classList.toggle('collapsed'); }
+function toggleToolbar() {
+    const settings = document.getElementById('settings-wrapper');
+    const headerTitle = document.getElementById('header-title');
+    const currentSection = document.getElementById('current-section-display');
+    const toolbarWrapper = document.getElementById('toolbar-wrapper');
+
+    if (settings) settings.classList.toggle('hidden');
+    if (headerTitle) headerTitle.classList.toggle('hidden');
+    if (currentSection) currentSection.classList.toggle('hidden');
+    if (toolbarWrapper) toolbarWrapper.classList.remove('collapsed');
+}
 function toggleSearchReplace() { document.getElementById('search-replace-bar').classList.toggle('active'); }
 
 function showToast(msg) {
@@ -124,7 +165,9 @@ function executeDirectSave() {
         title, 
         content: editor.innerHTML,
         lineLimit: document.getElementById('page-line-limit')?.value || '35',
-        charLimit: document.getElementById('page-char-limit')?.value || '40'
+        charLimit: document.getElementById('page-char-limit')?.value || '40',
+        fontFamily: document.getElementById('font-family-select')?.value || 'sans-serif',
+        lineHeight: document.getElementById('line-height-select')?.value || '1.8'
     };
     const jsonStr = JSON.stringify(content, null, 2);
     
@@ -134,6 +177,8 @@ function executeDirectSave() {
     try {
         localStorage.setItem('weby_autosave', editor.innerHTML); 
         localStorage.setItem('weby_autosave_title', titleInput.value);
+        localStorage.setItem('weby_autosave_fontFamily', document.getElementById('font-family-select')?.value || 'sans-serif');
+        localStorage.setItem('weby_autosave_lineHeight', document.getElementById('line-height-select')?.value || '1.8');
     } catch (e) { console.warn("バックアップ失敗: 容量不足"); }
 
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -173,6 +218,15 @@ function loadProjectFallback(input) {
                     const limitInput = document.getElementById('page-char-limit');
                     if (limitInput) limitInput.value = data.charLimit;
                 }
+                if (data.fontFamily) {
+                    const fontSelect = document.getElementById('font-family-select');
+                    if (fontSelect) fontSelect.value = data.fontFamily;
+                }
+                if (data.lineHeight) {
+                    const lhSelect = document.getElementById('line-height-select');
+                    if (lhSelect) lhSelect.value = data.lineHeight;
+                }
+                updateEditorStyles();
                 updateTOC(); 
                 updateCharCount();
                 updateEditorWidth();
@@ -200,6 +254,18 @@ function exportHTML() {
     updateTOC(); 
     const title = titleInput.value || '無題のシナリオ';
     const layout = document.getElementById('export-layout-select').value;
+    const fontFamily = document.getElementById('font-family-select').value;
+    const lineHeight = document.getElementById('line-height-select').value;
+    let fontCSS = fontFamily === 'sans-serif' ? "system-ui, -apple-system, sans-serif" :
+                  fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
+                  fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
+                  fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
+                  fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
+                  fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
+                  fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
+                  fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
+                  fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
+                  "system-ui, -apple-system, sans-serif";
     
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
@@ -225,6 +291,12 @@ function exportHTML() {
     };
 
     nodes.forEach(node => {
+        // 手動改ページマークの検出
+        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+            flushPage();
+            return;
+        }
+
         let weight = 1; // 基本1行分
         if (node.nodeType === 1) { // Element node
             const tag = node.tagName;
@@ -271,7 +343,7 @@ function exportHTML() {
     const exportStyles = `
         :root { --bg-body: #e2e8f0; --bg-page: #ffffff; --text-main: #0f172a; --border-editor: #e2e8f0; --accent: #4f46e5; }
         * { box-sizing: border-box; }
-        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; line-height: 1.8; color: var(--text-main); margin: 0; padding: 0; background-color: var(--bg-body); display: flex; scroll-behavior: smooth; }
+        body { font-family: ${fontCSS}; line-height: ${lineHeight}; color: var(--text-main); margin: 0; padding: 0; background-color: var(--bg-body); display: flex; scroll-behavior: smooth; }
         
         aside { width: 280px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid var(--border-editor); overflow-y: auto; padding: 20px; z-index: 100; }
         .toc-title { font-weight: bold; font-size: 1.1rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; color: var(--accent); }
@@ -384,6 +456,18 @@ function exportHTML() {
 
 function exportWord() {
     const title = titleInput.value || '無題のシナリオ';
+    const fontFamily = document.getElementById('font-family-select').value;
+    const lineHeight = document.getElementById('line-height-select').value;
+    let fontCSS = fontFamily === 'sans-serif' ? '"ＭＳ ゴシック", sans-serif' :
+                  fontFamily === 'serif' ? '"ＭＳ 明朝", serif' :
+                  fontFamily === 'monospace' ? '"Courier New", monospace' :
+                  fontFamily === 'yu-gothic' ? '"游ゴシック", "Yu Gothic", sans-serif' :
+                  fontFamily === 'yu-mincho' ? '"游明朝", "Yu Mincho", serif' :
+                  fontFamily === 'meiryo' ? '"メイリオ", "Meiryo", sans-serif' :
+                  fontFamily === 'rounded-gothic' ? '"ＭＳ ゴシック", sans-serif' :
+                  fontFamily === 'ms-pgothic' ? '"ＭＳ Ｐゴシック", sans-serif' :
+                  fontFamily === 'ms-pmincho' ? '"ＭＳ Ｐ明朝", serif' :
+                  '"ＭＳ ゴシック", sans-serif';
     
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
@@ -406,6 +490,12 @@ function exportWord() {
     };
 
     nodes.forEach(node => {
+        // 手動改ページマークの検出
+        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+            flushPage();
+            return;
+        }
+
         let weight = 1; // 基本1行分
         if (node.nodeType === 1) { // Element node
             const tag = node.tagName;
@@ -442,7 +532,8 @@ function exportWord() {
         <head>
             <meta charset="UTF-8">
             <style>
-                body { font-family: 'MS Mincho', 'serif'; }
+                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; mso-line-height-rule: exactly; }
+                p { margin-top: 0; margin-bottom: 0; }
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
                 .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
@@ -784,6 +875,13 @@ function insertSpecialBox(label) {
 
 function insertDivider() { document.execCommand('insertHTML', false, '<div class="divider"></div><p><br></p>'); autoUpdateUI(); }
 
+function insertPageBreak() {
+    editor.focus();
+    const html = `<div class="page-break" contenteditable="false"></div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+    autoUpdateUI();
+}
+
 /* --- 画像アップロード処理 --- */
 function handleImageUpload(input) {
     if (input.files?.[0]) {
@@ -879,6 +977,18 @@ window.onload = () => {
     if (savedContent) { editor.innerHTML = savedContent; saveStatus.textContent = "ブラウザから復元済み"; }
     if (savedTitle) titleInput.value = savedTitle;
     setTheme(localStorage.getItem('weby_theme') || 'standard');
+
+    const savedFont = localStorage.getItem('weby_autosave_fontFamily');
+    const savedLH = localStorage.getItem('weby_autosave_lineHeight');
+    if (savedFont) {
+        const fontSelect = document.getElementById('font-family-select');
+        if (fontSelect) fontSelect.value = savedFont;
+    }
+    if (savedLH) {
+        const lhSelect = document.getElementById('line-height-select');
+        if (lhSelect) lhSelect.value = savedLH;
+    }
+    updateEditorStyles();
     editor.addEventListener('keydown', (e) => {
         if (e.key === 'Tab') { e.preventDefault(); manualIndent(!e.shiftKey); }
     });
@@ -935,6 +1045,13 @@ function updatePageBreakGuides() {
     let pageNum = 1;
 
     nodes.forEach((node) => {
+        // 手動改ページマークの検出
+        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+            pageNum++;
+            currentLineCount = 0;
+            return;
+        }
+
         let weight = 1; // 基本1行分
         if (node.nodeType === 1) { // Element node
             const tag = node.tagName;
@@ -994,6 +1111,18 @@ function exportPDF() {
     updateTOC(); 
     const title = titleInput.value || '無題のシナリオ';
     const layout = document.getElementById('export-layout-select').value;
+    const fontFamily = document.getElementById('font-family-select').value;
+    const lineHeight = document.getElementById('line-height-select').value;
+    let fontCSS = fontFamily === 'sans-serif' ? "system-ui, -apple-system, sans-serif" :
+                  fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
+                  fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
+                  fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
+                  fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
+                  fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
+                  fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
+                  fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
+                  fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
+                  "system-ui, -apple-system, sans-serif";
     
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
@@ -1019,6 +1148,12 @@ function exportPDF() {
     };
 
     nodes.forEach(node => {
+        // 手動改ページマークの検出
+        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+            flushPage();
+            return;
+        }
+
         let weight = 1; // 基本1行分
         if (node.nodeType === 1) { // Element node
             const tag = node.tagName;
@@ -1053,7 +1188,7 @@ function exportPDF() {
     // PDF用印刷スタイル（エディタのスタイルを完全に再現）
     const printStyles = `
         * { box-sizing: border-box; }
-        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; line-height: 1.8; color: #0f172a; margin: 0; padding: 0; background-color: #ffffff; }
+        body { font-family: ${fontCSS}; line-height: ${lineHeight}; color: #0f172a; margin: 0; padding: 0; background-color: #ffffff; }
         main { display: flex; flex-direction: column; align-items: center; }
         
         .page { 
