@@ -32,10 +32,74 @@
     const valSnow = document.getElementById('valSnow');
     const valSnowSize = document.getElementById('valSnowSize');
 
+    // --- タブ要素 ---
+    const tabFilter = document.getElementById('tabFilter');
+    const tabVariation = document.getElementById('tabVariation');
+    const panelFilterLeft = document.getElementById('panelFilterLeft');
+    const panelVariationLeft = document.getElementById('panelVariationLeft');
+    const panelFilterRight = document.getElementById('panelFilterRight');
+    const panelVariationRight = document.getElementById('panelVariationRight');
+
+    // --- カラーバリエーション用要素 ---
+    const varCanvas = document.getElementById('varCanvas');
+    const downloadVarBtn = document.getElementById('downloadVarBtn');
+    const btnResetVariation = document.getElementById('btnResetVariation');
+    const varPresetSelect = document.getElementById('varPresetSelect');
+    const varHueRange = document.getElementById('varHueRange');
+    const varBrightRange = document.getElementById('varBrightRange');
+    const varSaturateRange = document.getElementById('varSaturateRange');
+    const varContrastRange = document.getElementById('varContrastRange');
+    const valVarHue = document.getElementById('valVarHue');
+    const valVarBright = document.getElementById('valVarBright');
+    const valVarSaturate = document.getElementById('valVarSaturate');
+    const valVarContrast = document.getElementById('valVarContrast');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const variationsGrid = document.getElementById('variationsGrid');
+    const varPlaceholder = document.getElementById('varPlaceholder');
+
     // アプリの状態を管理する変数
     let loadedImage = null; // アップロードされた元の画像データ
     let currentFilter = 'normal'; // 現在選ばれている時間帯
     let currentWeather = 'none'; // 現在選ばれている天気プリセット
+    let activeTab = 'filter'; // 現在アクティブなタブ
+
+    const varPresets = {
+        bw: { hue: 0, bright: 100, sat: 0, contrast: 100 },
+        metallic: { hue: 0, bright: 120, sat: 50, contrast: 150 },
+        cyber: { hue: 200, bright: 110, sat: 200, contrast: 120 },
+        pastel: { hue: 0, bright: 130, sat: 40, contrast: 90 },
+        glitter: { hue: 0, bright: 150, sat: 120, contrast: 180 }
+    };
+
+    // --- タブ切り替えロジック ---
+    function switchTab(tab) {
+      activeTab = tab;
+      if (tab === 'filter') {
+        tabFilter.className = "flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm flex items-center justify-center space-x-1.5";
+        tabVariation.className = "flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all text-slate-600 hover:bg-slate-50 flex items-center justify-center space-x-1.5";
+        
+        panelFilterLeft.classList.remove('hidden');
+        panelFilterRight.classList.remove('hidden');
+        panelVariationLeft.classList.add('hidden');
+        panelVariationRight.classList.add('hidden');
+      } else {
+        tabFilter.className = "flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all text-slate-600 hover:bg-slate-50 flex items-center justify-center space-x-1.5";
+        tabVariation.className = "flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm flex items-center justify-center space-x-1.5";
+        
+        panelFilterLeft.classList.add('hidden');
+        panelFilterRight.classList.add('hidden');
+        panelVariationLeft.classList.remove('hidden');
+        panelVariationRight.classList.remove('hidden');
+
+        // タブ切り替え時に描画更新
+        if (loadedImage) {
+          updateVariationFilters();
+        }
+      }
+    }
+
+    tabFilter.addEventListener('click', () => switchTab('filter'));
+    tabVariation.addEventListener('click', () => switchTab('variation'));
 
     // --- 1. ファイル読み込みのイベント設定 ---
 
@@ -86,13 +150,24 @@
         img.onload = () => {
           loadedImage = img;
           
+          // フィルター加工プレビュー表示初期化
           previewPlaceholder.classList.add('hidden');
           previewCanvas.classList.remove('hidden');
           
           downloadBtn.removeAttribute('disabled');
           downloadBtn.className = "w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5";
 
+          // カラーバリエーションプレビュー表示初期化
+          varPlaceholder.classList.add('hidden');
+          variationsGrid.classList.remove('hidden');
+
+          downloadVarBtn.removeAttribute('disabled');
+          downloadVarBtn.className = "w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5";
+          downloadAllBtn.classList.remove('hidden');
+
           processImage();
+          generateVariations();
+          updateVariationFilters();
         };
         img.src = event.target.result;
       };
@@ -390,4 +465,146 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    });
+
+    // --- 5. カラーバリエーション処理ロジック ---
+
+    function generateVariations() {
+      if (!loadedImage) return;
+      variationsGrid.innerHTML = '';
+      for (let i = 0; i < 15; i++) {
+        const hue = Math.round(i * 360 / 15);
+        const div = document.createElement('div');
+        div.className = 'variation-card';
+        if (hue === parseInt(varHueRange.value)) {
+          div.classList.add('active');
+        }
+
+        const canvas = document.createElement('canvas');
+        const maxPreviewWidth = 300;
+        const scale = Math.min(1, maxPreviewWidth / loadedImage.width);
+        canvas.width = loadedImage.width * scale;
+        canvas.height = loadedImage.height * scale;
+
+        const c = canvas.getContext('2d');
+        c.filter = `hue-rotate(${hue}deg)`;
+        c.drawImage(loadedImage, 0, 0, canvas.width, canvas.height);
+
+        div.appendChild(canvas);
+        
+        div.onclick = () => {
+          const cards = variationsGrid.querySelectorAll('.variation-card');
+          cards.forEach(card => card.classList.remove('active'));
+          div.classList.add('active');
+          selectVariation(hue);
+        };
+        variationsGrid.appendChild(div);
+      }
+    }
+
+    function selectVariation(hue) {
+      varPresetSelect.value = 'none';
+      varHueRange.value = hue;
+      updateVarSliderLabels();
+      updateVariationFilters();
+    }
+
+    function updateVariationFilters() {
+      if (!loadedImage) return;
+      const hue = varHueRange.value;
+      const bright = varBrightRange.value;
+      const saturate = varSaturateRange.value;
+      const contrast = varContrastRange.value;
+
+      varCanvas.width = loadedImage.width;
+      varCanvas.height = loadedImage.height;
+      const ctx = varCanvas.getContext('2d');
+      ctx.clearRect(0, 0, varCanvas.width, varCanvas.height);
+      ctx.filter = `hue-rotate(${hue}deg) brightness(${bright}%) saturate(${saturate}%) contrast(${contrast}%)`;
+      ctx.drawImage(loadedImage, 0, 0);
+    }
+
+    function updateVarSliderLabels() {
+      valVarHue.textContent = `${varHueRange.value}°`;
+      valVarBright.textContent = `${varBrightRange.value}%`;
+      valVarSaturate.textContent = `${varSaturateRange.value}%`;
+      valVarContrast.textContent = `${varContrastRange.value}%`;
+    }
+
+    varPresetSelect.addEventListener('change', (e) => {
+      const p = varPresets[e.target.value];
+      if (p) {
+        varHueRange.value = p.hue;
+        varBrightRange.value = p.bright;
+        varSaturateRange.value = p.sat;
+        varContrastRange.value = p.contrast;
+        updateVarSliderLabels();
+        updateVariationFilters();
+      }
+    });
+
+    [varHueRange, varBrightRange, varSaturateRange, varContrastRange].forEach(el => {
+      el.addEventListener('input', () => {
+        varPresetSelect.value = 'none';
+        updateVarSliderLabels();
+        updateVariationFilters();
+      });
+    });
+
+    btnResetVariation.addEventListener('click', () => {
+      varPresetSelect.value = 'none';
+      varHueRange.value = 0;
+      varBrightRange.value = 100;
+      varSaturateRange.value = 100;
+      varContrastRange.value = 100;
+      
+      updateVarSliderLabels();
+      updateVariationFilters();
+
+      const cards = variationsGrid.querySelectorAll('.variation-card');
+      cards.forEach(card => card.classList.remove('active'));
+      if (cards.length > 0) {
+        cards[0].classList.add('active');
+      }
+    });
+
+    downloadVarBtn.addEventListener('click', () => {
+      if (!loadedImage) return;
+      const baseName = fileName.textContent.substring(0, fileName.textContent.lastIndexOf('.')) || 'variation_image';
+      const outputName = `${baseName}_var_edited.png`;
+
+      const dataURL = varCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = outputName;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    downloadAllBtn.addEventListener('click', async () => {
+      if (!loadedImage) return;
+
+      const baseName = fileName.textContent.substring(0, fileName.textContent.lastIndexOf('.')) || 'variation';
+      
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = loadedImage.width;
+      tempCanvas.height = loadedImage.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      for (let i = 0; i < 15; i++) {
+        const hue = Math.round(i * 360 / 15);
+        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.filter = `hue-rotate(${hue}deg)`;
+        tempCtx.drawImage(loadedImage, 0, 0);
+
+        const link = document.createElement('a');
+        link.download = `${baseName}_variation_hue_${hue}.png`;
+        link.href = tempCanvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
     });
