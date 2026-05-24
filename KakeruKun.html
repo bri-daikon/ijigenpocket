@@ -58,7 +58,7 @@
     </div>
 
     <div class="flex min-h-screen">
-        <aside class="no-print w-64 bg-white border-r border-slate-200 sticky top-0 h-screen overflow-hidden flex flex-col hidden lg:flex">
+        <aside class="no-print w-64 bg-white border-r border-slate-200 sticky top-[60px] h-[calc(100vh-60px)] overflow-hidden flex flex-col hidden lg:flex">
             <div class="p-4 border-bottom bg-slate-50 font-bold text-slate-700">📋 目次</div>
             <nav id="toc-container" class="flex-1 overflow-y-auto py-4 text-sm"></nav>
             <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-2 text-slate-900">
@@ -70,17 +70,17 @@
         </aside>
 
         <div class="flex-1 flex flex-col">
-            <header class="no-print border-b p-4 sticky top-0 z-30 bg-white shadow-sm">
+            <header class="no-print border-b p-4 sticky top-[60px] z-30 bg-white shadow-sm">
                 <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="flex flex-col flex-1">
-                        <h1 class="text-xl font-extrabold text-indigo-700 mb-1">シナリオ書けるくん</h1>
+                        <h1 id="header-title" class="text-xl font-extrabold text-indigo-700 mb-1">シナリオ書けるくん</h1>
                         <div class="flex items-center gap-2 w-full max-w-sm">
                             <input type="text" id="scenario-title" placeholder="シナリオタイトル..." class="bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-400 outline-none text-sm font-bold text-slate-700 transition-all flex-1">
                             <button onclick="toggleToolbar()" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-500 px-2 py-1 rounded transition">🛠️ 切替</button>
                         </div>
                         <div id="current-section-display" class="text-[10px] text-slate-400 font-medium mt-1">執筆中: <span>本文</span></div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div id="settings-wrapper" class="flex items-center gap-2">
                         <div class="flex bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 gap-1 text-slate-900">
                             <button onclick="openModal('confirm-modal')" class="p-2 hover:bg-white rounded transition text-slate-600 text-xs" title="新規">➕</button>
                             <button onclick="executeDirectSave()" class="p-2 hover:bg-white rounded transition text-indigo-600 text-xs" title="保存">💾</button>
@@ -94,14 +94,43 @@
 
                         <!-- 目安行数入力 -->
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
-                            <span class="text-[9px] font-bold text-slate-500 px-1">目安行数</span>
+                            <span class="text-[9px] font-bold text-slate-500 px-1">行数</span>
                             <input type="number" id="page-line-limit" value="35" min="10" max="100" class="w-12 bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 text-center outline-none" oninput="updatePageBreakGuides()">
                         </div>
 
                         <!-- 目安文字数入力 -->
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
-                            <span class="text-[9px] font-bold text-slate-500 px-1">目安文字数/行</span>
+                            <span class="text-[9px] font-bold text-slate-500 px-1">文字数</span>
                             <input type="number" id="page-char-limit" value="40" min="20" max="120" class="w-12 bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 text-center outline-none" oninput="updateEditorWidth(); updatePageBreakGuides()">
+                        </div>
+
+                        <!-- フォント設定 -->
+                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
+                            <span class="text-[9px] font-bold text-slate-500 px-1">フォント</span>
+                            <select id="font-family-select" onchange="updateEditorStyles()" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 outline-none">
+                                <option value="sans-serif">ゴシック体</option>
+                                <option value="serif">明朝体</option>
+                                <option value="monospace">等幅</option>
+                                <option value="yu-gothic">游ゴシック</option>
+                                <option value="yu-mincho">游明朝</option>
+                                <option value="meiryo">メイリオ</option>
+                                <option value="rounded-gothic">丸ゴシック</option>
+                                <option value="ms-pgothic">MS Pゴシック</option>
+                                <option value="ms-pmincho">MS P明朝</option>
+                            </select>
+                        </div>
+
+                        <!-- 行間設定 -->
+                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
+                            <span class="text-[9px] font-bold text-slate-500 px-1">行間</span>
+                            <select id="line-height-select" onchange="updateEditorStyles()" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 outline-none">
+                                <option value="1.4">1.4</option>
+                                <option value="1.6">1.6</option>
+                                <option value="1.8" selected>1.8</option>
+                                <option value="2.0">2.0</option>
+                                <option value="2.2">2.2</option>
+                                <option value="2.4">2.4</option>
+                            </select>
                         </div>
 
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
@@ -175,6 +204,7 @@
 
                         <div class="flex flex-wrap gap-1 border-l pl-2">
                             <button onclick="insertDivider()" class="px-2 h-7 border rounded bg-white text-[10px]">線 —</button>
+                            <button onclick="insertPageBreak()" class="px-2 h-7 border border-rose-200 bg-rose-50 rounded text-[10px] text-rose-700 font-bold" title="改ページ位置を挿入">✂️ 改ページ</button>
                             <button onclick="insertTRPGBox('summary')" class="px-2 h-7 border border-blue-200 bg-blue-50 rounded text-[10px] text-blue-700 font-bold">📄 概要</button>
                             <button onclick="insertTRPGBox('check')" class="px-2 h-7 border border-green-200 bg-green-50 rounded text-[10px] text-green-700 font-bold">🎲 判定</button>
                             <button onclick="insertTRPGBox('spot')" class="px-2 h-7 border border-emerald-300 bg-emerald-50 rounded text-[10px] text-emerald-800 font-bold">👀 目星</button>
