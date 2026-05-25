@@ -308,7 +308,7 @@ async function handleApplySplit() {
         scale: defaultScale,
         x: (STAMP_WIDTH - width * defaultScale) / 2,
         y: (STAMP_HEIGHT - height * defaultScale) / 2,
-        threshold: 10,
+        threshold: 30,
         smoothEdge: true,
         clicks: [],
         history: [],
