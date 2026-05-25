@@ -124,7 +124,7 @@
     <div id="step-3" class="step-container hidden bg-white p-6 rounded-xl shadow-md border border-slate-200 flex flex-col md:flex-row gap-6">
       
       <!-- 左サイド：一覧プレビュー -->
-      <div class="w-full md:w-80 border-r border-slate-200 pr-4 shrink-0 relative">
+      <div class="w-full md:w-64 border-r border-slate-200 pr-4 shrink-0 relative">
         <div class="sticky top-24 flex flex-col" style="max-height: calc(100vh - 120px);">
           <h4 class="font-bold text-slate-800 mb-3 bg-white py-2 z-10 shrink-0">スタンプ一覧 (<span id="piece-count">0</span>)</h4>
           <div class="overflow-y-auto custom-scrollbar flex-1 pr-2 pb-4">
@@ -147,7 +147,7 @@
         </div>
 
         <!-- スポイト用キャンバスエリア -->
-        <div id="canvas-container" class="flex-1 bg-slate-100 rounded-lg flex flex-col overflow-hidden border border-dashed border-slate-400 relative checkerboard min-h-[600px] lg:min-h-[800px] transition-colors duration-300">
+        <div id="canvas-container" class="flex-1 bg-slate-100 rounded-lg flex flex-col overflow-hidden border border-dashed border-slate-400 relative checkerboard min-h-[450px] lg:min-h-[550px] transition-colors duration-300">
           
           <!-- 背景色切り替え機能 -->
           <div class="absolute top-4 left-4 z-10 flex items-center gap-1 bg-white rounded-md p-1 shadow-sm border border-slate-200">
@@ -171,15 +171,18 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- 調整コントローラー -->
-        <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-4 shrink-0">
-          
-          <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-sm flex items-start gap-2">
+      <!-- 右サイド：調整コントローラー・設定フレーム -->
+      <div class="w-full md:w-80 shrink-0 relative">
+        <div class="sticky top-24 bg-slate-50 border border-slate-200 p-6 rounded-xl flex flex-col gap-4">
+          <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-2">操作パネル</h4>
+
+          <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-xs flex items-start gap-2">
             <i data-lucide="mouse-pointer-2" class="text-blue-600 shrink-0 mt-0.5 w-4 h-4"></i>
             <p class="text-slate-700 font-medium">
               画像の<span class="text-blue-600 font-bold">透明にしたい背景部分</span>をクリックしてください。<br/>
-              <span class="text-xs text-slate-500">※ ドラッグして移動、スライダーで拡大・縮小ができます。複数の場所をクリックして連続で透明化できます。</span>
+              <span class="text-slate-500">※ ドラッグして移動、スライダーで拡大・縮小ができます。</span>
             </p>
           </div>
 
@@ -200,43 +203,49 @@
             <label for="show-guide-check" class="ml-2 text-sm font-bold text-slate-700 cursor-pointer">余白10pxガイド線（赤破線）を表示する</label>
           </div>
 
-          <div>
+          <!-- カラー許容値 -->
+          <div class="border-t border-slate-200 pt-3">
             <div class="flex justify-between mb-1">
               <label class="text-sm font-bold text-slate-700">カラー許容値（しきい値）</label>
-              <span id="threshold-val" class="text-sm font-bold text-blue-600">10</span>
+              <span id="threshold-val" class="text-sm font-bold text-blue-600">30</span>
             </div>
-            <input type="range" min="0" max="150" value="10" id="threshold-range" class="w-full accent-blue-600" />
+            <input type="range" min="0" max="150" value="30" id="threshold-range" class="w-full accent-blue-600" />
             <p class="text-xs text-slate-500 mt-1">値を大きくすると、似た色も一緒に透明になります。</p>
           </div>
 
-          <!-- アンチエイリアス（エッジの滑らかさ）チェックボタン -->
+          <!-- アンチエイリアス -->
           <div class="flex items-center">
             <input type="checkbox" id="smooth-edge-check" class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-600 accent-blue-600">
-            <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-slate-700 cursor-pointer">境界線のアンチエイリアス処理（滑らかにする）</label>
+            <label for="smooth-edge-check" class="ml-2 text-sm font-bold text-slate-700 cursor-pointer">境界線のアンチエイリアス処理</label>
           </div>
 
-          <!-- 1つ前に戻すボタンなど -->
-          <div class="flex flex-wrap gap-2">
-            <button onclick="handleAutoTransparency()" class="flex-1 min-w-[120px] bg-white border border-blue-400 text-blue-600 font-bold py-2 rounded-lg hover:bg-blue-50 transition-colors flex justify-center items-center shadow-sm">
+          <!-- 操作ボタン類 -->
+          <div class="flex flex-col gap-2 mt-2">
+            <button onclick="handleAutoTransparency()" class="w-full bg-white border border-blue-400 text-blue-600 font-bold py-2 rounded-lg hover:bg-blue-50 transition-colors flex justify-center items-center shadow-sm text-sm">
               <i data-lucide="sparkles" class="mr-2 w-4 h-4"></i>
               自動透過
             </button>
-            <button onclick="undoLastTransparency()" class="flex-1 min-w-[120px] bg-white border border-slate-400 text-slate-700 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm">
-              <i data-lucide="undo" class="mr-2 w-4 h-4"></i>
-              1つ戻す
+            <div class="flex gap-2">
+              <button onclick="undoLastTransparency()" class="flex-1 bg-white border border-slate-400 text-slate-700 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm text-xs">
+                <i data-lucide="undo" class="mr-1.5 w-3.5 h-3.5"></i>
+                1つ戻す
+              </button>
+              <button onclick="undoTransparency()" class="flex-1 bg-white border border-slate-300 text-slate-500 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm text-xs">
+                <i data-lucide="rotate-ccw" class="mr-1.5 w-3.5 h-3.5"></i>
+                すべて戻す
+              </button>
+            </div>
+          </div>
+
+          <!-- 下部に配置されていたナビゲーションボタンを操作パネル内に収める -->
+          <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col gap-2">
+            <button onclick="setStep(4)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg shadow transition-colors flex items-center justify-center">
+              次へ：完成 <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
             </button>
-            <button onclick="undoTransparency()" class="flex-1 min-w-[120px] bg-white border border-slate-300 text-slate-500 font-bold py-2 rounded-lg hover:bg-slate-100 transition-colors flex justify-center items-center shadow-sm">
-              <i data-lucide="rotate-ccw" class="mr-2 w-4 h-4"></i>
-              すべて戻す
+            <button onclick="setStep(2)" class="w-full py-2 text-slate-500 hover:text-blue-600 font-bold transition-colors text-sm text-center">
+              戻る
             </button>
           </div>
-        </div>
-
-        <div class="mt-4 flex justify-between shrink-0">
-          <button onclick="setStep(2)" class="py-2 px-6 text-slate-500 hover:text-blue-600 font-bold transition-colors">戻る</button>
-          <button onclick="setStep(4)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-8 rounded-lg shadow transition-colors flex items-center">
-            次へ：完成 <i data-lucide="chevron-right" class="ml-1 w-5 h-5"></i>
-          </button>
         </div>
       </div>
     </div>
