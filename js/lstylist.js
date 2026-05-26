@@ -161,7 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tabControls || !userControls) return;
         
         tabControls.innerHTML = '';
-        Object.keys(tabSettings).forEach(tab => {
+        const sortedTabKeys = Object.keys(tabSettings).sort((a, b) => {
+            const order = { 'main': 1, 'info': 2, '雑談': 3, 'other': 3 };
+            const aIdx = order[a.toLowerCase()] || 99;
+            const bIdx = order[b.toLowerCase()] || 99;
+            return aIdx - bIdx;
+        });
+
+        sortedTabKeys.forEach(tab => {
             const conf = tabSettings[tab];
             const div = document.createElement('div');
             div.className = 'p-2 bg-black/5 dark:bg-white/5 rounded space-y-2';
@@ -271,24 +278,27 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasStats = false;
         Object.keys(stats).forEach(user => {
             const s = stats[user];
+            const setting = userSettings[user];
             if (s.criticals.length + s.fumbles.length + s.specials.length > 0) {
                 hasStats = true;
                 const div = document.createElement('div');
                 div.className = 'bg-white/50 dark:bg-black/20 rounded-xl border border-black/5 overflow-hidden';
                 div.innerHTML = `
                     <div class="p-3 flex items-center justify-between cursor-pointer header-click">
-                        <div class="font-bold flex items-center gap-2" style="color:${userSettings[user].color}">
-                            <span>${userSettings[user].displayName}</span>
-                            <span class="text-[10px] opacity-40">▼ 詳細</span>
+                        <div class="font-bold flex items-center gap-2" style="color:${setting.color}">
+                            <span>${setting.displayName}</span>
+                            <span class="text-[10px] opacity-40">▼ 詳細表示</span>
                         </div>
                         <div class="flex gap-3 text-[10px] font-bold">
-                            <span class="text-pink-500">C: ${s.criticals.length}</span>
-                            <span class="text-blue-500">F: ${s.fumbles.length}</span>
+                            <span class="text-pink-500">Crit: ${s.criticals.length}</span>
+                            <span class="text-blue-500">Funb: ${s.fumbles.length}</span>
+                            <span class="text-indigo-500">Spec: ${s.specials.length}</span>
                         </div>
                     </div>
-                    <div class="hidden p-4 bg-black/5 dark:bg-black/40 text-[10px] space-y-2 border-t details-body">
-                        ${s.criticals.map(i => `<div class="opacity-80">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}
-                        ${s.fumbles.map(i => `<div class="opacity-80">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}
+                    <div class="hidden p-4 bg-black/5 dark:bg-black/40 text-[10px] space-y-4 border-t border-black/5 details-body">
+                        ${s.criticals.length ? `<div><p class="font-bold text-pink-500 mb-1">【決定的成功】</p>${s.criticals.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
+                        ${s.fumbles.length ? `<div><p class="font-bold text-blue-500 mb-1">【致命的失敗】</p>${s.fumbles.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
+                        ${s.specials.length ? `<div><p class="font-bold text-indigo-500 mb-1">【スペシャル】</p>${s.specials.map(i => `<div class="opacity-80 mb-1">[${i.tab}] ${stripHtml(i.content)}</div>`).join('')}</div>` : ''}
                     </div>
                 `;
                 div.querySelector('.header-click').onclick = () => div.querySelector('.details-body').classList.toggle('hidden');
@@ -324,35 +334,109 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.onclick = function() {
             const title = (logTitleInput ? logTitleInput.value : '') || 'SessionLog';
             const isDark = (darkModeToggle && darkModeToggle.checked);
-            const bgColor = isDark ? '#2d2d2d' : '#fdfaf0';
-            const txtColor = isDark ? '#e0e0e0' : '#3e3e3e';
+            const logContentHtml = logContentArea ? logContentArea.innerHTML : '';
+            const statsContentHtml = (statsArea && !statsArea.classList.contains('hidden')) ? statsArea.innerHTML : '';
             
+            const activeTabs = Object.keys(tabSettings)
+                .filter(t => tabSettings[t].visible)
+                .sort((a, b) => {
+                    const order = { 'main': 1, 'info': 2, '雑談': 3, 'other': 3 };
+                    const aIdx = order[a.toLowerCase()] || 99;
+                    const bIdx = order[b.toLowerCase()] || 99;
+                    return aIdx - bIdx;
+                });
+                
+            const activeUsers = Object.keys(userSettings)
+                .filter(u => userSettings[u].visible)
+                .map(u => userSettings[u].displayName);
+            
+            // 重複名を排除したユニークなリストを作成
+            const uniqueUsers = Array.from(new Set(activeUsers));
+
             const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <title>${title}</title>
     <style>
-        body { background: ${bgColor}; color: ${txtColor}; font-family: sans-serif; padding: 40px; margin:0; }
-        .log-line { padding: 12px 20px; border-bottom: 1px solid rgba(0,0,0,0.1); display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: baseline; }
-        .user-name { font-weight: bold; }
+        body { background: ${isDark ? '#2d2d2d' : '#fdfaf0'}; color: ${isDark ? '#e0e0e0' : '#3e3e3e'}; font-family: sans-serif; margin: 0; padding: 40px 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: ${isDark ? '#1e1e1e' : '#fff'}; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .controls { padding: 20px; background: rgba(0,0,0,0.05); font-size: 12px; }
+        .filter-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .filter-chip { padding: 4px 12px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; transition: 0.2s; }
+        .filter-chip.active { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        .log-line { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px; display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: baseline; }
+        .prio-main { padding-left: 20px; font-size: 1.0em; }
+        .prio-info { padding-left: 40px; font-size: 0.9em; opacity: 0.9; }
+        .prio-other-tab { padding-left: 60px; font-size: 0.8em; opacity: 0.75; }
+        .prio-lowest { padding-left: 80px; font-size: 0.7em; opacity: 0.6; }
+        .user-name { font-weight: bold; padding-right: 1em; }
         .critical { color: #e84393; font-weight: bold; text-decoration: underline; }
         .fumble { color: #0984e3; font-weight: bold; text-decoration: underline; }
         .special { color: #6c5ce7; font-weight: bold; }
+        .stats-area { padding: 20px; background: rgba(0,0,0,0.03); }
+        .hidden { display: none !important; }
+        .header-click { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        footer { margin-top: 40px; text-align: center; font-size: 10px; opacity: 0.5; line-height: 1.6; }
+        footer a { color: inherit; }
     </style>
 </head>
 <body>
     <h1>${title}</h1>
-    <div class="log-container">
-        ${logContentArea ? logContentArea.innerHTML : ''}
+    <div class="container">
+        <div class="controls">
+            <div class="filter-group">
+                ${activeTabs.map(t => `<div class="filter-chip active" onclick="toggleFilter(this, 'tab', '${t}')">${t}</div>`).join('')}
+            </div>
+            <div class="filter-group">
+                ${uniqueUsers.map(u => `<div class="filter-chip active" onclick="toggleFilter(this, 'user', '${u}')">${u}</div>`).join('')}
+            </div>
+        </div>
+        <div class="stats-area">${statsContentHtml}</div>
+        <div id="log-body">${logContentHtml}</div>
     </div>
+    <footer>
+        <p>Product by 異次元ポケット</p>
+        <p><a href="https://ijigenpocket.booth.pm/" target="_blank">https://ijigenpocket.booth.pm/</a></p>
+    </footer>
+    <script>
+        const states = { tab: {}, user: {} };
+        document.querySelectorAll('.filter-chip').forEach(el => {
+            const onclickText = el.getAttribute('onclick');
+            const parts = onclickText.match(/'([^']+)'/g);
+            states[parts[0].replace(/'/g,'')][parts[1].replace(/'/g,'')] = true;
+        });
+
+        function toggleFilter(el, type, val) {
+            el.classList.toggle('active');
+            states[type][val] = el.classList.contains('active');
+            document.querySelectorAll('.log-row').forEach(row => {
+                const visible = states.tab[row.dataset.tab] && states.user[row.dataset.user];
+                row.classList.toggle('hidden', !visible);
+            });
+        }
+
+        document.querySelectorAll('.header-click').forEach(el => {
+            el.onclick = () => {
+                const body = el.nextElementSibling;
+                if (body) body.classList.toggle('hidden');
+            };
+        });
+    <\/script>
 </body>
 </html>`;
-            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = title + ".html";
-            a.click();
+            
+            try {
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = title + ".html";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) { console.error(err); }
         };
     }
 });
