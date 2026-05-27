@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINEスタンプ自動タグ付けツール（一括解析版）</title>
+    <!-- Tailwind CSS の読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons の読み込み -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- 外部CSSファイルの読み込み -->
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/linestamptagger.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- ヘッダー部分 -->
+    <header class="bg-white border-b border-slate-200 py-5 px-6 shadow-sm">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-emerald-100 rounded-xl text-emerald-600 shadow-sm">
+                    <i data-lucide="tag" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">LINEスタンプ自動タグ付けツール</h1>
+                    <p class="text-xs text-slate-500">スタンプ一覧のスクショ画像からAIが一括でタグ解析・全体設定案を自動生成（爆速版）</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-8 fade-in">
+        
+        <!-- 使い方ガイド -->
+        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-8 text-sm text-amber-900 rounded-r-xl shadow-sm flex items-start space-x-2.5">
+            <i data-lucide="lightbulb" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+            <div>
+                <strong class="font-bold">使い方：</strong> 1枚ずつではなく、<strong class="font-bold">「スタンプ一覧のスクショ画像（40個並んだものなど）」</strong>を選択してください。1回の通信で一気に全タグを解析します！
+            </div>
+        </div>
+
+        <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8">
+            <!-- 1. 設定セクション -->
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                        <span class="w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mr-2 font-mono">1</span>
+                        Gemini APIキーを入力
+                        <span class="text-xs text-slate-400 font-normal ml-2">※入力内容は自動保存されます</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="apiKey" class="w-full border border-slate-200 rounded-xl p-3 pl-4 focus:outline-none transition-all text-sm" placeholder="AIのキーを入力してください (AI_...)">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                        <span class="w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mr-2 font-mono">2</span>
+                        タグ一覧を入力（カンマ区切り、または改行）
+                        <span class="text-xs text-slate-400 font-normal ml-2">※自動保存されます</span>
+                    </label>
+                    <textarea id="tagList" rows="3" class="w-full border border-slate-200 rounded-xl p-3 focus:outline-none transition-all text-sm" placeholder="例: 可愛い, 挨拶, 嬉しい, 悲しい, 日常, ありがとう, お疲れ様"></textarea>
+                </div>
+            </div>
+
+            <!-- 2. ファイル読み込みセクション -->
+            <div class="mb-8 bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-300 upload-zone text-center cursor-pointer relative">
+                <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center justify-center cursor-pointer">
+                    <span class="w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mr-2 font-mono">3</span>
+                    スタンプ一覧の「スクショ画像」を選択（複数枚可）
+                </label>
+                <div class="flex flex-col items-center justify-center space-y-2 py-4">
+                    <i data-lucide="image" class="w-10 h-10 text-slate-400"></i>
+                    <p class="text-xs text-slate-500">ドラッグ＆ドロップするか、ファイルを選択してください</p>
+                </div>
+                <input type="file" id="imageFiles" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            </div>
+
+            <!-- 3. 実行ボタン -->
+            <button id="startButton" class="w-full btn-primary text-white font-bold py-4 px-6 rounded-xl transition duration-200 flex items-center justify-center space-x-2 text-base">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <span>スクショから一括で解析を開始する</span>
+            </button>
+
+            <!-- 進行状況の表示 -->
+            <div id="status" class="mt-6 text-center font-bold text-slate-600 hidden p-4 bg-slate-50 rounded-xl animate-pulse-slow">
+                <span id="progressText">AIに一括解析をお願いしています（少し時間がかかります）...</span>
+            </div>
+        </div>
+
+        <!-- 全体のタイトル・説明文表示エリア -->
+        <div id="overallInfoArea" class="bg-blue-50 p-6 md:p-8 rounded-2xl border border-blue-100 hidden shadow-sm mb-8">
+            <h2 class="text-lg font-bold mb-4 text-blue-900 flex items-center">
+                <span class="text-xl mr-2">✨</span> スタンプ全体の設定案
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-bold text-sm text-blue-800 mb-3 border-b border-blue-200/60 pb-2 flex items-center justify-between">
+                        <span>🇯🇵 日本語設定</span>
+                        <span class="text-xs font-normal text-slate-400">Japanese</span>
+                    </h3>
+                    <div class="bg-white p-4 rounded-xl border border-blue-100/80 mb-4 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">タイトル (40文字以内)</span>
+                        <div id="overallJaTitle" class="font-semibold text-slate-800 text-sm"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-blue-100/80 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">説明文 (160文字以内)</span>
+                        <div id="overallJaDesc" class="text-xs text-slate-600 leading-relaxed"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-blue-800 mb-3 border-b border-blue-200/60 pb-2 flex items-center justify-between">
+                        <span>🇺🇸 英語設定</span>
+                        <span class="text-xs font-normal text-slate-400">English</span>
+                    </h3>
+                    <div class="bg-white p-4 rounded-xl border border-blue-100/80 mb-4 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Title (within 40 chars)</span>
+                        <div id="overallEnTitle" class="font-semibold text-slate-800 text-sm"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-blue-100/80 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Description (within 160 chars)</span>
+                        <div id="overallEnDesc" class="text-xs text-slate-600 leading-relaxed"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ダウンロードエリア -->
+        <div id="downloadArea" class="flex flex-col md:flex-row gap-4 mb-8 hidden">
+            <button id="downloadTagsCsv" class="w-full md:w-1/2 btn-primary text-white font-bold py-4 px-6 rounded-xl flex flex-col items-center justify-center transition">
+                <span class="flex items-center space-x-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>タグ一覧をダウンロード (CSV)</span>
+                </span>
+                <span class="text-[10px] font-normal mt-1 opacity-90">一括登録用フォーマット：01,タグA,タグB...</span>
+            </button>
+            <button id="downloadTextFile" class="w-full md:w-1/2 btn-secondary text-white font-bold py-4 px-6 rounded-xl flex flex-col items-center justify-center transition">
+                <span class="flex items-center space-x-2">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>タイトル・説明文を保存 (.txt)</span>
+                </span>
+                <span class="text-[10px] font-normal mt-1 opacity-90">上記全体設定案をテキストファイルで保存</span>
+            </button>
+        </div>
+
+        <!-- 結果表示セクション -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center">
+                <i data-lucide="list" class="w-5 h-5 text-emerald-600 mr-2"></i>
+                各スタンプのタグ解析結果
+            </h2>
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner-custom">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-slate-55 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="py-4 px-6 w-24 text-center font-bold">番号</th>
+                            <th class="py-4 px-6 text-left font-bold">タグ (最大9個)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultTableBody" class="text-sm divide-y divide-slate-100">
+                        <!-- 解析結果がここに追加されます -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター部分 -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-12">
+        <p class="mb-2">&copy; 2026 異次元ポケット工房</p>
+        <p class="text-[10px]">Product by 異次元ポケット</p>
+    </footer>
+
+    <!-- ナビゲーションおよび個別処理スクリプト -->
+    <script src="js/common.js"></script>
+    <script src="js/linestamptagger.js"></script>
+    <script>
+        // Lucideアイコンの初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
