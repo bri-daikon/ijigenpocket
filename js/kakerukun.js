@@ -422,6 +422,28 @@ function exportHTML() {
                 width: 100%; 
             }
         }
+        .scenario-text-block {
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin: 0.5rem -8px;
+            border: 1px solid transparent;
+        }
+        .scenario-text-block:hover {
+            background-color: rgba(79, 70, 229, 0.08);
+            border-color: rgba(79, 70, 229, 0.35);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+        }
+        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+        .kp-info:hover, .quote:hover, .box-summary:hover, .box-check:hover, .box-spot:hover, .box-search:hover, .box-listen:hover, .box-library:hover, .box-san:hover, .box-secret:hover, .box-gimmick:hover, .box-tendency:hover, .box-custom:hover, .box-special:hover {
+            border-color: rgba(79, 70, 229, 0.6) !important;
+            background-color: rgba(79, 70, 229, 0.08) !important;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+        }
     `;
     const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -439,6 +461,62 @@ function exportHTML() {
     <main>
         ${pagesHtml}
     </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 各 .page-content 内で、連続する p タグを .scenario-text-block でラップする
+            document.querySelectorAll('.page-content').forEach(pageContent => {
+                const children = Array.from(pageContent.children);
+                let currentGroup = null;
+
+                children.forEach(child => {
+                    const isBox = child.matches('.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special');
+                    const isHeading = child.tagName.startsWith('H') || child.classList.contains('h7') || child.classList.contains('h8');
+                    const isDivider = child.classList.contains('divider');
+                    const isTable = child.tagName === 'TABLE';
+                    const isDetails = child.tagName === 'DETAILS';
+
+                    const isParagraph = child.tagName === 'P';
+                    const isEmpty = isParagraph && (child.innerHTML.trim() === '<br>' || child.innerText.trim() === '');
+
+                    if (isParagraph && !isEmpty && !isBox && !isHeading && !isDivider && !isTable && !isDetails) {
+                        if (!currentGroup) {
+                            currentGroup = document.createElement('div');
+                            currentGroup.className = 'scenario-text-block';
+                            pageContent.insertBefore(currentGroup, child);
+                        }
+                        currentGroup.appendChild(child);
+                    } else {
+                        currentGroup = null;
+                    }
+                });
+            });
+
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s ease; z-index: 10000; pointer-events: none;';
+            toast.textContent = 'コピーしました';
+            document.body.appendChild(toast);
+
+            const showToast = () => {
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+            };
+
+            // コピー可能なdiv要素にツールチップを設定
+            document.querySelectorAll('.page-content > div').forEach(el => {
+                el.setAttribute('title', 'クリックでテキストをコピー');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' || e.target.closest('a')) return;
+
+                const div = e.target.closest('.page-content > div');
+                if (div) {
+                    navigator.clipboard.writeText(div.innerText).then(showToast).catch(console.error);
+                    return;
+                }
+            });
+        });
+    </script>
 </body>
 </html>`;
 
