@@ -13,10 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "ScrapKiritan", url: "ScrapKiritan.html" },
         { name: "VividStack", url: "VividStack.html" },
         { name: "LINEスタンプメーカー", url: "LINESTMPkiritoru.html" },
+        { name: "LINEスタンプタグ付け", url: "LineStampTagger.html" },
         { name: "タスク管理", url: "ijigentask.html" },
         { name: "SSCalendar", url: "SSCalendar.html" },
         { name: "HTML比較", url: "HtmlCompare.html" },
-        { name: "バトルマネージャー", url: "BattleManager.html" }
+        { name: "バトルマネージャー", url: "BattleManager.html" },
+        { name: "スケジュールマネージャー", url: "ScheduleManager.html" }
     ];
 
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
