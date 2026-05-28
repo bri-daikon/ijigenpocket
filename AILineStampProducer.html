@@ -167,6 +167,27 @@
             background: #334155;
         }
         .status-ready { background: #10b981; }
+        .toggle-btn {
+            background-color: #334155;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover {
+            background-color: #475569;
+            color: #fff;
+        }
+        .toggle-btn.active {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -177,6 +198,24 @@
         </div>
 
         <div class="grid-panel">
+            <!-- Settings Section -->
+            <div class="flex gap-6 mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700 flex-wrap">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-300">切り抜きグリッド数:</label>
+                    <div class="flex gap-2">
+                        <button id="grid-layout-5x4" onclick="setGridLayout('5x4')" class="toggle-btn active">縦5 × 横4列 (計40枚)</button>
+                        <button id="grid-layout-5x5" onclick="setGridLayout('5x5')" class="toggle-btn">縦5 × 横5列 (計50枚)</button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-300">出力画像タイプ:</label>
+                    <div class="flex gap-2">
+                        <button id="type-stamp" onclick="setOutputType('stamp')" class="toggle-btn active">スタンプ (320x320)</button>
+                        <button id="type-emoji" onclick="setOutputType('emoji')" class="toggle-btn">絵文字 (180x180)</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="upload-section">
                 <div>
                     <label>Grid 1 (Stamps 01-20):</label>
@@ -252,22 +291,99 @@
     </div>
 
     <script>
-        const stampPlan = Array.from({length: 40}, (_, i) => ({
-            id: i + 1,
-            status: 'pending'
-        }));
+        let gridLayout = '5x4';
+        let outputType = 'stamp';
+        let stampPlan = [];
 
-        const resultsContainer = document.getElementById('stamp-results');
-        stampPlan.forEach(s => {
-            const card = document.createElement('div');
-            card.className = 'stamp-card';
-            card.innerHTML = `
-                <canvas id="canvas-${s.id}" width="320" height="320"></canvas>
-                <div>Stamp ${String(s.id).padStart(2, '0')}</div>
-                <div id="status-${s.id}" class="status-badge">PENDING</div>
-            `;
-            resultsContainer.appendChild(card);
-        });
+        function initStampResults() {
+            const resultsContainer = document.getElementById('stamp-results');
+            resultsContainer.innerHTML = '';
+            
+            const cols = (gridLayout === '5x5') ? 5 : 4;
+            const rows = 5;
+            const totalStamps = cols * rows * 2;
+            
+            // アップロードラベルの動的更新
+            const labels = document.querySelectorAll('.upload-section label');
+            if (labels.length >= 2) {
+                labels[0].innerText = `Grid 1 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} 01-${String(cols*rows).padStart(2, '0')}):`;
+                labels[1].innerText = `Grid 2 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(cols*rows + 1).padStart(2, '0')}-${String(totalStamps).padStart(2, '0')}):`;
+            }
+            
+            // プレビューコンテナ見出しの更新
+            const h3_1 = document.querySelector('#preview-container-1 h3');
+            const h3_2 = document.querySelector('#preview-container-2 h3');
+            if (h3_1) h3_1.innerText = `Grid 1 Editor (1-${cols*rows}) - Drag red lines to align`;
+            if (h3_2) h3_2.innerText = `Grid 2 Editor (${cols*rows + 1}-${totalStamps}) - Drag red lines to align`;
+            
+            stampPlan = Array.from({length: totalStamps}, (_, i) => ({
+                id: i + 1,
+                status: 'pending'
+            }));
+
+            stampPlan.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'stamp-card';
+                card.innerHTML = `
+                    <canvas id="canvas-${s.id}" width="320" height="320"></canvas>
+                    <div>${outputType === 'stamp' ? 'Stamp' : 'Emoji'} ${String(s.id).padStart(2, '0')}</div>
+                    <div id="status-${s.id}" class="status-badge">PENDING</div>
+                `;
+                resultsContainer.appendChild(card);
+                
+                if (stampData[s.id]) {
+                    updateStampCanvas(s.id);
+                    const badge = document.getElementById(`status-${s.id}`);
+                    badge.innerText = 'READY';
+                    badge.classList.add('status-ready');
+                    card.onclick = () => openEditor(s.id);
+                }
+            });
+        }
+
+        function setGridLayout(layout) {
+            gridLayout = layout;
+            
+            const btn5x4 = document.getElementById('grid-layout-5x4');
+            const btn5x5 = document.getElementById('grid-layout-5x5');
+            if (layout === '5x4') {
+                btn5x4.classList.add('active');
+                btn5x5.classList.remove('active');
+            } else {
+                btn5x4.classList.remove('active');
+                btn5x5.classList.add('active');
+            }
+            
+            [1, 2].forEach(idx => {
+                const state = gridStates[idx];
+                if (state.img && state.initLines && state.draw) {
+                    state.initLines(state.img.width, state.img.height);
+                    state.draw();
+                }
+            });
+            
+            initStampResults();
+        }
+        window.setGridLayout = setGridLayout;
+
+        function setOutputType(type) {
+            outputType = type;
+            
+            const btnStamp = document.getElementById('type-stamp');
+            const btnEmoji = document.getElementById('type-emoji');
+            if (type === 'stamp') {
+                btnStamp.classList.add('active');
+                btnEmoji.classList.remove('active');
+            } else {
+                btnStamp.classList.remove('active');
+                btnEmoji.classList.add('active');
+            }
+            
+            initStampResults();
+        }
+        window.setOutputType = setOutputType;
+
+
 
         const bgColorPicker = document.getElementById('bg-color-picker');
         const bgColorHex = document.getElementById('bg-color-hex');
@@ -302,9 +418,12 @@
             function initLines(w, h) {
                 state.vLines = [];
                 state.hLines = [];
-                for (let i = 0; i <= 4; i++) state.vLines.push((w / 4) * i);
-                for (let i = 0; i <= 5; i++) state.hLines.push((h / 5) * i);
+                const cols = (gridLayout === '5x5') ? 5 : 4;
+                const rows = 5;
+                for (let i = 0; i <= cols; i++) state.vLines.push((w / cols) * i);
+                for (let i = 0; i <= rows; i++) state.hLines.push((h / rows) * i);
             }
+            state.initLines = initLines;
 
             function draw() {
                 if (!state.img) return;
@@ -322,6 +441,7 @@
                     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
                 });
             }
+            state.draw = draw;
 
             input.onchange = e => {
                 const file = e.target.files[0];
@@ -417,17 +537,21 @@
         }
 
         document.getElementById('process-grid-btn').onclick = async () => {
+            const cols = (gridLayout === '5x5') ? 5 : 4;
+            const rows = 5;
             if (gridStates[1].img) await processGridFile(1, 1);
-            if (gridStates[2].img) await processGridFile(2, 21);
+            if (gridStates[2].img) await processGridFile(2, cols * rows + 1);
             alert('Processing complete!');
         };
 
         async function processGridFile(gridIdx, startId) {
             const state = gridStates[gridIdx];
             const img = state.img;
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 4; col++) {
-                    const id = startId + (row * 4) + col;
+            const cols = (gridLayout === '5x5') ? 5 : 4;
+            const rows = 5;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const id = startId + (row * cols) + col;
                     const canvas = document.getElementById(`canvas-${id}`);
                     if (!canvas) continue;
                     
@@ -676,21 +800,35 @@
 
         document.getElementById('download-all-btn').onclick = async () => {
             const canvas1 = document.getElementById('canvas-1');
+            const isEmoji = (outputType === 'emoji');
+            const cols = (gridLayout === '5x5') ? 5 : 4;
+            const rows = 5;
+            const totalStamps = cols * rows * 2;
+
             if (canvas1 && document.getElementById('status-1').classList.contains('status-ready')) {
-                await downloadResized(canvas1, 240, 240, 'main.png');
+                if (!isEmoji) {
+                    await downloadResized(canvas1, 240, 240, 'main.png');
+                }
                 await downloadResized(canvas1, 96, 74, 'tab.png');
             }
-            for (let i = 1; i <= 40; i++) {
+            for (let i = 1; i <= totalStamps; i++) {
                 const canvas = document.getElementById(`canvas-${i}`);
                 if (canvas && document.getElementById(`status-${i}`).classList.contains('status-ready')) {
-                    const link = document.createElement('a');
-                    link.download = `${String(i).padStart(2, '0')}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                    await new Promise(r => setTimeout(r, 100));
+                    if (isEmoji) {
+                        await downloadResized(canvas, 180, 180, `${String(i).padStart(2, '0')}.png`);
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = `${String(i).padStart(2, '0')}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        await new Promise(r => setTimeout(r, 100));
+                    }
                 }
             }
         };
+
+        // 初期化実行
+        initStampResults();
     </script>
 </body>
 </html>
