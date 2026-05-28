@@ -23,6 +23,7 @@
                 <div class="flex justify-center mt-8 space-x-2 bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto">
                     <button onclick="switchMainTab('editor')" id="main-tab-editor" class="tab-btn active px-6 py-2.5 rounded-xl text-sm font-bold transition-all">スクショエディタ</button>
                     <button onclick="switchMainTab('resizer')" id="main-tab-resizer" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">一括リサイズ</button>
+                    <button onclick="switchMainTab('cropper1280')" id="main-tab-cropper1280" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">1280×670切り抜き</button>
                     <button onclick="switchMainTab('color')" id="main-tab-color" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">カラーツール</button>
                 </div>
             </header>
@@ -142,6 +143,39 @@
                             PNGリサイズして個別保存
                         </button>
                         <div id="batch-status" class="mt-4 text-center text-xs font-bold text-blue-600 hidden"></div>
+                    </div>
+                </div>
+
+                <!-- SECTION: 1280x670 CROPPER -->
+                <div id="view-cropper1280" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-2xl mx-auto flex flex-col items-center">
+                        <div class="flex flex-wrap gap-5 mb-6 justify-center w-full">
+                            <label class="btn-hover bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold cursor-pointer flex items-center gap-3 text-base shadow-xl shadow-slate-900/10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <span>画像を選択 / 貼り付け</span>
+                                <input type="file" id="crop1280-file-input" class="hidden" accept="image/*">
+                            </label>
+                            
+                            <button id="crop1280-exec-btn" class="hidden btn-hover bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 text-base shadow-xl shadow-emerald-500/10">
+                                <span>✂️</span>
+                                <span>1280×670で切り抜いて保存</span>
+                            </button>
+                        </div>
+
+                        <div id="crop1280-drop-zone" class="img-container relative group ring-1 ring-slate-100 w-full min-h-[300px] flex items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <img id="crop1280-image" src="" alt="Cropper 1280" class="hidden max-h-[500px]">
+                            <div id="crop1280-initial-guide" class="flex flex-col items-center justify-center text-center p-12 transition-all duration-500">
+                                <div class="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <p class="text-xl font-bold text-slate-700">画像をドロップまたは貼り付け</p>
+                                <p class="text-slate-400 text-xs mt-2">アスペクト比 1280:670 (約1.91:1) で切り抜きます</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
