@@ -12,6 +12,12 @@ function switchMainTab(tab) {
         activeBtn.classList.add('active');
         activeBtn.classList.remove('text-slate-500');
     }
+
+    if (tab === 'editor' && cropper) {
+        cropper.resize();
+    } else if (tab === 'cropper1280' && cropper1280) {
+        cropper1280.resize();
+    }
 }
 
 // Global scope expose for onclick handlers
@@ -65,6 +71,8 @@ document.addEventListener('paste', (e) => {
                 loadFile(blob);
             } else if (activeTab === 'main-tab-resizer') {
                 addFileToBatch(blob);
+            } else if (activeTab === 'main-tab-cropper1280') {
+                loadCropper1280File(blob);
             }
         }
     }
@@ -288,5 +296,80 @@ if (resetEdit) resetEdit.addEventListener('click', () => { if(originalCroppedIma
 if (downloadButton) {
     downloadButton.addEventListener('click', () => {
         const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `scrap-kiritan-${Date.now()}.png`; a.click();
+    });
+}
+
+// --- 1280x670 Cropper Logic ---
+const crop1280FileInput = document.getElementById('crop1280-file-input');
+const crop1280Image = document.getElementById('crop1280-image');
+const crop1280ExecBtn = document.getElementById('crop1280-exec-btn');
+const crop1280DropZone = document.getElementById('crop1280-drop-zone');
+const crop1280InitialGuide = document.getElementById('crop1280-initial-guide');
+
+let cropper1280 = null;
+let currentCrop1280FileName = 'cropped_image';
+
+function loadCropper1280File(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    currentCrop1280FileName = file.name ? file.name.split('.')[0] : 'cropped_image';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (cropper1280) cropper1280.destroy();
+        crop1280Image.src = e.target.result;
+        crop1280Image.classList.remove('hidden');
+        crop1280InitialGuide.classList.add('hidden');
+        crop1280ExecBtn.classList.remove('hidden');
+        
+        cropper1280 = new Cropper(crop1280Image, {
+            viewMode: 1,
+            aspectRatio: 1280 / 670,
+            autoCropArea: 0.9,
+            responsive: true,
+            restore: false,
+            checkCrossOrigin: false,
+            modal: true,
+            guides: true,
+            highlight: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+if (crop1280FileInput) crop1280FileInput.addEventListener('change', (e) => loadCropper1280File(e.target.files[0]));
+
+if (crop1280DropZone) {
+    crop1280DropZone.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        crop1280DropZone.classList.add('drop-active'); 
+    });
+    crop1280DropZone.addEventListener('dragleave', () => {
+        crop1280DropZone.classList.remove('drop-active');
+    });
+    crop1280DropZone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        crop1280DropZone.classList.remove('drop-active'); 
+        loadCropper1280File(e.dataTransfer.files[0]); 
+    });
+}
+
+if (crop1280ExecBtn) {
+    crop1280ExecBtn.addEventListener('click', () => {
+        if (!cropper1280) return;
+        const croppedCanvas = cropper1280.getCroppedCanvas({
+            width: 1280,
+            height: 670,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        
+        croppedCanvas.toBlob((blob) => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${currentCrop1280FileName}_1280x670.png`;
+            a.click();
+        }, 'image/png');
     });
 }
