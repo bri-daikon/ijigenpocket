@@ -167,7 +167,8 @@ function executeDirectSave() {
         lineLimit: document.getElementById('page-line-limit')?.value || '35',
         charLimit: document.getElementById('page-char-limit')?.value || '40',
         fontFamily: document.getElementById('font-family-select')?.value || 'sans-serif',
-        lineHeight: document.getElementById('line-height-select')?.value || '1.8'
+        lineHeight: document.getElementById('line-height-select')?.value || '1.8',
+        snippets: getSnippets()
     };
     const jsonStr = JSON.stringify(content, null, 2);
     
@@ -226,11 +227,15 @@ function loadProjectFallback(input) {
                     const lhSelect = document.getElementById('line-height-select');
                     if (lhSelect) lhSelect.value = data.lineHeight;
                 }
+                if (data.snippets) {
+                    saveSnippets(data.snippets);
+                }
                 updateEditorStyles();
                 updateTOC(); 
                 updateCharCount();
                 updateEditorWidth();
                 updatePageBreakGuides();
+                renderAllMermaidCharts();
                 saveStatus.textContent = "読み込み完了";
                 saveStatus.classList.remove('text-amber-500');
                 showToast("読み込みました");
@@ -401,7 +406,7 @@ function exportHTML() {
         details { border: 1px solid var(--border-editor); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.02); margin: 1rem 0; break-inside: avoid; }
         summary { cursor: pointer; font-weight: bold; color: var(--accent); }
         
-        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid transparent; clear: both; break-inside: avoid; }
+        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid transparent; clear: both; break-inside: avoid; }
         .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
         .box-secret { border-style: dashed; }
         .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
@@ -435,14 +440,90 @@ function exportHTML() {
             border-color: rgba(79, 70, 229, 0.35);
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
         }
-        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
+        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet {
             cursor: pointer;
             transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
         }
-        .kp-info:hover, .quote:hover, .box-summary:hover, .box-check:hover, .box-spot:hover, .box-search:hover, .box-listen:hover, .box-library:hover, .box-san:hover, .box-secret:hover, .box-gimmick:hover, .box-tendency:hover, .box-custom:hover, .box-special:hover {
+        .kp-info:hover, .quote:hover, .box-summary:hover, .box-check:hover, .box-spot:hover, .box-search:hover, .box-listen:hover, .box-library:hover, .box-san:hover, .box-secret:hover, .box-gimmick:hover, .box-tendency:hover, .box-custom:hover, .box-special:hover, .box-custom-snippet:hover {
             border-color: rgba(79, 70, 229, 0.6) !important;
             background-color: rgba(79, 70, 229, 0.08) !important;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+        }
+        .box-flowchart {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            clear: both;
+            break-inside: avoid;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+        .box-flowchart:hover {
+            border-color: rgba(79, 70, 229, 0.6) !important;
+            background-color: rgba(79, 70, 229, 0.08) !important;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+        }
+        .box-flowchart .flowchart-actions {
+            display: none;
+        }
+        
+        /* キャラクターシートのスタイル */
+        .box-char-sheet {
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            clear: both;
+            break-inside: avoid;
+            font-family: sans-serif;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+        .box-char-sheet input, .box-char-sheet textarea {
+            color: #0f172a !important;
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+            width: 100% !important;
+            outline: none !important;
+            transition: border-color 0.15s !important;
+        }
+        .box-char-sheet input:focus, .box-char-sheet textarea:focus {
+            border-color: #6366f1 !important;
+            background-color: #ffffff !important;
+        }
+        .box-char-sheet .char-stat-input {
+            text-align: center !important;
+            font-weight: bold !important;
+            font-size: 13px !important;
+            padding: 2px 4px !important;
+        }
+        .box-char-sheet .char-stats-grid {
+            display: grid !important;
+            grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            margin-top: 0.25rem !important;
+        }
+        @media (max-width: 640px) {
+            .box-char-sheet .char-stats-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            }
+        }
+        .box-char-sheet .char-skill-value {
+            width: 45px !important;
+            text-align: right !important;
+            font-weight: bold !important;
+        }
+        .box-char-sheet .char-skill-name {
+            font-weight: 500 !important;
         }
     `;
     const htmlContent = `<!DOCTYPE html>
@@ -452,6 +533,12 @@ function exportHTML() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <style>${exportStyles}</style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        });
+    </script>
 </head>
 <body>
     <aside>
@@ -469,7 +556,7 @@ function exportHTML() {
                 let currentGroup = null;
 
                 children.forEach(child => {
-                    const isBox = child.matches('.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special');
+                    const isBox = child.matches('.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-char-sheet');
                     const isHeading = child.tagName.startsWith('H') || child.classList.contains('h7') || child.classList.contains('h8');
                     const isDivider = child.classList.contains('divider');
                     const isTable = child.tagName === 'TABLE';
@@ -501,20 +588,138 @@ function exportHTML() {
                 setTimeout(() => { toast.style.opacity = '0'; }, 1500);
             };
 
-            // コピー可能なdiv要素にツールチップを設定
-            document.querySelectorAll('.page-content > div').forEach(el => {
+            // コピー可能なdiv要素にツールチップを設定 (キャラクターシートは除外)
+            document.querySelectorAll('.page-content > div:not(.box-char-sheet)').forEach(el => {
                 el.setAttribute('title', 'クリックでテキストをコピー');
             });
 
             document.addEventListener('click', (e) => {
                 if (e.target.tagName === 'A' || e.target.closest('a')) return;
+                // インプットやボタン、キャラクターシート関連の要素をクリックした時はコピー処理をスキップ
+                if (e.target.closest('input') || e.target.closest('button') || e.target.closest('textarea')) return;
 
                 const div = e.target.closest('.page-content > div');
+                if (div && div.classList.contains('box-char-sheet')) return; // キャラクターシート自体は除外
                 if (div) {
-                    navigator.clipboard.writeText(div.innerText).then(showToast).catch(console.error);
+                    navigator.clipboard.writeText(div.innerText).then(() => showToast('コピーしました')).catch(console.error);
                     return;
                 }
             });
+
+            // 技能追加
+            window.addSkillToSheet = (sheetId) => {
+                const sheet = document.getElementById(sheetId);
+                if (!sheet) return;
+                const container = sheet.querySelector('#skill-container-' + sheetId.replace('char-sheet-', ''));
+                if (!container) return;
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
+                div.innerHTML = '<input type="text" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute(\'value\', this.value)">' +
+                                '<input type="number" placeholder="初期値" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute(\'value\', this.value)">' +
+                                '<span class="text-[9px] text-slate-400">%</span>' +
+                                '<button onclick="this.parentNode.remove()" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>';
+                container.appendChild(div);
+            };
+
+            // ココフォリアコピー
+            window.copyToCcfolia = (sheetId) => {
+                const sheet = document.getElementById(sheetId);
+                if (!sheet) return;
+                
+                const inputs = sheet.querySelectorAll('.char-sheet-body input');
+                const name = inputs[0].value || '無題の探索者';
+                const job = inputs[1].value || '';
+                const age = inputs[2].value || '';
+                const gender = inputs[3].value || '';
+                const height = inputs[4].value || '';
+                const weight = inputs[5].value || '';
+                const birthday = inputs[6].value || '';
+                const color = inputs[7].value || '';
+                
+                const memo = '職業: ' + job + '\\n' +
+                             '年齢: ' + age + ' / 性別: ' + gender + '\\n' +
+                             '身長: ' + height + ' / 体重: ' + weight + '\\n' +
+                             '誕生日: ' + birthday + '\\n' +
+                             '髪/目の色: ' + color;
+                
+                const stats = sheet.querySelectorAll('.char-stat-input');
+                const str = stats[0].value || '0';
+                const con = stats[1].value || '0';
+                const pow = stats[2].value || '0';
+                const dex = stats[3].value || '0';
+                const app = stats[4].value || '0';
+                const siz = stats[5].value || '0';
+                const int = stats[6].value || '0';
+                const edu = stats[7].value || '0';
+                const san = stats[8].value || '0';
+                
+                const hp = Math.ceil((parseInt(con) + parseInt(siz)) / 2) || 0;
+                const mp = parseInt(pow) || 0;
+                
+                const skillNames = sheet.querySelectorAll('.char-skill-name');
+                const skillValues = sheet.querySelectorAll('.char-skill-value');
+                
+                const commands = [];
+                
+                commands.push('CCB<=' + (parseInt(san) || 0) + ' 【SAN値チェック】');
+                commands.push('CCB<=' + ((parseInt(str) || 0) * 5) + ' 【STR×5】');
+                commands.push('CCB<=' + ((parseInt(con) || 0) * 5) + ' 【CON×5】');
+                commands.push('CCB<=' + ((parseInt(pow) || 0) * 5) + ' 【POW×5】');
+                commands.push('CCB<=' + ((parseInt(dex) || 0) * 5) + ' 【DEX×5】');
+                commands.push('CCB<=' + ((parseInt(app) || 0) * 5) + ' 【APP×5】');
+                commands.push('CCB<=' + ((parseInt(int) || 0) * 5) + ' 【アイデア（INT×5）】');
+                commands.push('CCB<=' + ((parseInt(edu) || 0) * 5) + ' 【知識（EDU×5）】');
+                
+                skillNames.forEach((sNameEl, i) => {
+                    const sName = sNameEl.value.trim();
+                    const sVal = skillValues[i].value.trim();
+                    if (sName) {
+                        commands.push('CCB<=' + (parseInt(sVal) || 0) + ' 【' + sName + '】');
+                    }
+                });
+                
+                const ccfoliaData = {
+                    kind: "character",
+                    data: {
+                        name: name,
+                        memo: memo,
+                        initiatives: {
+                            "DEX": parseInt(dex) || 0
+                        },
+                        params: [
+                            { label: "STR", value: str },
+                            { label: "CON", value: con },
+                            { label: "POW", value: pow },
+                            { label: "DEX", value: dex },
+                            { label: "APP", value: app },
+                            { label: "SIZ", value: siz },
+                            { label: "INT", value: int },
+                            { label: "EDU", value: edu },
+                            { label: "SAN", value: san },
+                            { label: "HP", value: hp.toString() },
+                            { label: "MP", value: mp.toString() }
+                        ],
+                        status: [
+                            { label: "HP", value: hp, max: hp },
+                            { label: "MP", value: mp, max: mp },
+                            { label: "SAN", value: parseInt(san) || 0, max: 99 }
+                        ],
+                        commands: commands.join('\\n')
+                    }
+                };
+                
+                navigator.clipboard.writeText(JSON.stringify(ccfoliaData, null, 2)).then(() => {
+                    if (typeof showToast === 'function') {
+                        showToast("ココフォリア用データをコピーしました！");
+                    } else {
+                        alert("ココフォリア用データ（貼り付け用JSON）をコピーしました！");
+                    }
+                }).catch(err => {
+                    console.error("CCFOLIAコピー失敗", err);
+                    alert("コピーに失敗しました。");
+                });
+            };
         });
     </script>
 </body>
@@ -1050,6 +1255,7 @@ function openTableModal() {
 window.onload = () => {
     document.execCommand('styleWithCSS', false, true);
     document.execCommand('defaultParagraphSeparator', false, 'p');
+    renderSnippetSelector();
     const savedContent = localStorage.getItem('weby_autosave'); 
     const savedTitle = localStorage.getItem('weby_autosave_title');
     if (savedContent) { editor.innerHTML = savedContent; saveStatus.textContent = "ブラウザから復元済み"; }
@@ -1080,7 +1286,7 @@ window.onload = () => {
             sel.addRange(range);
         }
     });
-    updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides();
+    updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides(); renderAllMermaidCharts();
 };
 
 
@@ -1310,10 +1516,44 @@ function exportPDF() {
         details { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.02); margin: 15px 0; break-inside: avoid; }
         summary { cursor: pointer; font-weight: bold; color: #4f46e5; }
         
-        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special { padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid transparent; clear: both; break-inside: avoid; }
+        .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-flowchart { padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid transparent; clear: both; break-inside: avoid; }
         .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
         .box-secret { border-style: dashed; }
         .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
+        .box-flowchart {
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .box-flowchart .flowchart-actions {
+            display: none;
+        }
+        /* キャラクターシートの印刷用スタイル */
+        .box-char-sheet {
+            border: 1px solid #ccd3e0;
+            background: #ffffff;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        .box-char-sheet .char-stats-grid {
+            display: grid !important;
+            grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            margin-top: 0.25rem !important;
+        }
+        @media (max-width: 640px) {
+            .box-char-sheet .char-stats-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            }
+        }
+        .box-char-sheet input, .box-char-sheet textarea {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #0f172a !important;
+        }
         
         @media print {
             body { background: white; }
@@ -1366,3 +1606,580 @@ function updateEditorWidth() {
         wrapper.style.maxWidth = `calc(${maxChars}em + 6rem)`;
     }
 }
+
+/* --- ユーザースニペット管理機能 --- */
+
+// スニペット一覧をlocalStorageから取得
+function getSnippets() {
+    try {
+        const data = localStorage.getItem('weby_snippets');
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error("スニペット取得失敗", e);
+        return [];
+    }
+}
+
+// スニペット一覧をlocalStorageに保存し、UIを更新
+function saveSnippets(snippets) {
+    try {
+        localStorage.setItem('weby_snippets', JSON.stringify(snippets));
+    } catch (e) {
+        console.error("スニペット保存失敗", e);
+    }
+    renderSnippetSelector();
+}
+
+// ツールバーのスニペット選択セレクトボックスを描画
+function renderSnippetSelector() {
+    const selector = document.getElementById('snippet-selector');
+    if (!selector) return;
+    
+    selector.innerHTML = `
+        <option value="">スニペット...</option>
+        <option value="manage">⚙️ 管理...</option>
+    `;
+    
+    const snippets = getSnippets();
+    snippets.forEach(snippet => {
+        const opt = document.createElement('option');
+        opt.value = snippet.id;
+        opt.textContent = snippet.name;
+        selector.appendChild(opt);
+    });
+}
+
+// スニペット選択時の制御
+function handleSnippetSelect(val) {
+    if (!val) return;
+    if (val === 'manage') {
+        openSnippetManageModal();
+    } else {
+        insertSnippet(val);
+    }
+}
+
+// スニペット管理モーダルを開く
+function openSnippetManageModal() {
+    hideSnippetForm();
+    renderSnippetList();
+    openModal('snippet-modal');
+}
+
+// モーダル内に登録済みスニペット一覧を描画
+function renderSnippetList() {
+    const container = document.getElementById('snippet-list-container');
+    if (!container) return;
+    
+    const snippets = getSnippets();
+    if (snippets.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">登録されたスニペットはありません</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    snippets.forEach(snippet => {
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 shadow-sm gap-2";
+        
+        const colorIndicator = `<span class="w-3 h-3 rounded-full inline-block" style="background-color: ${snippet.color || '#3b82f6'}"></span>`;
+        
+        item.innerHTML = `
+            <div class="flex items-center gap-2 overflow-hidden flex-1">
+                ${colorIndicator}
+                <div class="font-bold text-xs text-slate-700 truncate flex-1">${snippet.name}</div>
+                <div class="text-[10px] text-slate-400 shrink-0">【${snippet.label}】</div>
+            </div>
+            <div class="flex gap-1 shrink-0">
+                <button onclick="editSnippet('${snippet.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold transition">編集</button>
+                <button onclick="deleteSnippet('${snippet.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded text-[10px] font-bold transition">削除</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// 編集・作成フォームの表示
+function showSnippetForm(isEdit = false) {
+    document.getElementById('snippet-list-view').classList.add('hidden');
+    document.getElementById('snippet-form-view').classList.remove('hidden');
+    document.getElementById('snippet-form-view').classList.add('flex');
+    
+    if (!isEdit) {
+        document.getElementById('snippet-edit-id').value = '';
+        document.getElementById('snippet-name-input').value = '';
+        document.getElementById('snippet-label-input').value = '';
+        document.getElementById('snippet-color-input').value = '#3b82f6';
+        document.getElementById('snippet-content-input').value = '';
+    }
+}
+
+// 編集・作成フォームの非表示（一覧へ戻る）
+function hideSnippetForm() {
+    document.getElementById('snippet-form-view').classList.remove('flex');
+    document.getElementById('snippet-form-view').classList.add('hidden');
+    document.getElementById('snippet-list-view').classList.remove('hidden');
+}
+
+// スニペット編集開始
+function editSnippet(id) {
+    const snippets = getSnippets();
+    const snippet = snippets.find(s => s.id === id);
+    if (!snippet) return;
+    
+    document.getElementById('snippet-edit-id').value = snippet.id;
+    document.getElementById('snippet-name-input').value = snippet.name;
+    document.getElementById('snippet-label-input').value = snippet.label;
+    document.getElementById('snippet-color-input').value = snippet.color || '#3b82f6';
+    document.getElementById('snippet-content-input').value = snippet.content || '';
+    
+    showSnippetForm(true);
+}
+
+// スニペット削除
+function deleteSnippet(id) {
+    if (!confirm('このスニペットを削除しますか？')) return;
+    const snippets = getSnippets();
+    const filtered = snippets.filter(s => s.id !== id);
+    saveSnippets(filtered);
+    renderSnippetList();
+}
+
+// スニペット保存
+function saveSnippetForm() {
+    const name = document.getElementById('snippet-name-input').value.trim();
+    const label = document.getElementById('snippet-label-input').value.trim();
+    const color = document.getElementById('snippet-color-input').value;
+    const content = document.getElementById('snippet-content-input').value;
+    const editId = document.getElementById('snippet-edit-id').value;
+    
+    if (!name || !label) {
+        alert('スニペット名と表示ラベルを入力してください。');
+        return;
+    }
+    
+    const snippets = getSnippets();
+    if (editId) {
+        const index = snippets.findIndex(s => s.id === editId);
+        if (index !== -1) {
+            snippets[index] = { id: editId, name, label, color, content };
+        }
+    } else {
+        const newId = 'snippet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        snippets.push({ id: newId, name, label, color, content });
+    }
+    
+    saveSnippets(snippets);
+    hideSnippetForm();
+    renderSnippetList();
+}
+
+// スニペット挿入
+function insertSnippet(id) {
+    const snippets = getSnippets();
+    const snippet = snippets.find(s => s.id === id);
+    if (!snippet) return;
+    
+    editor.focus();
+    const selectedHtml = getSelectedHtmlAndRemove();
+    const col = snippet.color || '#3b82f6';
+    
+    const defaultContent = (snippet.content || "内容を入力...").replace(/\n/g, '<br>');
+    const content = selectedHtml || defaultContent;
+    const textColor = darkenColor(col, 0.4);
+    
+    const html = `<div class="box-custom-snippet" data-snippet-id="${snippet.id}" style="border-color:${col}; background-color:${col}11; color:${textColor}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-width: 2px; border-style: solid; clear: both; break-inside: avoid;"><strong>【${snippet.label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
+    document.execCommand('insertHTML', false, html);
+    updateTOC(); autoUpdateUI();
+}
+
+/* --- フローチャート管理機能 (Mermaid.js) --- */
+
+// エディタ内のすべてのフローチャートをレンダリング
+function renderAllMermaidCharts() {
+    const charts = document.querySelectorAll('#editor .box-flowchart');
+    if (charts.length === 0) return;
+
+    let needsRender = false;
+    charts.forEach((chart, index) => {
+        const code = chart.getAttribute('data-mermaid-code');
+        if (!code) return;
+        
+        // ユニークIDを生成
+        const uniqueId = `mermaid-chart-${Date.now()}-${index}`;
+        
+        // 既存のSVGレンダリング結果を破棄し、pre.mermaid要素を再構成する
+        chart.innerHTML = `
+            <pre class="mermaid" id="${uniqueId}">${code}</pre>
+            <div class="flowchart-actions no-print">
+                <button onclick="editFlowchart(this.parentNode.parentNode)" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition">✏️ 編集</button>
+            </div>
+        `;
+        needsRender = true;
+    });
+
+    if (needsRender && typeof mermaid !== 'undefined') {
+        try {
+            mermaid.run({
+                nodes: document.querySelectorAll('#editor .mermaid')
+            });
+        } catch(e) {
+            console.error("Mermaid.js レンダリングエラー", e);
+        }
+    }
+}
+
+// 新規作成用のフローチャートモーダルを開く
+function openFlowchartModal() {
+    saveRange(); // 現在のカーソル位置を保存
+    
+    document.getElementById('flowchart-edit-id').value = '';
+    document.getElementById('flowchart-code-input').value = `graph TD\n  Start[開始] --> End[終了]`;
+    document.getElementById('flowchart-save-btn').textContent = 'エディタに挿入';
+    
+    openModal('flowchart-modal');
+    updateFlowchartPreview();
+}
+
+// テンプレートの適用
+function applyFlowchartTemplate(type) {
+    const textarea = document.getElementById('flowchart-code-input');
+    if (!textarea) return;
+    
+    let code = '';
+    if (type === 'simple') {
+        code = `graph TD\n  Start[オープニング] --> Event1[事件発生]\n  Event1 --> Event2[探索開始]\n  Event2 --> Boss[決戦クライマックス]\n  Boss --> Ending[エンディング]`;
+    } else if (type === 'branch') {
+        code = `graph TD\n  Start[オープニング] --> Branch{ルート分岐}\n  Branch -->|ルートA| RouteA[探索場所A]\n  Branch -->|ルートB| RouteB[探索場所B]\n  RouteA --> Boss[ボス戦]\n  RouteB --> Boss\n  Boss --> End[エンディング]`;
+    } else if (type === 'complex') {
+        code = `graph TD\n  Start[オープニング] --> Event1[探索場所A]\n  Start --> Event2[探索場所B]\n  Event1 --> GetItem[フラグ鍵を入手]\n  GetItem & Event2 --> Boss[決戦]\n  Boss --> End[エンディング]`;
+    }
+    
+    textarea.value = code;
+    updateFlowchartPreview();
+}
+
+// リアルタイムプレビューのレンダリング
+async function updateFlowchartPreview() {
+    const code = document.getElementById('flowchart-code-input').value.trim();
+    const container = document.getElementById('flowchart-preview-rendered');
+    if (!container) return;
+    if (!code) {
+        container.innerHTML = '<span class="text-slate-400">コードを入力してください</span>';
+        return;
+    }
+    
+    const uniqueId = `mermaid-preview-${Date.now()}`;
+    try {
+        if (typeof mermaid !== 'undefined') {
+            const { svg } = await mermaid.render(uniqueId, code);
+            container.innerHTML = svg;
+        } else {
+            container.innerHTML = '<span class="text-slate-400">Mermaid.js が読み込まれていません</span>';
+        }
+    } catch (e) {
+        container.innerHTML = `<span class="text-rose-500 text-xs font-mono whitespace-pre-wrap">${e.message || "構文エラーがあります"}</span>`;
+        const errEl = document.getElementById(`d${uniqueId}`);
+        if (errEl) errEl.remove();
+    }
+}
+
+// プレビュー表示のスロットル処理
+const updateFlowchartPreviewThrottled = throttle(updateFlowchartPreview, 300);
+
+// フローチャートの保存（挿入または更新）
+function saveFlowchart() {
+    const code = document.getElementById('flowchart-code-input').value.trim();
+    const editId = document.getElementById('flowchart-edit-id').value;
+    if (!code) return;
+    
+    if (editId) {
+        // 編集モードでの更新
+        const target = document.getElementById(editId);
+        if (target) {
+            target.setAttribute('data-mermaid-code', code);
+            const uniqueId = `mermaid-chart-${Date.now()}`;
+            target.innerHTML = `
+                <pre class="mermaid" id="${uniqueId}">${code}</pre>
+                <div class="flowchart-actions no-print">
+                    <button onclick="editFlowchart(this.parentNode.parentNode)" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition">✏️ 編集</button>
+                </div>
+            `;
+        }
+    } else {
+        // 新規作成での挿入
+        editor.focus();
+        restoreRange();
+        
+        const targetId = `flowchart-box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const uniqueId = `mermaid-chart-${Date.now()}`;
+        const escapedCode = code.replace(/"/g, '&quot;');
+        
+        const html = `
+            <div id="${targetId}" class="box-flowchart" contenteditable="false" data-mermaid-code="${escapedCode}">
+                <pre class="mermaid" id="${uniqueId}">${code}</pre>
+                <div class="flowchart-actions no-print">
+                    <button onclick="editFlowchart(this.parentNode.parentNode)" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition">✏️ 編集</button>
+                </div>
+            </div>
+            <p><br></p>
+        `;
+        document.execCommand('insertHTML', false, html);
+    }
+    
+    closeModal('flowchart-modal');
+    
+    // レンダリングを即時リフレッシュ
+    setTimeout(() => {
+        renderAllMermaidCharts();
+        autoUpdateUI();
+    }, 50);
+}
+
+// 既存のフローチャート編集開始
+function editFlowchart(el) {
+    if (!el) return;
+    if (!el.id) el.id = `flowchart-box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    saveRange(); // 現在のカーソル位置をバックアップ
+    
+    document.getElementById('flowchart-edit-id').value = el.id;
+    const code = el.getAttribute('data-mermaid-code') || '';
+    document.getElementById('flowchart-code-input').value = code;
+    document.getElementById('flowchart-save-btn').textContent = '更新';
+    
+    openModal('flowchart-modal');
+    updateFlowchartPreview();
+}
+
+/* --- クトゥルフキャラクターシート機能 --- */
+
+// キャラクターシートの新規挿入
+function insertCharacterSheet() {
+    editor.focus();
+    
+    const uniqueId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const sheetId = `char-sheet-${uniqueId}`;
+    const skillContainerId = `skill-container-${uniqueId}`;
+    
+    const html = `
+        <div class="box-char-sheet" contenteditable="false" id="${sheetId}">
+            <div class="char-sheet-header bg-slate-100 p-3 rounded-t-lg border border-slate-200 border-b-0 flex justify-between items-center">
+                <span class="font-bold text-slate-700 text-sm">👤 クトゥルフ神話TRPG キャラクターシート</span>
+                <button onclick="copyToCcfolia('${sheetId}')" class="ccfolia-copy-btn px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition no-print">ココフォリア用データをコピー</button>
+            </div>
+            <div class="char-sheet-body p-4 bg-white border border-slate-200 rounded-b-lg space-y-4">
+                <!-- プロフィール -->
+                <div>
+                    <span class="block text-xs font-bold text-slate-400 mb-1">プロフィール</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <input type="text" placeholder="名前" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="職業" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="年齢" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="性別" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="身長" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="体重" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="誕生日" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        <input type="text" placeholder="髪・目の色" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                    </div>
+                </div>
+                
+                <!-- 能力値 -->
+                <div>
+                    <span class="block text-xs font-bold text-slate-400 mb-1">能力値 (STR, CON, POW, DEX, APP, SIZ, INT, EDU, SAN)</span>
+                    <div class="char-stats-grid grid grid-cols-9 gap-1.5 text-center">
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">STR</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">CON</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">POW</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">DEX</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">APP</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">SIZ</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">INT</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">EDU</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
+                            <div class="text-[9px] font-bold text-slate-500">SAN</div>
+                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 技能リスト -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-slate-400">技能リスト</span>
+                        <button onclick="addSkillToSheet('${sheetId}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-bold transition no-print">＋ 技能追加</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="${skillContainerId}">
+                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                            <input type="text" value="目星" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <input type="number" value="25" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <span class="text-[9px] text-slate-400">%</span>
+                            <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
+                        </div>
+                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                            <input type="text" value="聞き耳" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <input type="number" value="25" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <span class="text-[9px] text-slate-400">%</span>
+                            <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
+                        </div>
+                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                            <input type="text" value="図書館" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <input type="number" value="20" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            <span class="text-[9px] text-slate-400">%</span>
+                            <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p><br></p>
+    `;
+    
+    document.execCommand('insertHTML', false, html);
+    updateTOC(); autoUpdateUI();
+}
+
+// 技能欄の動的追加
+function addSkillToSheet(sheetId) {
+    const sheet = document.getElementById(sheetId);
+    if (!sheet) return;
+    const container = sheet.querySelector('#skill-container-' + sheetId.replace('char-sheet-', ''));
+    if (!container) return;
+    
+    const div = document.createElement('div');
+    div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
+    div.innerHTML = `
+        <input type="text" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+        <input type="number" placeholder="初期値" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+        <span class="text-[9px] text-slate-400">%</span>
+        <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
+    `;
+    container.appendChild(div);
+    autoUpdateUI();
+}
+
+// ココフォリア用キャラクター貼り付けデータの生成とコピー
+function copyToCcfolia(sheetId) {
+    const sheet = document.getElementById(sheetId);
+    if (!sheet) return;
+    
+    const inputs = sheet.querySelectorAll('.char-sheet-body input');
+    const name = inputs[0].value || '無題の探索者';
+    const job = inputs[1].value || '';
+    const age = inputs[2].value || '';
+    const gender = inputs[3].value || '';
+    const height = inputs[4].value || '';
+    const weight = inputs[5].value || '';
+    const birthday = inputs[6].value || '';
+    const color = inputs[7].value || '';
+    
+    const memo = `職業: ${job}\n年齢: ${age} / 性別: ${gender}\n身長: ${height} / 体重: ${weight}\n誕生日: ${birthday}\n髪/目の色: ${color}`;
+    
+    const stats = sheet.querySelectorAll('.char-stat-input');
+    const str = stats[0].value || '0';
+    const con = stats[1].value || '0';
+    const pow = stats[2].value || '0';
+    const dex = stats[3].value || '0';
+    const app = stats[4].value || '0';
+    const siz = stats[5].value || '0';
+    const int = stats[6].value || '0';
+    const edu = stats[7].value || '0';
+    const san = stats[8].value || '0';
+    
+    // HP, MP の自動算出 (HP: (CON+SIZ)/2 切り上げ, MP: POW)
+    const hp = Math.ceil((parseInt(con) + parseInt(siz)) / 2) || 0;
+    const mp = parseInt(pow) || 0;
+    
+    const skillNames = sheet.querySelectorAll('.char-skill-name');
+    const skillValues = sheet.querySelectorAll('.char-skill-value');
+    
+    const skills = [];
+    const commands = [];
+    
+    // 基本ステータスロール
+    commands.push(`CCB<=${parseInt(san) || 0} 【SAN値チェック】`);
+    commands.push(`CCB<=${(parseInt(str) || 0) * 5} 【STR×5】`);
+    commands.push(`CCB<=${(parseInt(con) || 0) * 5} 【CON×5】`);
+    commands.push(`CCB<=${(parseInt(pow) || 0) * 5} 【POW×5】`);
+    commands.push(`CCB<=${(parseInt(dex) || 0) * 5} 【DEX×5】`);
+    commands.push(`CCB<=${(parseInt(app) || 0) * 5} 【APP×5】`);
+    commands.push(`CCB<=${(parseInt(int) || 0) * 5} 【アイデア（INT×5）】`);
+    commands.push(`CCB<=${(parseInt(edu) || 0) * 5} 【知識（EDU×5）】`);
+    
+    // 技能ロールの追加
+    skillNames.forEach((sNameEl, i) => {
+        const sName = sNameEl.value.trim();
+        const sVal = skillValues[i].value.trim();
+        if (sName) {
+            skills.push({ label: sName, value: sVal });
+            commands.push(`CCB<=${parseInt(sVal) || 0} 【${sName}】`);
+        }
+    });
+    
+    // ココフォリア互換JSONオブジェクト
+    const ccfoliaData = {
+        kind: "character",
+        data: {
+            name: name,
+            memo: memo,
+            initiatives: {
+                "DEX": parseInt(dex) || 0
+            },
+            params: [
+                { label: "STR", value: str },
+                { label: "CON", value: con },
+                { label: "POW", value: pow },
+                { label: "DEX", value: dex },
+                { label: "APP", value: app },
+                { label: "SIZ", value: siz },
+                { label: "INT", value: int },
+                { label: "EDU", value: edu },
+                { label: "SAN", value: san },
+                { label: "HP", value: hp.toString() },
+                { label: "MP", value: mp.toString() }
+            ],
+            status: [
+                { label: "HP", value: hp, max: hp },
+                { label: "MP", value: mp, max: mp },
+                { label: "SAN", value: parseInt(san) || 0, max: 99 }
+            ],
+            commands: commands.join('\n')
+        }
+    };
+    
+    navigator.clipboard.writeText(JSON.stringify(ccfoliaData, null, 2)).then(() => {
+        showToast("ココフォリア用データをコピーしました！");
+    }).catch(err => {
+        console.error("CCFOLIAコピー失敗", err);
+        alert("コピーに失敗しました。");
+    });
+}
+
+// グローバルスコープバインド
+window.insertCharacterSheet = insertCharacterSheet;
+window.addSkillToSheet = addSkillToSheet;
+window.copyToCcfolia = copyToCcfolia;
