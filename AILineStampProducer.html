@@ -305,9 +305,10 @@
             
             // アップロードラベルの動的更新
             const labels = document.querySelectorAll('.upload-section label');
+            const padLen = (outputType === 'emoji') ? 3 : 2;
             if (labels.length >= 2) {
-                labels[0].innerText = `Grid 1 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} 01-${String(cols*rows).padStart(2, '0')}):`;
-                labels[1].innerText = `Grid 2 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(cols*rows + 1).padStart(2, '0')}-${String(totalStamps).padStart(2, '0')}):`;
+                labels[0].innerText = `Grid 1 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(1).padStart(padLen, '0')}-${String(cols*rows).padStart(padLen, '0')}):`;
+                labels[1].innerText = `Grid 2 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(cols*rows + 1).padStart(padLen, '0')}-${String(totalStamps).padStart(padLen, '0')}):`;
             }
             
             // プレビューコンテナ見出しの更新
@@ -326,7 +327,7 @@
                 card.className = 'stamp-card';
                 card.innerHTML = `
                     <canvas id="canvas-${s.id}" width="320" height="320"></canvas>
-                    <div>${outputType === 'stamp' ? 'Stamp' : 'Emoji'} ${String(s.id).padStart(2, '0')}</div>
+                    <div>${outputType === 'stamp' ? 'Stamp' : 'Emoji'} ${String(s.id).padStart(padLen, '0')}</div>
                     <div id="status-${s.id}" class="status-badge">PENDING</div>
                 `;
                 resultsContainer.appendChild(card);
@@ -815,7 +816,7 @@
                 const canvas = document.getElementById(`canvas-${i}`);
                 if (canvas && document.getElementById(`status-${i}`).classList.contains('status-ready')) {
                     if (isEmoji) {
-                        await downloadResized(canvas, 180, 180, `${String(i).padStart(2, '0')}.png`);
+                        await downloadResized(canvas, 180, 180, `${String(i).padStart(3, '0')}.png`);
                     } else {
                         const link = document.createElement('a');
                         link.download = `${String(i).padStart(2, '0')}.png`;
