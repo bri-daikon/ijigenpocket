@@ -8,6 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/kakerukun.css">
+    <!-- Mermaid.js for flowcharts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+    </script>
 </head>
 <body data-theme="standard">
 
@@ -53,6 +58,97 @@
             <div id="table-grid-container"></div>
             <div class="mt-4 pt-4 border-t border-slate-100 flex justify-center">
                 <button onclick="closeModal('table-modal')" class="px-4 py-2 text-slate-500 text-sm transition">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="snippet-modal" class="modal-overlay no-print text-slate-900">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[85vh]">
+            <h3 class="text-lg font-bold mb-3">スニペット管理</h3>
+            
+            <!-- スニペット一覧表示エリア -->
+            <div id="snippet-list-view" class="flex-1 flex flex-col min-h-0">
+                <div class="flex-1 overflow-y-auto mb-4 border border-slate-100 rounded-lg p-2 bg-slate-50 space-y-2 min-h-[150px]" id="snippet-list-container">
+                    <!-- JavaScriptで動的に描画 -->
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <button onclick="showSnippetForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">➕ 新規スニペット</button>
+                    <button onclick="closeModal('snippet-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">閉じる</button>
+                </div>
+            </div>
+
+            <!-- スニペット作成・編集フォームエリア (初期状態は非表示) -->
+            <div id="snippet-form-view" class="hidden flex flex-col min-h-0">
+                <input type="hidden" id="snippet-edit-id">
+                <div class="space-y-4 overflow-y-auto pr-1 mb-4 flex-1">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">スニペット名 (メニュー表示用)</label>
+                        <input type="text" id="snippet-name-input" placeholder="例: NPCステータス" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">表示ラベル (挿入時のタイトル)</label>
+                        <input type="text" id="snippet-label-input" placeholder="例: NPC" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">枠・ハイライトの色</label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="snippet-color-input" value="#3b82f6" class="w-8 h-8 border-none cursor-pointer bg-transparent">
+                            <span class="text-xs text-slate-500 font-mono">カラーピッカーで選択してください</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">デフォルト本文 (改行も反映されます)</label>
+                        <textarea id="snippet-content-input" rows="5" placeholder="名前：&#10;STR:  / CON:  / POW:" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm outline-none focus:border-indigo-400 font-mono"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button onclick="hideSnippetForm()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">キャンセル</button>
+                    <button onclick="saveSnippetForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="flowchart-modal" class="modal-overlay no-print text-slate-900">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-full mx-4 flex flex-col max-h-[90vh]">
+            <h3 class="text-lg font-bold mb-3">フローチャート作成・編集</h3>
+            
+            <input type="hidden" id="flowchart-edit-id">
+            
+            <div class="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
+                <!-- 左ペイン: テンプレート＆エディタ -->
+                <div class="w-full md:w-1/2 flex flex-col gap-3 min-h-0">
+                    <div>
+                        <span class="block text-xs font-bold text-slate-400 mb-1">ひな形（テンプレート）</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button onclick="applyFlowchartTemplate('simple')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold transition">直線ルート</button>
+                            <button onclick="applyFlowchartTemplate('branch')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold transition">分岐ルート</button>
+                            <button onclick="applyFlowchartTemplate('complex')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold transition">合流フラグ</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col min-h-0">
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Mermaid 進行コード</label>
+                        <textarea id="flowchart-code-input" class="w-full flex-1 bg-slate-950 text-slate-200 border border-slate-800 rounded p-2.5 text-xs outline-none focus:border-indigo-500 font-mono resize-none" oninput="updateFlowchartPreviewThrottled()"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 右ペイン: プレビュー -->
+                <div class="w-full md:w-1/2 flex flex-col min-h-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4">
+                    <span class="block text-xs font-bold text-slate-400 mb-1">リアルタイムプレビュー</span>
+                    <div id="flowchart-preview-container" class="flex-1 overflow-auto bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
+                        <!-- レンダリングされたSVGがここに挿入される -->
+                        <div id="flowchart-preview-rendered"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-100 shrink-0">
+                <span class="text-[10px] text-slate-400">Mermaid記法で記述できます。矢印 `-->` でノードを繋ぎます。</span>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('flowchart-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">キャンセル</button>
+                    <button id="flowchart-save-btn" onclick="saveFlowchart()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition">エディタに挿入</button>
+                </div>
             </div>
         </div>
     </div>
@@ -166,6 +262,10 @@
                                 <span id="current-font-size-display" class="text-[10px] font-bold min-w-[20px] text-center">16</span>
                                 <button onclick="changeSelectionFontSize(2)" class="w-6 h-6 hover:bg-slate-100 text-xs rounded" title="大きく">＋</button>
                             </div>
+                            <select id="snippet-selector" onchange="handleSnippetSelect(this.value); this.selectedIndex=0;" class="bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none ml-1">
+                                <option value="">スニペット...</option>
+                                <option value="manage">⚙️ 管理...</option>
+                            </select>
                         </div>
 
                         <div class="flex items-center gap-1 bg-white border border-slate-200 rounded px-1">
@@ -219,6 +319,8 @@
                             <button onclick="insertKPInfo()" class="px-2 h-7 border border-yellow-300 bg-yellow-50 rounded text-[10px] text-yellow-800 font-bold">📝 KP</button>
                             <button onclick="insertQuote()" class="px-2 h-7 border border-slate-300 bg-slate-50 rounded text-[10px] text-slate-700 font-bold">💬 引用</button>
                             <button onclick="openTableModal()" class="px-2 h-7 border border-slate-300 bg-white rounded text-[10px] font-bold">📊 表</button>
+                            <button onclick="openFlowchartModal()" class="px-2 h-7 border border-indigo-300 bg-indigo-50 rounded text-[10px] text-indigo-700 font-bold" title="フローチャートを挿入">📊 フロー</button>
+                            <button onclick="insertCharacterSheet()" class="px-2 h-7 border border-emerald-300 bg-emerald-50 rounded text-[10px] text-emerald-800 font-bold" title="キャラクターシートを挿入">👤 キャラ</button>
                         </div>
 
                         <div class="flex flex-wrap gap-1 border-l pl-2">
