@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'emp_pm',
             name: 'アリス',
             role: 'プロダクトマネージャー',
-            department: 'planning',
+            department: 'linestamp',
             avatar: 'PM',
             description: 'エモ・クラゲ 40種の画像生成が完了。新設された自作エディタによる、精密な余白調整（10pxルール）と透過処理の最終工程を進行中。',
             status: '完了',
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'emp_designer',
             name: 'ボブ',
             role: 'UI/UXデザイナー',
-            department: 'design',
+            department: 'linestamp',
             avatar: 'Designer',
             description: '4x5レイアウトに最適化されたエモ・クラゲ40ポーズ of 色彩・デザインを確定させました。資産として登録済み。',
             status: '完了',
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'emp_developer',
             name: 'チャーリー',
             role: 'リードエンジニア',
-            department: 'development',
+            department: 'linestamp',
             avatar: 'Developer',
             description: '『AILineStampProducer』に強力な個別エディタ、Undo機能、精密ガイドを実装。外部ソフト不要の完結型制作環境へと進化させました。',
             status: '待機中',
@@ -40,12 +40,67 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'emp_marketer',
             name: 'デイヴ',
             role: 'マーケティングスペシャリスト',
-            department: 'marketing',
+            department: 'linestamp',
             avatar: 'Marketer',
             description: 'SNSでのトレンド分析を行い、次の製品의 ターゲット層を特定しています。',
             status: '分析中',
             progress: 95,
             task: '市場調査'
+        },
+        {
+            id: 'emp_emoji_designer',
+            name: 'エマ',
+            role: '絵文字デザイナー',
+            department: 'emoji',
+            avatar: 'EmojiDesigner',
+            description: '新規「絵文字部門」の立ち上げメンバー。感情表現豊かな絵文字パックのデザインを設計中。',
+            status: '考案中',
+            progress: 40,
+            task: '絵文字ラフデザイン'
+        },
+        {
+            id: 'emp_emoji_developer',
+            name: 'フェリックス',
+            role: '絵文字プログラマー',
+            department: 'emoji',
+            avatar: 'EmojiDeveloper',
+            description: '新規「絵文字部門」の立ち上げメンバー。キーボードアプリやチャットアプリ用の絵文字挿入エンジンの開発を担当。',
+            status: 'コーディング中',
+            progress: 30,
+            task: '挿入エンジンの実装'
+        },
+        {
+            id: 'emp_trpg_planner',
+            name: 'ガクト',
+            role: 'TRPGシナリオ構成者',
+            department: 'trpg_scenario',
+            avatar: 'TRPGPlanner',
+            description: '新規「TRPGシナリオ構成担当部門」の立ち上げメンバー。シナリオ全体のプロット設計と分岐ルートの整合性確認を担当。',
+            status: 'オンライン',
+            progress: 80,
+            task: 'プロット構成案作成'
+        },
+        {
+            id: 'emp_trpg_writer',
+            name: 'ヒカリ',
+            role: 'TRPGシナリオライター',
+            department: 'trpg_scenario',
+            avatar: 'TRPGWriter',
+            description: '新規「TRPGシナリオ構成担当部門」の執筆コア。NPCの台詞回しや描写テキストの肉付けを得意とする。',
+            status: 'オンライン',
+            progress: 70,
+            task: 'イベントテキスト執筆'
+        },
+        {
+            id: 'emp_trpg_editor',
+            name: 'ミヤビ',
+            role: 'TRPGシナリオ校正者',
+            department: 'trpg_scenario',
+            avatar: 'TRPGEditor',
+            description: '新規「TRPGシナリオ構成担当部門」の品質保証。表記揺れのチェックや、システムルールとの整合性確認を担当。',
+            status: '待機中',
+            progress: 100,
+            task: '校正エンジン設定完了'
         }
     ];
 
@@ -55,7 +110,64 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('aico_employees', JSON.stringify(defaultEmployees));
             return defaultEmployees;
         }
-        return JSON.parse(stored);
+        let employees = JSON.parse(stored);
+        
+        let migrated = false;
+        employees = employees.map(emp => {
+            if (['planning', 'development', 'design', 'marketing'].includes(emp.department)) {
+                emp.department = 'linestamp';
+                migrated = true;
+            }
+            return emp;
+        });
+
+        const hasEmma = employees.some(emp => emp.id === 'emp_emoji_designer');
+        const hasFelix = employees.some(emp => emp.id === 'emp_emoji_developer');
+        const hasGakuto = employees.some(emp => emp.id === 'emp_trpg_planner');
+        const hasHikari = employees.some(emp => emp.id === 'emp_trpg_writer');
+        const hasMiyabi = employees.some(emp => emp.id === 'emp_trpg_editor');
+
+        if (!hasEmma) {
+            const emma = defaultEmployees.find(emp => emp.id === 'emp_emoji_designer');
+            if (emma) {
+                employees.push(emma);
+                migrated = true;
+            }
+        }
+        if (!hasFelix) {
+            const felix = defaultEmployees.find(emp => emp.id === 'emp_emoji_developer');
+            if (felix) {
+                employees.push(felix);
+                migrated = true;
+            }
+        }
+        if (!hasGakuto) {
+            const gakuto = defaultEmployees.find(emp => emp.id === 'emp_trpg_planner');
+            if (gakuto) {
+                employees.push(gakuto);
+                migrated = true;
+            }
+        }
+        if (!hasHikari) {
+            const hikari = defaultEmployees.find(emp => emp.id === 'emp_trpg_writer');
+            if (hikari) {
+                employees.push(hikari);
+                migrated = true;
+            }
+        }
+        if (!hasMiyabi) {
+            const miyabi = defaultEmployees.find(emp => emp.id === 'emp_trpg_editor');
+            if (miyabi) {
+                employees.push(miyabi);
+                migrated = true;
+            }
+        }
+
+        if (migrated) {
+            localStorage.setItem('aico_employees', JSON.stringify(employees));
+        }
+
+        return employees;
     }
 
     function saveEmployees(employees) {
@@ -148,9 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Map departments to colors
             let deptColor = 'var(--primary-color)';
-            if (emp.department === 'development') deptColor = 'var(--secondary-color)';
-            if (emp.department === 'design') deptColor = 'var(--accent-color)';
-            if (emp.department === 'marketing') deptColor = 'var(--success)';
+            if (emp.department === 'linestamp') deptColor = 'var(--primary-color)';
+            if (emp.department === 'emoji') deptColor = 'var(--accent-color)';
+            if (emp.department === 'trpg_scenario') deptColor = 'var(--secondary-color)';
 
             card.innerHTML = `
                 <div class="card-header">
@@ -190,10 +302,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Map departments to labels
             const deptLabels = {
-                planning: '企画部門 (Planning)',
-                development: '開発部門 (Development)',
-                design: 'デザイン部門 (Design)',
-                marketing: 'マーケティング部門 (Marketing)'
+                linestamp: 'LINEスタンプ部門 (Line Stamp)',
+                emoji: '絵文字部門 (Emoji)',
+                trpg_scenario: 'TRPGシナリオ構成担当部門 (TRPG Scenario)'
             };
 
             card.innerHTML = `
@@ -216,10 +327,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="form-group" style="margin-bottom: 0;">
                         <label style="font-size: 0.75rem; color: var(--text-dim);">部門アサイン</label>
                         <select class="form-control dept-assign-select" data-id="${emp.id}" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
-                            <option value="planning" ${emp.department === 'planning' ? 'selected' : ''}>企画部門</option>
-                            <option value="development" ${emp.department === 'development' ? 'selected' : ''}>開発部門</option>
-                            <option value="design" ${emp.department === 'design' ? 'selected' : ''}>デザイン部門</option>
-                            <option value="marketing" ${emp.department === 'marketing' ? 'selected' : ''}>マーケティング部門</option>
+                            <option value="linestamp" ${emp.department === 'linestamp' ? 'selected' : ''}>LINEスタンプ部門</option>
+                            <option value="emoji" ${emp.department === 'emoji' ? 'selected' : ''}>絵文字部門</option>
+                            <option value="trpg_scenario" ${emp.department === 'trpg_scenario' ? 'selected' : ''}>TRPGシナリオ構成担当部門</option>
                         </select>
                     </div>
                 </div>
@@ -312,10 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Group employees by department
         const depts = {
-            planning: [],
-            development: [],
-            design: [],
-            marketing: []
+            linestamp: [],
+            emoji: [],
+            trpg_scenario: []
         };
 
         employees.forEach(emp => {
@@ -324,9 +433,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Find primary PM (from planning dept)
-        const planningLeader = depts.planning.length > 0 ? depts.planning[0] : null;
-        const otherPlanners = depts.planning.length > 1 ? depts.planning.slice(1) : [];
+        // Find primary PM / Leader (from linestamp dept)
+        const linestampLeader = depts.linestamp.length > 0 ? depts.linestamp.find(e => e.role.includes('マネージャー') || e.role.includes('PM')) || depts.linestamp[0] : null;
+        const otherLinestamp = depts.linestamp.filter(e => e !== linestampLeader);
 
         // Build HTML
         let html = '';
@@ -345,17 +454,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Level 2: PM (Planning Department)
-        if (planningLeader) {
+        // Level 2: PM (LINE Stamp Department Leader)
+        if (linestampLeader) {
             html += `
                 <div class="org-level-2">
                     <div class="org-node pm">
                         <div class="avatar-small" style="border: 2px solid var(--primary-color);">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${planningLeader.avatar || planningLeader.name}" style="width:100%;height:100%;object-fit:cover;">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${linestampLeader.avatar || linestampLeader.name}" style="width:100%;height:100%;object-fit:cover;">
                         </div>
                         <div class="org-node-info">
-                            <h4>${planningLeader.name}</h4>
-                            <p>${planningLeader.role}</p>
+                            <h4>${linestampLeader.name}</h4>
+                            <p>${linestampLeader.role}</p>
                         </div>
                     </div>
             `;
@@ -369,13 +478,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="org-node-info">
                             <h4>PM 未アサイン</h4>
-                            <p>企画部門長</p>
+                            <p>LINEスタンプ部門長</p>
                         </div>
                     </div>
             `;
         }
 
-        // Level 3: Department Children (Development, Design, Marketing, Extra Planners)
+        // Level 3: Department Children (LINE Stamp members, Emoji members)
         html += `
                 <div class="org-children">
         `;
@@ -421,19 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return branchHtml;
         };
 
-        // Planning members (excluding primary leader)
-        if (otherPlanners.length > 0) {
-            html += generateDeptBranch('企画部門 (企画員)', otherPlanners, '--primary-color');
-        }
+        // LINE Stamp members (excluding primary leader)
+        html += generateDeptBranch('LINEスタンプ部門 (LINE Stamp)', otherLinestamp, '--primary-color');
 
-        // Development branch
-        html += generateDeptBranch('開発部門 (Development)', depts.development, '--secondary-color');
+        // Emoji branch
+        html += generateDeptBranch('絵文字部門 (Emoji)', depts.emoji, '--accent-color');
 
-        // Design branch
-        html += generateDeptBranch('デザイン部門 (Design)', depts.design, '--accent-color');
-
-        // Marketing branch
-        html += generateDeptBranch('マーケティング部門 (Marketing)', depts.marketing, '--success');
+        // TRPG Scenario branch
+        html += generateDeptBranch('TRPGシナリオ構成担当部門 (TRPG Scenario)', depts.trpg_scenario, '--secondary-color');
 
         html += `
                 </div>
@@ -459,30 +563,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // Predefined Meeting Scenarios
     const scenarios = {
         stamp: [
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: 'みなさん、新しくアップグレードされた「AIスタンプ工場」の制作自動化プロセスについて、現在の進捗と改善点を議論しましょう。' },
-            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'design', text: 'アバターの余白と透過処理に関して、10pxルールを視覚的にガイドするUI部品をスタンプエディタ側に新規作成しました。直感的になったと思います！' },
-            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'development', text: 'デザイン側の提案を受けて、エディタエンジンに自動透過プレビュー機能と、一元的なスタンプ切り出しトリミング処理を実装しました。外部ソフトは不要です。' },
-            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'marketing', text: '素晴らしいですね。特に外部の画像編集ソフトを使わずにブラウザだけで透過・サイズ調整が完了する点は、SNSでバズるキラー機能になります！' },
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: '素晴らしい進捗です。この自動化フローを『AILineStampProducer』の標準コアモジュールとして統合して、リリースを急ぎましょう！' }
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: 'みなさん、新しくアップグレードされた「AIスタンプ工場」の制作自動化プロセスについて、現在の進捗と改善点を議論しましょう。' },
+            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'アバターの余白と透過処理に関して、10pxルールを視覚的にガイドするUI部品をスタンプエディタ側に新規作成しました。直感的になったと思います！' },
+            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: 'デザイン側の提案を受けて、エディタエンジンに自動透過プレビュー機能と、一元的なスタンプ切り出しトリミング処理を実装しました。外部ソフトは不要です。' },
+            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: '素晴らしいですね。特に外部の画像編集ソフトを使わずにブラウザだけで透過・サイズ調整が完了する点は、SNSでバズるキラー機能になります！' },
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '素晴らしい進捗です。この自動化フローを『AILineStampProducer』の標準コアモジュールとして統合して、リリースを急ぎましょう！' }
         ],
         kakeru: [
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: '「シナリオ書けるくん」のUI/UX改善について、各自からアイデアを出してください。' },
-            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'design', text: '長時間の執筆でも疲れにくいよう、ダストカラーのフォントとガラス調カードをより落ち着いた透過比率（0.7）に調整するテーマ設定を追加したいです。' },
-            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'development', text: 'それであれば、設定情報もローカルストレージで保存して永続化できるように対応します。文字数カウンターのリアルタイム処理の最適化も同時に完了しています。' },
-            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'marketing', text: 'TRPGシナリオ執筆者に刺さるよう、キャラクター発言整形ツールである『LStylist』とワンクリックで連動できるパッケージとしてアピールしましょう！' },
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: '良い戦略ですね。シナリオ執筆とログ整形をシームレスにつなぐ、TRPGクリエイター向けトータルワークフローとして打ち出します。' }
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '「シナリオ書けるくん」のUI/UX改善について、各自からアイデアを出してください。' },
+            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: '長時間の執筆でも疲れにくいよう、ダストカラーのフォントとガラス調カードをより落ち着いた透過比率（0.7）に調整するテーマ設定を追加したいです。' },
+            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: 'それであれば、設定情報もローカルストレージで保存して永続化できるように対応します。文字数カウンターのリアルタイム処理の最適化も同時に完了しています。' },
+            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: 'TRPGシナリオ執筆者に刺さるよう、キャラクター発言整形ツールである『LStylist』とワンクリックで連動できるパッケージとしてアピールしましょう！' },
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '良い戦略ですね。シナリオ執筆とログ整形をシームレスにつなぐ、TRPGクリエイター向けトータルワークフローとして打ち出します。' }
         ],
         marketing: [
-            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'marketing', text: '次期ツールのリリースに向けて、SNSの反応を最大化するための施策案を提案します。開発チームとデザインチームにも協力してほしい部分があります。' },
-            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'design', text: 'プロモーション用のバナーやアイキャッチに、エモ・クラゲのアセットを全面に押し出したネオンブルーのビジュアルを用意できますよ。' },
-            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'development', text: '開発側としては、LPの表示速度を最適化するためにCSSグラデーションとSVGロゴを活用して、画像の読み込み遅延（Lazy Load）を徹底します。' },
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: '素晴らしい。デイヴ、このプロモーションパッケージを次のアップデート公開と同時に展開しましょう。事前のアナウンススケジュールを引いておきます。' }
+            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: '次期ツールのリリースに向けて、SNSの反応を最大化するための施策案を提案します。開発チームとデザインチームにも協力してほしい部分があります。' },
+            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'プロモーション用のバナーやアイキャッチに、エモ・クラゲのアセットを全面に押し出したネオンブルーのビジュアルを用意できますよ。' },
+            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: '開発側としては、LP of 表示速度を最適化するためにCSSグラデーションとSVGロゴを活用して、画像の読み込み遅延（Lazy Load）を徹底します。' },
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '素晴らしい。デイヴ、このプロモーションパッケージを次のアップデート公開と同時に展開しましょう。事前のアナウンススケジュールを引いておきます。' }
         ],
         schedule: [
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'planning', text: '新ツール「スケジュールマネージャー」のブロック型予定配置と、既存カレンダー（SSCalendar）との機能重複を避けるためのポジショニングについて。' },
-            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'development', text: 'SSCalendarは日付単位の簡潔なToDo志向、スケジュールマネージャーは場所と時間帯（ブロック）のドラッグ管理という棲み分けにしました。エンジン側でデータ連携も可能です。' },
-            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'design', text: 'デザイン的にも、スケジュールマネージャーはガントチャートやタイムラインの視認性を重視し、SSCalendarは月間グリッドをベースにミニマルにまとめました。' },
-            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'marketing', text: '「ライトに予定を俯瞰するSSCalendar」と「タスク＆タイムブロックを緻密に組むプランナー」という形で対比して、ビジネス用とクリエイター用に切り分け紹介します。' }
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '新ツール「スケジュールマネージャー」のブロック型予定配置と、既存カレンダー（SSCalendar）との機能重複を避けるためのポジショニングについて。' },
+            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: 'SSCalendarは日付単位の簡潔なToDo志向、スケジュールマネージャーは場所と時間帯（ブロック）のドラッグ管理という棲み分けにしました。エンジン側でデータ連携も可能です。' },
+            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'デザイン的にも、スケジュールマネージャーはガントチャートやタイムラインの視認性を重視し、SSCalendarは月間グリッドをベースにミニマルにまとめました。' },
+            { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: '「ライトに予定を俯瞰するSSCalendar」と「タスク＆タイムブロックを緻密に組むプランナー」という形で対比して、ビジネス用とクリエイター用に切り分け紹介します。' }
+        ],
+        emoji: [
+            { sender: 'エマ', role: '絵文字デザイナー', avatar: 'EmojiDesigner', dept: 'emoji', text: 'CEO！新設された「絵文字部門」の初ミーティングです。現在、感情表現が豊かな新しい絵文字パックのデザインを制作しています。' },
+            { sender: 'フェリックス', role: '絵文字プログラマー', avatar: 'EmojiDeveloper', dept: 'emoji', text: '開発側では、キーボードやチャット画面で絵文字をスムーズに検索・挿入できる軽量な挿入エンジンのプロトタイプを開発中です。' },
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '絵文字部門の立ち上げ、順調そうですね。LINEスタンプ部門で培ったアセット管理や透過処理のノウハウはいつでも共有しますよ！' },
+            { sender: 'エマ', role: '絵文字デザイナー', avatar: 'EmojiDesigner', dept: 'emoji', text: 'ありがとうございます、アリスさん！スタンプの画像サイズやフォーマット調整の自動化エンジンは、絵文字制作でも大いに活用できそうです。' },
+            { sender: 'フェリックス', role: '絵文字プログラマー', avatar: 'EmojiDeveloper', dept: 'emoji', text: 'そうですね。APIの共通化などを進めて、両部門でシナジーを生み出せるような設計を目指します。' }
+        ],
+        trpg_scenario: [
+            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: 'CEO、新設された「TRPGシナリオ構成担当部門」のミーティングを開始します。現在、新作の複数ルート分岐型シナリオのプロット構成を設計しています。' },
+            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'プロットに沿って、NPCのセリフやイベントの情景描写を執筆しています。特にクライマックスの分岐シーンでの演出に力を入れています！' },
+            { sender: 'ミヤビ', role: 'TRPGシナリオ校正者', avatar: 'TRPGEditor', dept: 'trpg_scenario', text: '執筆されたテキストの表記揺れのチェックと、TRPGのルールブックのゲームメカニクスとの整合性を確認する校正フローを設定しました。' },
+            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: '執筆と校正がシームレスに回るよう、「シナリオ書けるくん」用のテンプレート開発も進めていきたいですね。' },
+            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'それは助かります！専用テンプレートがあれば、より執筆に集中できます。' }
         ]
     };
 
@@ -580,6 +698,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendSpeechMessage(speech) {
         // Map departments to colors
         const colors = {
+            linestamp: 'var(--primary-color)',
+            emoji: 'var(--accent-color)',
+            trpg_scenario: 'var(--secondary-color)',
             planning: 'var(--primary-color)',
             development: 'var(--secondary-color)',
             design: 'var(--accent-color)',
