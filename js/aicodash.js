@@ -101,6 +101,28 @@ document.addEventListener('DOMContentLoaded', () => {
             status: '待機中',
             progress: 100,
             task: '校正エンジン設定完了'
+        },
+        {
+            id: 'emp_trpg_map',
+            name: 'カイ',
+            role: 'TRPGマップデザイナー',
+            department: 'trpg_scenario',
+            avatar: 'TRPGMapDesigner',
+            description: '「TRPGシナリオ構成担当部門」の空間設計士。探索マップやダンジョンのグリッド配置、見取り図のデザインを担当。',
+            status: 'オンライン',
+            progress: 90,
+            task: 'マッププロトタイプ作成'
+        },
+        {
+            id: 'emp_trpg_graphic',
+            name: 'ユウ',
+            role: 'TRPGグラフィックデザイナー',
+            department: 'trpg_scenario',
+            avatar: 'TRPGGraphicDesigner',
+            description: '「TRPGシナリオ構成担当部門」のビジュアル担当。トレーラー画像やNPCの立ち絵、セッション用背景イラストの作成を担当。',
+            status: 'オンライン',
+            progress: 85,
+            task: 'イメージイラスト制作'
         }
     ];
 
@@ -126,6 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasGakuto = employees.some(emp => emp.id === 'emp_trpg_planner');
         const hasHikari = employees.some(emp => emp.id === 'emp_trpg_writer');
         const hasMiyabi = employees.some(emp => emp.id === 'emp_trpg_editor');
+        const hasKai = employees.some(emp => emp.id === 'emp_trpg_map');
+        const hasYu = employees.some(emp => emp.id === 'emp_trpg_graphic');
 
         if (!hasEmma) {
             const emma = defaultEmployees.find(emp => emp.id === 'emp_emoji_designer');
@@ -159,6 +183,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const miyabi = defaultEmployees.find(emp => emp.id === 'emp_trpg_editor');
             if (miyabi) {
                 employees.push(miyabi);
+                migrated = true;
+            }
+        }
+        if (!hasKai) {
+            const kai = defaultEmployees.find(emp => emp.id === 'emp_trpg_map');
+            if (kai) {
+                employees.push(kai);
+                migrated = true;
+            }
+        }
+        if (!hasYu) {
+            const yu = defaultEmployees.find(emp => emp.id === 'emp_trpg_graphic');
+            if (yu) {
+                employees.push(yu);
                 migrated = true;
             }
         }
@@ -596,11 +634,12 @@ document.addEventListener('DOMContentLoaded', () => {
             { sender: 'フェリックス', role: '絵文字プログラマー', avatar: 'EmojiDeveloper', dept: 'emoji', text: 'そうですね。APIの共通化などを進めて、両部門でシナジーを生み出せるような設計を目指します。' }
         ],
         trpg_scenario: [
-            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: 'CEO、新設された「TRPGシナリオ構成担当部門」のミーティングを開始します。現在、新作の複数ルート分岐型シナリオのプロット構成を設計しています。' },
-            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'プロットに沿って、NPCのセリフやイベントの情景描写を執筆しています。特にクライマックスの分岐シーンでの演出に力を入れています！' },
-            { sender: 'ミヤビ', role: 'TRPGシナリオ校正者', avatar: 'TRPGEditor', dept: 'trpg_scenario', text: '執筆されたテキストの表記揺れのチェックと、TRPGのルールブックのゲームメカニクスとの整合性を確認する校正フローを設定しました。' },
-            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: '執筆と校正がシームレスに回るよう、「シナリオ書けるくん」用のテンプレート開発も進めていきたいですね。' },
-            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'それは助かります！専用テンプレートがあれば、より執筆に集中できます。' }
+            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: 'CEO、TRPGシナリオ構成担当部門のミーティングを開始します。現在、複数ルート分岐型シナリオのプロット設計と、新規メンバーを含めた制作体制を話し合っています。' },
+            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'プロットに沿って、NPCのセリフやイベントの情景描写を執筆中です！今回はビジュアルとマップの表現力も大幅に強化できそうですね。' },
+            { sender: 'カイ', role: 'TRPGマップデザイナー', avatar: 'TRPGMapDesigner', dept: 'trpg_scenario', text: 'はい！探索フェーズの楽しさを引き出すため、詳細なダンジョンマップや洋館の間取り図などのマップデータを用意し、シナリオと連動させていきます。' },
+            { sender: 'ユウ', role: 'TRPGグラフィックデザイナー', avatar: 'TRPGGraphicDesigner', dept: 'trpg_scenario', text: '私はトレーラー用バナーやNPCのビジュアル、シーンのイメージイラストを担当します。生成AIと連携して、キービジュアルも自動で作り出せますよ！' },
+            { sender: 'ミヤビ', role: 'TRPGシナリオ校正者', avatar: 'TRPGEditor', dept: 'trpg_scenario', text: '執筆されたテキストの表記揺れチェックやルールの整合性確認に加え、マップの部屋構成と描写文の矛盾がないかも含めて校正フローに入れました。' },
+            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: '心強いですね。執筆・マップ設計・グラフィック制作がシームレスに回るよう、AI画像生成も含めた統合ワークフローを構築していきましょう！' }
         ]
     };
 
