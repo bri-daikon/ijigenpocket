@@ -68,9 +68,14 @@
         </div>
         <input type="file" id="fg-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
       </label>
-      <button id="clear-fg-btn" class="mt-2 text-xs text-red-400 hover:text-red-300" style="display: none;">
-        前景をクリア
-      </button>
+      <div class="flex gap-4 mt-2">
+        <button id="clear-fg-btn" class="text-xs text-red-400 hover:text-red-300" style="display: none;">
+          前景をクリア
+        </button>
+        <button id="edit-fg-btn" class="text-xs text-blue-400 hover:text-blue-300" style="display: none;">
+          画像を編集 (部分透明化)
+        </button>
+      </div>
     </div>
 
     <!-- パネル追加 -->
@@ -130,6 +135,87 @@
     </div>
   </div>
 
-  <script src="js/ccfolialayoutmaker.js?v=1.0.2"></script>
+  <!-- 前景画像編集モーダル -->
+  <div id="fg-edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- ヘッダー -->
+      <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/80">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="scissors" class="w-5 h-5 text-blue-400"></i>
+          前景画像の編集 (部分透明化)
+        </h3>
+        <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+      <!-- メインコンテンツ -->
+      <div class="p-6 flex flex-col md:flex-row gap-6 overflow-y-auto min-h-0">
+        <!-- 左側：キャンバス表示エリア -->
+        <div class="flex-grow flex items-center justify-center bg-gray-950 rounded-lg p-4 relative min-h-[300px] md:min-h-[400px] border border-gray-700 overflow-hidden">
+          <!-- 市松模様背景のラッパー -->
+          <div class="relative checkerboard-bg" style="max-width: 100%; max-height: 400px;">
+            <canvas id="fg-edit-canvas" class="block cursor-crosshair max-w-full max-h-[400px] object-contain"></canvas>
+          </div>
+        </div>
+        <!-- 右側：ツールパネル -->
+        <div class="w-full md:w-64 shrink-0 flex flex-col gap-4">
+          <!-- 選択ツール -->
+          <div>
+            <span class="text-xs text-gray-400 block mb-2 font-semibold">選択ツール</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button id="tool-free" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-blue-600 text-white hover:bg-blue-500 border border-blue-400/30 transition-all font-semibold text-xs">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+                自由描画
+              </button>
+              <button id="tool-rect" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600 transition-all font-semibold text-xs">
+                <i data-lucide="square" class="w-4 h-4"></i>
+                長方形
+              </button>
+              <button id="tool-circle" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600 transition-all font-semibold text-xs">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+                円・楕円
+              </button>
+            </div>
+          </div>
+          <!-- 操作 -->
+          <div class="flex flex-col gap-2 mt-2">
+            <button id="apply-transparent-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-semibold transition-colors">
+              <i data-lucide="eraser" class="w-4 h-4"></i>
+              選択範囲を透明にする
+            </button>
+            <button id="undo-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded text-sm transition-colors" disabled>
+              <i data-lucide="undo" class="w-4 h-4"></i>
+              元に戻す (Undo)
+            </button>
+            <button id="reset-edit-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded text-sm transition-colors">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              初期状態に戻す
+            </button>
+          </div>
+          <!-- 操作説明 -->
+          <div class="mt-auto bg-gray-900/50 border border-gray-700 p-3 rounded text-xs text-gray-400 leading-relaxed">
+            <p class="font-bold text-gray-300 mb-1 flex items-center gap-1">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-blue-400"></i> 使い方
+            </p>
+            1. 選択ツールを選びます。<br>
+            2. 画像の上をドラッグして範囲を選択します。<br>
+            3. 「選択範囲を透明にする」ボタンで透明化します。<br>
+            4. 完了したら「編集を適用する」を押します。
+          </div>
+        </div>
+      </div>
+      <!-- フッター -->
+      <div class="px-6 py-4 border-t border-gray-700 bg-gray-800/80 flex justify-end gap-3">
+        <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded font-semibold text-sm transition-colors">
+          キャンセル
+        </button>
+        <button id="save-edit-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-semibold text-sm transition-colors shadow-lg">
+          編集を適用する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/ccfolialayoutmaker.js?v=1.0.3"></script>
 </body>
 </html>
