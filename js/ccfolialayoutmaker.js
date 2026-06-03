@@ -4,12 +4,14 @@ if (typeof lucide !== 'undefined') {
 }
 
 // === 状態管理（データ） ===
-let foreground = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
+let frame = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
 let panels = [];
-let selectedPanelId = null; // 'foreground', またはパネルのid
+let selectedPanelId = null; // 'frame', またはパネルのid
 let copiedPanelData = null; // コピーされたパネルデータ
+let zoomScale = null; // null は自動フィット、数値は固定倍率
+let actionHistory = []; // 操作履歴スタック
 
-// === 前景画像編集モーダル用の状態変数 ===
+// === フレーム画像編集モーダル用の状態変数 ===
 let editOriginalUrl = null;
 let editHistory = [];
 let activeTool = 'free';
@@ -32,16 +34,45 @@ let snapToGrid = false;
 const canvasArea = document.getElementById('canvas-area');
 const panelList = document.getElementById('panel-list');
 const panelCount = document.getElementById('panel-count');
-const clearFgBtn = document.getElementById('clear-fg-btn');
-const editFgBtn = document.getElementById('edit-fg-btn');
+const clearFrameBtn = document.getElementById('clear-frame-btn');
+const editFrameBtn = document.getElementById('edit-frame-btn');
 const replacePanelUpload = document.getElementById('replace-panel-upload');
+const undoActionBtn = document.getElementById('undo-action-btn');
 
 // モーダル関連のDOM
-const fgEditModal = document.getElementById('fg-edit-modal');
+const frameEditModal = document.getElementById('frame-edit-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const saveEditBtn = document.getElementById('save-edit-btn');
-const fgEditCanvas = document.getElementById('fg-edit-canvas');
+const frameEditCanvas = document.getElementById('frame-edit-canvas');
+
+// === 操作履歴（Undo）の管理 ===
+function saveStateToHistory() {
+  const currentState = {
+    frame: frame ? JSON.parse(JSON.stringify(frame)) : null,
+    panels: JSON.parse(JSON.stringify(panels)),
+    canvasWidth: canvasWidth,
+    canvasHeight: canvasHeight,
+    selectedPanelId: selectedPanelId
+  };
+  actionHistory.push(currentState);
+  if (actionHistory.length > 30) {
+    actionHistory.shift(); // 最大30件
+  }
+}
+
+function undoAction() {
+  if (actionHistory.length === 0) return;
+  const prevState = actionHistory.pop();
+  
+  frame = prevState.frame ? JSON.parse(JSON.stringify(prevState.frame)) : null;
+  panels = JSON.parse(JSON.stringify(prevState.panels));
+  canvasWidth = prevState.canvasWidth;
+  canvasHeight = prevState.canvasHeight;
+  selectedPanelId = prevState.selectedPanelId;
+  
+  updateUI();
+}
 const toolFreeBtn = document.getElementById('tool-free');
 const toolRectBtn = document.getElementById('tool-rect');
 const toolCircleBtn = document.getElementById('tool-circle');
@@ -52,6 +83,11 @@ const resetEditBtn = document.getElementById('reset-edit-btn');
 const canvasSizeSelect = document.getElementById('canvas-size-select');
 const gridShowToggle = document.getElementById('grid-show-toggle');
 const gridSnapToggle = document.getElementById('grid-snap-toggle');
+
+// ズームコントロール関連のDOM
+const zoomInBtn = document.getElementById('zoom-in-btn');
+const zoomOutBtn = document.getElementById('zoom-out-btn');
+const zoomFitBtn = document.getElementById('zoom-fit-btn');
 
 // === 画面の更新（描画）関数 ===
 // データが変わるたびにこの関数を呼んで、画面を書き換えます
@@ -67,31 +103,31 @@ function updateUI() {
     sizeDisplay.innerText = `${canvasWidth} x ${canvasHeight}`;
   }
 
-  // 前景の描画
-  if (foreground) {
-    const fgEl = document.createElement('div');
-    const isSelected = selectedPanelId === 'foreground';
-    fgEl.className = `absolute cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
-    fgEl.style.left = `${foreground.x}px`;
-    fgEl.style.top = `${foreground.y}px`;
-    fgEl.style.width = `${foreground.width}px`;
-    fgEl.style.height = `${foreground.height}px`;
-    fgEl.style.backgroundImage = `url(${foreground.url})`;
-    fgEl.style.backgroundSize = '100% 100%';
-    fgEl.style.backgroundRepeat = 'no-repeat';
-    fgEl.style.backgroundPosition = 'center';
-    fgEl.style.zIndex = '10';
-    fgEl.style.pointerEvents = 'auto';
+  // フレームの描画
+  if (frame) {
+    const frameEl = document.createElement('div');
+    const isSelected = selectedPanelId === 'frame';
+    frameEl.className = `absolute cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
+    frameEl.style.left = `${frame.x}px`;
+    frameEl.style.top = `${frame.y}px`;
+    frameEl.style.width = `${frame.width}px`;
+    frameEl.style.height = `${frame.height}px`;
+    frameEl.style.backgroundImage = `url(${frame.url})`;
+    frameEl.style.backgroundSize = '100% 100%';
+    frameEl.style.backgroundRepeat = 'no-repeat';
+    frameEl.style.backgroundPosition = 'center';
+    frameEl.style.zIndex = '10';
+    frameEl.style.pointerEvents = 'auto';
     
-    fgEl.addEventListener('mousedown', (e) => handleSpecialMouseDown(e, 'foreground'));
+    frameEl.addEventListener('mousedown', (e) => handleSpecialMouseDown(e, 'frame'));
     
     if (isSelected) {
       const resizeHandle = document.createElement('div');
       resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm';
       resizeHandle.style.transform = 'translate(50%, 50%)';
-      fgEl.appendChild(resizeHandle);
+      frameEl.appendChild(resizeHandle);
     }
-    canvasArea.appendChild(fgEl);
+    canvasArea.appendChild(frameEl);
   }
 
   // グリッドの描画
@@ -105,6 +141,8 @@ function updateUI() {
 
   // パネルの描画
   panels.forEach(panel => {
+    if (panel.visible === false) return; // 非表示の場合はメインキャンバスに描画しない
+    
     const pEl = document.createElement('div');
     const isSelected = selectedPanelId === panel.id;
     
@@ -217,6 +255,7 @@ function updateUI() {
       flipHBtn.title = '左右反転';
       flipHBtn.onclick = (e) => {
         e.stopPropagation();
+        saveStateToHistory();
         panel.flipH = !panel.flipH;
         updateUI();
       };
@@ -229,6 +268,7 @@ function updateUI() {
       flipVBtn.title = '上下反転';
       flipVBtn.onclick = (e) => {
         e.stopPropagation();
+        saveStateToHistory();
         panel.flipV = !panel.flipV;
         updateUI();
       };
@@ -256,6 +296,20 @@ function updateUI() {
       };
       toolbar.appendChild(copyBtn);
 
+      // 非表示にする
+      const hideBtn = document.createElement('button');
+      hideBtn.className = 'text-gray-300 hover:text-blue-400';
+      hideBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+      hideBtn.title = '非表示にする';
+      hideBtn.onclick = (e) => {
+        e.stopPropagation();
+        saveStateToHistory();
+        panel.visible = false;
+        if (selectedPanelId === panel.id) selectedPanelId = null;
+        updateUI();
+      };
+      toolbar.appendChild(hideBtn);
+
       // 削除
       const delBtn = document.createElement('button');
       delBtn.className = 'text-gray-300 hover:text-red-400';
@@ -263,6 +317,7 @@ function updateUI() {
       delBtn.title = '削除';
       delBtn.onclick = (e) => {
         e.stopPropagation();
+        saveStateToHistory();
         panels = panels.filter(p => p.id !== panel.id);
         selectedPanelId = null;
         updateUI();
@@ -276,7 +331,7 @@ function updateUI() {
   });
 
   // ガイドテキストの表示
-  if (!foreground && panels.length === 0) {
+  if (!frame && panels.length === 0) {
     const guide = document.createElement('div');
     guide.className = 'absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none';
     guide.innerHTML = '<p>左のメニューから画像をアップロードしてください</p>';
@@ -330,6 +385,23 @@ function updateUI() {
       };
       btnContainer.appendChild(downBtn);
 
+      // 表示/非表示の切り替え
+      const toggleVisibleBtn = document.createElement('button');
+      toggleVisibleBtn.className = 'text-gray-400 hover:text-blue-400';
+      const isVisible = panel.visible !== false;
+      toggleVisibleBtn.innerHTML = `<i data-lucide="${isVisible ? 'eye' : 'eye-off'}" class="w-4 h-4"></i>`;
+      toggleVisibleBtn.title = isVisible ? '非表示にする' : '表示する';
+      toggleVisibleBtn.onclick = (e) => {
+        e.stopPropagation();
+        saveStateToHistory();
+        panel.visible = isVisible ? false : true;
+        if (!panel.visible && selectedPanelId === panel.id) {
+          selectedPanelId = null; // 非表示にしたら選択解除
+        }
+        updateUI();
+      };
+      btnContainer.appendChild(toggleVisibleBtn);
+
       // 複製
       const copyBtn = document.createElement('button');
       copyBtn.className = 'text-gray-400 hover:text-blue-400';
@@ -346,6 +418,7 @@ function updateUI() {
       trashBtn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
       trashBtn.onclick = (e) => {
         e.stopPropagation();
+        saveStateToHistory();
         panels = panels.filter(p => p.id !== panel.id);
         if (selectedPanelId === panel.id) selectedPanelId = null;
         updateUI();
@@ -361,8 +434,13 @@ function updateUI() {
   }
 
   // 3. クリアボタンの表示/非表示
-  clearFgBtn.style.display = foreground ? 'block' : 'none';
-  editFgBtn.style.display = foreground ? 'block' : 'none';
+  clearFrameBtn.style.display = frame ? 'block' : 'none';
+  editFrameBtn.style.display = frame ? 'block' : 'none';
+
+  // 3.5 操作履歴「一つ戻る」ボタンの制御
+  if (undoActionBtn) {
+    undoActionBtn.disabled = actionHistory.length === 0;
+  }
 
   // 4. 表示スケールの調整
   updateCanvasScale();
@@ -384,14 +462,15 @@ function handleFileUpload(event, type) {
       const originalHeight = img.naturalHeight;
       const originalRatio = originalWidth / originalHeight;
       
-      if (type === 'foreground') {
+      if (type === 'frame') {
+        saveStateToHistory();
         const scaleX = canvasWidth / originalWidth;
         const scaleY = canvasHeight / originalHeight;
         const scale = Math.min(1, scaleX, scaleY);
         const initWidth = originalWidth * scale;
         const initHeight = originalHeight * scale;
         
-        foreground = {
+        frame = {
           url: imageUrl,
           x: (canvasWidth - initWidth) / 2,
           y: (canvasHeight - initHeight) / 2,
@@ -399,8 +478,9 @@ function handleFileUpload(event, type) {
           height: initHeight,
           originalRatio: originalRatio
         };
-        selectedPanelId = 'foreground';
+        selectedPanelId = 'frame';
       } else if (type === 'panel') {
+        saveStateToHistory();
         // パネルは最大200x200に収まるようにアスペクト比を維持
         const scale = Math.min(1, 200 / originalWidth, 200 / originalHeight);
         const initWidth = originalWidth * scale;
@@ -415,7 +495,8 @@ function handleFileUpload(event, type) {
           height: initHeight,
           originalRatio: originalRatio,
           flipH: false,
-          flipV: false
+          flipV: false,
+          visible: true
         };
         panels.push(newPanel);
         selectedPanelId = newPanel.id;
@@ -429,22 +510,24 @@ function handleFileUpload(event, type) {
 }
 
 // イベントリスナーの登録
-document.getElementById('fg-upload').addEventListener('change', (e) => handleFileUpload(e, 'foreground'));
+document.getElementById('frame-upload').addEventListener('change', (e) => handleFileUpload(e, 'frame'));
 document.getElementById('panel-upload').addEventListener('change', (e) => handleFileUpload(e, 'panel'));
 
-clearFgBtn.addEventListener('click', () => { 
-  foreground = null; 
-  if (selectedPanelId === 'foreground') selectedPanelId = null;
+clearFrameBtn.addEventListener('click', () => { 
+  saveStateToHistory();
+  frame = null; 
+  if (selectedPanelId === 'frame') selectedPanelId = null;
   updateUI(); 
 });
 
 // === ドラッグ＆ドロップ、リサイズの処理 ===
 function handleSpecialMouseDown(e, type) {
   e.stopPropagation();
+  saveStateToHistory();
   
   const wasSelected = selectedPanelId === type;
   selectedPanelId = type;
-  const target = foreground;
+  const target = frame;
   
   const rect = canvasArea.getBoundingClientRect();
   const scale = rect.width / canvasWidth;
@@ -466,6 +549,7 @@ function handleSpecialMouseDown(e, type) {
 
 function handlePanelMouseDown(e, panelId) {
   e.stopPropagation();
+  saveStateToHistory();
   
   const wasSelected = selectedPanelId === panelId;
   selectedPanelId = panelId;
@@ -501,8 +585,8 @@ window.addEventListener('mousemove', (e) => {
   const mouseY = (e.clientY - rect.top) / scale;
   
   let target = null;
-  if (selectedPanelId === 'foreground') {
-    target = foreground;
+  if (selectedPanelId === 'frame') {
+    target = frame;
   } else {
     target = panels.find(p => p.id === selectedPanelId);
   }
@@ -548,6 +632,9 @@ window.addEventListener('mouseup', () => {
 
 // キャンバスの背景をクリックした時は選択解除
 canvasArea.addEventListener('mousedown', () => {
+  if (selectedPanelId !== null) {
+    saveStateToHistory();
+  }
   selectedPanelId = null;
   updateUI();
 });
@@ -568,19 +655,28 @@ function updateCanvasScale() {
     return;
   }
 
-  const pad = 32; // 余白
-  const maxW = rect.width - pad;
-  const maxH = rect.height - pad;
+  let scale = 1.0;
   
-  const scaleX = maxW / canvasWidth;
-  const scaleY = maxH / canvasHeight;
-  const scale = Math.max(0.05, Math.min(1, scaleX, scaleY));
+  if (zoomScale === null) {
+    // 自動フィット
+    const pad = 32; // 余白
+    const maxW = rect.width - pad;
+    const maxH = rect.height - pad;
+    const scaleX = maxW / canvasWidth;
+    const scaleY = maxH / canvasHeight;
+    scale = Math.max(0.05, Math.min(1, scaleX, scaleY));
+  } else {
+    // 固定ズーム
+    scale = zoomScale;
+  }
   
   canvasArea.style.transform = `scale(${scale})`;
   
   const scaleDisplay = document.getElementById('scale-display');
   if (scaleDisplay) {
-    scaleDisplay.innerText = `${Math.round(scale * 100)}%`;
+    scaleDisplay.innerText = zoomScale === null
+      ? `${Math.round(scale * 100)}% (フィット)`
+      : `${Math.round(scale * 100)}%`;
   }
 }
 
@@ -588,6 +684,7 @@ window.addEventListener('resize', updateCanvasScale);
 
 // キャンバス設定のイベントハンドラ
 canvasSizeSelect.addEventListener('change', (e) => {
+  saveStateToHistory();
   const value = e.target.value;
   if (value === '1280x720') {
     canvasWidth = 1280;
@@ -617,6 +714,7 @@ canvasSizeSelect.value = `${canvasWidth}x${canvasHeight}`;
 // パネルの順序移動関数 (インデックスの入れ替え)
 function movePanel(fromIndex, toIndex) {
   if (toIndex < 0 || toIndex >= panels.length) return;
+  saveStateToHistory();
   const element = panels[fromIndex];
   panels.splice(fromIndex, 1);
   panels.splice(toIndex, 0, element);
@@ -625,6 +723,7 @@ function movePanel(fromIndex, toIndex) {
 
 // パネル複製関数
 function duplicatePanel(panel) {
+  saveStateToHistory();
   const offset = snapToGrid ? 24 : 20;
   const newPanel = {
     ...panel,
@@ -652,7 +751,7 @@ function movePanelToExtremity(index, toFront) {
   updateUI();
 }
 
-// キーボードショートカットの登録 (Ctrl+C / Ctrl+V)
+// キーボードショートカットの登録 (Ctrl+C / Ctrl+V / Ctrl+Z)
 window.addEventListener('keydown', (e) => {
   if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA') {
     return;
@@ -660,7 +759,7 @@ window.addEventListener('keydown', (e) => {
 
   // Ctrl+C / Cmd+C (コピー)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-    if (selectedPanelId && selectedPanelId !== 'foreground') {
+    if (selectedPanelId && selectedPanelId !== 'frame') {
       const panel = panels.find(p => p.id === selectedPanelId);
       if (panel) {
         copiedPanelData = { ...panel };
@@ -675,6 +774,12 @@ window.addEventListener('keydown', (e) => {
       duplicatePanel(copiedPanelData);
       e.preventDefault();
     }
+  }
+
+  // Ctrl+Z / Cmd+Z (元に戻す)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    undoAction();
+    e.preventDefault();
   }
 });
 
@@ -708,15 +813,17 @@ async function exportToPNG() {
       });
     };
 
-    // 2. 前景の描画タスク
-    if (foreground) {
-      drawTasks.push(loadImage(foreground.url).then(img => {
-        return { img, x: foreground.x, y: foreground.y, w: foreground.width, h: foreground.height };
+    // 2. フレームの描画タスク
+    if (frame) {
+      drawTasks.push(loadImage(frame.url).then(img => {
+        return { img, x: frame.x, y: frame.y, w: frame.width, h: frame.height };
       }));
     }
 
-    // 3. 各パネルの描画タスク
+    // 3. 各パネルの描画タスク (表示されているパネルのみ)
     panels.forEach(panel => {
+      if (panel.visible === false) return; // 非表示はスキップ
+      
       drawTasks.push(loadImage(panel.url).then(img => {
         return { 
           img, 
@@ -771,42 +878,42 @@ if (exportBtnElement) {
   exportBtnElement.addEventListener('click', exportToPNG);
 }
 
-// === 前景画像編集モーダルの処理関数 ===
+// === フレーム画像編集モーダルの処理関数 ===
 
-function openFgEditModal() {
-  if (!foreground) return;
+function openFrameEditModal() {
+  if (!frame) return;
   
-  editOriginalUrl = foreground.url;
+  editOriginalUrl = frame.url;
   editHistory = [];
   undoBtn.disabled = true;
   setTool('free');
   
   // モーダルを表示
-  fgEditModal.classList.remove('hidden');
+  frameEditModal.classList.remove('hidden');
   
   // 画像をロードしてCanvasに描画
   editImage = new Image();
   editImage.onload = () => {
-    fgEditCanvas.width = editImage.naturalWidth;
-    fgEditCanvas.height = editImage.naturalHeight;
-    const ctx = fgEditCanvas.getContext('2d');
-    ctx.clearRect(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    frameEditCanvas.width = editImage.naturalWidth;
+    frameEditCanvas.height = editImage.naturalHeight;
+    const ctx = frameEditCanvas.getContext('2d');
+    ctx.clearRect(0, 0, frameEditCanvas.width, frameEditCanvas.height);
     ctx.drawImage(editImage, 0, 0);
     
     // 最初の状態を履歴に追加
     saveHistoryState();
   };
-  editImage.src = foreground.url;
+  editImage.src = frame.url;
 }
 
-function closeFgEditModal() {
-  fgEditModal.classList.add('hidden');
+function closeFrameEditModal() {
+  frameEditModal.classList.add('hidden');
   editImage = null;
 }
 
 function saveHistoryState() {
-  const ctx = fgEditCanvas.getContext('2d');
-  const imgData = ctx.getImageData(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+  const ctx = frameEditCanvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, frameEditCanvas.width, frameEditCanvas.height);
   editHistory.push(imgData);
   
   // 履歴が2件以上（初期状態 + 1回以上の編集）あればUndo可能
@@ -821,7 +928,7 @@ function undoEdit() {
   
   // 1つ前の状態を復元
   const prevState = editHistory[editHistory.length - 1];
-  const ctx = fgEditCanvas.getContext('2d');
+  const ctx = frameEditCanvas.getContext('2d');
   ctx.putImageData(prevState, 0, 0);
   
   undoBtn.disabled = editHistory.length <= 1;
@@ -835,12 +942,12 @@ function resetEdit() {
   
   const img = new Image();
   img.onload = () => {
-    const ctx = fgEditCanvas.getContext('2d');
-    ctx.clearRect(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    const ctx = frameEditCanvas.getContext('2d');
+    ctx.clearRect(0, 0, frameEditCanvas.width, frameEditCanvas.height);
     ctx.drawImage(img, 0, 0);
     
     // 履歴をリセットして初期状態のみにする
-    const imgData = ctx.getImageData(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    const imgData = ctx.getImageData(0, 0, frameEditCanvas.width, frameEditCanvas.height);
     editHistory = [imgData];
     undoBtn.disabled = true;
     clearSelection();
@@ -873,11 +980,11 @@ function setTool(tool) {
 }
 
 function getCanvasMouseCoords(e) {
-  const rect = fgEditCanvas.getBoundingClientRect();
+  const rect = frameEditCanvas.getBoundingClientRect();
   
   // 表示サイズと物理解像度の比率
-  const scaleX = fgEditCanvas.width / rect.width;
-  const scaleY = fgEditCanvas.height / rect.height;
+  const scaleX = frameEditCanvas.width / rect.width;
+  const scaleY = frameEditCanvas.height / rect.height;
   
   // マウス座標を取得して物理座標に変換
   const x = (e.clientX - rect.left) * scaleX;
@@ -923,7 +1030,7 @@ function clearSelection() {
   freePoints = [];
   
   if (editHistory.length > 0) {
-    const ctx = fgEditCanvas.getContext('2d');
+    const ctx = frameEditCanvas.getContext('2d');
     ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
   }
 }
@@ -931,7 +1038,7 @@ function clearSelection() {
 function redrawCanvasWithSelection() {
   if (editHistory.length === 0) return;
   
-  const ctx = fgEditCanvas.getContext('2d');
+  const ctx = frameEditCanvas.getContext('2d');
   
   // 1. まず現在の透明化適用済みの画像を復元
   ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
@@ -941,7 +1048,7 @@ function redrawCanvasWithSelection() {
   
   // 2. 選択枠のスタイル設定
   ctx.strokeStyle = '#3b82f6'; // blue-500
-  ctx.lineWidth = Math.max(2, fgEditCanvas.width / 400); // 解像度に合わせて太さを調整
+  ctx.lineWidth = Math.max(2, frameEditCanvas.width / 400); // 解像度に合わせて太さを調整
   ctx.setLineDash([6, 4]); // 破線
   
   // 塗りつぶしの半透明色（選択範囲内をわかりやすくする）
@@ -986,7 +1093,7 @@ function applyTransparency() {
   if (editHistory.length === 0) return;
   if (freePoints.length === 0) return;
   
-  const ctx = fgEditCanvas.getContext('2d');
+  const ctx = frameEditCanvas.getContext('2d');
   
   // 1. まず一旦選択枠のない状態に復元
   ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
@@ -1032,22 +1139,23 @@ function applyTransparency() {
   clearSelection();
 }
 
-function saveFgEdit() {
+function saveFrameEdit() {
   if (editHistory.length === 0) return;
-  const dataURL = fgEditCanvas.toDataURL('image/png');
+  saveStateToHistory();
+  const dataURL = frameEditCanvas.toDataURL('image/png');
   
-  // アスペクト比に影響がないか確認しつつ、前景画像のURLを更新
-  foreground.url = dataURL;
+  // アスペクト比に影響がないか確認しつつ、フレーム画像のURLを更新
+  frame.url = dataURL;
   
-  closeFgEditModal();
+  closeFrameEditModal();
   updateUI();
 }
 
 // === イベントリスナーの登録 ===
-editFgBtn.addEventListener('click', openFgEditModal);
-closeModalBtn.addEventListener('click', closeFgEditModal);
-cancelEditBtn.addEventListener('click', closeFgEditModal);
-saveEditBtn.addEventListener('click', saveFgEdit);
+editFrameBtn.addEventListener('click', openFrameEditModal);
+closeModalBtn.addEventListener('click', closeFrameEditModal);
+cancelEditBtn.addEventListener('click', closeFrameEditModal);
+saveEditBtn.addEventListener('click', saveFrameEdit);
 
 toolFreeBtn.addEventListener('click', () => setTool('free'));
 toolRectBtn.addEventListener('click', () => setTool('rect'));
@@ -1057,11 +1165,48 @@ applyTransparentBtn.addEventListener('click', applyTransparency);
 undoBtn.addEventListener('click', undoEdit);
 resetEditBtn.addEventListener('click', resetEdit);
 
-fgEditCanvas.addEventListener('mousedown', startSelection);
-fgEditCanvas.addEventListener('mousemove', drawSelection);
+frameEditCanvas.addEventListener('mousedown', startSelection);
+frameEditCanvas.addEventListener('mousemove', drawSelection);
 window.addEventListener('mouseup', endSelection);
 
 replacePanelUpload.addEventListener('change', handleReplacePanelUpload);
+if (undoActionBtn) {
+  undoActionBtn.addEventListener('click', undoAction);
+}
+
+// ズームイベントリスナー
+if (zoomInBtn && zoomOutBtn && zoomFitBtn) {
+  zoomInBtn.addEventListener('click', () => adjustZoom(0.1));
+  zoomOutBtn.addEventListener('click', () => adjustZoom(-0.1));
+  zoomFitBtn.addEventListener('click', () => {
+    zoomScale = null;
+    updateUI();
+  });
+}
+
+function adjustZoom(delta) {
+  let currentScale = 1.0;
+  
+  if (zoomScale !== null) {
+    currentScale = zoomScale;
+  } else {
+    // 現在の自動フィット時のスケールを算出
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (wrapper) {
+      const rect = wrapper.getBoundingClientRect();
+      const pad = 32;
+      const maxW = rect.width - pad;
+      const maxH = rect.height - pad;
+      const scaleX = maxW / canvasWidth;
+      const scaleY = maxH / canvasHeight;
+      currentScale = Math.max(0.05, Math.min(1, scaleX, scaleY));
+    }
+  }
+  
+  // スケールを 0.1刻みで増減 (最小 0.1, 最大 2.0)
+  zoomScale = Math.max(0.1, Math.min(2.0, Math.round((currentScale + delta) * 10) / 10));
+  updateUI();
+}
 
 function handleReplacePanelUpload(event) {
   const file = event.target.files[0];
@@ -1076,6 +1221,7 @@ function handleReplacePanelUpload(event) {
     const imageUrl = e.target.result;
     const img = new Image();
     img.onload = () => {
+      saveStateToHistory();
       panel.url = imageUrl;
       panel.originalRatio = img.naturalWidth / img.naturalHeight;
       updateUI();
