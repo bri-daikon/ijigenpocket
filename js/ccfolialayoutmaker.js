@@ -9,6 +9,16 @@ let panels = [];
 let selectedPanelId = null; // 'foreground', またはパネルのid
 let copiedPanelData = null; // コピーされたパネルデータ
 
+// === 前景画像編集モーダル用の状態変数 ===
+let editOriginalUrl = null;
+let editHistory = [];
+let activeTool = 'free';
+let isDrawingSelection = false;
+let startPoint = { x: 0, y: 0 };
+let currentPoint = { x: 0, y: 0 };
+let freePoints = [];
+let editImage = null;
+
 let isDragging = false;
 let isResizing = false;
 let dragOffset = { x: 0, y: 0 };
@@ -23,6 +33,20 @@ const canvasArea = document.getElementById('canvas-area');
 const panelList = document.getElementById('panel-list');
 const panelCount = document.getElementById('panel-count');
 const clearFgBtn = document.getElementById('clear-fg-btn');
+const editFgBtn = document.getElementById('edit-fg-btn');
+
+// モーダル関連のDOM
+const fgEditModal = document.getElementById('fg-edit-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const cancelEditBtn = document.getElementById('cancel-edit-btn');
+const saveEditBtn = document.getElementById('save-edit-btn');
+const fgEditCanvas = document.getElementById('fg-edit-canvas');
+const toolFreeBtn = document.getElementById('tool-free');
+const toolRectBtn = document.getElementById('tool-rect');
+const toolCircleBtn = document.getElementById('tool-circle');
+const applyTransparentBtn = document.getElementById('apply-transparent-btn');
+const undoBtn = document.getElementById('undo-btn');
+const resetEditBtn = document.getElementById('reset-edit-btn');
 
 const canvasSizeSelect = document.getElementById('canvas-size-select');
 const gridShowToggle = document.getElementById('grid-show-toggle');
@@ -285,6 +309,7 @@ function updateUI() {
 
   // 3. クリアボタンの表示/非表示
   clearFgBtn.style.display = foreground ? 'block' : 'none';
+  editFgBtn.style.display = foreground ? 'block' : 'none';
 
   // 4. 表示スケールの調整
   updateCanvasScale();
@@ -662,6 +687,296 @@ const exportBtnElement = document.getElementById('export-btn');
 if (exportBtnElement) {
   exportBtnElement.addEventListener('click', exportToPNG);
 }
+
+// === 前景画像編集モーダルの処理関数 ===
+
+function openFgEditModal() {
+  if (!foreground) return;
+  
+  editOriginalUrl = foreground.url;
+  editHistory = [];
+  undoBtn.disabled = true;
+  setTool('free');
+  
+  // モーダルを表示
+  fgEditModal.classList.remove('hidden');
+  
+  // 画像をロードしてCanvasに描画
+  editImage = new Image();
+  editImage.onload = () => {
+    fgEditCanvas.width = editImage.naturalWidth;
+    fgEditCanvas.height = editImage.naturalHeight;
+    const ctx = fgEditCanvas.getContext('2d');
+    ctx.clearRect(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    ctx.drawImage(editImage, 0, 0);
+    
+    // 最初の状態を履歴に追加
+    saveHistoryState();
+  };
+  editImage.src = foreground.url;
+}
+
+function closeFgEditModal() {
+  fgEditModal.classList.add('hidden');
+  editImage = null;
+}
+
+function saveHistoryState() {
+  const ctx = fgEditCanvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+  editHistory.push(imgData);
+  
+  // 履歴が2件以上（初期状態 + 1回以上の編集）あればUndo可能
+  undoBtn.disabled = editHistory.length <= 1;
+}
+
+function undoEdit() {
+  if (editHistory.length <= 1) return;
+  
+  // 最新（現在の状態）をポップ
+  editHistory.pop();
+  
+  // 1つ前の状態を復元
+  const prevState = editHistory[editHistory.length - 1];
+  const ctx = fgEditCanvas.getContext('2d');
+  ctx.putImageData(prevState, 0, 0);
+  
+  undoBtn.disabled = editHistory.length <= 1;
+  
+  // 選択範囲を消して再描画
+  clearSelection();
+}
+
+function resetEdit() {
+  if (!editOriginalUrl) return;
+  
+  const img = new Image();
+  img.onload = () => {
+    const ctx = fgEditCanvas.getContext('2d');
+    ctx.clearRect(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    ctx.drawImage(img, 0, 0);
+    
+    // 履歴をリセットして初期状態のみにする
+    const imgData = ctx.getImageData(0, 0, fgEditCanvas.width, fgEditCanvas.height);
+    editHistory = [imgData];
+    undoBtn.disabled = true;
+    clearSelection();
+  };
+  img.src = editOriginalUrl;
+}
+
+function setTool(tool) {
+  activeTool = tool;
+  
+  // ボタンのスタイル更新
+  const tools = {
+    free: toolFreeBtn,
+    rect: toolRectBtn,
+    circle: toolCircleBtn
+  };
+  
+  Object.keys(tools).forEach(key => {
+    const btn = tools[key];
+    if (key === tool) {
+      btn.classList.add('bg-blue-600', 'text-white');
+      btn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
+    } else {
+      btn.classList.remove('bg-blue-600', 'text-white');
+      btn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
+    }
+  });
+  
+  clearSelection();
+}
+
+function getCanvasMouseCoords(e) {
+  const rect = fgEditCanvas.getBoundingClientRect();
+  
+  // 表示サイズと物理解像度の比率
+  const scaleX = fgEditCanvas.width / rect.width;
+  const scaleY = fgEditCanvas.height / rect.height;
+  
+  // マウス座標を取得して物理座標に変換
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  
+  return { x, y };
+}
+
+function startSelection(e) {
+  isDrawingSelection = true;
+  const coords = getCanvasMouseCoords(e);
+  startPoint = coords;
+  currentPoint = coords;
+  freePoints = [coords];
+  
+  redrawCanvasWithSelection();
+}
+
+function drawSelection(e) {
+  if (!isDrawingSelection) return;
+  const coords = getCanvasMouseCoords(e);
+  currentPoint = coords;
+  
+  if (activeTool === 'free') {
+    freePoints.push(coords);
+  }
+  
+  redrawCanvasWithSelection();
+}
+
+function endSelection() {
+  if (!isDrawingSelection) return;
+  isDrawingSelection = false;
+  
+  // ドラッグ終了時も最終描画を維持
+  redrawCanvasWithSelection();
+}
+
+function clearSelection() {
+  isDrawingSelection = false;
+  startPoint = { x: 0, y: 0 };
+  currentPoint = { x: 0, y: 0 };
+  freePoints = [];
+  
+  if (editHistory.length > 0) {
+    const ctx = fgEditCanvas.getContext('2d');
+    ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
+  }
+}
+
+function redrawCanvasWithSelection() {
+  if (editHistory.length === 0) return;
+  
+  const ctx = fgEditCanvas.getContext('2d');
+  
+  // 1. まず現在の透明化適用済みの画像を復元
+  ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
+  
+  // ドラッグしていない、またはドラッグ開始直後は選択枠を描画しない
+  if (freePoints.length === 0) return;
+  
+  // 2. 選択枠のスタイル設定
+  ctx.strokeStyle = '#3b82f6'; // blue-500
+  ctx.lineWidth = Math.max(2, fgEditCanvas.width / 400); // 解像度に合わせて太さを調整
+  ctx.setLineDash([6, 4]); // 破線
+  
+  // 塗りつぶしの半透明色（選択範囲内をわかりやすくする）
+  ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // 半透明ブルー
+  
+  ctx.beginPath();
+  
+  if (activeTool === 'free') {
+    ctx.moveTo(freePoints[0].x, freePoints[0].y);
+    for (let i = 1; i < freePoints.length; i++) {
+      ctx.lineTo(freePoints[i].x, freePoints[i].y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    
+  } else if (activeTool === 'rect') {
+    const x = Math.min(startPoint.x, currentPoint.x);
+    const y = Math.min(startPoint.y, currentPoint.y);
+    const w = Math.abs(startPoint.x - currentPoint.x);
+    const h = Math.abs(startPoint.y - currentPoint.y);
+    
+    ctx.rect(x, y, w, h);
+    ctx.stroke();
+    ctx.fill();
+    
+  } else if (activeTool === 'circle') {
+    const x = Math.min(startPoint.x, currentPoint.x);
+    const y = Math.min(startPoint.y, currentPoint.y);
+    const w = Math.abs(startPoint.x - currentPoint.x);
+    const h = Math.abs(startPoint.y - currentPoint.y);
+    
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fill();
+  }
+  
+  ctx.setLineDash([]); // ダッシュ設定を戻す
+}
+
+function applyTransparency() {
+  if (editHistory.length === 0) return;
+  if (freePoints.length === 0) return;
+  
+  const ctx = fgEditCanvas.getContext('2d');
+  
+  // 1. まず一旦選択枠のない状態に復元
+  ctx.putImageData(editHistory[editHistory.length - 1], 0, 0);
+  
+  // 2. 選択された形状をマスクして透明化する
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = 'black';
+  
+  ctx.beginPath();
+  
+  if (activeTool === 'free') {
+    ctx.moveTo(freePoints[0].x, freePoints[0].y);
+    for (let i = 1; i < freePoints.length; i++) {
+      ctx.lineTo(freePoints[i].x, freePoints[i].y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    
+  } else if (activeTool === 'rect') {
+    const x = Math.min(startPoint.x, currentPoint.x);
+    const y = Math.min(startPoint.y, currentPoint.y);
+    const w = Math.abs(startPoint.x - currentPoint.x);
+    const h = Math.abs(startPoint.y - currentPoint.y);
+    
+    ctx.fillRect(x, y, w, h);
+    
+  } else if (activeTool === 'circle') {
+    const x = Math.min(startPoint.x, currentPoint.x);
+    const y = Math.min(startPoint.y, currentPoint.y);
+    const w = Math.abs(startPoint.x - currentPoint.x);
+    const h = Math.abs(startPoint.y - currentPoint.y);
+    
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.globalCompositeOperation = 'source-over';
+  
+  // 4. 現在の状態を履歴に保存
+  saveHistoryState();
+  
+  // 5. 選択範囲をクリアして再描画
+  clearSelection();
+}
+
+function saveFgEdit() {
+  if (editHistory.length === 0) return;
+  const dataURL = fgEditCanvas.toDataURL('image/png');
+  
+  // アスペクト比に影響がないか確認しつつ、前景画像のURLを更新
+  foreground.url = dataURL;
+  
+  closeFgEditModal();
+  updateUI();
+}
+
+// === イベントリスナーの登録 ===
+editFgBtn.addEventListener('click', openFgEditModal);
+closeModalBtn.addEventListener('click', closeFgEditModal);
+cancelEditBtn.addEventListener('click', closeFgEditModal);
+saveEditBtn.addEventListener('click', saveFgEdit);
+
+toolFreeBtn.addEventListener('click', () => setTool('free'));
+toolRectBtn.addEventListener('click', () => setTool('rect'));
+toolCircleBtn.addEventListener('click', () => setTool('circle'));
+
+applyTransparentBtn.addEventListener('click', applyTransparency);
+undoBtn.addEventListener('click', undoEdit);
+resetEditBtn.addEventListener('click', resetEdit);
+
+fgEditCanvas.addEventListener('mousedown', startSelection);
+fgEditCanvas.addEventListener('mousemove', drawSelection);
+window.addEventListener('mouseup', endSelection);
 
 // 初期描画
 updateUI();
