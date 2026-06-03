@@ -4,10 +4,9 @@ if (typeof lucide !== 'undefined') {
 }
 
 // === 状態管理（データ） ===
-let background = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
 let foreground = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
 let panels = [];
-let selectedPanelId = null; // 'background', 'foreground', またはパネルのid
+let selectedPanelId = null; // 'foreground', またはパネルのid
 let copiedPanelData = null; // コピーされたパネルデータ
 
 let isDragging = false;
@@ -23,7 +22,6 @@ let snapToGrid = false;
 const canvasArea = document.getElementById('canvas-area');
 const panelList = document.getElementById('panel-list');
 const panelCount = document.getElementById('panel-count');
-const clearBgBtn = document.getElementById('clear-bg-btn');
 const clearFgBtn = document.getElementById('clear-fg-btn');
 
 const canvasSizeSelect = document.getElementById('canvas-size-select');
@@ -42,33 +40,6 @@ function updateUI() {
   const sizeDisplay = document.getElementById('size-display');
   if (sizeDisplay) {
     sizeDisplay.innerText = `${canvasWidth} x ${canvasHeight}`;
-  }
-
-  // 背景の描画
-  if (background) {
-    const bgEl = document.createElement('div');
-    const isSelected = selectedPanelId === 'background';
-    bgEl.className = `absolute cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
-    bgEl.style.left = `${background.x}px`;
-    bgEl.style.top = `${background.y}px`;
-    bgEl.style.width = `${background.width}px`;
-    bgEl.style.height = `${background.height}px`;
-    bgEl.style.backgroundImage = `url(${background.url})`;
-    bgEl.style.backgroundSize = '100% 100%';
-    bgEl.style.backgroundRepeat = 'no-repeat';
-    bgEl.style.backgroundPosition = 'center';
-    bgEl.style.zIndex = '0';
-    bgEl.style.pointerEvents = 'auto';
-    
-    bgEl.addEventListener('mousedown', (e) => handleSpecialMouseDown(e, 'background'));
-    
-    if (isSelected) {
-      const resizeHandle = document.createElement('div');
-      resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm';
-      resizeHandle.style.transform = 'translate(50%, 50%)';
-      bgEl.appendChild(resizeHandle);
-    }
-    canvasArea.appendChild(bgEl);
   }
 
   // 前景の描画
@@ -228,7 +199,7 @@ function updateUI() {
   });
 
   // ガイドテキストの表示
-  if (!background && !foreground && panels.length === 0) {
+  if (!foreground && panels.length === 0) {
     const guide = document.createElement('div');
     guide.className = 'absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none';
     guide.innerHTML = '<p>左のメニューから画像をアップロードしてください</p>';
@@ -313,7 +284,6 @@ function updateUI() {
   }
 
   // 3. クリアボタンの表示/非表示
-  clearBgBtn.style.display = background ? 'block' : 'none';
   clearFgBtn.style.display = foreground ? 'block' : 'none';
 
   // 4. 表示スケールの調整
@@ -336,23 +306,7 @@ function handleFileUpload(event, type) {
       const originalHeight = img.naturalHeight;
       const originalRatio = originalWidth / originalHeight;
       
-      if (type === 'background') {
-        const scaleX = canvasWidth / originalWidth;
-        const scaleY = canvasHeight / originalHeight;
-        const scale = Math.min(1, scaleX, scaleY);
-        const initWidth = originalWidth * scale;
-        const initHeight = originalHeight * scale;
-        
-        background = {
-          url: imageUrl,
-          x: (canvasWidth - initWidth) / 2,
-          y: (canvasHeight - initHeight) / 2,
-          width: initWidth,
-          height: initHeight,
-          originalRatio: originalRatio
-        };
-        selectedPanelId = 'background';
-      } else if (type === 'foreground') {
+      if (type === 'foreground') {
         const scaleX = canvasWidth / originalWidth;
         const scaleY = canvasHeight / originalHeight;
         const scale = Math.min(1, scaleX, scaleY);
@@ -395,15 +349,9 @@ function handleFileUpload(event, type) {
 }
 
 // イベントリスナーの登録
-document.getElementById('bg-upload').addEventListener('change', (e) => handleFileUpload(e, 'background'));
 document.getElementById('fg-upload').addEventListener('change', (e) => handleFileUpload(e, 'foreground'));
 document.getElementById('panel-upload').addEventListener('change', (e) => handleFileUpload(e, 'panel'));
 
-clearBgBtn.addEventListener('click', () => { 
-  background = null; 
-  if (selectedPanelId === 'background') selectedPanelId = null;
-  updateUI(); 
-});
 clearFgBtn.addEventListener('click', () => { 
   foreground = null; 
   if (selectedPanelId === 'foreground') selectedPanelId = null;
@@ -414,7 +362,7 @@ clearFgBtn.addEventListener('click', () => {
 function handleSpecialMouseDown(e, type) {
   e.stopPropagation();
   selectedPanelId = type;
-  const target = type === 'background' ? background : foreground;
+  const target = foreground;
   
   const rect = canvasArea.getBoundingClientRect();
   const scale = rect.width / canvasWidth;
@@ -463,9 +411,7 @@ window.addEventListener('mousemove', (e) => {
   const mouseY = (e.clientY - rect.top) / scale;
   
   let target = null;
-  if (selectedPanelId === 'background') {
-    target = background;
-  } else if (selectedPanelId === 'foreground') {
+  if (selectedPanelId === 'foreground') {
     target = foreground;
   } else {
     target = panels.find(p => p.id === selectedPanelId);
@@ -622,7 +568,7 @@ window.addEventListener('keydown', (e) => {
 
   // Ctrl+C / Cmd+C (コピー)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-    if (selectedPanelId && selectedPanelId !== 'background' && selectedPanelId !== 'foreground') {
+    if (selectedPanelId && selectedPanelId !== 'foreground') {
       const panel = panels.find(p => p.id === selectedPanelId);
       if (panel) {
         copiedPanelData = { ...panel };
@@ -669,13 +615,6 @@ async function exportToPNG() {
         img.src = url;
       });
     };
-
-    // 1. 背景の描画タスク
-    if (background) {
-      drawTasks.push(loadImage(background.url).then(img => {
-        return { img, x: background.x, y: background.y, w: background.width, h: background.height };
-      }));
-    }
 
     // 2. 前景の描画タスク
     if (foreground) {
