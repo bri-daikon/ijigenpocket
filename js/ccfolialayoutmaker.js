@@ -112,10 +112,22 @@ function updateUI() {
     pEl.style.top = `${panel.y}px`;
     pEl.style.width = `${panel.width}px`;
     pEl.style.height = `${panel.height}px`;
-    pEl.style.backgroundImage = `url(${panel.url})`;
-    pEl.style.backgroundSize = '100% 100%'; // 枠に合わせて伸縮
-    pEl.style.backgroundRepeat = 'no-repeat';
-    pEl.style.backgroundPosition = 'center';
+
+    // 反転表示のためのインナー要素
+    const imgEl = document.createElement('div');
+    imgEl.className = 'w-full h-full';
+    imgEl.style.backgroundImage = `url(${panel.url})`;
+    imgEl.style.backgroundSize = '100% 100%'; // 枠に合わせて伸縮
+    imgEl.style.backgroundRepeat = 'no-repeat';
+    imgEl.style.backgroundPosition = 'center';
+    
+    // 反転の適用
+    const flipH = panel.flipH ? -1 : 1;
+    const flipV = panel.flipV ? -1 : 1;
+    if (panel.flipH || panel.flipV) {
+      imgEl.style.transform = `scale(${flipH}, ${flipV})`;
+    }
+    pEl.appendChild(imgEl);
     
     // パネルをマウスで押した時の処理
     pEl.addEventListener('mousedown', (e) => handlePanelMouseDown(e, panel.id));
@@ -191,6 +203,30 @@ function updateUI() {
       const divider = document.createElement('div');
       divider.className = 'w-px h-4 bg-gray-600 mx-1';
       toolbar.appendChild(divider);
+
+      // 左右反転
+      const flipHBtn = document.createElement('button');
+      flipHBtn.className = `text-gray-300 hover:text-blue-400 ${panel.flipH ? 'text-blue-400 font-bold' : ''}`;
+      flipHBtn.innerHTML = '<i data-lucide="flip-horizontal" class="w-4 h-4"></i>';
+      flipHBtn.title = '左右反転';
+      flipHBtn.onclick = (e) => {
+        e.stopPropagation();
+        panel.flipH = !panel.flipH;
+        updateUI();
+      };
+      toolbar.appendChild(flipHBtn);
+
+      // 上下反転
+      const flipVBtn = document.createElement('button');
+      flipVBtn.className = `text-gray-300 hover:text-blue-400 ${panel.flipV ? 'text-blue-400 font-bold' : ''}`;
+      flipVBtn.innerHTML = '<i data-lucide="flip-vertical" class="w-4 h-4"></i>';
+      flipVBtn.title = '上下反転';
+      flipVBtn.onclick = (e) => {
+        e.stopPropagation();
+        panel.flipV = !panel.flipV;
+        updateUI();
+      };
+      toolbar.appendChild(flipVBtn);
 
       // 複製
       const copyBtn = document.createElement('button');
@@ -360,7 +396,9 @@ function handleFileUpload(event, type) {
           y: (canvasHeight - initHeight) / 2,
           width: initWidth,
           height: initHeight,
-          originalRatio: originalRatio
+          originalRatio: originalRatio,
+          flipH: false,
+          flipV: false
         };
         panels.push(newPanel);
         selectedPanelId = newPanel.id;
@@ -565,7 +603,9 @@ function duplicatePanel(panel) {
     ...panel,
     id: Date.now().toString(),
     x: panel.x + offset,
-    y: panel.y + offset
+    y: panel.y + offset,
+    flipH: panel.flipH || false,
+    flipV: panel.flipV || false
   };
   panels.push(newPanel);
   selectedPanelId = newPanel.id;
@@ -651,7 +691,15 @@ async function exportToPNG() {
     // 3. 各パネルの描画タスク
     panels.forEach(panel => {
       drawTasks.push(loadImage(panel.url).then(img => {
-        return { img, x: panel.x, y: panel.y, w: panel.width, h: panel.height };
+        return { 
+          img, 
+          x: panel.x, 
+          y: panel.y, 
+          w: panel.width, 
+          h: panel.height,
+          flipH: panel.flipH || false,
+          flipV: panel.flipV || false
+        };
       }));
     });
 
@@ -660,7 +708,15 @@ async function exportToPNG() {
 
     // キャンバスに描画
     renderItems.forEach(item => {
-      ctx.drawImage(item.img, item.x, item.y, item.w, item.h);
+      if (item.flipH || item.flipV) {
+        ctx.save();
+        ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
+        ctx.scale(item.flipH ? -1 : 1, item.flipV ? -1 : 1);
+        ctx.drawImage(item.img, -item.w / 2, -item.h / 2, item.w, item.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(item.img, item.x, item.y, item.w, item.h);
+      }
     });
 
     // PNGファイルを生成してダウンロード
