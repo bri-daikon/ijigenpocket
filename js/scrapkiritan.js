@@ -73,6 +73,8 @@ document.addEventListener('paste', (e) => {
                 addFileToBatch(blob);
             } else if (activeTab === 'main-tab-cropper1280') {
                 loadCropper1280File(blob);
+            } else if (activeTab === 'main-tab-iconmaker') {
+                loadIconMakerFile(blob);
             }
         }
     }
@@ -371,5 +373,111 @@ if (crop1280ExecBtn) {
             a.download = `${currentCrop1280FileName}_1280x670.png`;
             a.click();
         }, 'image/png');
+    });
+}
+
+// --- Icon Maker Logic ---
+const iconImageInput = document.getElementById('icon-imageInput');
+const iconColorTop = document.getElementById('icon-colorTop');
+const iconColorBottom = document.getElementById('icon-colorBottom');
+const iconTextInput = document.getElementById('icon-textInput');
+const iconCanvas = document.getElementById('icon-previewCanvas');
+const iconCtx = iconCanvas ? iconCanvas.getContext('2d') : null;
+const iconDownloadBtn = document.getElementById('icon-downloadBtn');
+const iconPlaceholderText = document.getElementById('icon-placeholderText');
+
+let iconUploadedImage = new Image();
+
+function loadIconMakerFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        iconUploadedImage.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (iconUploadedImage) {
+    iconUploadedImage.onload = () => {
+        if (iconPlaceholderText) iconPlaceholderText.classList.add('hidden');
+        if (iconCanvas) iconCanvas.classList.remove('hidden');
+        if (iconDownloadBtn) iconDownloadBtn.disabled = false;
+        drawIconMaker();
+    };
+}
+
+if (iconImageInput) {
+    iconImageInput.addEventListener('change', (e) => {
+        loadIconMakerFile(e.target.files[0]);
+    });
+}
+
+const updateIconOnColorOrTextChange = () => {
+    if (iconUploadedImage.src) {
+        drawIconMaker();
+    }
+};
+
+if (iconColorTop) iconColorTop.addEventListener('input', updateIconOnColorOrTextChange);
+if (iconColorBottom) iconColorBottom.addEventListener('input', updateIconOnColorOrTextChange);
+if (iconTextInput) iconTextInput.addEventListener('input', updateIconOnColorOrTextChange);
+
+function drawIconMaker() {
+    if (!iconCanvas || !iconCtx || !iconUploadedImage.src) return;
+
+    const size = Math.min(iconUploadedImage.width, iconUploadedImage.height);
+    iconCanvas.width = size;
+    iconCanvas.height = size;
+
+    iconCtx.clearRect(0, 0, iconCanvas.width, iconCanvas.height);
+
+    // 円形にクリップ
+    iconCtx.save();
+    iconCtx.beginPath();
+    iconCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    iconCtx.closePath();
+    iconCtx.clip();
+
+    // グラデーション背景
+    const gradient = iconCtx.createLinearGradient(0, 0, 0, iconCanvas.height);
+    gradient.addColorStop(0, iconColorTop.value);
+    gradient.addColorStop(1, iconColorBottom.value);
+    iconCtx.fillStyle = gradient;
+    iconCtx.fillRect(0, 0, iconCanvas.width, iconCanvas.height);
+
+    // 画像描画
+    const x = (size - iconUploadedImage.width) / 2;
+    const y = (size - iconUploadedImage.height) / 2;
+    iconCtx.drawImage(iconUploadedImage, x, y);
+
+    // テキスト描画
+    const text = iconTextInput.value;
+    if (text) {
+        const fontSize = size * 0.06;
+        iconCtx.font = `bold ${fontSize}px sans-serif`;
+        iconCtx.textAlign = 'center';
+        iconCtx.textBaseline = 'bottom';
+
+        iconCtx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        iconCtx.shadowBlur = 8;
+        iconCtx.shadowOffsetX = 0;
+        iconCtx.shadowOffsetY = 2;
+
+        iconCtx.fillStyle = '#ffffff';
+        iconCtx.fillText(text, size / 2, size - (size * 0.08));
+
+        // 影設定をリセット
+        iconCtx.shadowBlur = 0;
+    }
+    iconCtx.restore();
+}
+
+if (iconDownloadBtn) {
+    iconDownloadBtn.addEventListener('click', () => {
+        if (!iconCanvas) return;
+        const link = document.createElement('a');
+        link.download = 'icon_ijigenpocket.png';
+        link.href = iconCanvas.toDataURL('image/png');
+        link.click();
     });
 }
