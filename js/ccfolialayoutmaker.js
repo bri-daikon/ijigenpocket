@@ -151,6 +151,7 @@ function updateUI() {
     pEl.style.top = `${panel.y}px`;
     pEl.style.width = `${panel.width}px`;
     pEl.style.height = `${panel.height}px`;
+    pEl.style.opacity = panel.opacity !== undefined ? panel.opacity : 1;
 
     // 反転表示のためのインナー要素
     const imgEl = document.createElement('div');
@@ -309,6 +310,36 @@ function updateUI() {
         updateUI();
       };
       toolbar.appendChild(hideBtn);
+
+      // 透過率スライダー
+      const opacityContainer = document.createElement('div');
+      opacityContainer.className = 'flex items-center gap-1.5 ml-1 mr-1 pointer-events-auto';
+      opacityContainer.innerHTML = '<i data-lucide="droplet" class="w-3.5 h-3.5 text-gray-400"></i>';
+      opacityContainer.addEventListener('mousedown', (e) => e.stopPropagation());
+      opacityContainer.addEventListener('mousemove', (e) => e.stopPropagation());
+
+      const opacityRange = document.createElement('input');
+      opacityRange.type = 'range';
+      opacityRange.min = '0';
+      opacityRange.max = '1';
+      opacityRange.step = '0.05';
+      opacityRange.value = panel.opacity !== undefined ? panel.opacity : 1;
+      opacityRange.className = 'w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500';
+      opacityRange.title = `透過率: ${Math.round((panel.opacity !== undefined ? panel.opacity : 1) * 100)}%`;
+
+      opacityRange.addEventListener('input', (e) => {
+        panel.opacity = parseFloat(e.target.value);
+        opacityRange.title = `透過率: ${Math.round(panel.opacity * 100)}%`;
+        pEl.style.opacity = panel.opacity;
+      });
+
+      opacityRange.addEventListener('change', () => {
+        saveStateToHistory();
+        updateUI();
+      });
+
+      opacityContainer.appendChild(opacityRange);
+      toolbar.appendChild(opacityContainer);
 
       // 削除
       const delBtn = document.createElement('button');
@@ -496,7 +527,8 @@ function handleFileUpload(event, type) {
           originalRatio: originalRatio,
           flipH: false,
           flipV: false,
-          visible: true
+          visible: true,
+          opacity: 1
         };
         panels.push(newPanel);
         selectedPanelId = newPanel.id;
@@ -823,7 +855,7 @@ async function exportToPNG() {
       }));
     }
 
-    // 3. 各パネルの描画タスク (表示されているパネルのみ)
+    // 3. 各パネルの描流タスク (表示されているパネルのみ)
     panels.forEach(panel => {
       if (panel.visible === false) return; // 非表示はスキップ
       
@@ -835,7 +867,8 @@ async function exportToPNG() {
           w: panel.width, 
           h: panel.height,
           flipH: panel.flipH || false,
-          flipV: panel.flipV || false
+          flipV: panel.flipV || false,
+          opacity: panel.opacity !== undefined ? panel.opacity : 1
         };
       }));
     });
@@ -845,15 +878,18 @@ async function exportToPNG() {
 
     // キャンバスに描画
     renderItems.forEach(item => {
+      ctx.save();
+      if (item.opacity !== undefined) {
+        ctx.globalAlpha = item.opacity;
+      }
       if (item.flipH || item.flipV) {
-        ctx.save();
         ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
         ctx.scale(item.flipH ? -1 : 1, item.flipV ? -1 : 1);
         ctx.drawImage(item.img, -item.w / 2, -item.h / 2, item.w, item.h);
-        ctx.restore();
       } else {
         ctx.drawImage(item.img, item.x, item.y, item.w, item.h);
       }
+      ctx.restore();
     });
 
     // PNGファイルを生成してダウンロード
