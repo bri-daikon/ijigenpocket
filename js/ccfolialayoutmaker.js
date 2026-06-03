@@ -182,9 +182,9 @@ function updateUI() {
       const toolbar = document.createElement('div');
       // Y座標が 50px 未満なら下側に配置、そうでなければ上側に配置
       if (panel.y < 50) {
-        toolbar.className = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto';
+        toolbar.className = 'quick-toolbar absolute top-full mt-2 left-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto origin-top';
       } else {
-        toolbar.className = 'absolute -top-11 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto';
+        toolbar.className = 'quick-toolbar absolute -top-11 left-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto origin-bottom';
       }
       
       // ツールバー上でのmousedownがパネルのドラッグを引き起こさないようにバブリングを防止
@@ -671,6 +671,9 @@ function updateCanvasScale() {
   }
   
   canvasArea.style.transform = `scale(${scale})`;
+  if (typeof canvasArea.style.setProperty === 'function') {
+    canvasArea.style.setProperty('--canvas-scale', scale);
+  }
   
   const scaleDisplay = document.getElementById('scale-display');
   if (scaleDisplay) {
