@@ -125,12 +125,103 @@ function updateUI() {
     // パネルをマウスで押した時の処理
     pEl.addEventListener('mousedown', (e) => handlePanelMouseDown(e, panel.id));
 
-    // 選択中ならリサイズ用のツマミを表示
+    // 選択中ならリサイズ用のツマミとクイックツールバーを表示
     if (isSelected) {
       const resizeHandle = document.createElement('div');
-      resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm';
+      resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm z-30';
       resizeHandle.style.transform = 'translate(50%, 50%)';
       pEl.appendChild(resizeHandle);
+
+      // クイックツールバー
+      const toolbar = document.createElement('div');
+      // Y座標が 50px 未満なら下側に配置、そうでなければ上側に配置
+      if (panel.y < 50) {
+        toolbar.className = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto';
+      } else {
+        toolbar.className = 'absolute -top-11 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto';
+      }
+      
+      // index を探す
+      const index = panels.findIndex(p => p.id === panel.id);
+
+      // 最前面へ
+      const toFrontBtn = document.createElement('button');
+      toFrontBtn.className = `text-gray-300 hover:text-blue-400 ${index === panels.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`;
+      toFrontBtn.innerHTML = '<i data-lucide="chevrons-up" class="w-4 h-4"></i>';
+      toFrontBtn.title = '最前面へ';
+      toFrontBtn.disabled = index === panels.length - 1;
+      toFrontBtn.onclick = (e) => {
+        e.stopPropagation();
+        movePanelToExtremity(index, true);
+      };
+      toolbar.appendChild(toFrontBtn);
+
+      // 前面へ
+      const upBtn = document.createElement('button');
+      upBtn.className = `text-gray-300 hover:text-blue-400 ${index === panels.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`;
+      upBtn.innerHTML = '<i data-lucide="chevron-up" class="w-4 h-4"></i>';
+      upBtn.title = '前面へ';
+      upBtn.disabled = index === panels.length - 1;
+      upBtn.onclick = (e) => {
+        e.stopPropagation();
+        movePanel(index, index + 1);
+      };
+      toolbar.appendChild(upBtn);
+
+      // 背面へ
+      const downBtn = document.createElement('button');
+      downBtn.className = `text-gray-300 hover:text-blue-400 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`;
+      downBtn.innerHTML = '<i data-lucide="chevron-down" class="w-4 h-4"></i>';
+      downBtn.title = '背面へ';
+      downBtn.disabled = index === 0;
+      downBtn.onclick = (e) => {
+        e.stopPropagation();
+        movePanel(index, index - 1);
+      };
+      toolbar.appendChild(downBtn);
+
+      // 最背面へ
+      const toBackBtn = document.createElement('button');
+      toBackBtn.className = `text-gray-300 hover:text-blue-400 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`;
+      toBackBtn.innerHTML = '<i data-lucide="chevrons-down" class="w-4 h-4"></i>';
+      toBackBtn.title = '最背面へ';
+      toBackBtn.disabled = index === 0;
+      toBackBtn.onclick = (e) => {
+        e.stopPropagation();
+        movePanelToExtremity(index, false);
+      };
+      toolbar.appendChild(toBackBtn);
+
+      // 区切り線
+      const divider = document.createElement('div');
+      divider.className = 'w-px h-4 bg-gray-600 mx-1';
+      toolbar.appendChild(divider);
+
+      // 複製
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'text-gray-300 hover:text-blue-400';
+      copyBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+      copyBtn.title = '複製';
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        duplicatePanel(panel);
+      };
+      toolbar.appendChild(copyBtn);
+
+      // 削除
+      const delBtn = document.createElement('button');
+      delBtn.className = 'text-gray-300 hover:text-red-400';
+      delBtn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+      delBtn.title = '削除';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        panels = panels.filter(p => p.id !== panel.id);
+        selectedPanelId = null;
+        updateUI();
+      };
+      toolbar.appendChild(delBtn);
+
+      pEl.appendChild(toolbar);
     }
     
     canvasArea.appendChild(pEl);
@@ -507,6 +598,19 @@ function duplicatePanel(panel) {
   };
   panels.push(newPanel);
   selectedPanelId = newPanel.id;
+  updateUI();
+}
+
+// パネルを最前面/最背面に移動する関数
+function movePanelToExtremity(index, toFront) {
+  if (index < 0 || index >= panels.length) return;
+  const element = panels[index];
+  panels.splice(index, 1);
+  if (toFront) {
+    panels.push(element); // 最前面（末尾）
+  } else {
+    panels.unshift(element); // 最背面（先頭）
+  }
   updateUI();
 }
 
