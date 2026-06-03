@@ -20,8 +20,8 @@ const EXCLUDED_FILENAMES = ['main.png', 'tab.png'];
 // Sortableの初期化 (連番リストのみ)
 const sortable = new Sortable(sortableList, {
     animation: 300,
-    handle: '.drag-handle',
-    ghostClass: 'bg-indigo-50',
+    ghostClass: 'opacity-40',
+    filter: 'button',
     onEnd: updateNumbers
 });
 
@@ -81,26 +81,26 @@ function handleFiles(files) {
 // 連番用アイテム追加
 function addSeqItem(id, file) {
     const li = document.createElement('li');
-    li.className = 'flex items-center gap-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm drag-handle cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all group';
+    li.className = 'flex flex-col bg-white p-3 rounded-2xl border border-slate-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all group relative';
     li.dataset.id = id;
 
     const previewUrl = URL.createObjectURL(file);
 
     li.innerHTML = `
-        <div class="flex-shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-mono font-black text-xl num-display">
+        <div class="absolute top-2 left-2 z-10 bg-indigo-600 text-white text-xs font-black font-mono w-6 h-6 rounded-full flex items-center justify-center shadow-md num-display">
             --
         </div>
-        <div class="relative flex-shrink-0">
-            <img src="${previewUrl}" class="w-32 h-32 object-cover rounded-xl bg-slate-100 border border-slate-100 shadow-inner">
+        <button class="absolute top-2 right-2 z-10 bg-white/80 hover:bg-red-500 hover:text-white text-slate-500 p-1.5 rounded-full transition-colors shadow-md" onclick="removeItem('${id}', 'seq')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="relative w-full aspect-square mb-2">
+            <img src="${previewUrl}" class="w-full h-full object-cover rounded-xl bg-slate-100 border border-slate-100 shadow-inner">
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-xl pointer-events-none"></div>
         </div>
-        <div class="flex-grow min-w-0">
-            <p class="text-xs text-slate-400 truncate mb-1">元: ${file.name}</p>
-            <p class="text-xl font-black text-indigo-600 font-mono new-name-display tracking-tight">00.ext</p>
+        <div class="w-full min-w-0 px-1">
+            <p class="text-sm font-black text-indigo-600 font-mono new-name-display truncate text-center mb-0.5">00.ext</p>
+            <p class="text-[10px] text-slate-400 truncate text-center" title="${file.name}">元: ${file.name}</p>
         </div>
-        <button class="text-slate-300 hover:text-red-500 p-3 transition-colors" onclick="removeItem('${id}', 'seq')">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
     `;
     sortableList.appendChild(li);
 }
