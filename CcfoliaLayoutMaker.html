@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ココフォリア・レイアウトメーカー</title>
+  <!-- Tailwind CSS (デザイン用のライブラリ) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons (アイコン用のライブラリ) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/ccfolialayoutmaker.css?v=1.0.1">
+</head>
+<body class="flex h-screen bg-gray-900 text-gray-100 font-sans overflow-hidden no-select">
+
+  <!-- 左側：設定パネル（サイドバー） -->
+  <div class="w-80 bg-gray-800 border-r border-gray-700 p-6 flex flex-col gap-6 overflow-y-auto shadow-xl z-10">
+    <div>
+      <h1 class="text-2xl font-bold mb-2 flex items-center gap-2">
+        <i data-lucide="layers" class="text-blue-400 w-6 h-6"></i>
+        レイアウトメーカー
+      </h1>
+      <p class="text-sm text-gray-400">ココフォリア向け部屋作成ツール(HTML版)</p>
+    </div>
+
+    <!-- キャンバス設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="monitor" class="w-5 h-5"></i> キャンバス設定
+      </h2>
+      <div class="flex flex-col gap-3">
+        <!-- サイズ選択 -->
+        <div>
+          <label for="canvas-size-select" class="text-xs text-gray-400 block mb-1">サイズ</label>
+          <select id="canvas-size-select" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="1280x720">1280 x 720 (16:9)</option>
+            <option value="1920x1080">1920 x 1080 (16:9)</option>
+          </select>
+        </div>
+        <!-- グリッド表示 -->
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-300">グリッドを表示</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="grid-show-toggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <!-- グリッドスナップ -->
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-300">グリッドにスナップ</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="grid-snap-toggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 背景設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="image" class="w-5 h-5"></i> 背景画像
+      </h2>
+      <label class="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-600/30 transition-colors">
+        <div class="flex flex-col items-center pointer-events-none">
+          <i data-lucide="upload" class="text-gray-400 mb-1 w-5 h-5"></i>
+          <span class="text-sm text-gray-400">クリックしてアップロード</span>
+        </div>
+        <input type="file" id="bg-upload" class="hidden" accept="image/*" />
+      </label>
+      <button id="clear-bg-btn" class="mt-2 text-xs text-red-400 hover:text-red-300" style="display: none;">
+        背景をクリア
+      </button>
+    </div>
+
+    <!-- 前景設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="image" class="w-5 h-5"></i> 前景画像 (透過推奨)
+      </h2>
+      <label class="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-600/30 transition-colors">
+        <div class="flex flex-col items-center pointer-events-none">
+          <i data-lucide="upload" class="text-gray-400 mb-1 w-5 h-5"></i>
+          <span class="text-sm text-gray-400">クリックしてアップロード</span>
+        </div>
+        <input type="file" id="fg-upload" class="hidden" accept="image/*" />
+      </label>
+      <button id="clear-fg-btn" class="mt-2 text-xs text-red-400 hover:text-red-300" style="display: none;">
+        前景をクリア
+      </button>
+    </div>
+
+    <!-- パネル追加 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600 flex-grow">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="plus" class="w-5 h-5"></i> パネル画像の追加
+      </h2>
+      <label class="flex items-center justify-center w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer transition-colors shadow-lg">
+        <i data-lucide="upload" class="mr-2 w-5 h-5"></i>
+        画像をパネルとして追加
+        <input type="file" id="panel-upload" class="hidden" accept="image/*" />
+      </label>
+
+      <!-- 配置済みパネル一覧 -->
+      <div class="mt-4">
+        <h3 class="text-sm text-gray-400 mb-2">配置済みパネル (<span id="panel-count">0</span>)</h3>
+        <ul id="panel-list" class="space-y-2">
+          <!-- パネルリストがここにJavaScriptで生成されます -->
+          <p class="text-xs text-gray-500">パネルはありません</p>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 画像出力 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="download" class="w-5 h-5"></i> 画像出力
+      </h2>
+      <button id="export-btn" class="flex items-center justify-center w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer transition-colors shadow-lg font-semibold text-sm">
+        <i data-lucide="download" class="mr-2 w-5 h-5"></i>
+        PNG画像として保存
+      </button>
+    </div>
+  </div>
+
+  <!-- 右側：プレビュー領域（キャンバス） -->
+  <div class="flex-grow p-8 bg-gray-950 flex flex-col items-center justify-center overflow-hidden">
+    
+    <!-- キャンバスラッパー（中央配置とスケーリング用） -->
+    <div id="canvas-wrapper" class="flex items-center justify-center w-full h-full min-h-0 relative">
+      <!-- キャンバスエリア -->
+      <div 
+        id="canvas-area"
+        class="relative bg-black rounded-lg shadow-2xl overflow-hidden border border-gray-700 origin-center"
+        style="width: 1280px; height: 720px;"
+      >
+        <!-- 背景、前景、パネルがここにJavaScriptで生成されます -->
+        <div id="canvas-guide" class="absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none">
+          <p>左のメニューから画像をアップロードしてください</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-4 text-gray-500 text-sm flex gap-4 z-10">
+      <span>キャンバスサイズ: <span id="size-display">1280 x 720</span></span>
+      <span>表示倍率: <span id="scale-display">100%</span></span>
+    </div>
+  </div>
+
+  <script src="js/ccfolialayoutmaker.js?v=1.0.1"></script>
+</body>
+</html>
