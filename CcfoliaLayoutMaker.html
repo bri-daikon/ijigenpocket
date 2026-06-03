@@ -49,31 +49,41 @@
           <span class="text-sm text-gray-300">グリッドにスナップ</span>
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="grid-snap-toggle" class="sr-only peer">
-            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
         </div>
       </div>
     </div>
 
 
-    <!-- 前景設定 -->
+    <!-- 操作履歴 -->
     <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
       <h2 class="font-semibold mb-3 flex items-center gap-2">
-        <i data-lucide="image" class="w-5 h-5"></i> 前景画像 (透過推奨)
+        <i data-lucide="history" class="w-5 h-5"></i> 操作履歴
       </h2>
-      <label for="fg-upload" class="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-600/30 transition-colors">
+      <button id="undo-action-btn" class="flex items-center justify-center w-full py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:hover:bg-gray-700 disabled:cursor-not-allowed text-gray-300 hover:text-white rounded text-sm font-semibold transition-colors border border-gray-600" disabled>
+        <i data-lucide="undo" class="mr-2 w-4 h-4"></i>
+        一つ戻る (Undo)
+      </button>
+    </div>
+
+
+    <!-- フレーム設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="image" class="w-5 h-5"></i> フレーム画像 (透過推奨)
+      </h2>
+      <label for="frame-upload" class="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-600/30 transition-colors">
         <div class="flex flex-col items-center pointer-events-none">
           <i data-lucide="upload" class="text-gray-400 mb-1 w-5 h-5"></i>
           <span class="text-sm text-gray-400">クリックしてアップロード</span>
         </div>
-        <input type="file" id="fg-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
+        <input type="file" id="frame-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
       </label>
       <div class="flex gap-4 mt-2">
-        <button id="clear-fg-btn" class="text-xs text-red-400 hover:text-red-300" style="display: none;">
-          前景をクリア
+        <button id="clear-frame-btn" class="text-xs text-red-400 hover:text-red-300" style="display: none;">
+          フレームをクリア
         </button>
-        <button id="edit-fg-btn" class="text-xs text-blue-400 hover:text-blue-300" style="display: none;">
-          画像を編集 (部分透明化)
+        <button id="edit-frame-btn" class="text-xs text-blue-400 hover:text-blue-300" style="display: none;">
+          フレーム画像を編集 (部分透明化)
         </button>
       </div>
     </div>
@@ -116,34 +126,45 @@
   <div class="flex-grow p-8 bg-gray-950 flex flex-col items-center justify-center overflow-hidden">
     
     <!-- キャンバスラッパー（中央配置とスケーリング用） -->
-    <div id="canvas-wrapper" class="flex items-center justify-center w-full h-full min-h-0 relative">
+    <div id="canvas-wrapper" class="flex items-center justify-center w-full h-full min-h-0 relative overflow-auto p-8">
       <!-- キャンバスエリア -->
       <div 
         id="canvas-area"
         class="relative bg-black rounded-lg shadow-2xl overflow-hidden border border-gray-700 origin-center shrink-0"
         style="width: 1280px; height: 720px;"
       >
-        <!-- 背景、前景、パネルがここにJavaScriptで生成されます -->
+        <!-- 背景、フレーム、パネルがここにJavaScriptで生成されます -->
         <div id="canvas-guide" class="absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none">
           <p>左のメニューから画像をアップロードしてください</p>
         </div>
       </div>
     </div>
     
-    <div class="mt-4 text-gray-500 text-sm flex gap-4 z-10">
-      <span>キャンバスサイズ: <span id="size-display">1280 x 720</span></span>
-      <span>表示倍率: <span id="scale-display">100%</span></span>
+    <div class="mt-4 text-gray-500 text-sm flex items-center gap-6 z-10 bg-gray-900/80 px-5 py-2 rounded-full border border-gray-800 shadow-lg">
+      <span>キャンバスサイズ: <span id="size-display" class="font-semibold text-gray-300">1280 x 720</span></span>
+      <div class="flex items-center gap-2 border-l border-gray-700 pl-6">
+        <button id="zoom-out-btn" class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="縮小">
+          <i data-lucide="zoom-out" class="w-4 h-4"></i>
+        </button>
+        <span>表示倍率: <span id="scale-display" class="font-semibold text-gray-300">100%</span></span>
+        <button id="zoom-in-btn" class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="拡大">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+        <button id="zoom-fit-btn" class="ml-2 px-2.5 py-0.5 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors" title="自動フィット">
+          フィット
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- 前景画像編集モーダル -->
-  <div id="fg-edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <!-- フレーム画像編集モーダル -->
+  <div id="frame-edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       <!-- ヘッダー -->
       <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/80">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <i data-lucide="scissors" class="w-5 h-5 text-blue-400"></i>
-          前景画像の編集 (部分透明化)
+          フレーム画像の編集 (部分透明化)
         </h3>
         <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors">
           <i data-lucide="x" class="w-6 h-6"></i>
@@ -155,7 +176,7 @@
         <div class="flex-grow flex items-center justify-center bg-gray-950 rounded-lg p-4 relative min-h-[300px] md:min-h-[400px] border border-gray-700 overflow-hidden">
           <!-- 市松模様背景のラッパー -->
           <div class="relative checkerboard-bg" style="max-width: 100%; max-height: 400px;">
-            <canvas id="fg-edit-canvas" class="block cursor-crosshair max-w-full max-h-[400px] object-contain"></canvas>
+            <canvas id="frame-edit-canvas" class="block cursor-crosshair max-w-full max-h-[400px] object-contain"></canvas>
           </div>
         </div>
         <!-- 右側：ツールパネル -->
@@ -217,6 +238,6 @@
     </div>
   </div>
 
-  <script src="js/ccfolialayoutmaker.js?v=1.0.5"></script>
+  <script src="js/ccfolialayoutmaker.js?v=1.0.8"></script>
 </body>
 </html>
