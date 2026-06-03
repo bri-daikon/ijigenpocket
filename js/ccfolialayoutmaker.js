@@ -34,6 +34,7 @@ const panelList = document.getElementById('panel-list');
 const panelCount = document.getElementById('panel-count');
 const clearFgBtn = document.getElementById('clear-fg-btn');
 const editFgBtn = document.getElementById('edit-fg-btn');
+const replacePanelUpload = document.getElementById('replace-panel-upload');
 
 // モーダル関連のDOM
 const fgEditModal = document.getElementById('fg-edit-modal');
@@ -232,6 +233,17 @@ function updateUI() {
         updateUI();
       };
       toolbar.appendChild(flipVBtn);
+
+      // 画像を差し替え
+      const replaceBtn = document.createElement('button');
+      replaceBtn.className = 'text-gray-300 hover:text-blue-400';
+      replaceBtn.innerHTML = '<i data-lucide="image" class="w-4 h-4"></i>';
+      replaceBtn.title = '画像を差し替え';
+      replaceBtn.onclick = (e) => {
+        e.stopPropagation();
+        replacePanelUpload.click();
+      };
+      toolbar.appendChild(replaceBtn);
 
       // 複製
       const copyBtn = document.createElement('button');
@@ -1048,6 +1060,31 @@ resetEditBtn.addEventListener('click', resetEdit);
 fgEditCanvas.addEventListener('mousedown', startSelection);
 fgEditCanvas.addEventListener('mousemove', drawSelection);
 window.addEventListener('mouseup', endSelection);
+
+replacePanelUpload.addEventListener('change', handleReplacePanelUpload);
+
+function handleReplacePanelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!selectedPanelId) return;
+
+  const panel = panels.find(p => p.id === selectedPanelId);
+  if (!panel) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const imageUrl = e.target.result;
+    const img = new Image();
+    img.onload = () => {
+      panel.url = imageUrl;
+      panel.originalRatio = img.naturalWidth / img.naturalHeight;
+      updateUI();
+    };
+    img.src = imageUrl;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = ''; // リセット
+}
 
 // 初期描画
 updateUI();
