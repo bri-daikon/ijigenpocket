@@ -25,6 +25,7 @@
                     <button onclick="switchMainTab('resizer')" id="main-tab-resizer" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">一括リサイズ</button>
                     <button onclick="switchMainTab('cropper1280')" id="main-tab-cropper1280" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">1280×670切り抜き</button>
                     <button onclick="switchMainTab('color')" id="main-tab-color" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">カラーツール</button>
+                    <button onclick="switchMainTab('iconmaker')" id="main-tab-iconmaker" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">丸形アイコン</button>
                 </div>
             </header>
 
@@ -198,6 +199,63 @@
                                 </div>
                             </div>
                             <div id="utility-notif" class="mt-6 text-emerald-500 font-black text-sm opacity-0 transition-opacity">COPIED!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: ICON MAKER -->
+                <div id="view-iconmaker" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. アイコン画像を選ぶ (背景透明推奨)</label>
+                                    <input type="file" id="icon-imageInput" accept="image/png, image/jpeg, image/webp" 
+                                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                </div>
+
+                                <!-- 2. 背景色（グラデーション）選択 -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">2. 背景色を選ぶ（グラデーション）</label>
+                                    <div class="flex items-center space-x-6">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-bold text-slate-600">上:</span>
+                                            <div class="w-10 h-10 color-picker-wrapper">
+                                                <input type="color" id="icon-colorTop" value="#4F46E5" class="shadow-sm">
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-bold text-slate-600">下:</span>
+                                            <div class="w-10 h-10 color-picker-wrapper">
+                                                <input type="color" id="icon-colorBottom" value="#EC4899" class="shadow-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. クレジットテキスト入力 -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">3. クレジットテキスト</label>
+                                    <input type="text" id="icon-textInput" value="©異次元ポケット" 
+                                        class="block w-full px-4 py-3 text-sm text-slate-700 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow font-medium">
+                                </div>
+
+                                <!-- 4. ダウンロードボタン -->
+                                <div class="pt-4">
+                                    <button id="icon-downloadBtn" class="w-full btn-hover bg-indigo-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-indigo-600/10 disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        画像をダウンロード
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl p-4 border-2 border-dashed border-slate-200 min-h-[300px]">
+                                <p id="icon-placeholderText" class="text-slate-400 text-sm font-bold mb-4">ここにプレビューが表示されます</p>
+                                <!-- このCanvasに画像を合成して描画します -->
+                                <canvas id="icon-previewCanvas" class="max-w-full h-auto rounded-full shadow-2xl hidden"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
