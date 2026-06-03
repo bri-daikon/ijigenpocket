@@ -148,6 +148,11 @@ function updateUI() {
         toolbar.className = 'absolute -top-11 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto';
       }
       
+      // ツールバー上でのmousedownがパネルのドラッグを引き起こさないようにバブリングを防止
+      toolbar.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+      });
+      
       // index を探す
       const index = panels.findIndex(p => p.id === panel.id);
 
@@ -424,6 +429,8 @@ clearFgBtn.addEventListener('click', () => {
 // === ドラッグ＆ドロップ、リサイズの処理 ===
 function handleSpecialMouseDown(e, type) {
   e.stopPropagation();
+  
+  const wasSelected = selectedPanelId === type;
   selectedPanelId = type;
   const target = foreground;
   
@@ -439,11 +446,16 @@ function handleSpecialMouseDown(e, type) {
     dragOffset.x = mouseX - target.x;
     dragOffset.y = mouseY - target.y;
   }
-  updateUI();
+  
+  if (!wasSelected) {
+    updateUI();
+  }
 }
 
 function handlePanelMouseDown(e, panelId) {
   e.stopPropagation();
+  
+  const wasSelected = selectedPanelId === panelId;
   selectedPanelId = panelId;
   const panel = panels.find(p => p.id === panelId);
   
@@ -459,7 +471,10 @@ function handlePanelMouseDown(e, panelId) {
     dragOffset.x = mouseX - panel.x;
     dragOffset.y = mouseY - panel.y;
   }
-  updateUI();
+  
+  if (!wasSelected) {
+    updateUI();
+  }
 }
 
 // 画面全体でマウスの動きを監視
