@@ -6,10 +6,12 @@ if (typeof lucide !== 'undefined') {
 // === 状態管理（データ） ===
 let frame = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
 let panels = [];
-let selectedPanelId = null; // 'frame', またはパネルのid
-let copiedPanelData = null; // コピーされたパネルデータ
+let selectedPanelIds = []; // 'frame', またはパネルのidの配列
+let copiedPanelData = []; // コピーされたパネルデータの配列
 let zoomScale = null; // null は自動フィット、数値は固定倍率
 let actionHistory = []; // 操作履歴スタック
+let previewBgColor = 'blue'; // 'white', 'gray', 'black', 'blue' (Undo対象外)
+let canvasBgColor = 'black'; // 'transparent', 'white', 'gray', 'black' (Undo対象)
 
 // === フレーム画像編集モーダル用の状態変数 ===
 let editOriginalUrl = null;
@@ -24,6 +26,7 @@ let editImage = null;
 let isDragging = false;
 let isResizing = false;
 let dragOffset = { x: 0, y: 0 };
+let dragStartPositions = []; // 複数移動用：{ id, x, y } の配列
 
 let canvasWidth = 1280;
 let canvasHeight = 720;
@@ -39,6 +42,16 @@ const editFrameBtn = document.getElementById('edit-frame-btn');
 const replacePanelUpload = document.getElementById('replace-panel-upload');
 const undoActionBtn = document.getElementById('undo-action-btn');
 
+const previewArea = document.getElementById('preview-area');
+const alignTopBtn = document.getElementById('align-top-btn');
+const alignCenterBtn = document.getElementById('align-center-btn');
+const alignBottomBtn = document.getElementById('align-bottom-btn');
+const alignLeftBtn = document.getElementById('align-left-btn');
+const alignCenterHBtn = document.getElementById('align-center-h-btn');
+const alignRightBtn = document.getElementById('align-right-btn');
+const distributeHBtn = document.getElementById('distribute-h-btn');
+const distributeVBtn = document.getElementById('distribute-v-btn');
+
 // モーダル関連のDOM
 const frameEditModal = document.getElementById('frame-edit-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -53,7 +66,8 @@ function saveStateToHistory() {
     panels: JSON.parse(JSON.stringify(panels)),
     canvasWidth: canvasWidth,
     canvasHeight: canvasHeight,
-    selectedPanelId: selectedPanelId
+    selectedPanelIds: JSON.parse(JSON.stringify(selectedPanelIds)),
+    canvasBgColor: canvasBgColor
   };
   actionHistory.push(currentState);
   if (actionHistory.length > 30) {
@@ -69,7 +83,8 @@ function undoAction() {
   panels = JSON.parse(JSON.stringify(prevState.panels));
   canvasWidth = prevState.canvasWidth;
   canvasHeight = prevState.canvasHeight;
-  selectedPanelId = prevState.selectedPanelId;
+  selectedPanelIds = JSON.parse(JSON.stringify(prevState.selectedPanelIds));
+  canvasBgColor = prevState.canvasBgColor || 'black';
   
   updateUI();
 }
@@ -95,6 +110,12 @@ function updateUI() {
   // 1. キャンバスの再描画
   canvasArea.innerHTML = ''; // 一旦空にする
 
+  let canvasBgClass = 'bg-black';
+  if (canvasBgColor === 'transparent') canvasBgClass = 'checkerboard-bg';
+  else if (canvasBgColor === 'white') canvasBgClass = 'bg-white';
+  else if (canvasBgColor === 'gray') canvasBgClass = 'bg-gray-500';
+  canvasArea.className = `relative rounded-lg shadow-2xl overflow-hidden border border-gray-700 origin-center shrink-0 ${canvasBgClass}`;
+
   canvasArea.style.width = `${canvasWidth}px`;
   canvasArea.style.height = `${canvasHeight}px`;
 
@@ -106,7 +127,7 @@ function updateUI() {
   // フレームの描画
   if (frame) {
     const frameEl = document.createElement('div');
-    const isSelected = selectedPanelId === 'frame';
+    const isSelected = selectedPanelIds.includes('frame');
     frameEl.className = `absolute cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
     frameEl.style.left = `${frame.x}px`;
     frameEl.style.top = `${frame.y}px`;
@@ -121,7 +142,7 @@ function updateUI() {
     
     frameEl.addEventListener('mousedown', (e) => handleSpecialMouseDown(e, 'frame'));
     
-    if (isSelected) {
+    if (isSelected && selectedPanelIds.length === 1) {
       const resizeHandle = document.createElement('div');
       resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm';
       resizeHandle.style.transform = 'translate(50%, 50%)';
@@ -144,7 +165,7 @@ function updateUI() {
     if (panel.visible === false) return; // 非表示の場合はメインキャンバスに描画しない
     
     const pEl = document.createElement('div');
-    const isSelected = selectedPanelId === panel.id;
+    const isSelected = selectedPanelIds.includes(panel.id);
     
     pEl.className = `absolute z-20 cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
     pEl.style.left = `${panel.x}px`;
@@ -172,8 +193,8 @@ function updateUI() {
     // パネルをマウスで押した時の処理
     pEl.addEventListener('mousedown', (e) => handlePanelMouseDown(e, panel.id));
 
-    // 選択中ならリサイズ用のツマミとクイックツールバーを表示
-    if (isSelected) {
+    // 選択中かつ単一選択ならリサイズ用のツマミとクイックツールバーを表示
+    if (isSelected && selectedPanelIds.length === 1) {
       const resizeHandle = document.createElement('div');
       resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm z-30';
       resizeHandle.style.transform = 'translate(50%, 50%)';
@@ -306,7 +327,7 @@ function updateUI() {
         e.stopPropagation();
         saveStateToHistory();
         panel.visible = false;
-        if (selectedPanelId === panel.id) selectedPanelId = null;
+        selectedPanelIds = selectedPanelIds.filter(id => id !== panel.id);
         updateUI();
       };
       toolbar.appendChild(hideBtn);
@@ -350,7 +371,7 @@ function updateUI() {
         e.stopPropagation();
         saveStateToHistory();
         panels = panels.filter(p => p.id !== panel.id);
-        selectedPanelId = null;
+        selectedPanelIds = selectedPanelIds.filter(id => id !== panel.id);
         updateUI();
       };
       toolbar.appendChild(delBtn);
@@ -379,10 +400,19 @@ function updateUI() {
     panelsReversed.forEach((panel, revIndex) => {
       const index = panels.length - 1 - revIndex;
       const li = document.createElement('li');
-      const isSelected = selectedPanelId === panel.id;
+      const isSelected = selectedPanelIds.includes(panel.id);
       li.className = `flex items-center justify-between p-2 rounded bg-gray-800 border cursor-pointer ${isSelected ? 'border-blue-500' : 'border-gray-600'}`;
-      li.onclick = () => {
-        selectedPanelId = panel.id;
+      li.onclick = (e) => {
+        if (e.shiftKey || e.ctrlKey) {
+          if (selectedPanelIds.includes(panel.id)) {
+            selectedPanelIds = selectedPanelIds.filter(id => id !== panel.id);
+          } else {
+            selectedPanelIds.push(panel.id);
+            selectedPanelIds = selectedPanelIds.filter(id => id !== 'frame'); // フレームとの同時選択を防止
+          }
+        } else {
+          selectedPanelIds = [panel.id];
+        }
         updateUI();
       };
 
@@ -426,8 +456,8 @@ function updateUI() {
         e.stopPropagation();
         saveStateToHistory();
         panel.visible = isVisible ? false : true;
-        if (!panel.visible && selectedPanelId === panel.id) {
-          selectedPanelId = null; // 非表示にしたら選択解除
+        if (!panel.visible) {
+          selectedPanelIds = selectedPanelIds.filter(id => id !== panel.id);
         }
         updateUI();
       };
@@ -451,7 +481,7 @@ function updateUI() {
         e.stopPropagation();
         saveStateToHistory();
         panels = panels.filter(p => p.id !== panel.id);
-        if (selectedPanelId === panel.id) selectedPanelId = null;
+        selectedPanelIds = selectedPanelIds.filter(id => id !== panel.id);
         updateUI();
       };
       btnContainer.appendChild(trashBtn);
@@ -468,10 +498,39 @@ function updateUI() {
   clearFrameBtn.style.display = frame ? 'block' : 'none';
   editFrameBtn.style.display = frame ? 'block' : 'none';
 
+  // 3.3 整列・配置ボタンの有効化/無効化制御
+  const selectedPanelCount = selectedPanelIds.filter(id => id !== 'frame').length;
+  const hasMultiple = selectedPanelCount >= 2;
+  const hasThreeOrMore = selectedPanelCount >= 3;
+  if (alignTopBtn) alignTopBtn.disabled = !hasMultiple;
+  if (alignCenterBtn) alignCenterBtn.disabled = !hasMultiple;
+  if (alignBottomBtn) alignBottomBtn.disabled = !hasMultiple;
+  if (alignLeftBtn) alignLeftBtn.disabled = !hasMultiple;
+  if (alignCenterHBtn) alignCenterHBtn.disabled = !hasMultiple;
+  if (alignRightBtn) alignRightBtn.disabled = !hasMultiple;
+  if (distributeHBtn) distributeHBtn.disabled = !hasThreeOrMore;
+  if (distributeVBtn) distributeVBtn.disabled = !hasThreeOrMore;
+
   // 3.5 操作履歴「一つ戻る」ボタンの制御
   if (undoActionBtn) {
     undoActionBtn.disabled = actionHistory.length === 0;
   }
+
+  // キャンバス背景色ボタンのリング表示制御
+  const canvasBgColors = ['trans', 'white', 'gray', 'black'];
+  const targetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
+  canvasBgColors.forEach(c => {
+    const btn = document.getElementById(`canvas-bg-${c}`);
+    if (btn) {
+      if (targetMap[c] === canvasBgColor) {
+        btn.classList.add('ring-2', 'ring-blue-500');
+        if (c === 'black') btn.classList.remove('ring-1');
+      } else {
+        btn.classList.remove('ring-2', 'ring-blue-500');
+        if (c === 'black') btn.classList.add('ring-1', 'ring-blue-500');
+      }
+    }
+  });
 
   // 4. 表示スケールの調整
   updateCanvasScale();
@@ -479,22 +538,23 @@ function updateUI() {
 
 // === 画像の読み込み処理 ===
 function handleFileUpload(event, type) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const files = Array.from(event.target.files);
+  if (files.length === 0) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const imageUrl = e.target.result;
-    
-    // 画像オブジェクトを作成してアスペクト比を計測
-    const img = new Image();
-    img.onload = () => {
-      const originalWidth = img.naturalWidth;
-      const originalHeight = img.naturalHeight;
-      const originalRatio = originalWidth / originalHeight;
-      
-      if (type === 'frame') {
-        saveStateToHistory();
+  saveStateToHistory();
+
+  if (type === 'frame') {
+    // フレームは1枚だけなので最初のファイルのみ処理
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target.result;
+      const img = new Image();
+      img.onload = () => {
+        const originalWidth = img.naturalWidth;
+        const originalHeight = img.naturalHeight;
+        const originalRatio = originalWidth / originalHeight;
+        
         const scaleX = canvasWidth / originalWidth;
         const scaleY = canvasHeight / originalHeight;
         const scale = Math.min(1, scaleX, scaleY);
@@ -509,35 +569,70 @@ function handleFileUpload(event, type) {
           height: initHeight,
           originalRatio: originalRatio
         };
-        selectedPanelId = 'frame';
-      } else if (type === 'panel') {
-        saveStateToHistory();
-        // パネルは最大200x200に収まるようにアスペクト比を維持
-        const scale = Math.min(1, 200 / originalWidth, 200 / originalHeight);
-        const initWidth = originalWidth * scale;
-        const initHeight = originalHeight * scale;
-        
-        const newPanel = {
-          id: Date.now().toString(),
-          url: imageUrl,
-          x: (canvasWidth - initWidth) / 2,
-          y: (canvasHeight - initHeight) / 2,
-          width: initWidth,
-          height: initHeight,
-          originalRatio: originalRatio,
-          flipH: false,
-          flipV: false,
-          visible: true,
-          opacity: 1
-        };
-        panels.push(newPanel);
-        selectedPanelId = newPanel.id;
-      }
-      updateUI();
+        selectedPanelIds = ['frame'];
+        updateUI();
+      };
+      img.src = imageUrl;
     };
-    img.src = imageUrl;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  } else if (type === 'panel') {
+    // 複数パネルの一括読み込み
+    const newPanelIds = [];
+    
+    // 各ファイルの読み込みをPromise化
+    const loadFile = (file, index) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target.result;
+          const img = new Image();
+          img.onload = () => {
+            const originalWidth = img.naturalWidth;
+            const originalHeight = img.naturalHeight;
+            const originalRatio = originalWidth / originalHeight;
+            
+            // パネルは最大200x200に収まるようにアスペクト比を維持
+            const scale = Math.min(1, 200 / originalWidth, 200 / originalHeight);
+            const initWidth = originalWidth * scale;
+            const initHeight = originalHeight * scale;
+            
+            // 重ならないように、複数追加時は少しずつ位置をずらす
+            const offset = index * 24;
+            const baseX = (canvasWidth - initWidth) / 2 + offset;
+            const baseY = (canvasHeight - initHeight) / 2 + offset;
+            
+            const newPanel = {
+              id: Date.now().toString() + '-' + index + '-' + Math.random().toString(36).substr(2, 5),
+              url: imageUrl,
+              x: baseX,
+              y: baseY,
+              width: initWidth,
+              height: initHeight,
+              originalRatio: originalRatio,
+              flipH: false,
+              flipV: false,
+              visible: true,
+              opacity: 1
+            };
+            resolve(newPanel);
+          };
+          img.src = imageUrl;
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    // すべてのファイルを非同期で読み込んで追加
+    Promise.all(files.map((file, idx) => loadFile(file, idx))).then((newPanels) => {
+      newPanels.forEach(panel => {
+        panels.push(panel);
+        newPanelIds.push(panel.id);
+      });
+      selectedPanelIds = newPanelIds; // 追加されたすべてのパネルを選択状態にする
+      updateUI();
+    });
+  }
+
   event.target.value = ''; // 同じ画像を連続で選べるようにリセット
 }
 
@@ -548,7 +643,7 @@ document.getElementById('panel-upload').addEventListener('change', (e) => handle
 clearFrameBtn.addEventListener('click', () => { 
   saveStateToHistory();
   frame = null; 
-  if (selectedPanelId === 'frame') selectedPanelId = null;
+  selectedPanelIds = selectedPanelIds.filter(id => id !== 'frame');
   updateUI(); 
 });
 
@@ -557,8 +652,8 @@ function handleSpecialMouseDown(e, type) {
   e.stopPropagation();
   saveStateToHistory();
   
-  const wasSelected = selectedPanelId === type;
-  selectedPanelId = type;
+  // フレームは単一選択のみ
+  selectedPanelIds = ['frame'];
   const target = frame;
   
   const rect = canvasArea.getBoundingClientRect();
@@ -572,69 +667,119 @@ function handleSpecialMouseDown(e, type) {
     const mouseY = (e.clientY - rect.top) / scale;
     dragOffset.x = mouseX - target.x;
     dragOffset.y = mouseY - target.y;
+    dragStartPositions = [{ id: 'frame', x: target.x, y: target.y }];
   }
   
-  if (!wasSelected) {
-    updateUI();
-  }
+  updateUI();
 }
 
 function handlePanelMouseDown(e, panelId) {
   e.stopPropagation();
   saveStateToHistory();
   
-  const wasSelected = selectedPanelId === panelId;
-  selectedPanelId = panelId;
-  const panel = panels.find(p => p.id === panelId);
-  
   const rect = canvasArea.getBoundingClientRect();
   const scale = rect.width / canvasWidth;
 
-  if (e.target.classList.contains('resize-handle')) {
+  const isResizeHandle = e.target.classList.contains('resize-handle');
+  
+  if (e.shiftKey || e.ctrlKey) {
+    // 複数選択トグル
+    if (selectedPanelIds.includes(panelId)) {
+      selectedPanelIds = selectedPanelIds.filter(id => id !== panelId);
+    } else {
+      selectedPanelIds.push(panelId);
+      selectedPanelIds = selectedPanelIds.filter(id => id !== 'frame'); // フレームとの同時選択を防止
+    }
+  } else {
+    // 通常のクリック：既に選択されている場合はその選択を維持（複数ドラッグのため）、選択されていない場合は単一選択
+    if (!selectedPanelIds.includes(panelId)) {
+      selectedPanelIds = [panelId];
+    }
+  }
+
+  // クリックされたパネルを基準とする
+  const basePanel = panels.find(p => p.id === panelId);
+
+  if (isResizeHandle && selectedPanelIds.length === 1) {
     isResizing = true;
   } else {
     isDragging = true;
     const mouseX = (e.clientX - rect.left) / scale;
     const mouseY = (e.clientY - rect.top) / scale;
-    dragOffset.x = mouseX - panel.x;
-    dragOffset.y = mouseY - panel.y;
+    dragOffset.x = mouseX - basePanel.x;
+    dragOffset.y = mouseY - basePanel.y;
+
+    // 選択されているすべてのパネルの初期位置を保存
+    dragStartPositions = selectedPanelIds.map(id => {
+      if (id === 'frame') {
+        return { id: 'frame', x: frame.x, y: frame.y };
+      } else {
+        const p = panels.find(panel => panel.id === id);
+        return p ? { id: p.id, x: p.x, y: p.y } : null;
+      }
+    }).filter(Boolean);
   }
   
-  if (!wasSelected) {
-    updateUI();
-  }
+  updateUI();
 }
 
 // 画面全体でマウスの動きを監視
 window.addEventListener('mousemove', (e) => {
   if (!isDragging && !isResizing) return;
-  if (!selectedPanelId) return;
+  if (selectedPanelIds.length === 0) return;
 
   const rect = canvasArea.getBoundingClientRect();
   const scale = rect.width / canvasWidth;
   
   const mouseX = (e.clientX - rect.left) / scale;
   const mouseY = (e.clientY - rect.top) / scale;
-  
-  let target = null;
-  if (selectedPanelId === 'frame') {
-    target = frame;
-  } else {
-    target = panels.find(p => p.id === selectedPanelId);
-  }
-
-  if (!target) return;
 
   if (isDragging) {
-    let newX = mouseX - dragOffset.x;
-    let newY = mouseY - dragOffset.y;
+    // 基準となる移動量の計算
+    const baseId = selectedPanelIds[0];
+    const baseStart = dragStartPositions.find(p => p.id === baseId);
+    if (!baseStart) return;
+
+    let targetX = mouseX - dragOffset.x;
+    let targetY = mouseY - dragOffset.y;
     if (snapToGrid) {
-      newX = Math.round(newX / 24) * 24;
-      newY = Math.round(newY / 24) * 24;
+      targetX = Math.round(targetX / 24) * 24;
+      targetY = Math.round(targetY / 24) * 24;
     }
-    target.x = newX;
-    target.y = newY;
+
+    const deltaX = targetX - baseStart.x;
+    const deltaY = targetY - baseStart.y;
+
+    // 選択されているすべての要素に移動量を適用する
+    dragStartPositions.forEach(start => {
+      let finalX = start.x + deltaX;
+      let finalY = start.y + deltaY;
+      
+      if (start.id === 'frame') {
+        if (frame) {
+          frame.x = finalX;
+          frame.y = finalY;
+        }
+      } else {
+        const p = panels.find(panel => panel.id === start.id);
+        if (p) {
+          p.x = finalX;
+          p.y = finalY;
+        }
+      }
+    });
+
   } else if (isResizing) {
+    // リサイズは単一選択時のみ
+    const targetId = selectedPanelIds[0];
+    let target = null;
+    if (targetId === 'frame') {
+      target = frame;
+    } else {
+      target = panels.find(p => p.id === targetId);
+    }
+    if (!target) return;
+
     let newWidth = mouseX - target.x;
     let newHeight = mouseY - target.y;
 
@@ -660,14 +805,15 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', () => {
   isDragging = false;
   isResizing = false;
+  dragStartPositions = [];
 });
 
 // キャンバスの背景をクリックした時は選択解除
-canvasArea.addEventListener('mousedown', () => {
-  if (selectedPanelId !== null) {
+canvasArea.addEventListener('mousedown', (e) => {
+  if (selectedPanelIds.length > 0) {
     saveStateToHistory();
   }
-  selectedPanelId = null;
+  selectedPanelIds = [];
   updateUI();
 });
 
@@ -762,14 +908,14 @@ function duplicatePanel(panel) {
   const offset = snapToGrid ? 24 : 20;
   const newPanel = {
     ...panel,
-    id: Date.now().toString(),
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
     x: panel.x + offset,
     y: panel.y + offset,
     flipH: panel.flipH || false,
     flipV: panel.flipV || false
   };
   panels.push(newPanel);
-  selectedPanelId = newPanel.id;
+  selectedPanelIds = [newPanel.id];
   updateUI();
 }
 
@@ -786,7 +932,7 @@ function movePanelToExtremity(index, toFront) {
   updateUI();
 }
 
-// キーボードショートカットの登録 (Ctrl+C / Ctrl+V / Ctrl+Z)
+// キーボードショートカットの登録 (Ctrl+C / Ctrl+V / Ctrl+Z / Delete)
 window.addEventListener('keydown', (e) => {
   if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA') {
     return;
@@ -794,19 +940,33 @@ window.addEventListener('keydown', (e) => {
 
   // Ctrl+C / Cmd+C (コピー)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-    if (selectedPanelId && selectedPanelId !== 'frame') {
-      const panel = panels.find(p => p.id === selectedPanelId);
-      if (panel) {
-        copiedPanelData = { ...panel };
-        e.preventDefault();
-      }
+    const copyTargets = selectedPanelIds.filter(id => id !== 'frame')
+      .map(id => panels.find(p => p.id === id))
+      .filter(Boolean);
+    if (copyTargets.length > 0) {
+      copiedPanelData = copyTargets.map(p => JSON.parse(JSON.stringify(p)));
+      e.preventDefault();
     }
   }
 
   // Ctrl+V / Cmd+V (ペースト)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-    if (copiedPanelData) {
-      duplicatePanel(copiedPanelData);
+    if (copiedPanelData && copiedPanelData.length > 0) {
+      saveStateToHistory();
+      const offset = snapToGrid ? 24 : 20;
+      const newPanelIds = [];
+      copiedPanelData.forEach(pData => {
+        const newPanel = {
+          ...pData,
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          x: pData.x + offset,
+          y: pData.y + offset
+        };
+        panels.push(newPanel);
+        newPanelIds.push(newPanel.id);
+      });
+      selectedPanelIds = newPanelIds;
+      updateUI();
       e.preventDefault();
     }
   }
@@ -815,6 +975,18 @@ window.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
     undoAction();
     e.preventDefault();
+  }
+
+  // Delete / Backspace (削除)
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    const deleteTargets = selectedPanelIds.filter(id => id !== 'frame');
+    if (deleteTargets.length > 0) {
+      saveStateToHistory();
+      panels = panels.filter(p => !deleteTargets.includes(p.id));
+      selectedPanelIds = [];
+      updateUI();
+      e.preventDefault();
+    }
   }
 });
 
@@ -875,6 +1047,15 @@ async function exportToPNG() {
 
     // すべての画像を並列で読み込み
     const renderItems = await Promise.all(drawTasks);
+
+    // キャンバス背景色の塗りつぶし
+    if (canvasBgColor !== 'transparent') {
+      let fillColor = '#000000';
+      if (canvasBgColor === 'white') fillColor = '#ffffff';
+      else if (canvasBgColor === 'gray') fillColor = '#6b7280'; // bg-gray-500
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
 
     // キャンバスに描画
     renderItems.forEach(item => {
@@ -1250,9 +1431,9 @@ function adjustZoom(delta) {
 function handleReplacePanelUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (!selectedPanelId) return;
+  if (selectedPanelIds.length !== 1) return;
 
-  const panel = panels.find(p => p.id === selectedPanelId);
+  const panel = panels.find(p => p.id === selectedPanelIds[0]);
   if (!panel) return;
 
   const reader = new FileReader();
@@ -1271,5 +1452,167 @@ function handleReplacePanelUpload(event) {
   event.target.value = ''; // リセット
 }
 
-// 初期描画
+// === 整列・配置の処理 ===
+function alignPanels(type) {
+  const targetIds = selectedPanelIds.filter(id => id !== 'frame');
+  const targetPanels = panels.filter(p => targetIds.includes(p.id));
+  if (targetPanels.length < 2) return;
+
+  saveStateToHistory();
+
+  if (type === 'top') {
+    const minY = Math.min(...targetPanels.map(p => p.y));
+    targetPanels.forEach(p => {
+      p.y = minY;
+    });
+  } else if (type === 'bottom') {
+    const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
+    targetPanels.forEach(p => {
+      p.y = maxY - p.height;
+    });
+  } else if (type === 'center') {
+    const minY = Math.min(...targetPanels.map(p => p.y));
+    const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
+    const centerY = (minY + maxY) / 2;
+    targetPanels.forEach(p => {
+      p.y = centerY - p.height / 2;
+    });
+  } else if (type === 'left') {
+    const minX = Math.min(...targetPanels.map(p => p.x));
+    targetPanels.forEach(p => {
+      p.x = minX;
+    });
+  } else if (type === 'right') {
+    const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
+    targetPanels.forEach(p => {
+      p.x = maxX - p.width;
+    });
+  } else if (type === 'center-h') {
+    const minX = Math.min(...targetPanels.map(p => p.x));
+    const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
+    const centerX = (minX + maxX) / 2;
+    targetPanels.forEach(p => {
+      p.x = centerX - p.width / 2;
+    });
+  } else if (type === 'distribute-h') {
+    if (targetPanels.length < 3) return;
+    // x座標でソート
+    const sorted = [...targetPanels].sort((a, b) => a.x - b.x);
+    const minX = sorted[0].x;
+    const maxX = sorted[sorted.length - 1].x + sorted[sorted.length - 1].width;
+    const totalWidth = sorted.reduce((sum, p) => sum + p.width, 0);
+    const totalGap = (maxX - minX) - totalWidth;
+    const gap = totalGap / (sorted.length - 1);
+
+    let currentX = minX;
+    sorted.forEach((p, idx) => {
+      p.x = currentX;
+      currentX += p.width + gap;
+    });
+  } else if (type === 'distribute-v') {
+    if (targetPanels.length < 3) return;
+    // y座標でソート
+    const sorted = [...targetPanels].sort((a, b) => a.y - b.y);
+    const minY = sorted[0].y;
+    const maxY = sorted[sorted.length - 1].y + sorted[sorted.length - 1].height;
+    const totalHeight = sorted.reduce((sum, p) => sum + p.height, 0);
+    const totalGap = (maxY - minY) - totalHeight;
+    const gap = totalGap / (sorted.length - 1);
+
+    let currentY = minY;
+    sorted.forEach((p, idx) => {
+      p.y = currentY;
+      currentY += p.height + gap;
+    });
+  }
+
+  updateUI();
+}
+
+// === 背景色の切り替え ===
+function setPreviewBg(color) {
+  previewBgColor = color;
+  if (!previewArea) return;
+
+  // すべての背景色クラスを除去して、選択されたクラスを追加
+  previewArea.classList.remove('bg-blue-950', 'bg-white', 'bg-gray-500', 'bg-black');
+  
+  let bgClass = 'bg-blue-950';
+  if (color === 'white') bgClass = 'bg-white';
+  else if (color === 'gray') bgClass = 'bg-gray-500';
+  else if (color === 'black') bgClass = 'bg-black';
+
+  previewArea.classList.add(bgClass);
+
+  // カラーチップのアクティブ表示（リング表示）の切り替え
+  const colors = ['white', 'gray', 'black', 'blue'];
+  colors.forEach(c => {
+    const btn = document.getElementById(`bg-color-${c}`);
+    if (btn) {
+      if (c === color) {
+        btn.classList.add('ring-2', 'ring-blue-500');
+        btn.classList.remove('ring-1', 'ring-blue-500'); // デフォルト青のring-1を上書きするため
+      } else {
+        btn.classList.remove('ring-2', 'ring-blue-500');
+        if (c === 'blue') {
+          btn.classList.add('ring-1', 'ring-blue-500');
+        }
+      }
+    }
+  });
+}
+
+// イベントリスナーの登録
+if (alignTopBtn) {
+  alignTopBtn.addEventListener('click', () => alignPanels('top'));
+}
+if (alignCenterBtn) {
+  alignCenterBtn.addEventListener('click', () => alignPanels('center'));
+}
+if (alignBottomBtn) {
+  alignBottomBtn.addEventListener('click', () => alignPanels('bottom'));
+}
+if (alignLeftBtn) {
+  alignLeftBtn.addEventListener('click', () => alignPanels('left'));
+}
+if (alignCenterHBtn) {
+  alignCenterHBtn.addEventListener('click', () => alignPanels('center-h'));
+}
+if (alignRightBtn) {
+  alignRightBtn.addEventListener('click', () => alignPanels('right'));
+}
+if (distributeHBtn) {
+  distributeHBtn.addEventListener('click', () => alignPanels('distribute-h'));
+}
+if (distributeVBtn) {
+  distributeVBtn.addEventListener('click', () => alignPanels('distribute-v'));
+}
+
+const bgColors = ['white', 'gray', 'black', 'blue'];
+bgColors.forEach(color => {
+  const btn = document.getElementById(`bg-color-${color}`);
+  if (btn) {
+    btn.addEventListener('click', () => setPreviewBg(color));
+  }
+});
+
+// === キャンバス背景色の切り替え ===
+function setCanvasBg(color) {
+  saveStateToHistory();
+  canvasBgColor = color;
+  updateUI();
+}
+
+const canvasBgColorsList = ['trans', 'white', 'gray', 'black'];
+const canvasTargetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
+canvasBgColorsList.forEach(c => {
+  const btn = document.getElementById(`canvas-bg-${c}`);
+  if (btn) {
+    btn.addEventListener('click', () => setCanvasBg(canvasTargetMap[c]));
+  }
+});
+
+// 初期描画と初期背景色の設定
+canvasBgColor = 'black';
+setPreviewBg('blue');
 updateUI();
