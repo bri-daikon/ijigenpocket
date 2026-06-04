@@ -52,6 +52,16 @@
             <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
         </div>
+        <!-- キャンバス背景色 -->
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-300">キャンバス背景</span>
+          <div class="flex items-center gap-1.5 bg-gray-850 px-2 py-1 rounded border border-gray-650">
+            <button type="button" id="canvas-bg-trans" class="w-4 h-4 rounded border border-gray-500 checkerboard-bg hover:scale-110 transition-transform" title="透過"></button>
+            <button type="button" id="canvas-bg-white" class="w-4 h-4 rounded bg-white border border-gray-400 hover:scale-110 transition-transform" title="白"></button>
+            <button type="button" id="canvas-bg-gray" class="w-4 h-4 rounded bg-gray-500 border border-gray-600 hover:scale-110 transition-transform" title="グレー"></button>
+            <button type="button" id="canvas-bg-black" class="w-4 h-4 rounded bg-black border border-gray-800 hover:scale-110 transition-transform ring-1 ring-blue-500" title="黒（デフォルト）"></button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -98,7 +108,7 @@
       <label for="panel-upload" class="flex items-center justify-center w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer transition-colors shadow-lg">
         <i data-lucide="upload" class="mr-2 w-5 h-5"></i>
         画像をパネルとして追加
-        <input type="file" id="panel-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
+        <input type="file" id="panel-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" multiple />
       </label>
       <input type="file" id="replace-panel-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
 
@@ -109,6 +119,53 @@
           <!-- パネルリストがここにJavaScriptで生成されます -->
           <p class="text-xs text-gray-500">パネルはありません</p>
         </ul>
+      </div>
+    </div>
+
+    <!-- 整列・配置 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="align-center" class="w-5 h-5"></i> 整列・配置
+      </h2>
+      <div class="flex flex-col gap-2">
+        <div class="grid grid-cols-3 gap-2">
+          <button id="align-top-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="上に合わせる">
+            <i data-lucide="align-start-horizontal" class="w-5 h-5 mb-1"></i>
+            上揃え
+          </button>
+          <button id="align-center-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="中央に合わせる">
+            <i data-lucide="align-center-horizontal" class="w-5 h-5 mb-1"></i>
+            中央揃え
+          </button>
+          <button id="align-bottom-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="下に合わせる">
+            <i data-lucide="align-end-horizontal" class="w-5 h-5 mb-1"></i>
+            下揃え
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-1">
+          <button id="align-left-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="左に合わせる">
+            <i data-lucide="align-start-vertical" class="w-5 h-5 mb-1"></i>
+            左揃え
+          </button>
+          <button id="align-center-h-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="左右中央に合わせる">
+            <i data-lucide="align-center-vertical" class="w-5 h-5 mb-1"></i>
+            左右中央
+          </button>
+          <button id="align-right-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="右に合わせる">
+            <i data-lucide="align-end-vertical" class="w-5 h-5 mb-1"></i>
+            右揃え
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-1">
+          <button id="distribute-h-btn" class="flex items-center justify-center py-2 px-3 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="水平に均等配置">
+            <i data-lucide="distribute-horizontal" class="w-4 h-4 mr-1.5"></i>
+            水平均等
+          </button>
+          <button id="distribute-v-btn" class="flex items-center justify-center py-2 px-3 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="垂直に均等配置">
+            <i data-lucide="distribute-vertical" class="w-4 h-4 mr-1.5"></i>
+            垂直均等
+          </button>
+        </div>
       </div>
     </div>
 
@@ -125,7 +182,7 @@
   </div>
 
   <!-- 右側：プレビュー領域（キャンバス） -->
-  <div class="flex-grow p-8 bg-blue-950 flex flex-col items-center justify-center overflow-hidden">
+  <div id="preview-area" class="flex-grow p-8 bg-blue-950 flex flex-col items-center justify-center overflow-hidden transition-colors duration-200">
     
     <!-- キャンバスラッパー（中央配置とスケーリング用） -->
     <div id="canvas-wrapper" class="flex items-center justify-center w-full h-full min-h-0 relative overflow-auto p-8">
@@ -145,6 +202,13 @@
     <div class="mt-4 text-gray-500 text-sm flex items-center gap-6 z-10 bg-gray-900/80 px-5 py-2 rounded-full border border-gray-800 shadow-lg">
       <span>キャンバスサイズ: <span id="size-display" class="font-semibold text-gray-300">1280 x 720</span></span>
       <div class="flex items-center gap-2 border-l border-gray-700 pl-6">
+        <span class="text-xs text-gray-400 mr-1">背景色:</span>
+        <div class="flex items-center gap-1.5 mr-4">
+          <button id="bg-color-white" class="w-4 h-4 rounded-full bg-white border border-gray-400 hover:scale-110 transition-transform" title="白"></button>
+          <button id="bg-color-gray" class="w-4 h-4 rounded-full bg-gray-500 border border-gray-600 hover:scale-110 transition-transform" title="グレー"></button>
+          <button id="bg-color-black" class="w-4 h-4 rounded-full bg-black border border-gray-800 hover:scale-110 transition-transform" title="黒"></button>
+          <button id="bg-color-blue" class="w-4 h-4 rounded-full bg-blue-950 border border-blue-900 hover:scale-110 transition-transform ring-1 ring-blue-500" title="青（デフォルト）"></button>
+        </div>
         <button id="zoom-out-btn" class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="縮小">
           <i data-lucide="zoom-out" class="w-4 h-4"></i>
         </button>
@@ -240,6 +304,6 @@
     </div>
   </div>
 
-  <script src="js/ccfolialayoutmaker.js?v=1.1.0"></script>
+  <script src="js/ccfolialayoutmaker.js?v=1.2.3"></script>
 </body>
 </html>
