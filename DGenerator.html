@@ -126,6 +126,38 @@
                 }
             });
 
+            const moveText = (index, direction) => {
+                const nextIndex = index + direction;
+                if (nextIndex < 0 || nextIndex >= layout.texts.length) return;
+                setLayout(prev => {
+                    const newTexts = [...prev.texts];
+                    const z1 = newTexts[index].z;
+                    const z2 = newTexts[nextIndex].z;
+                    newTexts[index] = { ...newTexts[index], z: z2 };
+                    newTexts[nextIndex] = { ...newTexts[nextIndex], z: z1 };
+                    const temp = newTexts[index];
+                    newTexts[index] = newTexts[nextIndex];
+                    newTexts[nextIndex] = temp;
+                    return { ...prev, texts: newTexts };
+                });
+            };
+
+            const moveVariation = (index, direction) => {
+                const nextIndex = index + direction;
+                if (nextIndex < 0 || nextIndex >= layout.variations.length) return;
+                setLayout(prev => {
+                    const newVars = [...prev.variations];
+                    const z1 = newVars[index].z;
+                    const z2 = newVars[nextIndex].z;
+                    newVars[index] = { ...newVars[index], z: z2 };
+                    newVars[nextIndex] = { ...newVars[nextIndex], z: z1 };
+                    const temp = newVars[index];
+                    newVars[index] = newVars[nextIndex];
+                    newVars[nextIndex] = temp;
+                    return { ...prev, variations: newVars };
+                });
+            };
+
             const waitForFonts = async () => {
                 await document.fonts.ready;
             };
@@ -291,12 +323,24 @@
                 setIsExporting(false);
             };
 
+            const bringToFront = (type, id) => {
+                const nextZ = maxZ + 1;
+                setMaxZ(nextZ);
+                setLayout(prev => {
+                    const next = { ...prev };
+                    if (type === 'text') next.texts = next.texts.map(t => t.id === id ? {...t, z: nextZ} : t);
+                    else if (type === 'image') next.images = next.images.map(i => i.id === id ? {...i, z: nextZ} : i);
+                    else if (type === 'var') next.variations = next.variations.map(v => v.id === id ? {...v, z: nextZ} : v);
+                    else if (type === 'radar') next.radar = { ...next.radar, z: nextZ };
+                    return next;
+                });
+                setSelectedId(id);
+            };
+
             const onMouseDown = (e, type, id) => {
                 if (isExporting) return;
                 e.stopPropagation();
-                setSelectedId(id);
-                const nextZ = maxZ + 1;
-                setMaxZ(nextZ);
+                bringToFront(type, id);
                 const rect = canvasRef.current.getBoundingClientRect();
                 const mouseXInCanvas = (e.clientX - rect.left) / zoom;
                 const mouseYInCanvas = (e.clientY - rect.top) / zoom;
@@ -307,14 +351,6 @@
                 else if (type === 'var') { const item = layout.variations.find(v => v.id === id); if (item) { initialX = item.x; initialY = item.y; } }
                 else if (type === 'radar') { initialX = layout.radar.x; initialY = layout.radar.y; }
 
-                setLayout(prev => {
-                    const next = { ...prev };
-                    if (type === 'text') next.texts = next.texts.map(t => t.id === id ? {...t, z: nextZ} : t);
-                    else if (type === 'image') next.images = next.images.map(i => i.id === id ? {...i, z: nextZ} : i);
-                    else if (type === 'var') next.variations = next.variations.map(v => v.id === id ? {...v, z: nextZ} : v);
-                    else if (type === 'radar') next.radar = { ...next.radar, z: nextZ };
-                    return next;
-                });
                 setDragging({ type, id, offsetX: mouseXInCanvas - initialX, offsetY: mouseYInCanvas - initialY });
             };
 
@@ -457,9 +493,28 @@
 
                             {activeTab === 'text' && (
                                 <div className="space-y-4">
-                                    {layout.texts.map(t => (
-                                        <div key={t.id} onClick={() => setSelectedId(t.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === t.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
-                                            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">{t.label} <input type="checkbox" checked={t.visible} onChange={() => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,visible:!xt.visible}:xt)}))} /></div>
+                                    {layout.texts.map((t, idx) => (
+                                        <div key={t.id} onClick={() => bringToFront('text', t.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === t.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
+                                            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
+                                                <span>{t.label}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        className="hover:text-indigo-400 disabled:opacity-30" 
+                                                        disabled={idx === 0} 
+                                                        onClick={(e) => { e.stopPropagation(); moveText(idx, -1); }}
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <button 
+                                                        className="hover:text-indigo-400 disabled:opacity-30" 
+                                                        disabled={idx === layout.texts.length - 1} 
+                                                        onClick={(e) => { e.stopPropagation(); moveText(idx, 1); }}
+                                                    >
+                                                        ▼
+                                                    </button>
+                                                    <input type="checkbox" checked={t.visible} onChange={() => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,visible:!xt.visible}:xt)}))} />
+                                                </div>
+                                            </div>
                                             <textarea className="w-full bg-slate-950 p-2 rounded text-xs outline-none h-16 resize-none" value={t.text} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,text:e.target.value}:xt)}))} />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-1">
@@ -496,7 +551,7 @@
                             {activeTab === 'image' && (
                                 <div className="space-y-6">
                                     {layout.images.map(img => (
-                                        <div key={img.id} onClick={() => setSelectedId(img.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === img.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
+                                        <div key={img.id} onClick={() => bringToFront('image', img.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === img.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
                                             <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">{img.label} <input type="checkbox" checked={img.visible} onChange={() => setLayout(p => ({...p, images: p.images.map(i => i.id===img.id?{...i,visible:!i.visible}:i)}))} /></div>
                                             <label className="block w-full py-2 bg-slate-800 rounded text-center cursor-pointer text-[10px]">画像を選択<input type="file" className="hidden" onChange={e => handleFile(e, 'image', img.id)} /></label>
                                             <div className="space-y-1">
@@ -547,8 +602,8 @@
                                         )}
 
                                         <div className="space-y-2">
-                                            {layout.variations.map(v => (
-                                                <div key={v.id} onClick={() => setSelectedId(v.id)} className={`p-3 bg-slate-900/50 rounded-lg border ${selectedId === v.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-2`}>
+                                            {layout.variations.map((v, idx) => (
+                                                <div key={v.id} onClick={() => bringToFront('var', v.id)} className={`p-3 bg-slate-900/50 rounded-lg border ${selectedId === v.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-2`}>
                                                     <div className="flex justify-between items-center text-[10px]">
                                                         <div className="flex items-center gap-2">
                                                             <input 
@@ -563,9 +618,23 @@
                                                                 }} 
                                                                 onClick={e => e.stopPropagation()}
                                                             />
-                                                            <span className="truncate w-28 font-bold">{v.label}</span>
+                                                            <span className="truncate w-24 font-bold">{v.label}</span>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <button 
+                                                                className="hover:text-indigo-400 disabled:opacity-30" 
+                                                                disabled={idx === 0} 
+                                                                onClick={(e) => { e.stopPropagation(); moveVariation(idx, -1); }}
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button 
+                                                                className="hover:text-indigo-400 disabled:opacity-30" 
+                                                                disabled={idx === layout.variations.length - 1} 
+                                                                onClick={(e) => { e.stopPropagation(); moveVariation(idx, 1); }}
+                                                            >
+                                                                ▼
+                                                            </button>
                                                             <input type="checkbox" checked={v.visible} onChange={() => setLayout(p => ({...p, variations: p.variations.map(xv => xv.id===v.id?{...xv,visible:!xv.visible}:xv)}))} />
                                                             <button onClick={(e) => { 
                                                                 e.stopPropagation(); 
@@ -598,7 +667,7 @@
                                         <button onClick={importCcfolia} className="w-full py-2 bg-indigo-600 rounded-lg font-bold text-xs">データを反映</button>
                                     </div>
 
-                                    <div onClick={() => setSelectedId(layout.radar.id)} className={`p-4 rounded-xl border ${selectedId === layout.radar.id ? 'border-indigo-500 bg-slate-800' : 'bg-slate-900/50 border-white/5'} space-y-4`}>
+                                    <div onClick={() => bringToFront('radar', layout.radar.id)} className={`p-4 rounded-xl border ${selectedId === layout.radar.id ? 'border-indigo-500 bg-slate-800' : 'bg-slate-900/50 border-white/5'} space-y-4`}>
                                         <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">レーダー表示 <input type="checkbox" checked={layout.radar.visible} onChange={e => setLayout(p => ({...p, radar: {...p.radar, visible: e.target.checked}}))} /></div>
                                         <div className="space-y-1"><span className="text-[10px] text-slate-400">サイズ: {layout.radar.size}</span><input type="range" min="100" max="800" value={layout.radar.size} onChange={e => setLayout(p => ({...p, radar: {...p.radar, size: parseInt(e.target.value)}}))} /></div>
                                         <div className="space-y-1"><span className="text-[10px] text-slate-400">最大値: {layout.radar.maxValue}</span><input type="range" min="5" max="100" value={layout.radar.maxValue} onChange={e => setLayout(p => ({...p, radar: {...p.radar, maxValue: parseInt(e.target.value)}}))} /></div>
