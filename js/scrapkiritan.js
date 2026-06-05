@@ -170,12 +170,41 @@ const batchInput = document.getElementById('batch-file-input');
 const batchPreview = document.getElementById('batch-preview-container');
 const batchBtn = document.getElementById('batch-exec-btn');
 
+function toggleResizeAxis() {
+    const selectedRadio = document.querySelector('input[name="resize-axis"]:checked');
+    const axis = selectedRadio ? selectedRadio.value : 'width';
+    const widthInput = document.getElementById('batch-width-value');
+    const heightInput = document.getElementById('batch-height-value');
+    
+    if (widthInput && heightInput) {
+        if (axis === 'width') {
+            widthInput.disabled = false;
+            heightInput.disabled = true;
+        } else {
+            widthInput.disabled = true;
+            heightInput.disabled = false;
+        }
+    }
+}
+window.toggleResizeAxis = toggleResizeAxis;
+
 function setResizeMode(mode) {
     resizeMode = mode;
-    document.getElementById('mode-px').className = mode === 'px' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs';
-    document.getElementById('mode-percent').className = mode === 'percent' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs';
-    document.getElementById('batch-unit-label').innerText = mode === 'px' ? 'px' : '%';
-    document.getElementById('batch-resize-value').value = mode === 'px' ? '800' : '50';
+    document.getElementById('mode-px').className = mode === 'px' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all';
+    document.getElementById('mode-percent').className = mode === 'percent' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all';
+    
+    const pxGroup = document.getElementById('px-settings-group');
+    const pctGroup = document.getElementById('percent-settings-group');
+    if (pxGroup && pctGroup) {
+        if (mode === 'px') {
+            pxGroup.classList.remove('hidden');
+            pctGroup.classList.add('hidden');
+            toggleResizeAxis();
+        } else {
+            pxGroup.classList.add('hidden');
+            pctGroup.classList.remove('hidden');
+        }
+    }
 }
 window.setResizeMode = setResizeMode;
 
@@ -212,7 +241,22 @@ if (batchInput) {
 
 if (batchBtn) {
     batchBtn.addEventListener('click', async () => {
-        const val = parseFloat(document.getElementById('batch-resize-value').value);
+        let val;
+        let axis = 'width'; // 'width' | 'height' | 'percent'
+        
+        if (resizeMode === 'px') {
+            const selectedRadio = document.querySelector('input[name="resize-axis"]:checked');
+            axis = selectedRadio ? selectedRadio.value : 'width';
+            if (axis === 'width') {
+                val = parseFloat(document.getElementById('batch-width-value').value);
+            } else {
+                val = parseFloat(document.getElementById('batch-height-value').value);
+            }
+        } else {
+            axis = 'percent';
+            val = parseFloat(document.getElementById('batch-resize-value').value);
+        }
+
         if(!val || val <= 0) return;
         batchBtn.disabled = true;
         document.getElementById('batch-status').innerText = '1枚ずつダウンロード中...';
@@ -221,8 +265,19 @@ if (batchBtn) {
         for(const file of batchFiles) {
             const img = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = URL.createObjectURL(file); });
             const cv = document.createElement('canvas');
-            const tw = resizeMode === 'px' ? val : img.width * (val/100);
-            const th = resizeMode === 'px' ? img.height * (val/img.width) : img.height * (val/100);
+            
+            let tw, th;
+            if (axis === 'width') {
+                tw = val;
+                th = img.height * (val / img.width);
+            } else if (axis === 'height') {
+                th = val;
+                tw = img.width * (val / img.height);
+            } else { // percent
+                tw = img.width * (val / 100);
+                th = img.height * (val / 100);
+            }
+            
             cv.width = tw; cv.height = th;
             cv.getContext('2d').drawImage(img, 0, 0, tw, th);
             
