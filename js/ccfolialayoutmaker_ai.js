@@ -669,6 +669,14 @@ function handlePanelMouseDown(e, panelId) {
   e.stopPropagation();
   saveStateToHistory();
   
+  // パネルを最前面（配列の末尾）に移動
+  const panelIndex = panels.findIndex(p => p.id === panelId);
+  if (panelIndex > -1) {
+    const clickedPanel = panels[panelIndex];
+    panels.splice(panelIndex, 1);
+    panels.push(clickedPanel);
+  }
+  
   const rect = canvasArea.getBoundingClientRect();
   const scale = rect.width / canvasWidth;
 
