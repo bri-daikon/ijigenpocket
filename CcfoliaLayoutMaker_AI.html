@@ -65,6 +65,75 @@
       </div>
     </div>
 
+    <!-- AI部屋自動生成 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2 text-yellow-400">
+        <i data-lucide="sparkles" class="w-5 h-5"></i> AI社員に部屋作成を依頼
+      </h2>
+      <div class="flex flex-col gap-3">
+        <!-- APIキー入力 -->
+        <div class="bg-gray-800/80 border border-gray-700 rounded p-2.5 flex flex-col gap-1">
+          <label for="ai-api-key" class="text-xs text-gray-400 flex items-center gap-1.5 font-semibold">
+            <i data-lucide="key" class="w-3.5 h-3.5 text-yellow-400"></i> Gemini API Key (入力でリアルAI起動)
+          </label>
+          <input type="password" id="ai-api-key" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500" placeholder="AI会議室と自動同期されます">
+        </div>
+        <!-- 雰囲気テーマ -->
+        <div>
+          <label for="ai-theme-select" class="text-xs text-gray-400 block mb-1">雰囲気・テーマ</label>
+          <select id="ai-theme-select" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="custom">AIにおまかせ（自由入力）</option>
+            <option value="cyberpunk">サイバーパンク</option>
+            <option value="horror">和風ホラー</option>
+            <option value="classic">クラシック洋館</option>
+            <option value="fantasy">ファンタジー・魔法</option>
+          </select>
+        </div>
+        <!-- フリーテキスト要望 -->
+        <div>
+          <label for="ai-prompt-input" class="text-xs text-gray-400 block mb-1">追加の要望（フリー入力）</label>
+          <textarea id="ai-prompt-input" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" rows="2" placeholder="例: 夕暮れ時の海辺のカフェのような雰囲気、ネオンピンクをアクセントに 等"></textarea>
+        </div>
+        <!-- プレイヤー人数 -->
+        <div>
+          <label for="ai-players-select" class="text-xs text-gray-400 block mb-1">プレイヤー（PL）人数</label>
+          <select id="ai-players-select" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="1">1人部屋</option>
+            <option value="2">2人部屋</option>
+            <option value="3">3人部屋</option>
+            <option value="4" selected>4人部屋</option>
+            <option value="5">5人部屋</option>
+          </select>
+        </div>
+        <!-- レイアウト方針 -->
+        <div>
+          <label for="ai-layout-select" class="text-xs text-gray-400 block mb-1">PLパネル配置</label>
+          <select id="ai-layout-select" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="right-vertical">右側に縦並び</option>
+            <option value="bottom-horizontal">下部に横並び</option>
+          </select>
+        </div>
+        <!-- 背景画像生成トグル -->
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-300">背景画像もAIで生成する (ナノバナナ)</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="ai-gen-bg-toggle" class="sr-only peer" checked>
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        
+        <button id="ai-generate-btn" class="flex items-center justify-center w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded font-bold text-sm transition-all shadow-lg transform active:scale-95">
+          <i data-lucide="play" class="mr-1.5 w-4 h-4"></i>
+          AI社員に作成を依頼する
+        </button>
+
+        <!-- AIチャット風ログエリア -->
+        <div id="ai-chat-box" class="hidden bg-gray-900/90 border border-gray-700 rounded p-3 text-xs flex flex-col gap-2 max-h-40 overflow-y-auto mt-2">
+          <!-- AIのセリフが流れる -->
+        </div>
+      </div>
+    </div>
+
     <!-- 操作履歴 -->
     <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
       <h2 class="font-semibold mb-3 flex items-center gap-2">
@@ -303,6 +372,6 @@
     </div>
   </div>
 
-  <script src="js/ccfolialayoutmaker.js?v=1.2.3"></script>
+  <script src="js/ccfolialayoutmaker_ai.js?v=1.2.3"></script>
 </body>
 </html>
