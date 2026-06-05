@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LINEスタンプメーカー</title>
+  <title>画像透明化メーカー</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +22,7 @@
   <!-- ヘッダー -->
   <header class="bg-white shadow-sm py-4 px-6 border-b-4 border-slate-800 flex items-center justify-center sticky top-0 z-50">
     <i data-lucide="layers" class="text-slate-800 mr-2 w-7 h-7"></i>
-    <h1 class="text-2xl font-black text-slate-800 tracking-wider">LINE STAMP MAKER</h1>
+    <h1 class="text-2xl font-black text-slate-800 tracking-wider">IMAGE TRANSPARENCY MAKER</h1>
   </header>
 
   <!-- 全体の幅を max-w-[98%] にして横いっぱいに広げています -->
@@ -41,7 +41,7 @@
         <i data-lucide="upload-cloud" class="text-slate-700 w-12 h-12"></i>
       </div>
       <h2 class="text-2xl font-bold mb-4 text-slate-800">ベースになる画像を選択</h2>
-      <p class="text-slate-500 mb-8">1枚のイラストから、複数のスタンプを切り出します。</p>
+      <p class="text-slate-500 mb-8">1枚の画像から、背景を透過させた画像を切り出します。</p>
       
       <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg cursor-pointer transition-colors shadow flex items-center">
         <i data-lucide="image" class="mr-2 w-5 h-5"></i>
@@ -89,7 +89,8 @@
         <div class="sticky top-24 bg-slate-50 border border-slate-200 p-6 rounded-xl flex flex-col">
           <h4 class="font-bold text-slate-800 mb-4">分割テンプレート</h4>
           
-          <div class="grid grid-cols-2 gap-3 mb-6">
+          <div class="grid grid-cols-3 gap-3 mb-6">
+            <button onclick="initializeSplitLines(1, 1)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">1 × 1</button>
             <button onclick="initializeSplitLines(2, 2)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">2 × 2</button>
             <button onclick="initializeSplitLines(3, 3)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">3 × 3</button>
             <button onclick="initializeSplitLines(4, 4)" class="bg-white border border-slate-300 rounded-lg py-2 font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition-colors">4 × 4</button>
@@ -126,7 +127,7 @@
       <!-- 左サイド：一覧プレビュー -->
       <div class="w-full md:w-64 border-r border-slate-200 pr-4 shrink-0 relative">
         <div class="sticky top-24 flex flex-col" style="max-height: calc(100vh - 120px);">
-          <h4 class="font-bold text-slate-800 mb-3 bg-white py-2 z-10 shrink-0">スタンプ一覧 (<span id="piece-count">0</span>)</h4>
+          <h4 class="font-bold text-slate-800 mb-3 bg-white py-2 z-10 shrink-0">画像一覧 (<span id="piece-count">0</span>)</h4>
           <div class="overflow-y-auto custom-scrollbar flex-1 pr-2 pb-4">
             <div id="piece-list" class="grid grid-cols-2 gap-2">
               <!-- JSで生成 -->
@@ -182,25 +183,8 @@
             <i data-lucide="mouse-pointer-2" class="text-blue-600 shrink-0 mt-0.5 w-4 h-4"></i>
             <p class="text-slate-700 font-medium">
               画像の<span class="text-blue-600 font-bold">透明にしたい背景部分</span>をクリックしてください。<br/>
-              <span class="text-slate-500">※ ドラッグして移動、スライダーで拡大・縮小ができます。</span>
+              <span class="text-slate-500">※ スライダーで拡大・縮小ができます。</span>
             </p>
-          </div>
-
-          <!-- 画像の配置・サイズ調整 -->
-          <div class="border-t border-slate-200 pt-3">
-            <div class="flex justify-between mb-1">
-              <label class="text-sm font-bold text-slate-700 flex items-center">
-                <i data-lucide="move" class="w-4 h-4 mr-1 text-blue-600"></i> 位置とサイズの調整
-              </label>
-              <span id="stamp-scale-val" class="text-sm font-bold text-blue-600">100%</span>
-            </div>
-            <input type="range" min="0.1" max="3.0" step="0.01" value="1.0" id="stamp-scale-range" class="w-full accent-blue-600" oninput="handleStampScaleChange(this.value)" />
-          </div>
-
-          <!-- 余白ガイド線の表示切り替え -->
-          <div class="flex items-center">
-            <input type="checkbox" id="show-guide-check" checked class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-600 accent-blue-600" onchange="drawPieceCanvas(appState.selectedPieceIndex)">
-            <label for="show-guide-check" class="ml-2 text-sm font-bold text-slate-700 cursor-pointer">余白10pxガイド線（赤破線）を表示する</label>
           </div>
 
           <!-- カラー許容値 -->
@@ -253,7 +237,7 @@
     <!-- ================= Step 4: Download ================= -->
     <div id="step-4" class="step-container hidden bg-white p-10 rounded-xl shadow-md border border-slate-200 text-center">
       <h2 class="text-3xl font-black text-slate-800 mb-2">COMPLETE!</h2>
-      <p class="text-slate-500 font-medium mb-8">LINEスタンプ用のサイズ（370×320）に調整が完了しました。</p>
+      <p class="text-slate-500 font-medium mb-8">画像の背景透過処理が完了しました。</p>
 
       <div class="flex flex-col sm:flex-row justify-center gap-4 mb-10">
         <button onclick="downloadAllAsZip()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg shadow transition-colors flex items-center justify-center text-lg">
@@ -263,30 +247,6 @@
         <button onclick="setStep(3)" class="bg-white border border-slate-800 text-slate-800 hover:bg-slate-50 font-bold py-4 px-8 rounded-lg shadow-sm transition-colors">
           微調整に戻る
         </button>
-      </div>
-
-      <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl text-left mb-6">
-        <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-300 pb-2">メタデータ画像（メイン・タブ）</h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-            <span class="text-xs font-bold text-slate-500 mb-2">main.png (240x240)</span>
-            <div class="w-32 h-32 mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
-              <img id="main-preview" src="" class="max-w-full max-h-full object-contain" />
-            </div>
-            <button onclick="downloadSingle(appState.mainImageDataUrl, 'main.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
-              DL (main)
-            </button>
-          </div>
-          <div class="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-            <span class="text-xs font-bold text-slate-500 mb-2">tab.png (96x74)</span>
-            <div class="w-32 h-32 mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
-              <img id="tab-preview" src="" class="max-w-full max-h-full object-contain" />
-            </div>
-            <button onclick="downloadSingle(appState.tabImageDataUrl, 'tab.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
-              DL (tab)
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl text-left">
