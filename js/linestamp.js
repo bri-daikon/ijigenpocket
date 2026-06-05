@@ -273,10 +273,10 @@ async function handleApplySplit() {
 
   for (let row = 0; row < yPositions.length - 1; row++) {
     for (let col = 0; col < xPositions.length - 1; col++) {
-      const startX = xPositions[col] * appState.sourceImage.width;
-      const endX = xPositions[col + 1] * appState.sourceImage.width;
-      const startY = yPositions[row] * appState.sourceImage.height;
-      const endY = yPositions[row + 1] * appState.sourceImage.height;
+      const startX = Math.round(xPositions[col] * appState.sourceImage.width);
+      const endX = Math.round(xPositions[col + 1] * appState.sourceImage.width);
+      const startY = Math.round(yPositions[row] * appState.sourceImage.height);
+      const endY = Math.round(yPositions[row + 1] * appState.sourceImage.height);
       
       const width = endX - startX;
       const height = endY - startY;
@@ -415,7 +415,7 @@ function renderStep3() {
         renderStep3();
       };
       div.innerHTML = `
-        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-square" />
+        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain" />
         <div class="absolute top-1 left-1 bg-slate-900 bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">${i + 1}</div>
       `;
       listContainer.appendChild(div);
@@ -631,7 +631,7 @@ async function renderStep4() {
     const div = document.createElement('div');
     div.className = "flex flex-col items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200";
     div.innerHTML = `
-      <div class="w-full aspect-square mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
+      <div class="w-full mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
         <img src="${piece.processedDataUrl}" class="max-w-full max-h-full object-contain" />
       </div>
       <button onclick="downloadSingle('${piece.processedDataUrl}', 'transparent_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
