@@ -989,14 +989,10 @@ function openFrameEditModal() {
   editImage.src = frame.url;
 }
 
-function closeModalBtnHandler() {
+function closeFrameEditModal() {
   frameEditModal.classList.add('hidden');
   editImage = null;
 }
-
-closeModalBtn.addEventListener('click', closeModalBtnHandler);
-cancelEditBtn.addEventListener('click', closeModalBtnHandler);
-saveEditBtn.addEventListener('click', saveFrameEdit);
 
 // 選択ツールの操作
 function saveHistoryState() {
@@ -1194,8 +1190,8 @@ function saveFrameEdit() {
 }
 
 editFrameBtn.addEventListener('click', openFrameEditModal);
-closeModalBtn.addEventListener('click', closeModalBtnHandler);
-cancelEditBtn.addEventListener('click', closeModalBtnHandler);
+closeModalBtn.addEventListener('click', closeFrameEditModal);
+cancelEditBtn.addEventListener('click', closeFrameEditModal);
 saveEditBtn.addEventListener('click', saveFrameEdit);
 
 toolFreeBtn.addEventListener('click', () => setTool('free'));
