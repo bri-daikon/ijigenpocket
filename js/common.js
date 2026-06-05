@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "連番リネーム", url: "RenReNm.html" },
         { name: "ScrapKiritan", url: "ScrapKiritan.html" },
         { name: "VividStack", url: "VividStack.html" },
-        { name: "LINEスタンプメーカー", url: "LINESTMPkiritoru.html" },
+        { name: "画像透明化メーカー", url: "LINESTMPkiritoru.html" },
         { name: "LINEスタンプタグ付け", url: "LineStampTagger.html" },
         { name: "タスク管理", url: "ijigentask.html" },
         { name: "SSCalendar", url: "SSCalendar.html" },

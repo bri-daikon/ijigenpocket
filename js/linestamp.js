@@ -11,9 +11,7 @@ const appState = {
   pieces: [],
   selectedPieceIndex: 0,
   zoom2: 1.0, // 分割画面のズーム倍率
-  zoom3: 1.0,  // 透過画面のズーム倍率
-  mainImageDataUrl: null,
-  tabImageDataUrl: null
+  zoom3: 1.0  // 透過画面のズーム倍率
 };
 
 const stepsInfo = [
@@ -273,10 +271,6 @@ async function handleApplySplit() {
   appState.pieces = [];
   let idCounter = 1;
 
-  // LINEスタンプのサイズ定義
-  const STAMP_WIDTH = 370;
-  const STAMP_HEIGHT = 320;
-
   for (let row = 0; row < yPositions.length - 1; row++) {
     for (let col = 0; col < xPositions.length - 1; col++) {
       const startX = xPositions[col] * appState.sourceImage.width;
@@ -299,15 +293,10 @@ async function handleApplySplit() {
       originalCanvas.height = height;
       originalCanvas.getContext('2d').drawImage(rawCanvas, 0, 0);
 
-      // 初期倍率（10pxの余白内にピッタリ収まる倍率）
-      const defaultScale = Math.min((STAMP_WIDTH - 20) / width, (STAMP_HEIGHT - 20) / height);
       const piece = {
         id: idCounter++,
         rawCanvas: rawCanvas,
         originalCanvas: originalCanvas,
-        scale: defaultScale,
-        x: (STAMP_WIDTH - width * defaultScale) / 2,
-        y: (STAMP_HEIGHT - height * defaultScale) / 2,
         threshold: 30,
         smoothEdge: true,
         clicks: [],
@@ -324,14 +313,9 @@ async function handleApplySplit() {
   setStep(3);
 }
 
-// 370x320の画像を合成してデータURL化し保存する
+// 画像をデータURL化し保存する
 function compileProcessedDataUrl(piece) {
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = 370;
-  tempCanvas.height = 320;
-  const ctx = tempCanvas.getContext('2d');
-  ctx.drawImage(piece.rawCanvas, piece.x, piece.y, piece.rawCanvas.width * piece.scale, piece.rawCanvas.height * piece.scale);
-  piece.processedDataUrl = tempCanvas.toDataURL('image/png');
+  piece.processedDataUrl = piece.rawCanvas.toDataURL('image/png');
 }
 
 // ==========================================
@@ -414,14 +398,10 @@ function renderStep3() {
   const thresholdRange = document.getElementById('threshold-range');
   const thresholdVal = document.getElementById('threshold-val');
   const smoothEdgeCheck = document.getElementById('smooth-edge-check');
-  const scaleRange = document.getElementById('stamp-scale-range');
-  const scaleVal = document.getElementById('stamp-scale-val');
 
   if (thresholdRange) thresholdRange.value = piece.threshold;
   if (thresholdVal) thresholdVal.textContent = piece.threshold;
   if (smoothEdgeCheck) smoothEdgeCheck.checked = piece.smoothEdge;
-  if (scaleRange) scaleRange.value = piece.scale;
-  if (scaleVal) scaleVal.textContent = Math.round(piece.scale * 100) + '%';
 
   // 左側リスト描画
   const listContainer = document.getElementById('piece-list');
@@ -435,7 +415,7 @@ function renderStep3() {
         renderStep3();
       };
       div.innerHTML = `
-        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-[37/32]" />
+        <img src="${p.processedDataUrl}" class="w-full h-auto object-contain aspect-square" />
         <div class="absolute top-1 left-1 bg-slate-900 bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">${i + 1}</div>
       `;
       listContainer.appendChild(div);
@@ -447,7 +427,7 @@ function renderStep3() {
   updateZoom3Display();
 }
 
-// 370x320メインキャンバスを描画する（画像 + ガイド線）
+// メインキャンバスを描画する
 function drawPieceCanvas(pieceIndex) {
   const piece = appState.pieces[pieceIndex];
   if (!piece) return;
@@ -455,22 +435,11 @@ function drawPieceCanvas(pieceIndex) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
-  canvas.width = 370;
-  canvas.height = 320;
+  canvas.width = piece.rawCanvas.width;
+  canvas.height = piece.rawCanvas.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // 1. ユーザーが配置したスケール・座標で rawCanvas を描画
-  ctx.drawImage(piece.rawCanvas, piece.x, piece.y, piece.rawCanvas.width * piece.scale, piece.rawCanvas.height * piece.scale);
-  
-  // 2. 10pxの余白ガイド線を描画
-  const showGuide = document.getElementById('show-guide-check')?.checked ?? true;
-  if (showGuide) {
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)'; // 赤の半透明
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(10, 10, 350, 300);
-    ctx.setLineDash([]);
-  }
+  ctx.drawImage(piece.rawCanvas, 0, 0);
 }
 
 // 透過処理メインロジック
@@ -540,19 +509,6 @@ async function applyTransparency(pieceIndex) {
   }
 }
 
-// 位置・サイズスライダー変更処理
-function handleStampScaleChange(val) {
-  const piece = appState.pieces[appState.selectedPieceIndex];
-  if (!piece) return;
-  piece.scale = parseFloat(val);
-  
-  const scaleVal = document.getElementById('stamp-scale-val');
-  if (scaleVal) scaleVal.textContent = Math.round(piece.scale * 100) + '%';
-  
-  drawPieceCanvas(appState.selectedPieceIndex);
-  updateLeftPanelPreview(appState.selectedPieceIndex);
-}
-
 function updateLeftPanelPreview(pieceIndex) {
   const piece = appState.pieces[pieceIndex];
   compileProcessedDataUrl(piece);
@@ -572,70 +528,30 @@ function saveToHistory(piece) {
   if (piece.history.length > 20) piece.history.shift(); // 履歴サイズ制限
 }
 
-// ドラッグおよびクリックイベントリスナー設定
-let isDraggingPiece = false;
-let dragStartPos = { x: 0, y: 0 };
-let totalDragDistance = 0;
-
+// クリックイベントリスナー設定
 const transparencyCanvas = document.getElementById('transparency-canvas');
 if (transparencyCanvas) {
-  transparencyCanvas.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    isDraggingPiece = true;
-    dragStartPos = { x: e.clientX, y: e.clientY };
-    totalDragDistance = 0;
-  });
-
-  window.addEventListener('mousemove', (e) => {
-    if (!isDraggingPiece) return;
+  transparencyCanvas.addEventListener('click', (e) => {
+    const rect = transparencyCanvas.getBoundingClientRect();
+    const scaleX = transparencyCanvas.width / rect.width;
+    const scaleY = transparencyCanvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    
     const piece = appState.pieces[appState.selectedPieceIndex];
     if (!piece) return;
+    const rx = canvasX;
+    const ry = canvasY;
     
-    const rect = transparencyCanvas.getBoundingClientRect();
-    const scaleX = 370 / rect.width;
-    const scaleY = 320 / rect.height;
-    
-    const dx = (e.clientX - dragStartPos.x) * scaleX;
-    const dy = (e.clientY - dragStartPos.y) * scaleY;
-    
-    piece.x += dx;
-    piece.y += dy;
-    
-    totalDragDistance += Math.sqrt(dx * dx + dy * dy);
-    dragStartPos = { x: e.clientX, y: e.clientY };
-    
-    drawPieceCanvas(appState.selectedPieceIndex);
-  });
-
-  window.addEventListener('mouseup', (e) => {
-    if (!isDraggingPiece) return;
-    isDraggingPiece = false;
-    
-    // ドラッグ移動量がごく小さい場合は、透過スポイトクリック処理と判定
-    if (totalDragDistance < 5) {
-      const rect = transparencyCanvas.getBoundingClientRect();
-      const scaleX = 370 / rect.width;
-      const scaleY = 320 / rect.height;
-      const canvasX = (e.clientX - rect.left) * scaleX;
-      const canvasY = (e.clientY - rect.top) * scaleY;
-      
-      const piece = appState.pieces[appState.selectedPieceIndex];
-      // rawCanvas 内の座標に変換
-      const rx = (canvasX - piece.x) / piece.scale;
-      const ry = (canvasY - piece.y) / piece.scale;
-      
-      if (rx >= 0 && rx < piece.rawCanvas.width && ry >= 0 && ry < piece.rawCanvas.height) {
-        const ctx = piece.rawCanvas.getContext('2d', { willReadFrequently: true });
-        const pixel = ctx.getImageData(Math.floor(rx), Math.floor(ry), 1, 1).data;
-        if (pixel[3] > 0) {
-          saveToHistory(piece);
-          
-          piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: { x: rx, y: ry } });
-          applyTransparency(appState.selectedPieceIndex);
-        }
+    if (rx >= 0 && rx < piece.rawCanvas.width && ry >= 0 && ry < piece.rawCanvas.height) {
+      const ctx = piece.rawCanvas.getContext('2d', { willReadFrequently: true });
+      const pixel = ctx.getImageData(Math.floor(rx), Math.floor(ry), 1, 1).data;
+      if (pixel[3] > 0) {
+        saveToHistory(piece);
+        
+        piece.clicks.push({ color: [pixel[0], pixel[1], pixel[2]], pos: { x: rx, y: ry } });
+        applyTransparency(appState.selectedPieceIndex);
       }
-    } else {
-      updateLeftPanelPreview(appState.selectedPieceIndex);
     }
   });
 }
@@ -703,28 +619,6 @@ async function handleAutoTransparency() {
   applyTransparency(appState.selectedPieceIndex);
 }
 
-// 画像を指定サイズにリサイズし、10pxの余白を設けて中央配置する
-async function generateResizedImage(sourceDataUrl, targetWidth, targetHeight, margin = 10) {
-  const img = await loadImage(sourceDataUrl);
-  const canvas = document.createElement('canvas');
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext('2d');
-
-  const innerWidth = targetWidth - (margin * 2);
-  const innerHeight = targetHeight - (margin * 2);
-
-  const scale = Math.min(innerWidth / img.width, innerHeight / img.height);
-  const drawWidth = img.width * scale;
-  const drawHeight = img.height * scale;
-
-  const dx = (targetWidth - drawWidth) / 2;
-  const dy = (targetHeight - drawHeight) / 2;
-
-  ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
-  return canvas.toDataURL('image/png');
-}
-
 // ==========================================
 // Step 4: ダウンロード
 // ==========================================
@@ -732,27 +626,15 @@ async function renderStep4() {
   const list = document.getElementById('download-list');
   if (!list) return;
   list.innerHTML = '';
-  
-  // メイン画像とタブ画像の生成
-  if (appState.pieces.length > 0) {
-    const firstPieceUrl = appState.pieces[0].processedDataUrl;
-    appState.mainImageDataUrl = await generateResizedImage(firstPieceUrl, 240, 240, 10);
-    appState.tabImageDataUrl = await generateResizedImage(firstPieceUrl, 96, 74, 10);
-    
-    const mainPreview = document.getElementById('main-preview');
-    const tabPreview = document.getElementById('tab-preview');
-    if (mainPreview) mainPreview.src = appState.mainImageDataUrl;
-    if (tabPreview) tabPreview.src = appState.tabImageDataUrl;
-  }
 
   appState.pieces.forEach((piece, index) => {
     const div = document.createElement('div');
     div.className = "flex flex-col items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200";
     div.innerHTML = `
-      <div class="w-full aspect-[37/32] mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
+      <div class="w-full aspect-square mb-2 rounded border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden checkerboard">
         <img src="${piece.processedDataUrl}" class="max-w-full max-h-full object-contain" />
       </div>
-      <button onclick="downloadSingle('${piece.processedDataUrl}', 'stamp_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
+      <button onclick="downloadSingle('${piece.processedDataUrl}', 'transparent_${String(index+1).padStart(2, '0')}.png')" class="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-600 font-bold py-1.5 px-3 rounded w-full transition-colors">
         DL (${index + 1})
       </button>
     `;
@@ -771,24 +653,16 @@ async function downloadAllAsZip() {
   if (!window.JSZip) return alert("ZIP生成ライブラリを読み込んでいます。少々お待ちください。");
   
   const zip = new window.JSZip();
-  
-  // メイン画像とタブ画像をZIPに含める
-  if (appState.mainImageDataUrl) {
-    zip.file("main.png", appState.mainImageDataUrl.split(',')[1], { base64: true });
-  }
-  if (appState.tabImageDataUrl) {
-    zip.file("tab.png", appState.tabImageDataUrl.split(',')[1], { base64: true });
-  }
 
   appState.pieces.forEach((piece, index) => {
     const base64Data = piece.processedDataUrl.split(',')[1];
-    zip.file(`stamp_${String(index + 1).padStart(2, '0')}.png`, base64Data, { base64: true });
+    zip.file(`transparent_${String(index + 1).padStart(2, '0')}.png`, base64Data, { base64: true });
   });
   
   const content = await zip.generateAsync({ type: "blob" });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(content);
-  link.download = "stamps.zip";
+  link.download = "transparent_images.zip";
   link.click();
 }
 
