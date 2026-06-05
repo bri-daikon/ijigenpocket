@@ -649,21 +649,10 @@ function downloadSingle(dataUrl, filename) {
   link.click();
 }
 
-async function downloadAllAsZip() {
-  if (!window.JSZip) return alert("ZIP生成ライブラリを読み込んでいます。少々お待ちください。");
-  
-  const zip = new window.JSZip();
-
+function downloadAll() {
   appState.pieces.forEach((piece, index) => {
-    const base64Data = piece.processedDataUrl.split(',')[1];
-    zip.file(`transparent_${String(index + 1).padStart(2, '0')}.png`, base64Data, { base64: true });
+    downloadSingle(piece.processedDataUrl, `transparent_${String(index + 1).padStart(2, '0')}.png`);
   });
-  
-  const content = await zip.generateAsync({ type: "blob" });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(content);
-  link.download = "transparent_images.zip";
-  link.click();
 }
 
 // 初期化処理
