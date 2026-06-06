@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             role: 'マーケティングスペシャリスト',
             department: 'linestamp',
             avatar: 'Marketer',
-            description: 'SNSでのトレンド分析を行い、次の製品의 ターゲット層を特定しています。',
+            description: 'SNSでのトレンド分析を行い、次の製品のターゲット層を特定しています。',
             status: '分析中',
             progress: 95,
             task: '市場調査'
@@ -275,6 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
             renderEmployeeManagement();
         } else if (viewId === 'org-chart') {
             renderOrgChart();
+        } else if (viewId === 'meeting') {
+            const topic = meetingTopicSelect ? meetingTopicSelect.value : '';
+            const trpgPanel = document.getElementById('trpg-generator-panel');
+            if (topic === 'trpg_scenario' && trpgPanel) {
+                trpgPanel.style.display = 'block';
+                if (typeof checkApiStatus === 'function') checkApiStatus();
+            } else if (trpgPanel) {
+                trpgPanel.style.display = 'none';
+            }
         }
     }
 
@@ -476,10 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const otherLinestamp = depts.linestamp.filter(e => e !== linestampLeader);
 
         // Build HTML
-        let html = '';
-
-        // Level 1: CEO
-        html += `
+        let html = `
             <!-- CEO Level -->
             <div class="org-node ceo">
                 <div class="avatar-small" style="border: 2px solid var(--accent-color); justify-content: center;">
@@ -492,7 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Level 2: PM (LINE Stamp Department Leader)
         if (linestampLeader) {
             html += `
                 <div class="org-level-2">
@@ -507,7 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
             `;
         } else {
-            // Placeholder PM if none hired
             html += `
                 <div class="org-level-2">
                     <div class="org-node pm" style="border-style: dashed; opacity: 0.6;">
@@ -522,12 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // Level 3: Department Children (LINE Stamp members, Emoji members)
-        html += `
-                <div class="org-children">
-        `;
-
-        // helper to generate sub-node
         const generateDeptBranch = (deptTitle, deptEmployees, colorVar) => {
             let branchHtml = `
                 <div class="org-child-branch">
@@ -568,37 +566,71 @@ document.addEventListener('DOMContentLoaded', () => {
             return branchHtml;
         };
 
-        // LINE Stamp members (excluding primary leader)
         html += generateDeptBranch('LINEスタンプ部門 (LINE Stamp)', otherLinestamp, '--primary-color');
-
-        // Emoji branch
         html += generateDeptBranch('絵文字部門 (Emoji)', depts.emoji, '--accent-color');
-
-        // TRPG Scenario branch
         html += generateDeptBranch('TRPGシナリオ構成担当部門 (TRPG Scenario)', depts.trpg_scenario, '--secondary-color');
 
-        html += `
-                </div>
-            </div>
-        `;
-
+        html += `</div></div>`;
         treeContent.innerHTML = html;
     }
 
-    // 6. Meeting Room Simulator
     const btnToggleMeeting = document.getElementById('btn-toggle-meeting');
     const meetingTopicSelect = document.getElementById('meeting-topic-select');
     const chatTopicDisplay = document.getElementById('chat-topic-display');
     const chatContainer = document.getElementById('chat-messages-container');
     const chatUserInput = document.getElementById('chat-user-input');
     const btnSendMessage = document.getElementById('btn-send-message');
+    const meetingApiKeyInput = document.getElementById('meeting-api-key');
 
     let meetingInterval = null;
     let isMeetingActive = false;
     let currentStepIndex = 0;
     let activeScenario = [];
+    let meetingHistory = [];
+    let activeEmployees = [];
 
-    // Predefined Meeting Scenarios
+    if (meetingApiKeyInput) {
+        const savedApiKey = localStorage.getItem('stampToolApiKey');
+        if (savedApiKey) meetingApiKeyInput.value = savedApiKey;
+        meetingApiKeyInput.addEventListener('input', (e) => {
+            localStorage.setItem('stampToolApiKey', e.target.value.trim());
+        });
+    }
+
+    async function callGeminiApi(apiKey, contents, retries = 3, delay = 1000) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: contents })
+                });
+                
+                if (response.status === 503 || response.status === 429) {
+                    if (i < retries - 1) {
+                        console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                        continue;
+                    }
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                console.warn(`Fetch error: ${error.message}. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+    }
+
     const scenarios = {
         stamp: [
             { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: 'みなさん、新しくアップグレードされた「AIスタンプ工場」の制作自動化プロセスについて、現在の進捗と改善点を議論しましょう。' },
@@ -612,18 +644,18 @@ document.addEventListener('DOMContentLoaded', () => {
             { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: '長時間の執筆でも疲れにくいよう、ダストカラーのフォントとガラス調カードをより落ち着いた透過比率（0.7）に調整するテーマ設定を追加したいです。' },
             { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: 'それであれば、設定情報もローカルストレージで保存して永続化できるように対応します。文字数カウンターのリアルタイム処理の最適化も同時に完了しています。' },
             { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: 'TRPGシナリオ執筆者に刺さるよう、キャラクター発言整形ツールである『LStylist』とワンクリックで連動できるパッケージとしてアピールしましょう！' },
-            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '良い戦略ですね。シナリオ執筆とログ整形をシームレスにつなぐ、TRPGクリエイター向けトータルワークフローとして打ち出します。' }
+            { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '良い戦略ですね。シナリオ執筆とログ整形をシームレスにつなぐ、TRPGクリエーター向けトータルワークフローとして打ち出します。' }
         ],
         marketing: [
             { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: '次期ツールのリリースに向けて、SNSの反応を最大化するための施策案を提案します。開発チームとデザインチームにも協力してほしい部分があります。' },
             { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'プロモーション用のバナーやアイキャッチに、エモ・クラゲのアセットを全面に押し出したネオンブルーのビジュアルを用意できますよ。' },
-            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: '開発側としては、LP of 表示速度を最適化するためにCSSグラデーションとSVGロゴを活用して、画像の読み込み遅延（Lazy Load）を徹底します。' },
+            { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: '開発側としては、LP の表示速度を最適化するためにCSSグラデーションとSVGロゴを活用して、画像の読み込み遅延（Lazy Load）を徹底します。' },
             { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '素晴らしい。デイヴ、このプロモーションパッケージを次のアップデート公開と同時に展開しましょう。事前のアナウンススケジュールを引いておきます。' }
         ],
         schedule: [
             { sender: 'アリス', role: 'プロダクトマネージャー', avatar: 'PM', dept: 'linestamp', text: '新ツール「スケジュールマネージャー」のブロック型予定配置と、既存カレンダー（SSCalendar）との機能重複を避けるためのポジショニングについて。' },
             { sender: 'チャーリー', role: 'リードエンジニア', avatar: 'Developer', dept: 'linestamp', text: 'SSCalendarは日付単位の簡潔なToDo志向、スケジュールマネージャーは場所と時間帯（ブロック）のドラッグ管理という棲み分けにしました。エンジン側でデータ連携も可能です。' },
-            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'デザイン的にも、スケジュールマネージャーはガントチャートやタイムラインの視認性を重視し、SSCalendarは月間グリッドをベースにミニマルにまとめました。' },
+            { sender: 'ボブ', role: 'UI/UXデザイナー', avatar: 'Designer', dept: 'linestamp', text: 'デザイン的に、スケジュールマネージャーはガントチャートやタイムラインの視認性を重視し、SSCalendarは月間グリッドをベースにミニマルにまとめました。' },
             { sender: 'デイヴ', role: 'マーケティングスペシャリスト', avatar: 'Marketer', dept: 'linestamp', text: '「ライトに予定を俯瞰するSSCalendar」と「タスク＆タイムブロックを緻密に組むプランナー」という形で対比して、ビジネス用とクリエイター用に切り分け紹介します。' }
         ],
         emoji: [
@@ -635,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         trpg_scenario: [
             { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: 'CEO、TRPGシナリオ構成担当部門のミーティングを開始します。現在、複数ルート分岐型シナリオのプロット設計と、新規メンバーを含めた制作体制を話し合っています。' },
-            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'プロットに沿って、NPCのセリフやイベントの情景描写を執筆中です！今回はビジュアルとマップの表現力も大幅に強化できそうですね。' },
+            { sender: 'ヒカリ', role: 'TRPGシナリオライター', avatar: 'TRPGWriter', dept: 'trpg_scenario', text: 'プロットに沿って、NPC of セリフやイベントの情景描写を執筆中です！今回はビジュアルとマップの表現力も大幅に強化できそうですね。' },
             { sender: 'カイ', role: 'TRPGマップデザイナー', avatar: 'TRPGMapDesigner', dept: 'trpg_scenario', text: 'はい！探索フェーズの楽しさを引き出すため、詳細なダンジョンマップや洋館の間取り図などのマップデータを用意し、シナリオと連動させていきます。' },
             { sender: 'ユウ', role: 'TRPGグラフィックデザイナー', avatar: 'TRPGGraphicDesigner', dept: 'trpg_scenario', text: '私はトレーラー用バナーやNPCのビジュアル、シーンのイメージイラストを担当します。生成AIと連携して、キービジュアルも自動で作り出せますよ！' },
             { sender: 'ミヤビ', role: 'TRPGシナリオ校正者', avatar: 'TRPGEditor', dept: 'trpg_scenario', text: '執筆されたテキストの表記揺れチェックやルールの整合性確認に加え、マップの部屋構成と描写文の矛盾がないかも含めて校正フローに入れました。' },
@@ -645,75 +677,182 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnToggleMeeting) {
         btnToggleMeeting.addEventListener('click', () => {
-            if (isMeetingActive) {
-                stopMeeting();
-            } else {
-                startMeeting();
-            }
+            isMeetingActive ? stopMeeting() : startMeeting();
         });
+    }
+
+    function selectActiveEmployees(topic) {
+        const allEmployees = getEmployees();
+        let targetDept = topic === 'emoji' ? 'emoji' : (topic === 'trpg_scenario' ? 'trpg_scenario' : 'linestamp');
+        let members = allEmployees.filter(emp => emp.department === targetDept);
+        if (members.length === 0) members = allEmployees.slice(0, 4);
+        const alice = allEmployees.find(e => e.role.includes('PM'));
+        if (alice && !members.some(m => m.id === alice.id)) members.unshift(alice);
+        return members;
     }
 
     function startMeeting() {
         isMeetingActive = true;
         btnToggleMeeting.innerHTML = '<span class="material-icons-round">stop</span><span>会議を停止</span>';
         btnToggleMeeting.style.background = 'linear-gradient(135deg, #ef4444, #f43f5e)';
-        
         const selectedTopic = meetingTopicSelect.value;
         const topicText = meetingTopicSelect.options[meetingTopicSelect.selectedIndex].text;
         chatTopicDisplay.innerText = `会議アジェンダ: ${topicText}`;
-        
-        // Load scenario based on topic
-        activeScenario = scenarios[selectedTopic] || [];
-        currentStepIndex = 0;
-        
-        // Clear chat
         chatContainer.innerHTML = '';
-        appendSystemMessage('会議を開始しました。AI社員がアジェンダに沿って発言します。');
-        
-        // Disable topic select
         meetingTopicSelect.disabled = true;
+        if (meetingApiKeyInput) meetingApiKeyInput.disabled = true;
 
-        // Start step loop
-        scheduleNextStep();
+        const apiKey = localStorage.getItem('stampToolApiKey');
+        if (apiKey) {
+            activeEmployees = selectActiveEmployees(selectedTopic);
+            meetingHistory = [];
+            appendSystemMessage('リアルAI会議を開始しました。Gemini API を使って社員たちが自律的に議論します。');
+            const pm = activeEmployees.find(e => e.role.includes('PM')) || activeEmployees[0];
+            const speech = { sender: pm.name, role: pm.role, avatar: pm.avatar, dept: pm.department, text: `みなさん、本日の会議を始めます。議題は「${topicText}」です。自由に進捗や意見を出してください。` };
+            showTypingIndicator(pm.name);
+            setTimeout(() => {
+                removeTypingIndicator();
+                appendSpeechMessage(speech);
+                meetingHistory.push(speech);
+                scheduleNextRealAiSpeech();
+            }, 1200);
+        } else {
+            activeScenario = scenarios[selectedTopic] || [];
+            currentStepIndex = 0;
+            appendSystemMessage('会議を開始しました。(デモモード)');
+            scheduleNextStep();
+        }
     }
 
     function stopMeeting() {
         isMeetingActive = false;
-        if (meetingInterval) {
-            clearTimeout(meetingInterval);
-            meetingInterval = null;
-        }
+        if (meetingInterval) clearTimeout(meetingInterval);
         btnToggleMeeting.innerHTML = '<span class="material-icons-round">play_arrow</span><span>会議を開始</span>';
         btnToggleMeeting.style.background = 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))';
         meetingTopicSelect.disabled = false;
-        appendSystemMessage('会議はCEOによって一時停止されました。');
+        if (meetingApiKeyInput) meetingApiKeyInput.disabled = false;
+        appendSystemMessage('会議はCEOによって停止されました。');
     }
 
     function scheduleNextStep() {
         if (!isMeetingActive || currentStepIndex >= activeScenario.length) {
             if (currentStepIndex >= activeScenario.length) {
                 stopMeeting();
-                appendSystemMessage('会議が正常に終了しました。本日の決定事項をタスクに反映します。');
+                appendSystemMessage('会議が正常に終了しました。');
             }
             return;
         }
-
         const currentSpeech = activeScenario[currentStepIndex];
-
-        // 1. Show Typing Indicator
         showTypingIndicator(currentSpeech.sender);
-
-        // 2. Wait and post message
         meetingInterval = setTimeout(() => {
             removeTypingIndicator();
             appendSpeechMessage(currentSpeech);
             currentStepIndex++;
+            meetingInterval = setTimeout(scheduleNextStep, 2500);
+        }, 1500);
+    }
 
-            // Wait before next person speaks
-            meetingInterval = setTimeout(() => {
-                scheduleNextStep();
-            }, 2000);
-        }, 1500); // Typing simulation delay
+    function scheduleNextRealAiSpeech() {
+        if (!isMeetingActive) return;
+        meetingInterval = setTimeout(async () => {
+            const apiKey = localStorage.getItem('stampToolApiKey');
+            if (!apiKey) { stopMeeting(); return; }
+            
+            const activeMemberNames = activeEmployees.map(e => e.name).join(', ');
+            const membersInfo = activeEmployees.map(e => `${e.name} (${e.role}, ID: ${e.id})`).join('\n');
+            
+            let lastSpeakerName = "";
+            if (meetingHistory.length > 0) {
+                lastSpeakerName = meetingHistory[meetingHistory.length - 1].sender;
+            }
+            const candidateSpeakers = activeEmployees.filter(e => e.name !== lastSpeakerName);
+            const tempSpeaker = candidateSpeakers.length > 0 ? candidateSpeakers[Math.floor(Math.random() * candidateSpeakers.length)] : activeEmployees[0];
+            
+            showTypingIndicator(tempSpeaker.name);
+            
+            try {
+                const formattedHistory = meetingHistory.map(h => `${h.sender} (${h.role}): ${h.text}`).join('\n');
+                
+                const systemPrompt = `
+あなたは有能なAI会議ファシリテーターです。
+現在、以下のメンバーで会議を行っています。
+
+【メンバー一覧】
+${membersInfo}
+
+【アジェンダ（議題）】
+"${meetingTopicSelect.options[meetingTopicSelect.selectedIndex].text}"
+
+【これまでの発言履歴】
+${formattedHistory}
+
+【指示】
+発言履歴の流れを読み、次に発言するのに最も適した社員を【メンバー一覧】から1名選んでください。
+選んだ社員のキャラクターや役割（PM、エンジニア、デザイナー、マーケター等）にふさわしい、具体的で前向きな発言（2〜3文）を生成してください。
+発言は「です・ます」調で、その社員の口調にしてください。
+会議がマンネリ化しないよう、前の発言への同意だけでなく、新しい提案や課題定義、自分の専門領域からの視点（デザイン、技術、マーケ等）を含めてください。
+
+出力は必ず以下の有効なJSONフォーマットのみとしてください。余計な説明や前置き、\`\`\`json マークダウンなどは含めないでください。
+{
+  "next_speaker_id": "選んだ社員のID",
+  "speech": "発言内容"
+}
+`;
+                const rawResponse = await callGeminiApi(apiKey, [{ role: 'user', parts: [{ text: systemPrompt }] }]);
+                let cleanedJson = rawResponse.replace(/```json|```/g, '').trim();
+                const responseData = JSON.parse(cleanedJson);
+                
+                const nextSpeaker = activeEmployees.find(e => e.id === responseData.next_speaker_id) || tempSpeaker;
+                
+                removeTypingIndicator();
+                showTypingIndicator(nextSpeaker.name);
+                
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    const speech = {
+                        sender: nextSpeaker.name,
+                        role: nextSpeaker.role,
+                        avatar: nextSpeaker.avatar,
+                        dept: nextSpeaker.department,
+                        text: responseData.speech
+                    };
+                    appendSpeechMessage(speech);
+                    meetingHistory.push(speech);
+                    if (meetingHistory.length > 30) meetingHistory.shift();
+                    
+                    scheduleNextRealAiSpeech();
+                }, 1000);
+            } catch (err) {
+                console.error(err);
+                removeTypingIndicator();
+                appendSystemMessage(`通信エラーが発生しました (${err.message})。デモメッセージで会議を代行・継続します。`);
+                
+                const randomEmp = activeEmployees[Math.floor(Math.random() * activeEmployees.length)];
+                showTypingIndicator(randomEmp.name);
+                
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    const mockTexts = [
+                        "その点については同意です。現在直面している課題に対して、優先度をつけて順次解決していきましょう。",
+                        "確かに、ユーザーの利便性を最優先に考えるべきですね。その方向でアセットの再設計を進めてみます。",
+                        "開発側としても、その方針であれば実装の目処が立ちます。データの整合性を保ちつつ、統合を進めます。",
+                        "マーケティングの観点からも、その追加機能はプロモーションの大きな強みになります。ぜひ進めましょう！"
+                    ];
+                    const speech = {
+                        sender: randomEmp.name,
+                        role: randomEmp.role,
+                        avatar: randomEmp.avatar,
+                        dept: randomEmp.department,
+                        text: mockTexts[Math.floor(Math.random() * mockTexts.length)]
+                    };
+                    appendSpeechMessage(speech);
+                    meetingHistory.push(speech);
+                    if (meetingHistory.length > 30) meetingHistory.shift();
+                    
+                    scheduleNextRealAiSpeech();
+                }, 2000);
+            }
+        }, 3500);
     }
 
     function appendSystemMessage(text) {
@@ -735,7 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendSpeechMessage(speech) {
-        // Map departments to colors
         const colors = {
             linestamp: 'var(--primary-color)',
             emoji: 'var(--accent-color)',
@@ -765,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showTypingIndicator(senderName) {
-        removeTypingIndicator(); // Ensure no duplicates
+        removeTypingIndicator();
         
         const indicator = document.createElement('div');
         indicator.id = 'chat-typing-indicator';
@@ -798,13 +936,11 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    // CEO Interruption / Message sending
     if (btnSendMessage && chatUserInput) {
         const handleSendMessage = () => {
             const text = chatUserInput.value.trim();
             if (!text) return;
 
-            // Append CEO speech
             const msg = document.createElement('div');
             msg.className = 'chat-message self';
             msg.innerHTML = `
@@ -822,45 +958,89 @@ document.addEventListener('DOMContentLoaded', () => {
             chatUserInput.value = '';
             scrollToBottom();
 
-            // Pause scenario, let random employee answer the CEO
+            const apiKey = localStorage.getItem('stampToolApiKey');
+
             if (isMeetingActive) {
                 if (meetingInterval) {
                     clearTimeout(meetingInterval);
                 }
                 
-                const employees = getEmployees();
-                const randomEmp = employees[Math.floor(Math.random() * employees.length)];
-                
-                showTypingIndicator(randomEmp.name);
-                
-                setTimeout(() => {
-                    removeTypingIndicator();
-                    appendSpeechMessage({
-                        sender: randomEmp.name,
-                        role: randomEmp.role,
-                        avatar: randomEmp.avatar,
-                        dept: randomEmp.department,
-                        text: `CEO、ご指示ありがとうございます。その指示を踏まえ、「${text}」の方針を最優先として各自のタスクへ反映いたします。`
+                if (apiKey) {
+                    meetingHistory.push({
+                        sender: 'CEO',
+                        role: '最高経営責任者',
+                        avatar: 'CEO',
+                        dept: 'ceo',
+                        text: text
                     });
+                    scheduleNextRealAiSpeech();
+                } else {
+                    const employeesList = getEmployees();
+                    const randomEmp = employeesList[Math.floor(Math.random() * employeesList.length)];
                     
-                    // Resume meeting after a short pause
+                    showTypingIndicator(randomEmp.name);
+                    
                     setTimeout(() => {
-                        scheduleNextStep();
-                    }, 2500);
-                }, 1800);
+                        removeTypingIndicator();
+                        appendSpeechMessage({
+                            sender: randomEmp.name,
+                            role: randomEmp.role,
+                            avatar: randomEmp.avatar,
+                            dept: randomEmp.department,
+                            text: `CEO、ご指示ありがとうございます。その指示を踏まえ、「${text}」の方針を最優先として各自のタスクへ反映いたします。`
+                        });
+                        
+                        setTimeout(() => {
+                            scheduleNextStep();
+                        }, 2500);
+                    }, 1800);
+                }
             } else {
-                // If meeting is not active, PM answers
-                showTypingIndicator('アリス');
-                setTimeout(() => {
-                    removeTypingIndicator();
-                    appendSpeechMessage({
-                        sender: 'アリス',
-                        role: 'プロダクトマネージャー',
-                        avatar: 'PM',
-                        dept: 'planning',
-                        text: `CEO、ご指摘ありがとうございます。「${text}」の指示について承知いたしました。会議を開始する際は本件を含めてディスカッションします。`
-                    });
-                }, 1200);
+                if (apiKey) {
+                    showTypingIndicator('アリス');
+                    setTimeout(async () => {
+                        try {
+                            const systemPrompt = `
+あなたはプロダクトマネージャーの「アリス」です。
+現在、CEOから「${text}」という個別の指示を受け取りました。
+アリスのキャラクター（冷静で有能なPM、スタンプ部門所属）になりきって、この指示に対する丁寧な承諾や意見を1〜2文でCEOに返答してください。
+他の説明や余計な修飾、JSON構造などは含めず、純粋な発言テキストのみを出力してください。
+`;
+                            const contents = [{ role: 'user', parts: [{ text: systemPrompt }] }];
+                            const responseText = await callGeminiApi(apiKey, contents);
+                            
+                            removeTypingIndicator();
+                            appendSpeechMessage({
+                                sender: 'アリス',
+                                role: 'プロダクトマネージャー',
+                                avatar: 'PM',
+                                dept: 'linestamp',
+                                text: responseText.trim()
+                            });
+                        } catch (err) {
+                            removeTypingIndicator();
+                            appendSpeechMessage({
+                                sender: 'アリス',
+                                role: 'プロダクトマネージャー',
+                                avatar: 'PM',
+                                dept: 'linestamp',
+                                text: `CEO、ご指示を承知いたしました。API呼び出しに失敗しましたが、後ほど対応いたします。`
+                            });
+                        }
+                    }, 1200);
+                } else {
+                    showTypingIndicator('アリス');
+                    setTimeout(() => {
+                        removeTypingIndicator();
+                        appendSpeechMessage({
+                            sender: 'アリス',
+                            role: 'プロダクトマネージャー',
+                            avatar: 'PM',
+                            dept: 'linestamp',
+                            text: `CEO、ご指摘ありがとうございます。「${text}」の指示について承知いたしました。会議を開始する際は本件を含めてディスカッションします。`
+                        });
+                    }, 1200);
+                }
             }
         };
 
@@ -870,6 +1050,102 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleSendMessage();
             }
         });
+
+        // --- TRPG シナリオ自動生成 UI & API 連携の実装 ---
+        const trpgPanel = document.getElementById('trpg-generator-panel');
+        const trpgIdeaInput = document.getElementById('trpg-idea-input');
+        const btnRunTrpgGen = document.getElementById('btn-run-trpg-generator');
+        const trpgGenStatus = document.getElementById('trpg-gen-status');
+        const apiStatusDot = document.getElementById('api-status-dot');
+        const apiStatusText = document.getElementById('api-status-text');
+
+        // APIサーバーの稼働状況を確認する関数 (グローバル公開して switchView からも呼べるようにする)
+        window.checkApiStatus = async function() {
+            if (!trpgPanel || !btnRunTrpgGen) return;
+            try {
+                const response = await fetch('http://localhost:8080', { method: 'GET' });
+                if (response.ok) {
+                    apiStatusDot.style.backgroundColor = 'var(--success)';
+                    apiStatusText.innerText = 'Online';
+                    btnRunTrpgGen.disabled = false;
+                    btnRunTrpgGen.style.opacity = '1';
+                    btnRunTrpgGen.style.cursor = 'pointer';
+                } else {
+                    throw new Error('Not ok');
+                }
+            } catch (err) {
+                apiStatusDot.style.backgroundColor = 'var(--danger)';
+                apiStatusText.innerText = 'Offline';
+                btnRunTrpgGen.disabled = true;
+                btnRunTrpgGen.style.opacity = '0.5';
+                btnRunTrpgGen.style.cursor = 'not-allowed';
+            }
+        };
+
+        // アジェンダ変更時の表示切り替え & ステータスチェック
+        if (meetingTopicSelect) {
+            meetingTopicSelect.addEventListener('change', () => {
+                const topic = meetingTopicSelect.value;
+                if (topic === 'trpg_scenario') {
+                    trpgPanel.style.display = 'block';
+                    window.checkApiStatus();
+                } else {
+                    trpgPanel.style.display = 'none';
+                }
+            });
+        }
+
+        // 自動生成を実行するボタン処理
+        if (btnRunTrpgGen) {
+            btnRunTrpgGen.addEventListener('click', async () => {
+                const idea = trpgIdeaInput.value.trim();
+                if (!idea) {
+                    alert('シナリオのアイデア（ネタ）を入力してください。');
+                    return;
+                }
+
+                // 進行中ステータスに変更
+                btnRunTrpgGen.disabled = true;
+                btnRunTrpgGen.style.opacity = '0.5';
+                trpgGenStatus.innerHTML = `
+                    <span class="typing-dot" style="animation: typingBounce 1.4s infinite -0.32s both; width: 6px; height: 6px; background-color: var(--secondary-color); border-radius: 50%; display: inline-block;"></span>
+                    <span class="typing-dot" style="animation: typingBounce 1.4s infinite -0.16s both; width: 6px; height: 6px; background-color: var(--secondary-color); border-radius: 50%; display: inline-block; margin-left: 2px;"></span>
+                    <span class="typing-dot" style="animation: typingBounce 1.4s infinite both; width: 6px; height: 6px; background-color: var(--secondary-color); border-radius: 50%; display: inline-block; margin-left: 2px;"></span>
+                    <span style="margin-left: 0.5rem; color: var(--secondary-color); font-weight: bold;">AI社員たちが執筆・画像設計・エクスポートを処理中... (約1〜2分かかります)</span>
+                `;
+
+                try {
+                    const response = await fetch('http://localhost:8080/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ idea: idea })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok && result.status === 'success') {
+                        trpgGenStatus.innerHTML = `
+                            <span class="material-icons-round" style="color: var(--success); font-size: 1.2rem; vertical-align: middle;">check_circle</span>
+                            <span style="color: var(--success); font-weight: bold; vertical-align: middle;">${result.message}</span>
+                        `;
+                        trpgIdeaInput.value = '';
+                    } else {
+                        throw new Error(result.message || '生成エラーが発生しました。');
+                    }
+                } catch (err) {
+                    trpgGenStatus.innerHTML = `
+                        <span class="material-icons-round" style="color: var(--danger); font-size: 1.2rem; vertical-align: middle;">error</span>
+                        <span style="color: var(--danger); font-weight: bold; vertical-align: middle;">エラー: ${err.message}</span>
+                    `;
+                } finally {
+                    setTimeout(() => {
+                        window.checkApiStatus();
+                    }, 4000);
+                }
+            });
+        }
     }
 
     // 7. Legacies: Real-time update simulation for dashboard
