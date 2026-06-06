@@ -370,6 +370,37 @@
         <!-- Meeting Room View -->
         <div id="meeting-room-view" class="view-section">
             <h2 style="margin-bottom: 1.5rem; font-family: 'Outfit';">AI会議室 (Meeting Room)</h2>
+            
+            <!-- TRPG Scenario Generator Panel (Hidden by default, shown for trpg_scenario agenda) -->
+            <div id="trpg-generator-panel" class="card" style="margin-bottom: 1.5rem; display: none; border-color: rgba(0, 229, 255, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-family: 'Outfit'; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                        <span class="material-icons-round" style="color: var(--secondary-color);">auto_awesome</span>
+                        <span>実務実行：TRPGシナリオ自動生成</span>
+                    </h3>
+                    <span style="font-size: 0.75rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+                        <span id="api-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--danger); display: inline-block;"></span>
+                        <span>API Server: <span id="api-status-text">Offline</span></span>
+                    </span>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1.2rem;">
+                    AI社員たちに書いてほしいシナリオの「ネタ」や「プロット」を入力してください。
+                    実行ボタンを押すと、ローカルで稼働中のPythonサーバーを呼び出し、シナリオと画像を自動生成して Notion / Googleスプレッドシートへの保存を完了します。
+                </p>
+                <div class="form-group" style="margin-bottom: 1.2rem;">
+                    <textarea id="trpg-idea-input" class="form-control" rows="3" placeholder="例: 深夜の廃校で行われる百物語。一つ怪談が語られるたびに消えていく灯火、そして実際に消えていく参加者たち..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="btn-run-trpg-generator" class="btn-submit" style="width: auto; padding: 0.5rem 1.8rem; font-size: 0.85rem; height: 38px; background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));">
+                        <span class="material-icons-round" style="font-size: 1.1rem;">play_circle</span>
+                        <span>自動生成を実行</span>
+                    </button>
+                    <div id="trpg-gen-status" style="font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.5rem;">
+                        <!-- Status message -->
+                    </div>
+                </div>
+            </div>
+
             <div class="chat-window">
                 <div class="chat-header-actions">
                     <div style="display: flex; align-items: center; gap: 1rem;">
