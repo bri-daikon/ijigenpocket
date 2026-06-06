@@ -1701,9 +1701,41 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
 - 配置: ${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
 - 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
 
+【レイアウト配置の動的設計指示】
+キャンバス全体の解像度は 1280x720 ピクセルです。
+CEOからの追加の要望（フリー入力）に、PLパネルやメイン画面、メニュー、アクションアイコンの配置位置やサイズに関する具体的な要望がある場合、その要望を満たすように各コンテナの座標（X座標、Y座標、横幅、縦幅）を動的に計算してJSONに出力してください。
+特に配置に関する具体的な要望がない場合、または判断がつかない場合は、デフォルトの配置ルール（layoutType）に基づく標準的な座標を出力してください。
+
+【各コンテナの標準的なサイズとデフォルトの配置ルール】
+- キャンバスサイズ: 1280 x 720
+- メイン画面 (window):
+  - 標準サイズ: 横 720 x 縦 405
+  - デフォルト位置:
+    - 右側に縦並びの場合: X 50, Y 110
+    - 下部に横並びの場合: X 280, Y 50
+- PLパネル (pl_panels):
+  - 人数分（${numPlayers}個）の座標オブジェクトの配列。
+  - 標準サイズ: 横 160〜180, 縦 120〜200（人数や配置エリアに収まるように調整。例えば人数が多い場合は縮小したり2列にする）
+  - デフォルト位置:
+    - 右側に縦並びの場合: X 1050, Yは 40 から 680 の間で等間隔に縦並び
+    - 下部に横並びの場合: Y 510, Xは 280 から 1000 の間で等間隔に横並び
+- メニュー (menu):
+  - 5つのボタンがある。
+  - 配置方向（menu_layout）: "horizontal" (横並び) または "vertical" (縦並び)
+  - ボタンサイズ: 横並びなら横 180 x 縦 36、縦並びなら横 130 x 縦 32
+  - メニュー開始位置 (menu_x, menu_y):
+    - 右側に縦並びの場合: X 50 から横並びに展開, Y 50
+    - 下部に横並びの場合: X 50, Y 50 から縦並びに展開
+- アクションアイコン (action):
+  - 6つのボタンがある。
+  - ボタンサイズ: 横 75 x 75
+  - アクション開始位置 (action_x, action_y):
+    - 右側に縦並びの場合: X 50 から横並びに展開, Y 550
+    - 下部に横並びの場合: X 50 から縦に2列（横90px、縦90pxの間隔）で展開
+
 【出力指示】
-1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーや装飾にするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
-2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコード等で指定してください。
+1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーやレイアウトにするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
+2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコードおよびレイアウト座標パラメータで指定してください。
    - bg_gradient_start: 背景のグラデーション開始色 (ダークカラー推奨、16進数)
    - bg_gradient_end: 背景のグラデーション終了色 (ダークカラー推奨、16進数)
    - accent_color: アクセントとして輝かせるネオンやスリットなどの色 (16進数)
@@ -1712,6 +1744,18 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
    - text_color: 各種ラベルのテキスト文字色 (16進数)
    - panel_bg: 前景窓やPLパネルなどのコンテナの内側背景色 (透過半透明で表示されるため、暗めの色推奨、16進数)
    - style_description: 今回設計したスタイルの短い説明 (例: "夕暮れのアンティークカフェ")
+   
+   【レイアウト座標パラメータ】※CEOの要望に応じて適切に変更し、必ず含めてください。
+   - window_x: メイン画面のX座標（数値）
+   - window_y: メイン画面のY座標（数値）
+   - window_width: メイン画面の横幅（数値、標準720）
+   - window_height: メイン画面の縦幅（数値、標準405）
+   - pl_panels: プレイヤー人数分（${numPlayers}個）の座標オブジェクト配列。各要素は {"x": 数値, "y": 数値, "width": 数値, "height": 数値}
+   - menu_x: メニュー開始X座標（数値）
+   - menu_y: メニュー開始Y座標（数値）
+   - menu_layout: "horizontal" または "vertical"
+   - action_x: アクション開始X座標（数値）
+   - action_y: アクション開始Y座標（数値）
 
 出力は必ず以下の有効なJSONフォーマットのみとしてください。前置きや\`\`\`json マークダウンなどは含めないでください。
 
@@ -1730,7 +1774,20 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
     "border_color": "#XXXXXX",
     "text_color": "#XXXXXX",
     "panel_bg": "#XXXXXX",
-    "style_description": "説明"
+    "style_description": "説明",
+    "window_x": 座標数値,
+    "window_y": 座標数値,
+    "window_width": 横幅数値,
+    "window_height": 縦幅数値,
+    "pl_panels": [
+      {"x": X座標数値, "y": Y座標数値, "width": 横幅数値, "height": 縦幅数値},
+      ...
+    ],
+    "menu_x": X座標数値,
+    "menu_y": Y座標数値,
+    "menu_layout": "horizontal" または "vertical",
+    "action_x": X座標数値,
+    "action_y": Y座標数値
   }
 }
 `;
@@ -2385,15 +2442,19 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     };
   }
 
+  // 1. メイン画面の描画
   const windowSvg = gen.window(design);
-  const windowPanelWidth = 720;
-  const windowPanelHeight = 405;
-  let windowX = 50;
-  let windowY = 110;
+  const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
+  const windowPanelHeight = design.window_height !== undefined ? design.window_height : 405;
+  let windowX = design.window_x !== undefined ? design.window_x : 50;
+  let windowY = design.window_y !== undefined ? design.window_y : 110;
 
-  if (layoutType === 'bottom-horizontal') {
-    windowX = 280;
-    windowY = 50;
+  if (design.window_x === undefined) {
+    // 従来のフォールバック計算
+    if (layoutType === 'bottom-horizontal') {
+      windowX = 280;
+      windowY = 50;
+    }
   }
 
   panels.push({
@@ -2410,32 +2471,42 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     opacity: 1
   });
 
-  let plW = 160;
-  let plH = 170;
-  if (layoutType === 'right-vertical') {
-    if (numPlayers <= 3) { plW = 180; plH = 200; }
-    else if (numPlayers === 4) { plW = 170; plH = 150; }
-    else { plW = 160; plH = 120; }
-  }
-
+  // 2. PLパネルの描画
+  const plPanelsData = design.pl_panels || [];
   for (let i = 0; i < numPlayers; i++) {
     const plSvg = gen.pl(design);
     let plX = 1050;
     let plY = 40;
-    
-    if (layoutType === 'right-vertical') {
-      plX = 1050;
-      if (numPlayers === 1) {
-        plY = 260;
-      } else {
-        plY = 40 + i * (640 - plH) / (numPlayers - 1);
-      }
+    let plW = 160;
+    let plH = 170;
+
+    if (plPanelsData[i]) {
+      plX = plPanelsData[i].x !== undefined ? plPanelsData[i].x : plX;
+      plY = plPanelsData[i].y !== undefined ? plPanelsData[i].y : plY;
+      plW = plPanelsData[i].width !== undefined ? plPanelsData[i].width : plW;
+      plH = plPanelsData[i].height !== undefined ? plPanelsData[i].height : plH;
     } else {
-      plY = 510;
-      if (numPlayers === 1) {
-        plX = 660;
+      // 従来のフォールバック計算
+      if (layoutType === 'right-vertical') {
+        if (numPlayers <= 3) { plW = 180; plH = 200; }
+        else if (numPlayers === 4) { plW = 170; plH = 150; }
+        else { plW = 160; plH = 120; }
+        
+        plX = 1050;
+        if (numPlayers === 1) {
+          plY = 260;
+        } else {
+          plY = 40 + i * (640 - plH) / (numPlayers - 1);
+        }
       } else {
-        plX = 280 + i * (720 - plW) / (numPlayers - 1);
+        plW = 160;
+        plH = 170;
+        plY = 510;
+        if (numPlayers === 1) {
+          plX = 660;
+        } else {
+          plX = 280 + i * (720 - plW) / (numPlayers - 1);
+        }
       }
     }
 
@@ -2454,21 +2525,45 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     });
   }
 
+  // 3. メニューボタンの描画
   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
-  const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
-  const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+  const menuLayoutType = design.menu_layout || ((layoutType === 'bottom-horizontal') ? 'horizontal' : 'vertical');
+  const menuW = (menuLayoutType === 'horizontal') ? 180 : 130;
+  const menuH = (menuLayoutType === 'horizontal') ? 36 : 32;
+
+  let baseMenuX = design.menu_x !== undefined ? design.menu_x : 50;
+  let baseMenuY = design.menu_y !== undefined ? design.menu_y : 50;
+
+  if (design.menu_x === undefined) {
+    // 従来のフォールバック計算
+    if (layoutType === 'right-vertical') {
+      baseMenuY = 50;
+      baseMenuX = 50;
+    } else {
+      baseMenuX = 50;
+      baseMenuY = 50;
+    }
+  }
 
   menuLabels.forEach((label, i) => {
     const menuSvg = gen.menu(design, label);
-    let menuX = 50;
-    let menuY = 50;
+    let menuX = baseMenuX;
+    let menuY = baseMenuY;
 
-    if (layoutType === 'right-vertical') {
-      menuY = 50;
-      menuX = 50 + i * 145;
+    if (design.menu_x === undefined) {
+      if (layoutType === 'right-vertical') {
+        menuY = 50;
+        menuX = 50 + i * 145;
+      } else {
+        menuX = 50;
+        menuY = 50 + i * 55;
+      }
     } else {
-      menuX = 50;
-      menuY = 50 + i * 55;
+      if (menuLayoutType === 'horizontal') {
+        menuX = baseMenuX + i * (menuW + 15);
+      } else {
+        menuY = baseMenuY + i * (menuH + 10);
+      }
     }
 
     panels.push({
@@ -2486,20 +2581,27 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     });
   });
 
+  // 4. アクションアイコンの描画
   const actionW = 75;
   const actionH = 75;
+  const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+  const baseActionY = design.action_y !== undefined ? design.action_y : 550;
 
   actionIconsData.forEach((icon, i) => {
     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
-    let actionX = 50;
-    let actionY = 550;
+    let actionX = baseActionX;
+    let actionY = baseActionY;
 
-    if (layoutType === 'right-vertical') {
-      actionY = 550;
-      actionX = 50 + i * 125;
+    if (design.action_x === undefined) {
+      if (layoutType === 'right-vertical') {
+        actionY = 550;
+        actionX = 50 + i * 125;
+      } else {
+        actionX = 50 + (i % 2) * 90;
+        actionY = 350 + Math.floor(i / 2) * 90;
+      }
     } else {
-      actionX = 50 + (i % 2) * 90;
-      actionY = 350 + Math.floor(i / 2) * 90;
+      actionX = baseActionX + i * (actionW + 15);
     }
 
     panels.push({
