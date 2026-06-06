@@ -1059,9 +1059,110 @@ async function exportToPNG() {
   }
 }
 
+async function exportPartsToZIP() {
+  const exportPartsBtn = document.getElementById('export-parts-btn');
+  if (!exportPartsBtn) return;
+  
+  const originalText = exportPartsBtn.innerHTML;
+  exportPartsBtn.disabled = true;
+  exportPartsBtn.innerHTML = '<i data-lucide="loader" class="animate-spin mr-2 w-4 h-4"></i>圧縮中...';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  try {
+    if (typeof JSZip === 'undefined') {
+      throw new Error("JSZipライブラリが読み込まれていません。");
+    }
+
+    const zip = new JSZip();
+    const loadImage = (url) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('画像のロードに失敗しました'));
+        img.src = url;
+      });
+    };
+
+    // 1. フレーム画像の処理
+    if (frame) {
+      const img = await loadImage(frame.url);
+      const canvas = document.createElement('canvas');
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, frame.width, frame.height);
+      
+      const dataURL = canvas.toDataURL('image/png');
+      const b64Data = dataURL.split(',')[1];
+      zip.file("00_frame.png", b64Data, {base64: true});
+    }
+
+    // 2. 各パネルの処理
+    const activePanels = panels.filter(p => p.visible !== false);
+    for (let i = 0; i < activePanels.length; i++) {
+      const panel = activePanels[i];
+      const img = await loadImage(panel.url);
+      const canvas = document.createElement('canvas');
+      canvas.width = panel.width;
+      canvas.height = panel.height;
+      const ctx = canvas.getContext('2d');
+
+      ctx.save();
+      // 不透明度
+      if (panel.opacity !== undefined) {
+        ctx.globalAlpha = panel.opacity;
+      }
+      // 反転
+      const flipH = panel.flipH || false;
+      const flipV = panel.flipV || false;
+      if (flipH || flipV) {
+        ctx.translate(panel.width / 2, panel.height / 2);
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(img, -panel.width / 2, -panel.height / 2, panel.width, panel.height);
+      } else {
+        ctx.drawImage(img, 0, 0, panel.width, panel.height);
+      }
+      ctx.restore();
+
+      const dataURL = canvas.toDataURL('image/png');
+      const b64Data = dataURL.split(',')[1];
+      
+      const numStr = String(i + 1).padStart(2, '0');
+      zip.file(`${numStr}_panel.png`, b64Data, {base64: true});
+    }
+
+    if (!frame && activePanels.length === 0) {
+      alert("配置されている画像がありません。");
+      return;
+    }
+
+    const content = await zip.generateAsync({type: "blob"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = `cocfolia_parts_${Date.now()}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+  } catch (error) {
+    console.error(error);
+    alert('ZIPファイルの作成中にエラーが発生しました: ' + error.message);
+  } finally {
+    exportPartsBtn.disabled = false;
+    exportPartsBtn.innerHTML = originalText;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
 const exportBtnElement = document.getElementById('export-btn');
 if (exportBtnElement) {
   exportBtnElement.addEventListener('click', exportToPNG);
+}
+
+const exportPartsBtnElement = document.getElementById('export-parts-btn');
+if (exportPartsBtnElement) {
+  exportPartsBtnElement.addEventListener('click', exportPartsToZIP);
 }
 
 // === フレーム画像編集モーダルの処理関数 ===
