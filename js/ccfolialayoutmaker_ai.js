@@ -1611,6 +1611,7 @@ const aiLayoutSelect = document.getElementById('ai-layout-select');
 const aiChatBox = document.getElementById('ai-chat-box');
 const aiPromptInput = document.getElementById('ai-prompt-input');
 const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
+const aiGenPartsToggle = document.getElementById('ai-gen-parts-toggle');
 const aiApiKeyInput = document.getElementById('ai-api-key');
 
 if (aiApiKeyInput) {
@@ -1670,6 +1671,30 @@ function createSvgUrl(svgString) {
   return URL.createObjectURL(blob);
 }
 
+function combineImageAndSvg(img, sx, sy, sw, sh, svgString, targetW, targetH) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    
+    // 1. 画像から指定の範囲を切り出して描画
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+    
+    // 2. SVGを重ねる
+    const svgImg = new Image();
+    svgImg.onload = () => {
+      ctx.drawImage(svgImg, 0, 0, targetW, targetH);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    svgImg.onerror = () => {
+      resolve(canvas.toDataURL('image/png'));
+    };
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    svgImg.src = URL.createObjectURL(svgBlob);
+  });
+}
+
 function addChatMessage(employee, text) {
   const msgEl = document.createElement('div');
   msgEl.className = 'flex gap-2 items-start mb-2';
@@ -1687,6 +1712,16 @@ function addChatMessage(employee, text) {
 async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
+  let layoutName = '右側に縦並び';
+  if (layoutType === 'bottom-horizontal') layoutName = '下部に横並び';
+  else if (layoutType === 'pattern1') layoutName = 'パターン1 (メイン左上・立ち絵右・アクション右下)';
+  else if (layoutType === 'pattern2') layoutName = 'パターン2 (メイン左下・立ち絵右・アクション右上)';
+  else if (layoutType === 'pattern3') layoutName = 'パターン3 (メイン右上・立ち絵下・アクション右縦)';
+  else if (layoutType === 'pattern4') layoutName = 'パターン4 (メイン右・立ち絵左・アクション下)';
+  else if (layoutType === 'pattern5') layoutName = 'パターン5 (メイン中央上・立ち絵下・メニュー最上・アクション最下)';
+  else if (layoutType === 'pattern6') layoutName = 'パターン6 (メイン最上・立ち絵最下・メニュー&アクション中央)';
+  else if (layoutType === 'pattern7') layoutName = 'パターン7 (メイン最下・立ち絵上・メニュー最上・アクション中央下)';
+
   const systemPrompt = `
 あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
 以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
@@ -1698,7 +1733,7 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
 【CEOからの要望】
 - 大枠のテーマ: ${theme}
 - プレイヤー人数: ${numPlayers}人部屋
-- 配置: ${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
+- 配置: ${layoutName}
 - 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
 
 【レイアウト配置の動的設計指示】
@@ -1928,17 +1963,17 @@ const themeSvgGenerators = {
   <circle cx="20" cy="20" r="4" fill="#00ff00" opacity="0.8"/>
   <circle cx="32" cy="20" r="4" fill="#00ff00" opacity="0.3"/>
 </svg>`,
-    pl: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="200" viewBox="0 0 180 200">
-  <rect x="4" y="4" width="172" height="192" fill="#06070c" fill-opacity="0.6" stroke="#ff007f" stroke-width="1.5" rx="4"/>
+    pl: (design, w = 180, h = 200) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="#06070c" fill-opacity="0.6" stroke="#ff007f" stroke-width="1.5" rx="4"/>
   <path d="M4,18 L4,4 L18,4" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
-  <path d="M176,18 L176,4 L162,4" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
-  <path d="M4,182 L4,196 L18,196" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
-  <path d="M176,182 L176,196 L162,196" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
-  <line x1="20" y1="130" x2="160" y2="130" stroke="#00f0ff" stroke-width="1" opacity="0.3"/>
-  <line x1="20" y1="145" x2="160" y2="145" stroke="#00f0ff" stroke-width="1" opacity="0.3"/>
-  <rect x="15" y="160" width="150" height="26" fill="#111322" stroke="#ff007f" stroke-width="1" rx="2"/>
-  <text x="90" y="177" font-family="sans-serif" font-size="11" font-weight="bold" fill="#00f0ff" text-anchor="middle">PC NAME</text>
+  <path d="M${w - 4},18 L${w - 4},4 L${w - 18},4" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
+  <path d="M4,${h - 18} L4,${h - 4} L18,${h - 4}" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
+  <path d="M${w - 4},${h - 18} L${w - 4},${h - 4} L${w - 18},${h - 4}" fill="none" stroke="#00f0ff" stroke-width="2.5"/>
+  <line x1="20" y1="${h - 70}" x2="${w - 20}" y2="${h - 70}" stroke="#00f0ff" stroke-width="1" opacity="0.3"/>
+  <line x1="20" y1="${h - 55}" x2="${w - 20}" y2="${h - 55}" stroke="#00f0ff" stroke-width="1" opacity="0.3"/>
+  <rect x="15" y="${h - 40}" width="${w - 30}" height="26" fill="#111322" stroke="#ff007f" stroke-width="1" rx="2"/>
+  <text x="${w / 2}" y="${h - 23}" font-family="sans-serif" font-size="11" font-weight="bold" fill="#00f0ff" text-anchor="middle">PC NAME</text>
 </svg>`,
     menu: (text) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
@@ -1974,12 +2009,12 @@ const themeSvgGenerators = {
   <text x="360" y="30" font-family="serif" font-size="14" font-weight="bold" fill="#8a0c0c" text-anchor="middle" letter-spacing="4">主画面</text>
   <line x1="320" y1="36" x2="400" y2="36" stroke="#8a0c0c" stroke-width="1.5"/>
 </svg>`,
-    pl: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="200" viewBox="0 0 180 200">
-  <rect x="4" y="4" width="172" height="192" fill="#0c0202" fill-opacity="0.7" stroke="#4a0404" stroke-width="2"/>
-  <line x1="10" y1="150" x2="170" y2="150" stroke="#4a0404" stroke-width="1.5"/>
-  <rect x="25" y="158" width="130" height="28" fill="#1a0202" stroke="#8a0c0c" stroke-width="1"/>
-  <text x="90" y="176" font-family="serif" font-size="12" font-weight="bold" fill="#8a0c0c" text-anchor="middle">登 場 人 物</text>
+    pl: (design, w = 180, h = 200) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="#0c0202" fill-opacity="0.7" stroke="#4a0404" stroke-width="2"/>
+  <line x1="10" y1="${h - 50}" x2="${w - 10}" y2="${h - 50}" stroke="#4a0404" stroke-width="1.5"/>
+  <rect x="15" y="${h - 42}" width="${w - 30}" height="28" fill="#1a0202" stroke="#8a0c0c" stroke-width="1"/>
+  <text x="${w / 2}" y="${h - 24}" font-family="serif" font-size="12" font-weight="bold" fill="#8a0c0c" text-anchor="middle">登 場 人 物</text>
 </svg>`,
     menu: (text) => {
       const trans = { "houserule": "定法", "battle": "合戦", "insanity": "狂気", "growth": "成長", "other": "雑記" };
@@ -2012,12 +2047,12 @@ const themeSvgGenerators = {
   <rect x="5" y="5" width="710" height="395" fill="#141a14" fill-opacity="0.6" stroke="#d4af37" stroke-width="2.5" rx="2"/>
   <text x="360" y="32" font-family="'Georgia', serif" font-style="italic" font-size="13" font-weight="bold" fill="#d4af37" text-anchor="middle" letter-spacing="2">Theatre</text>
 </svg>`,
-    pl: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="200" viewBox="0 0 180 200">
-  <rect x="4" y="4" width="172" height="192" fill="#141a14" fill-opacity="0.65" stroke="#d4af37" stroke-width="1.5" rx="3"/>
-  <line x1="20" y1="140" x2="160" y2="140" stroke="#d4af37" stroke-width="0.8" opacity="0.5"/>
-  <rect x="20" y="152" width="140" height="26" fill="#0d120d" stroke="#d4af37" stroke-width="1" rx="1"/>
-  <text x="90" y="169" font-family="'Georgia', serif" font-size="11" font-weight="bold" fill="#d4af37" text-anchor="middle" letter-spacing="1">INVESTIGATOR</text>
+    pl: (design, w = 180, h = 200) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="#141a14" fill-opacity="0.65" stroke="#d4af37" stroke-width="1.5" rx="3"/>
+  <line x1="20" y1="${h - 60}" x2="${w - 20}" y2="${h - 60}" stroke="#d4af37" stroke-width="0.8" opacity="0.5"/>
+  <rect x="20" y="${h - 48}" width="${w - 40}" height="26" fill="#0d120d" stroke="#d4af37" stroke-width="1" rx="1"/>
+  <text x="${w / 2}" y="${h - 31}" font-family="'Georgia', serif" font-size="11" font-weight="bold" fill="#d4af37" text-anchor="middle" letter-spacing="1">INVESTIGATOR</text>
 </svg>`,
     menu: (text) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
@@ -2044,14 +2079,11 @@ const themeSvgGenerators = {
   <rect x="5" y="5" width="710" height="395" fill="#0d091a" fill-opacity="0.55" stroke="#7b68ee" stroke-width="2" rx="4"/>
   <text x="360" y="30" font-family="'Cinzel', serif" font-size="12" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="3">PORTAL</text>
 </svg>`,
-    pl: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="200" viewBox="0 0 180 200">
-  <rect x="4" y="4" width="172" height="192" fill="#0d091a" fill-opacity="0.6" stroke="#7b68ee" stroke-width="1.5" rx="4"/>
-  <line x1="20" y1="140" x2="160" y2="140" stroke="#4b0082" stroke-width="1"/>
-  <rect x="20" y="152" width="140" height="26" fill="#07040f" stroke="#7b68ee" stroke-width="1" rx="2"/>
-  <text x="90" y="169" font-family="sans-serif" font-size="11" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="1">ADVENTURER</text>
-</svg>`,
-    menu: (text) => `
+    pl: (design, w = 180, h = 200) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="#0d091a" fill-opacity="0.6" stroke="#7b68ee" stroke-width="1.5" rx="4"/>
+  <line x1="20" y1="${h - 60}" x2="${w - 20}" y2="${h - 60}" stroke="#4b0082" stroke-width="1"/>
+  <rect x="20" y="${h - 48}" width="${w - 40}" height="26" fill="#07040f" stroke="#7b68ee" stroke-width="1" rx="2"/>
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
   <rect x="2" y="2" width="176" height="32" fill="#0d091a" fill-opacity="0.8" stroke="#7b68ee" stroke-width="1.5" rx="3"/>
   <text x="95" y="22" font-family="sans-serif" font-size="11" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="2">${text.toUpperCase()}</text>
@@ -2100,17 +2132,17 @@ const themeSvgGenerators = {
   <path d="M260,5 L280,25 L440,25 L460,5 Z" fill="${d.border_color || '#00f0ff'}"/>
   <text x="360" y="18" font-family="sans-serif" font-size="11" font-weight="bold" fill="${d.panel_bg || '#07080d'}" text-anchor="middle" letter-spacing="2">MAIN MONITOR</text>
 </svg>`,
-    pl: (d) => `
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="200" viewBox="0 0 180 200">
-  <rect x="4" y="4" width="172" height="192" fill="${d.panel_bg || '#06070c'}" fill-opacity="0.6" stroke="${d.border_color || '#ff007f'}" stroke-width="1.5" rx="4"/>
+    pl: (d, w = 180, h = 200) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="${d.panel_bg || '#06070c'}" fill-opacity="0.6" stroke="${d.border_color || '#ff007f'}" stroke-width="1.5" rx="4"/>
   <path d="M4,18 L4,4 L18,4" fill="none" stroke="${d.accent_color || '#00f0ff'}" stroke-width="2.5"/>
-  <path d="M176,18 L176,4 L162,4" fill="none" stroke="${d.accent_color || '#00f0ff'}" stroke-width="2.5"/>
-  <path d="M4,182 L4,196 L18,196" fill="none" stroke="${d.accent_color || '#00f0ff'}" stroke-width="2.5"/>
-  <path d="M176,182 L176,196 L162,196" fill="none" stroke="${d.border_color || '#00f0ff'}" stroke-width="2.5"/>
-  <line x1="20" y1="130" x2="160" y2="130" stroke="${d.border_color || '#00f0ff'}" stroke-width="1" opacity="0.3"/>
-  <line x1="20" y1="145" x2="160" y2="145" stroke="${d.border_color || '#00f0ff'}" stroke-width="1" opacity="0.3"/>
-  <rect x="15" y="160" width="150" height="26" fill="${d.panel_bg || '#111322'}" stroke="${d.border_color || '#ff007f'}" stroke-width="1" rx="2"/>
-  <text x="90" y="177" font-family="sans-serif" font-size="11" font-weight="bold" fill="${d.text_color || '#00f0ff'}" text-anchor="middle">PC NAME</text>
+  <path d="M${w - 4},18 L${w - 4},4 L${w - 18},4" fill="none" stroke="${d.accent_color || '#00f0ff'}" stroke-width="2.5"/>
+  <path d="M4,${h - 18} L4,${h - 4} L18,${h - 4}" fill="none" stroke="${d.accent_color || '#00f0ff'}" stroke-width="2.5"/>
+  <path d="M${w - 4},${h - 18} L${w - 4},${h - 4} L${w - 18},${h - 4}" fill="none" stroke="${d.border_color || '#00f0ff'}" stroke-width="2.5"/>
+  <line x1="20" y1="${h - 70}" x2="${w - 20}" y2="${h - 70}" stroke="${d.border_color || '#00f0ff'}" stroke-width="1" opacity="0.3"/>
+  <line x1="20" y1="${h - 55}" x2="${w - 20}" y2="${h - 55}" stroke="${d.border_color || '#00f0ff'}" stroke-width="1" opacity="0.3"/>
+  <rect x="15" y="${h - 40}" width="${w - 30}" height="26" fill="${d.panel_bg || '#111322'}" stroke="${d.border_color || '#ff007f'}" stroke-width="1" rx="2"/>
+  <text x="${w / 2}" y="${h - 23}" font-family="sans-serif" font-size="11" font-weight="bold" fill="${d.text_color || '#00f0ff'}" text-anchor="middle">PC NAME</text>
 </svg>`,
     menu: (d, text) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
@@ -2146,6 +2178,7 @@ if (aiGenerateBtn) {
     const layoutType = aiLayoutSelect.value;
     const customPrompt = aiPromptInput ? aiPromptInput.value.trim() : '';
     const genBg = aiGenBgToggle ? aiGenBgToggle.checked : false;
+    const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
     
     // UIをロード状態にする
     aiGenerateBtn.disabled = true;
@@ -2197,11 +2230,33 @@ if (aiGenerateBtn) {
           }
         }
 
+        let partsImageUrl = null;
+        if (genParts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          addChatMessage(employees.aoi, "要望に合わせたUIパーツアセット（メイン枠、キャラクター枠、各種ボタン等）のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+          
+          try {
+            const styleDesc = responseData.design.style_description || "beautiful illustration";
+            const basePrompt = customPrompt || theme;
+            const partsPrompt = `A complete UI design asset sheet for a TRPG game room on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. It must contain: one large horizontal display window frame (left side), one tall vertical character portrait frame (right side), one horizontal menu button (bottom left), and one circular icon button (bottom right). Isolated layout on a solid dark gray background, clean borders, high quality game UI assets, 16:9 aspect ratio.`;
+            
+            const partsBytes = await callImagenApiForBackground(apiKey, partsPrompt);
+            partsImageUrl = `data:image/png;base64,${partsBytes}`;
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            addChatMessage(employees.aoi, "UIパーツアセットの画像生成が完了したよ！パーツの切り出しと合成を行うね！");
+          } catch (partsErr) {
+            console.error(partsErr);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            addChatMessage(employees.takumi, `UIパーツ画像の生成中にエラーが発生しました (${partsErr.message})。安全のため、従来のSVG枠線のみで代行します。`);
+          }
+        }
+
         await new Promise(resolve => setTimeout(resolve, 1500));
         addChatMessage(employees.aoi, `デザイン設計完了！「${responseData.design.style_description}」テーマの部屋レイアウトをキャンバスに出力したよ！`);
         
         // dynamicテーマのレイアウト生成
-        generateAndLoadDynamicLayout(responseData.design, numPlayers, layoutType, bgImageUrl);
+        await generateAndLoadDynamicLayout(responseData.design, numPlayers, layoutType, bgImageUrl, partsImageUrl);
         
       } catch (err) {
         console.error(err);
@@ -2210,7 +2265,7 @@ if (aiGenerateBtn) {
         // デモモードへフォールバック
         await new Promise(resolve => setTimeout(resolve, 1000));
         const fallbackTheme = theme === 'custom' ? 'cyberpunk' : theme;
-        generateAndLoadLayout(fallbackTheme, numPlayers, layoutType);
+        await generateAndLoadLayout(fallbackTheme, numPlayers, layoutType);
       } finally {
         aiGenerateBtn.disabled = false;
         aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
@@ -2229,8 +2284,15 @@ if (aiGenerateBtn) {
       const selectedThemeVal = theme === 'custom' ? 'cyberpunk' : theme;
       const themeName = themeNames[theme];
 
+      let layoutName = '右側縦並び';
+      if (layoutType === 'bottom-horizontal') layoutName = '下部横並び';
+      else if (layoutType.startsWith('pattern')) {
+        const pNum = layoutType.replace('pattern', '');
+        layoutName = `パターン${pNum}`;
+      }
+
       setTimeout(() => {
-        addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutType === 'right-vertical' ? '右側縦並び' : '下部横並び'}】ですね。さっそく企画立案しました。`);
+        addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutName}】ですね。さっそく企画立案しました。`);
         
         setTimeout(() => {
           addChatMessage(employees.aoi, `任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
@@ -2242,7 +2304,7 @@ if (aiGenerateBtn) {
               setTimeout(() => {
                 addChatMessage(employees.aoi, `背景アセット用のイメージ画像（デモ）を取得するね。`);
                 
-                setTimeout(() => {
+                setTimeout(async () => {
                   addChatMessage(employees.aoi, `画像の読み込みが完了したよ！キャンバスに自動レイアウトを出力するね！CEO！`);
                   
                   let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80"; // ジェネリックなグラデーション
@@ -2250,7 +2312,12 @@ if (aiGenerateBtn) {
                     mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
                   }
                   
-                  generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl);
+                  let mockPartsUrl = null;
+                  if (genParts) {
+                    mockPartsUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&h=720&q=80";
+                  }
+                  
+                  await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, mockPartsUrl);
                   
                   aiGenerateBtn.disabled = false;
                   aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
@@ -2258,10 +2325,15 @@ if (aiGenerateBtn) {
                 }, 1500);
               }, 1500);
             } else {
-              setTimeout(() => {
+              setTimeout(async () => {
                 addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
                 
-                generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType);
+                let mockPartsUrl = null;
+                if (genParts) {
+                  mockPartsUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&h=720&q=80";
+                }
+                
+                await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, null, mockPartsUrl);
                 
                 aiGenerateBtn.disabled = false;
                 aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
@@ -2275,7 +2347,7 @@ if (aiGenerateBtn) {
   });
 }
 
-function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
+async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, partsImageUrl) {
   saveStateToHistory();
   
   const gen = themeSvgGenerators[theme];
@@ -2306,25 +2378,61 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
     };
   }
 
-  const windowSvg = gen.window();
-  const windowPanelWidth = 720;
-  const windowPanelHeight = 405;
+  let partsImg = null;
+  const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
+  if (genParts && partsImageUrl) {
+    partsImg = await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = partsImageUrl;
+    });
+  }
+
+  let windowW = 720;
+  let windowH = 405;
   let windowX = 50;
   let windowY = 110;
 
   if (layoutType === 'bottom-horizontal') {
     windowX = 280;
     windowY = 50;
+  } else if (layoutType === 'pattern1') {
+    windowX = 50; windowY = 50; windowW = 500; windowH = 300;
+  } else if (layoutType === 'pattern2') {
+    windowX = 50; windowY = 370; windowW = 500; windowH = 300;
+  } else if (layoutType === 'pattern3') {
+    windowX = 350; windowY = 80; windowW = 700; windowH = 320;
+  } else if (layoutType === 'pattern4') {
+    windowX = 720; windowY = 50; windowW = 500; windowH = 320;
+  } else if (layoutType === 'pattern5') {
+    windowX = 280; windowY = 80; windowW = 720; windowH = 320;
+  } else if (layoutType === 'pattern6') {
+    windowX = 150; windowY = 50; windowW = 980; windowH = 300;
+  } else if (layoutType === 'pattern7') {
+    windowX = 150; windowY = 440; windowW = 980; windowH = 250;
+  }
+
+  const windowSvg = gen.window();
+  let windowUrl = createSvgUrl(windowSvg);
+  if (partsImg) {
+    windowUrl = await combineImageAndSvg(
+      partsImg,
+      partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.05,
+      partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.55,
+      windowSvg, windowW, windowH
+    );
   }
 
   panels.push({
     id: 'ai-window-' + Date.now(),
-    url: createSvgUrl(windowSvg),
+    url: windowUrl,
     x: windowX,
     y: windowY,
-    width: windowPanelWidth,
-    height: windowPanelHeight,
-    originalRatio: windowPanelWidth / windowPanelHeight,
+    width: windowW,
+    height: windowH,
+    originalRatio: windowW / windowH,
     flipH: false,
     flipV: false,
     visible: true,
@@ -2337,10 +2445,19 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
     if (numPlayers <= 3) { plW = 180; plH = 200; }
     else if (numPlayers === 4) { plW = 170; plH = 150; }
     else { plW = 160; plH = 120; }
+  } else if (layoutType === 'bottom-horizontal') {
+    plW = 160; plH = 170;
+  } else if (layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
+    plW = 140; plH = 350;
+  } else if (layoutType === 'pattern3' || layoutType === 'pattern5') {
+    plW = 140; plH = 260;
+  } else if (layoutType === 'pattern6') {
+    plW = 140; plH = 180;
+  } else if (layoutType === 'pattern7') {
+    plW = 180; plH = 280;
   }
 
   for (let i = 0; i < numPlayers; i++) {
-    const plSvg = gen.pl();
     let plX = 1050;
     let plY = 40;
     
@@ -2351,18 +2468,78 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
       } else {
         plY = 40 + i * (640 - plH) / (numPlayers - 1);
       }
-    } else {
+    } else if (layoutType === 'bottom-horizontal') {
       plY = 510;
       if (numPlayers === 1) {
         plX = 660;
       } else {
         plX = 280 + i * (720 - plW) / (numPlayers - 1);
       }
+    } else if (layoutType === 'pattern1') {
+      plY = 150;
+      if (numPlayers === 1) {
+        plX = 600;
+      } else {
+        plX = 600 + i * 160;
+      }
+    } else if (layoutType === 'pattern2') {
+      plY = 220;
+      if (numPlayers === 1) {
+        plX = 600;
+      } else {
+        plX = 600 + i * 160;
+      }
+    } else if (layoutType === 'pattern3') {
+      plY = 430;
+      if (numPlayers === 1) {
+        plX = 630;
+      } else {
+        plX = 300 + i * 160;
+      }
+    } else if (layoutType === 'pattern4') {
+      plY = 50;
+      if (numPlayers === 1) {
+        plX = 290;
+      } else {
+        plX = 50 + i * 160;
+      }
+    } else if (layoutType === 'pattern5') {
+      plY = 420;
+      if (numPlayers === 1) {
+        plX = 570;
+      } else {
+        plX = 280 + i * 180;
+      }
+    } else if (layoutType === 'pattern6') {
+      plY = 510;
+      if (numPlayers === 1) {
+        plX = 570;
+      } else {
+        plX = 150 + i * 260;
+      }
+    } else if (layoutType === 'pattern7') {
+      plY = 80;
+      if (numPlayers === 1) {
+        plX = 550;
+      } else {
+        plX = 150 + i * 260;
+      }
+    }
+
+    const plSvg = gen.pl(null, plW, plH);
+    let plUrl = createSvgUrl(plSvg);
+    if (partsImg) {
+      plUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.65, partsImg.naturalHeight * 0.05,
+        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.60,
+        plSvg, plW, plH
+      );
     }
 
     panels.push({
       id: `ai-pl-${i}-${Date.now()}`,
-      url: createSvgUrl(plSvg),
+      url: plUrl,
       x: plX,
       y: plY,
       width: plW,
@@ -2376,10 +2553,19 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
   }
 
   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
-  const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
-  const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+  
+  let menuLayout = 'horizontal';
+  if (layoutType === 'bottom-horizontal' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern3' || layoutType === 'pattern4') {
+    menuLayout = 'vertical';
+  } else {
+    menuLayout = 'horizontal';
+  }
 
-  menuLabels.forEach((label, i) => {
+  const menuW = (menuLayout === 'horizontal') ? 180 : 130;
+  const menuH = (menuLayout === 'horizontal') ? 36 : 32;
+
+  for (let i = 0; i < menuLabels.length; i++) {
+    const label = menuLabels[i];
     const menuSvg = gen.menu(label);
     let menuX = 50;
     let menuY = 50;
@@ -2387,14 +2573,45 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
     if (layoutType === 'right-vertical') {
       menuY = 50;
       menuX = 50 + i * 145;
-    } else {
+    } else if (layoutType === 'bottom-horizontal') {
       menuX = 50;
       menuY = 50 + i * 55;
+    } else if (layoutType === 'pattern1') {
+      menuX = 120;
+      menuY = 380 + i * 40;
+    } else if (layoutType === 'pattern2') {
+      menuX = 120;
+      menuY = 50 + i * 40;
+    } else if (layoutType === 'pattern3') {
+      menuX = 50;
+      menuY = 100 + i * 40;
+    } else if (layoutType === 'pattern4') {
+      menuX = 50;
+      menuY = 430 + i * 40;
+    } else if (layoutType === 'pattern5') {
+      menuX = 200 + i * 195;
+      menuY = 30;
+    } else if (layoutType === 'pattern6') {
+      menuX = 150 + i * 195;
+      menuY = 370;
+    } else if (layoutType === 'pattern7') {
+      menuX = 150 + i * 195;
+      menuY = 30;
+    }
+
+    let menuUrl = createSvgUrl(menuSvg);
+    if (partsImg) {
+      menuUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.65,
+        partsImg.naturalWidth * 0.45, partsImg.naturalHeight * 0.25,
+        menuSvg, menuW, menuH
+      );
     }
 
     panels.push({
       id: `ai-menu-${label}-${Date.now()}`,
-      url: createSvgUrl(menuSvg),
+      url: menuUrl,
       x: menuX,
       y: menuY,
       width: menuW,
@@ -2405,12 +2622,13 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
       visible: true,
       opacity: 1
     });
-  });
+  }
 
   const actionW = 75;
   const actionH = 75;
 
-  actionIconsData.forEach((icon, i) => {
+  for (let i = 0; i < actionIconsData.length; i++) {
+    const icon = actionIconsData[i];
     const actionSvg = gen.action(icon.label, icon.sub, icon.path);
     let actionX = 50;
     let actionY = 550;
@@ -2418,14 +2636,45 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
     if (layoutType === 'right-vertical') {
       actionY = 550;
       actionX = 50 + i * 125;
-    } else {
+    } else if (layoutType === 'bottom-horizontal') {
       actionX = 50 + (i % 2) * 90;
       actionY = 350 + Math.floor(i / 2) * 90;
+    } else if (layoutType === 'pattern1') {
+      actionX = 600 + i * 90;
+      actionY = 530;
+    } else if (layoutType === 'pattern2') {
+      actionX = 600 + i * 90;
+      actionY = 110;
+    } else if (layoutType === 'pattern3') {
+      actionX = 950;
+      actionY = 430 + i * 45;
+    } else if (layoutType === 'pattern4') {
+      actionX = 300 + i * 90;
+      actionY = 500;
+    } else if (layoutType === 'pattern5') {
+      actionX = 360 + i * 90;
+      actionY = 600;
+    } else if (layoutType === 'pattern6') {
+      actionX = 150 + i * 90;
+      actionY = 430;
+    } else if (layoutType === 'pattern7') {
+      actionX = 150 + i * 90;
+      actionY = 380;
+    }
+
+    let actionUrl = createSvgUrl(actionSvg);
+    if (partsImg) {
+      actionUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
+        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+        actionSvg, actionW, actionH
+      );
     }
 
     panels.push({
       id: `ai-action-${icon.name}-${Date.now()}`,
-      url: createSvgUrl(actionSvg),
+      url: actionUrl,
       x: actionX,
       y: actionY,
       width: actionW,
@@ -2436,12 +2685,12 @@ function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
       visible: true,
       opacity: 1
     });
-  });
+  }
 
   updateUI();
 }
 
-function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl, partsImageUrl) {
   saveStateToHistory();
   
   const gen = themeSvgGenerators.dynamic;
@@ -2474,6 +2723,18 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     };
   }
 
+  let partsImg = null;
+  const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
+  if (genParts && partsImageUrl) {
+    partsImg = await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = partsImageUrl;
+    });
+  }
+
   // 1. メイン画面の描画
   const windowSvg = gen.window(design);
   const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
@@ -2489,9 +2750,19 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     }
   }
 
+  let windowUrl = createSvgUrl(windowSvg);
+  if (partsImg) {
+    windowUrl = await combineImageAndSvg(
+      partsImg,
+      partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.05,
+      partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.55,
+      windowSvg, windowPanelWidth, windowPanelHeight
+    );
+  }
+
   panels.push({
     id: 'ai-window-' + Date.now(),
-    url: createSvgUrl(windowSvg),
+    url: windowUrl,
     x: windowX,
     y: windowY,
     width: windowPanelWidth,
@@ -2506,7 +2777,6 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
   // 2. PLパネルの描画
   const plPanelsData = design.pl_panels || [];
   for (let i = 0; i < numPlayers; i++) {
-    const plSvg = gen.pl(design);
     let plX = 1050;
     let plY = 40;
     let plW = 160;
@@ -2542,9 +2812,20 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
       }
     }
 
+    const plSvg = gen.pl(design, plW, plH);
+    let plUrl = createSvgUrl(plSvg);
+    if (partsImg) {
+      plUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.65, partsImg.naturalHeight * 0.05,
+        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.60,
+        plSvg, plW, plH
+      );
+    }
+
     panels.push({
       id: `ai-pl-${i}-${Date.now()}`,
-      url: createSvgUrl(plSvg),
+      url: plUrl,
       x: plX,
       y: plY,
       width: plW,
@@ -2577,7 +2858,8 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
     }
   }
 
-  menuLabels.forEach((label, i) => {
+  for (let i = 0; i < menuLabels.length; i++) {
+    const label = menuLabels[i];
     const menuSvg = gen.menu(design, label);
     let menuX = baseMenuX;
     let menuY = baseMenuY;
@@ -2598,9 +2880,19 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
       }
     }
 
+    let menuUrl = createSvgUrl(menuSvg);
+    if (partsImg) {
+      menuUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.65,
+        partsImg.naturalWidth * 0.45, partsImg.naturalHeight * 0.25,
+        menuSvg, menuW, menuH
+      );
+    }
+
     panels.push({
       id: `ai-menu-${label}-${Date.now()}`,
-      url: createSvgUrl(menuSvg),
+      url: menuUrl,
       x: menuX,
       y: menuY,
       width: menuW,
@@ -2611,7 +2903,7 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
       visible: true,
       opacity: 1
     });
-  });
+  }
 
   // 4. アクションアイコンの描画
   const actionW = 75;
@@ -2619,7 +2911,8 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
 
-  actionIconsData.forEach((icon, i) => {
+  for (let i = 0; i < actionIconsData.length; i++) {
+    const icon = actionIconsData[i];
     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
     let actionX = baseActionX;
     let actionY = baseActionY;
@@ -2636,9 +2929,19 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
       actionX = baseActionX + i * (actionW + 15);
     }
 
+    let actionUrl = createSvgUrl(actionSvg);
+    if (partsImg) {
+      actionUrl = await combineImageAndSvg(
+        partsImg,
+        partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
+        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+        actionSvg, actionW, actionH
+      );
+    }
+
     panels.push({
       id: `ai-action-${icon.name}-${Date.now()}`,
-      url: createSvgUrl(actionSvg),
+      url: actionUrl,
       x: actionX,
       y: actionY,
       width: actionW,
@@ -2649,7 +2952,7 @@ function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl
       visible: true,
       opacity: 1
     });
-  });
+  }
 
   updateUI();
 }
