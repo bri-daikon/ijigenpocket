@@ -2231,25 +2231,10 @@ if (aiGenerateBtn) {
         }
 
         let partsImageUrl = null;
-        if (genParts) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          addChatMessage(employees.aoi, "要望に合わせたUIパーツアセット（メイン枠、キャラクター枠、各種ボタン等）のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
-          
-          try {
-            const styleDesc = responseData.design.style_description || "beautiful illustration";
-            const basePrompt = customPrompt || theme;
-            const partsPrompt = `A complete UI design asset sheet for a TRPG game room on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. It must contain: one large horizontal display window frame (left side), one tall vertical character portrait frame (right side), one horizontal menu button (bottom left), and one circular icon button (bottom right). Isolated layout on a solid dark gray background, clean borders, high quality game UI assets, 16:9 aspect ratio.`;
-            
-            const partsBytes = await callImagenApiForBackground(apiKey, partsPrompt);
-            partsImageUrl = `data:image/png;base64,${partsBytes}`;
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            addChatMessage(employees.aoi, "UIパーツアセットの画像生成が完了したよ！パーツの切り出しと合成を行うね！");
-          } catch (partsErr) {
-            console.error(partsErr);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            addChatMessage(employees.takumi, `UIパーツ画像の生成中にエラーが発生しました (${partsErr.message})。安全のため、従来のSVG枠線のみで代行します。`);
-          }
+        if (genParts && bgImageUrl) {
+          partsImageUrl = bgImageUrl;
+          await new Promise(resolve => setTimeout(resolve, 500));
+          addChatMessage(employees.aoi, "背景画像から各パーツ（メイン枠や立ち絵枠など）をシームレスに切り出して合成するね！");
         }
 
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -2312,10 +2297,7 @@ if (aiGenerateBtn) {
                     mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
                   }
                   
-                  let mockPartsUrl = null;
-                  if (genParts) {
-                    mockPartsUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&h=720&q=80";
-                  }
+                  let mockPartsUrl = genParts ? mockBgUrl : null;
                   
                   await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, mockPartsUrl);
                   
@@ -2328,10 +2310,8 @@ if (aiGenerateBtn) {
               setTimeout(async () => {
                 addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
                 
-                let mockPartsUrl = null;
-                if (genParts) {
-                  mockPartsUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&h=720&q=80";
-                }
+                let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
+                let mockPartsUrl = genParts ? mockBgUrl : null;
                 
                 await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, null, mockPartsUrl);
                 
@@ -2417,10 +2397,12 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   const windowSvg = gen.window();
   let windowUrl = createSvgUrl(windowSvg);
   if (partsImg) {
+    const scaleX = partsImg.naturalWidth / canvasWidth;
+    const scaleY = partsImg.naturalHeight / canvasHeight;
     windowUrl = await combineImageAndSvg(
       partsImg,
-      partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.05,
-      partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.55,
+      windowX * scaleX, windowY * scaleY,
+      windowW * scaleX, windowH * scaleY,
       windowSvg, windowW, windowH
     );
   }
@@ -2529,10 +2511,12 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     const plSvg = gen.pl(null, plW, plH);
     let plUrl = createSvgUrl(plSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       plUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.65, partsImg.naturalHeight * 0.05,
-        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.60,
+        plX * scaleX, plY * scaleY,
+        plW * scaleX, plH * scaleY,
         plSvg, plW, plH
       );
     }
@@ -2601,10 +2585,12 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
 
     let menuUrl = createSvgUrl(menuSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       menuUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.65,
-        partsImg.naturalWidth * 0.45, partsImg.naturalHeight * 0.25,
+        menuX * scaleX, menuY * scaleY,
+        menuW * scaleX, menuH * scaleY,
         menuSvg, menuW, menuH
       );
     }
@@ -2664,10 +2650,12 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
 
     let actionUrl = createSvgUrl(actionSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       actionUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
-        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+        actionX * scaleX, actionY * scaleY,
+        actionW * scaleX, actionH * scaleY,
         actionSvg, actionW, actionH
       );
     }
@@ -2752,10 +2740,12 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
   let windowUrl = createSvgUrl(windowSvg);
   if (partsImg) {
+    const scaleX = partsImg.naturalWidth / canvasWidth;
+    const scaleY = partsImg.naturalHeight / canvasHeight;
     windowUrl = await combineImageAndSvg(
       partsImg,
-      partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.05,
-      partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.55,
+      windowX * scaleX, windowY * scaleY,
+      windowPanelWidth * scaleX, windowPanelHeight * scaleY,
       windowSvg, windowPanelWidth, windowPanelHeight
     );
   }
@@ -2815,10 +2805,12 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
     const plSvg = gen.pl(design, plW, plH);
     let plUrl = createSvgUrl(plSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       plUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.65, partsImg.naturalHeight * 0.05,
-        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.60,
+        plX * scaleX, plY * scaleY,
+        plW * scaleX, plH * scaleY,
         plSvg, plW, plH
       );
     }
@@ -2882,10 +2874,12 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
     let menuUrl = createSvgUrl(menuSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       menuUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.65,
-        partsImg.naturalWidth * 0.45, partsImg.naturalHeight * 0.25,
+        menuX * scaleX, menuY * scaleY,
+        menuW * scaleX, menuH * scaleY,
         menuSvg, menuW, menuH
       );
     }
@@ -2931,10 +2925,12 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
     let actionUrl = createSvgUrl(actionSvg);
     if (partsImg) {
+      const scaleX = partsImg.naturalWidth / canvasWidth;
+      const scaleY = partsImg.naturalHeight / canvasHeight;
       actionUrl = await combineImageAndSvg(
         partsImg,
-        partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
-        partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+        actionX * scaleX, actionY * scaleY,
+        actionW * scaleX, actionH * scaleY,
         actionSvg, actionW, actionH
       );
     }
