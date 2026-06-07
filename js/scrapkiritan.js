@@ -647,6 +647,7 @@ if (texteditorBgImage) {
         texteditorTexts = [];
         selectedTextIndex = -1;
         switchTextEditorTool('select');
+        setTextEditorCanvasBg('transparent');
         
         drawTextEditor();
         updateTextEditorLayerList();
@@ -913,6 +914,11 @@ function drawTextEditor(hideSelection = false) {
         const lines = txt.text.split('\n');
         const box = measureMultilineText(txt);
 
+        // 計測後にフォントやアライメントの設定がクリアされるのを防ぐため、再適用します
+        texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+        texteditorCtx.textAlign = 'center';
+        texteditorCtx.textBaseline = 'middle';
+
         // 共通の描画処理
         const renderText = (str, x, y) => {
             if (txt.strokeWidth > 0) {
@@ -1112,4 +1118,45 @@ if (texteditorDownloadBtn) {
         drawTextEditor(false);
     });
 }
+
+function setTextEditorCanvasBg(bg) {
+    if (!texteditorCanvas) return;
+    
+    // 背景色のクラスを一度すべてクリア
+    texteditorCanvas.classList.remove('bg-white');
+    texteditorCanvas.classList.remove('bg-black');
+    texteditorCanvas.classList.remove('checkerboard-bg');
+    
+    // ボタンのスタイル切り替え用
+    const btnTransparent = document.getElementById('canvas-bg-btn-transparent');
+    const btnWhite = document.getElementById('canvas-bg-btn-white');
+    const btnBlack = document.getElementById('canvas-bg-btn-black');
+    
+    const activeClassTransparent = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 checkerboard-bg";
+    const activeClassWhite = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 bg-white";
+    const activeClassBlack = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 bg-slate-900";
+    
+    const inactiveClassTransparent = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 checkerboard-bg";
+    const inactiveClassWhite = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-white text-slate-700";
+    const inactiveClassBlack = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-slate-900 text-white";
+    
+    if (bg === 'transparent') {
+        texteditorCanvas.classList.add('checkerboard-bg');
+        if (btnTransparent) btnTransparent.className = activeClassTransparent;
+        if (btnWhite) btnWhite.className = inactiveClassWhite;
+        if (btnBlack) btnBlack.className = inactiveClassBlack;
+    } else if (bg === 'white') {
+        texteditorCanvas.classList.add('bg-white');
+        if (btnTransparent) btnTransparent.className = inactiveClassTransparent;
+        if (btnWhite) btnWhite.className = activeClassWhite;
+        if (btnBlack) btnBlack.className = inactiveClassBlack;
+    } else if (bg === 'black') {
+        texteditorCanvas.classList.add('bg-black');
+        if (btnTransparent) btnTransparent.className = inactiveClassTransparent;
+        if (btnWhite) btnWhite.className = inactiveClassWhite;
+        if (btnBlack) btnBlack.className = activeClassBlack;
+    }
+}
+window.setTextEditorCanvasBg = setTextEditorCanvasBg;
+
 
