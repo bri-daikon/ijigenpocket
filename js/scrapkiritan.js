@@ -75,6 +75,8 @@ document.addEventListener('paste', (e) => {
                 loadCropper1280File(blob);
             } else if (activeTab === 'main-tab-iconmaker') {
                 loadIconMakerFile(blob);
+            } else if (activeTab === 'main-tab-texteditor') {
+                loadTextEditorFile(blob);
             }
         }
     }
@@ -534,5 +536,415 @@ if (iconDownloadBtn) {
         link.download = 'icon_ijigenpocket.png';
         link.href = iconCanvas.toDataURL('image/png');
         link.click();
+    });
+}
+
+// --- Text Editor & Image Adjuster Logic ---
+const texteditorFileInput = document.getElementById('texteditor-file-input');
+const texteditorDropzone = document.getElementById('texteditor-dropzone');
+const texteditorAddBtn = document.getElementById('texteditor-add-btn');
+const texteditorCanvas = document.getElementById('texteditor-canvas');
+const texteditorCtx = texteditorCanvas ? texteditorCanvas.getContext('2d') : null;
+const texteditorDownloadBtn = document.getElementById('texteditor-download-btn');
+const texteditorPlaceholder = document.getElementById('texteditor-placeholder');
+const texteditorCanvasContainer = document.getElementById('texteditor-canvas-container');
+
+const texteditorTextInput = document.getElementById('texteditor-text-input');
+const texteditorFontSelect = document.getElementById('texteditor-font-select');
+const texteditorBoldCb = document.getElementById('texteditor-bold-cb');
+const texteditorItalicCb = document.getElementById('texteditor-italic-cb');
+const texteditorFillColor = document.getElementById('texteditor-fill-color');
+const texteditorStrokeColor = document.getElementById('texteditor-stroke-color');
+const texteditorSizeSlider = document.getElementById('texteditor-size-slider');
+const texteditorStrokeSlider = document.getElementById('texteditor-stroke-slider');
+const texteditorBrightSlider = document.getElementById('texteditor-bright-slider');
+const texteditorContrastSlider = document.getElementById('texteditor-contrast-slider');
+const texteditorLayerList = document.getElementById('texteditor-layer-list');
+
+let texteditorTexts = []; // { id, text, x, y, font, size, bold, italic, color, strokeColor, strokeWidth }
+let selectedTextIndex = -1;
+let isTextDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let texteditorBgImage = new Image();
+
+// フィルター値
+let texteditorBrightness = 100;
+let texteditorContrast = 100;
+
+function loadTextEditorFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        texteditorBgImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (texteditorBgImage) {
+    texteditorBgImage.onload = () => {
+        if (texteditorPlaceholder) texteditorPlaceholder.classList.add('hidden');
+        if (texteditorCanvasContainer) texteditorCanvasContainer.classList.remove('hidden');
+        if (texteditorDownloadBtn) texteditorDownloadBtn.disabled = false;
+
+        // キャンバスサイズを元画像サイズに設定
+        texteditorCanvas.width = texteditorBgImage.width;
+        texteditorCanvas.height = texteditorBgImage.height;
+
+        // 初期状態で再リセット
+        texteditorTexts = [];
+        selectedTextIndex = -1;
+        
+        drawTextEditor();
+        updateTextEditorLayerList();
+    };
+}
+
+if (texteditorFileInput) {
+    texteditorFileInput.addEventListener('change', (e) => {
+        loadTextEditorFile(e.target.files[0]);
+    });
+}
+
+if (texteditorDropzone) {
+    texteditorDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        texteditorDropzone.classList.add('drop-active');
+    });
+    texteditorDropzone.addEventListener('dragleave', () => {
+        texteditorDropzone.classList.remove('drop-active');
+    });
+    texteditorDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        texteditorDropzone.classList.remove('drop-active');
+        loadTextEditorFile(e.dataTransfer.files[0]);
+    });
+}
+
+// フィルター調整
+if (texteditorBrightSlider) {
+    texteditorBrightSlider.addEventListener('input', (e) => {
+        texteditorBrightness = e.target.value;
+        document.getElementById('texteditor-bright-val').innerText = `${texteditorBrightness}%`;
+        drawTextEditor();
+    });
+}
+if (texteditorContrastSlider) {
+    texteditorContrastSlider.addEventListener('input', (e) => {
+        texteditorContrast = e.target.value;
+        document.getElementById('texteditor-contrast-val').innerText = `${texteditorContrast}%`;
+        drawTextEditor();
+    });
+}
+
+// スタイル変更時の即時反映（選択中テキストがある場合）
+const syncStyleToSelectedText = () => {
+    if (selectedTextIndex === -1 || !texteditorTexts[selectedTextIndex]) return;
+    const txt = texteditorTexts[selectedTextIndex];
+    txt.font = texteditorFontSelect.value;
+    txt.bold = texteditorBoldCb.checked;
+    txt.italic = texteditorItalicCb.checked;
+    txt.color = texteditorFillColor.value;
+    txt.strokeColor = texteditorStrokeColor.value;
+    txt.size = parseInt(texteditorSizeSlider.value);
+    txt.strokeWidth = parseInt(texteditorStrokeSlider.value);
+    drawTextEditor();
+};
+
+if (texteditorFontSelect) texteditorFontSelect.addEventListener('change', syncStyleToSelectedText);
+if (texteditorBoldCb) texteditorBoldCb.addEventListener('change', syncStyleToSelectedText);
+if (texteditorItalicCb) texteditorItalicCb.addEventListener('change', syncStyleToSelectedText);
+if (texteditorFillColor) texteditorFillColor.addEventListener('input', syncStyleToSelectedText);
+if (texteditorStrokeColor) texteditorStrokeColor.addEventListener('input', syncStyleToSelectedText);
+
+if (texteditorSizeSlider) {
+    texteditorSizeSlider.addEventListener('input', (e) => {
+        document.getElementById('texteditor-size-val').innerText = `${e.target.value}px`;
+        syncStyleToSelectedText();
+    });
+}
+if (texteditorStrokeSlider) {
+    texteditorStrokeSlider.addEventListener('input', (e) => {
+        document.getElementById('texteditor-stroke-val').innerText = `${e.target.value}px`;
+        syncStyleToSelectedText();
+    });
+}
+
+// 文字の追加
+if (texteditorAddBtn) {
+    texteditorAddBtn.addEventListener('click', () => {
+        const textStr = texteditorTextInput.value.trim();
+        if (!textStr || !texteditorBgImage.src) return;
+
+        // キャンバスの中央付近に配置
+        const newText = {
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            text: textStr,
+            x: texteditorCanvas.width / 2,
+            y: texteditorCanvas.height / 2,
+            font: texteditorFontSelect.value,
+            size: parseInt(texteditorSizeSlider.value),
+            bold: texteditorBoldCb.checked,
+            italic: texteditorItalicCb.checked,
+            color: texteditorFillColor.value,
+            strokeColor: texteditorStrokeColor.value,
+            strokeWidth: parseInt(texteditorStrokeSlider.value)
+        };
+
+        texteditorTexts.push(newText);
+        selectedTextIndex = texteditorTexts.length - 1;
+        texteditorTextInput.value = ''; // 入力欄をクリア
+        
+        drawTextEditor();
+        updateTextEditorLayerList();
+    });
+}
+
+// レイヤーリストの更新
+function updateTextEditorLayerList() {
+    if (!texteditorLayerList) return;
+    if (texteditorTexts.length === 0) {
+        texteditorLayerList.innerHTML = '<p class="text-slate-400 text-center py-4">文字がまだ追加されていません</p>';
+        return;
+    }
+
+    texteditorLayerList.innerHTML = '';
+    // 上のレイヤー（配列の末尾）がリストでも上にくるように逆順ループ
+    for (let i = texteditorTexts.length - 1; i >= 0; i--) {
+        const txt = texteditorTexts[i];
+        const item = document.createElement('div');
+        const isActive = (i === selectedTextIndex);
+        item.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+            isActive ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+        }`;
+
+        item.innerHTML = `
+            <span class="truncate max-w-[150px] cursor-pointer flex-grow" onclick="selectTextLayer(${i})">${txt.text}</span>
+            <div class="flex items-center gap-1">
+                <button onclick="moveLayerUp(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="前面へ">▲</button>
+                <button onclick="moveLayerDown(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="背面へ">▼</button>
+                <button onclick="deleteLayer(${i})" class="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-600" title="削除">❌</button>
+            </div>
+        `;
+        texteditorLayerList.appendChild(item);
+    }
+}
+
+function selectTextLayer(index) {
+    selectedTextIndex = index;
+    const txt = texteditorTexts[index];
+    if (txt) {
+        // UIフォームの値を同期
+        texteditorTextInput.value = txt.text;
+        texteditorFontSelect.value = txt.font;
+        texteditorBoldCb.checked = txt.bold;
+        texteditorItalicCb.checked = txt.italic;
+        texteditorFillColor.value = txt.color;
+        texteditorStrokeColor.value = txt.strokeColor;
+        texteditorSizeSlider.value = txt.size;
+        document.getElementById('texteditor-size-val').innerText = `${txt.size}px`;
+        texteditorStrokeSlider.value = txt.strokeWidth;
+        document.getElementById('texteditor-stroke-val').innerText = `${txt.strokeWidth}px`;
+    }
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.selectTextLayer = selectTextLayer;
+
+function deleteLayer(index) {
+    texteditorTexts.splice(index, 1);
+    if (selectedTextIndex === index) {
+        selectedTextIndex = -1;
+    } else if (selectedTextIndex > index) {
+        selectedTextIndex--;
+    }
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.deleteLayer = deleteLayer;
+
+function moveLayerUp(index) {
+    if (index >= texteditorTexts.length - 1) return;
+    const temp = texteditorTexts[index];
+    texteditorTexts[index] = texteditorTexts[index + 1];
+    texteditorTexts[index + 1] = temp;
+    
+    if (selectedTextIndex === index) selectedTextIndex = index + 1;
+    else if (selectedTextIndex === index + 1) selectedTextIndex = index;
+
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.moveLayerUp = moveLayerUp;
+
+function moveLayerDown(index) {
+    if (index <= 0) return;
+    const temp = texteditorTexts[index];
+    texteditorTexts[index] = texteditorTexts[index - 1];
+    texteditorTexts[index - 1] = temp;
+
+    if (selectedTextIndex === index) selectedTextIndex = index - 1;
+    else if (selectedTextIndex === index - 1) selectedTextIndex = index;
+
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.moveLayerDown = moveLayerDown;
+
+// キャンバス描画
+function drawTextEditor(hideSelection = false) {
+    if (!texteditorCanvas || !texteditorCtx || !texteditorBgImage.src) return;
+
+    // 画面クリア
+    texteditorCtx.clearRect(0, 0, texteditorCanvas.width, texteditorCanvas.height);
+
+    // フィルターの適用と画像描画
+    texteditorCtx.save();
+    texteditorCtx.filter = `brightness(${texteditorBrightness}%) contrast(${texteditorContrast}%)`;
+    texteditorCtx.drawImage(texteditorBgImage, 0, 0);
+    texteditorCtx.restore();
+
+    // テキストの描画
+    texteditorTexts.forEach((txt, index) => {
+        texteditorCtx.save();
+        
+        let fontStyle = '';
+        if (txt.italic) fontStyle += 'italic ';
+        if (txt.bold) fontStyle += 'bold ';
+        texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+        
+        texteditorCtx.textAlign = 'center';
+        texteditorCtx.textBaseline = 'middle';
+
+        // 縁取り描画
+        if (txt.strokeWidth > 0) {
+            texteditorCtx.strokeStyle = txt.strokeColor;
+            texteditorCtx.lineWidth = txt.strokeWidth;
+            texteditorCtx.lineJoin = 'round';
+            texteditorCtx.strokeText(txt.text, txt.x, txt.y);
+        }
+
+        // 塗りつぶし描画
+        texteditorCtx.fillStyle = txt.color;
+        texteditorCtx.fillText(txt.text, txt.x, txt.y);
+
+        // 選択枠の描画 (hideSelectionがfalseのときのみ)
+        if (!hideSelection && index === selectedTextIndex) {
+            const metrics = texteditorCtx.measureText(txt.text);
+            const w = metrics.width + 16;
+            const h = txt.size + 16;
+            
+            texteditorCtx.strokeStyle = '#3b82f6';
+            texteditorCtx.lineWidth = 2;
+            texteditorCtx.setLineDash([6, 4]);
+            texteditorCtx.strokeRect(txt.x - w / 2, txt.y - h / 2, w, h);
+            
+            // 角にマーカーを描画
+            texteditorCtx.fillStyle = '#3b82f6';
+            texteditorCtx.fillRect(txt.x - w / 2 - 4, txt.y - h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x + w / 2 - 4, txt.y - h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x - w / 2 - 4, txt.y + h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x + w / 2 - 4, txt.y + h / 2 - 4, 8, 8);
+        }
+
+        texteditorCtx.restore();
+    });
+}
+
+// キャンバス座標変換
+const getTextEditorPos = (e) => {
+    if (!texteditorCanvas) return { x: 0, y: 0 };
+    const rect = texteditorCanvas.getBoundingClientRect();
+    const sx = texteditorCanvas.width / rect.width;
+    const sy = texteditorCanvas.height / rect.height;
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
+};
+
+// マウスイベントによるドラッグ＆ドロップと選択
+if (texteditorCanvas) {
+    const handleStart = (e) => {
+        if (!texteditorBgImage.src) return;
+        const p = getTextEditorPos(e);
+        
+        // 当たり判定：上にあるレイヤー（配列末尾）から順にチェック
+        let clickedIndex = -1;
+        
+        for (let i = texteditorTexts.length - 1; i >= 0; i--) {
+            const txt = texteditorTexts[i];
+            
+            // テキスト幅の計測
+            texteditorCtx.save();
+            let fontStyle = '';
+            if (txt.italic) fontStyle += 'italic ';
+            if (txt.bold) fontStyle += 'bold ';
+            texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+            const metrics = texteditorCtx.measureText(txt.text);
+            texteditorCtx.restore();
+            
+            const w = metrics.width + 16;
+            const h = txt.size + 16;
+            
+            if (p.x >= txt.x - w / 2 && p.x <= txt.x + w / 2 &&
+                p.y >= txt.y - h / 2 && p.y <= txt.y + h / 2) {
+                clickedIndex = i;
+                break;
+            }
+        }
+
+        if (clickedIndex !== -1) {
+            isTextDragging = true;
+            selectTextLayer(clickedIndex);
+            dragStartX = p.x - texteditorTexts[clickedIndex].x;
+            dragStartY = p.y - texteditorTexts[clickedIndex].y;
+            e.preventDefault();
+        } else {
+            // 背景クリック時は選択解除
+            selectedTextIndex = -1;
+            updateTextEditorLayerList();
+            drawTextEditor();
+        }
+    };
+
+    const handleMove = (e) => {
+        if (!isTextDragging || selectedTextIndex === -1) return;
+        e.preventDefault();
+        const p = getTextEditorPos(e);
+        const txt = texteditorTexts[selectedTextIndex];
+        txt.x = p.x - dragStartX;
+        txt.y = p.y - dragStartY;
+        drawTextEditor();
+    };
+
+    const handleEnd = () => {
+        isTextDragging = false;
+    };
+
+    texteditorCanvas.addEventListener('mousedown', handleStart);
+    texteditorCanvas.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+
+    // タッチ対応
+    texteditorCanvas.addEventListener('touchstart', handleStart, { passive: false });
+    texteditorCanvas.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+}
+
+// ダウンロード
+if (texteditorDownloadBtn) {
+    texteditorDownloadBtn.addEventListener('click', () => {
+        if (!texteditorCanvas) return;
+        
+        // 選択枠を非表示にして描画
+        drawTextEditor(true);
+        
+        const link = document.createElement('a');
+        link.download = `scrap-texteditor-${Date.now()}.png`;
+        link.href = texteditorCanvas.toDataURL('image/png');
+        link.click();
+        
+        // 選択枠を再表示
+        drawTextEditor(false);
     });
 }
