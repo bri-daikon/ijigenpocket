@@ -26,6 +26,7 @@
                     <button onclick="switchMainTab('cropper1280')" id="main-tab-cropper1280" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">1280×670切り抜き</button>
                     <button onclick="switchMainTab('color')" id="main-tab-color" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">カラーツール</button>
                     <button onclick="switchMainTab('iconmaker')" id="main-tab-iconmaker" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">丸形アイコン</button>
+                    <button onclick="switchMainTab('texteditor')" id="main-tab-texteditor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">文字入れ・画像編集</button>
                 </div>
             </header>
 
@@ -281,6 +282,137 @@
                                 <p id="icon-placeholderText" class="text-slate-400 text-sm font-bold mb-4">ここにプレビューが表示されます</p>
                                 <!-- このCanvasに画像を合成して描画します -->
                                 <canvas id="icon-previewCanvas" class="max-w-full h-auto rounded-full shadow-2xl hidden"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: TEXT EDITOR -->
+                <div id="view-texteditor" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <!-- 左側：操作パネル (5/12) -->
+                            <div class="lg:col-span-5 space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 背景画像を選択</label>
+                                    <div id="texteditor-dropzone" class="relative h-24 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="texteditor-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-xs">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. テキスト追加/編集 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. テキストを追加・編集</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="texteditor-text-input" placeholder="テキストを入力..." class="flex-grow px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow font-medium">
+                                        <button id="texteditor-add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 rounded-xl transition-colors">追加</button>
+                                    </div>
+
+                                    <!-- スタイル詳細設定 -->
+                                    <div class="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
+                                        <div>
+                                            <span class="block mb-1">フォント:</span>
+                                            <select id="texteditor-font-select" class="w-full px-2 py-2 border border-slate-200 rounded-lg bg-white outline-none">
+                                                <option value="sans-serif">ゴシック (Sans-serif)</option>
+                                                <option value="serif">明朝 (Serif)</option>
+                                                <option value="monospace">等幅 (Monospace)</option>
+                                                <option value="Impact">インパクト (Impact)</option>
+                                                <option value="Arial">Arial</option>
+                                                <option value="'Helvetica Neue'">Helvetica</option>
+                                                <option value="'Times New Roman'">Times New Roman</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <span class="block mb-1">装飾:</span>
+                                            <div class="flex items-center gap-4 py-2.5">
+                                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                                    <input type="checkbox" id="texteditor-bold-cb" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                    <span>太字</span>
+                                                </label>
+                                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                                    <input type="checkbox" id="texteditor-italic-cb" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                    <span>斜体</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 色とサイズ・縁取り設定 -->
+                                    <div class="space-y-3 bg-white p-4 rounded-2xl border border-slate-100">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-bold text-slate-600">文字色 / 縁取り色:</span>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 color-picker-wrapper">
+                                                    <input type="color" id="texteditor-fill-color" value="#ffffff">
+                                                </div>
+                                                <div class="w-8 h-8 color-picker-wrapper">
+                                                    <input type="color" id="texteditor-stroke-color" value="#000000">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                                <span>文字サイズ</span>
+                                                <span id="texteditor-size-val">40px</span>
+                                            </div>
+                                            <input type="range" id="texteditor-size-slider" min="10" max="200" value="40" class="w-full accent-blue-600">
+                                        </div>
+
+                                        <div>
+                                            <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                                <span>縁取りの太さ</span>
+                                                <span id="texteditor-stroke-val">6px</span>
+                                            </div>
+                                            <input type="range" id="texteditor-stroke-slider" min="0" max="30" value="6" class="w-full accent-blue-600">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. レイヤー管理 / テキスト一覧 -->
+                                <div class="border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">3. レイヤー (配置された文字)</label>
+                                    <div id="texteditor-layer-list" class="space-y-2 max-h-40 overflow-y-auto pr-1 text-xs">
+                                        <p class="text-slate-400 text-center py-4">文字がまだ追加されていません</p>
+                                    </div>
+                                </div>
+
+                                <!-- 4. 画像フィルター & 編集 -->
+                                <div class="border-t border-slate-200 pt-4 space-y-3">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">4. 画像調整 (フィルター)</label>
+                                    <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded-2xl border border-slate-100 text-[10px] font-bold text-slate-500">
+                                        <div>
+                                            <div class="flex justify-between mb-1"><span>明るさ</span><span id="texteditor-bright-val">100%</span></div>
+                                            <input type="range" id="texteditor-bright-slider" min="50" max="150" value="100" class="w-full accent-slate-700">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between mb-1"><span>コントラスト</span><span id="texteditor-contrast-val">100%</span></div>
+                                            <input type="range" id="texteditor-contrast-slider" min="50" max="150" value="100" class="w-full accent-slate-700">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. ダウンロードボタン -->
+                                <div class="pt-4">
+                                    <button id="texteditor-download-btn" class="w-full btn-hover bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        画像を保存する
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 (7/12) -->
+                            <div class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200 min-h-[450px]">
+                                <div id="texteditor-placeholder" class="text-center">
+                                    <p class="text-slate-400 text-sm font-bold">ここにキャンバスが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に背景画像を選択してください</p>
+                                </div>
+                                <!-- 編集用Canvas -->
+                                <div class="relative max-w-full overflow-hidden rounded-2xl shadow-2xl bg-white hidden" id="texteditor-canvas-container">
+                                    <canvas id="texteditor-canvas" class="max-w-full h-auto block cursor-move"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
