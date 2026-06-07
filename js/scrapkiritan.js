@@ -551,6 +551,7 @@ const texteditorCanvasContainer = document.getElementById('texteditor-canvas-con
 
 const texteditorTextInput = document.getElementById('texteditor-text-input');
 const texteditorFontSelect = document.getElementById('texteditor-font-select');
+const texteditorWritingModeSelect = document.getElementById('texteditor-writing-mode');
 const texteditorBoldCb = document.getElementById('texteditor-bold-cb');
 const texteditorItalicCb = document.getElementById('texteditor-italic-cb');
 const texteditorFillColor = document.getElementById('texteditor-fill-color');
@@ -561,16 +562,61 @@ const texteditorBrightSlider = document.getElementById('texteditor-bright-slider
 const texteditorContrastSlider = document.getElementById('texteditor-contrast-slider');
 const texteditorLayerList = document.getElementById('texteditor-layer-list');
 
-let texteditorTexts = []; // { id, text, x, y, font, size, bold, italic, color, strokeColor, strokeWidth }
+// 消しゴム＆ツール用変数
+const texteditorEraserSettings = document.getElementById('texteditor-eraser-settings');
+const texteditorEraserSizeSlider = document.getElementById('texteditor-eraser-size');
+const texteditorEraserSizeVal = document.getElementById('texteditor-eraser-size-val');
+
+let texteditorTexts = []; // { id, text, x, y, font, size, bold, italic, color, strokeColor, strokeWidth, writingMode }
 let selectedTextIndex = -1;
 let isTextDragging = false;
+let isEraserDrawing = false;
 let dragStartX = 0;
 let dragStartY = 0;
 let texteditorBgImage = new Image();
 
-// フィルター値
+// 編集用の一時背景キャンバス
+let texteditorBgCanvas = document.createElement('canvas');
+let texteditorBgCtx = texteditorBgCanvas.getContext('2d');
+
+// ツールと設定値
+let texteditorActiveTool = 'select'; // 'select' | 'eraser'
+let texteditorEraserSize = 30;
 let texteditorBrightness = 100;
 let texteditorContrast = 100;
+
+function switchTextEditorTool(tool) {
+    texteditorActiveTool = tool;
+    
+    // UIボタンのアクティブ状態を切り替え
+    const selectBtn = document.getElementById('texteditor-tool-select');
+    const eraserBtn = document.getElementById('texteditor-tool-eraser');
+    
+    if (tool === 'select') {
+        selectBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        eraserBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        if (texteditorEraserSettings) texteditorEraserSettings.classList.add('hidden');
+        if (texteditorCanvas) texteditorCanvas.style.cursor = 'move';
+    } else {
+        selectBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        eraserBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        if (texteditorEraserSettings) texteditorEraserSettings.classList.remove('hidden');
+        if (texteditorCanvas) texteditorCanvas.style.cursor = 'crosshair';
+        
+        // 消しゴムツール選択時はテキスト選択を解除して再描画
+        selectedTextIndex = -1;
+        updateTextEditorLayerList();
+        drawTextEditor();
+    }
+}
+window.switchTextEditorTool = switchTextEditorTool;
+
+if (texteditorEraserSizeSlider) {
+    texteditorEraserSizeSlider.addEventListener('input', (e) => {
+        texteditorEraserSize = parseInt(e.target.value);
+        if (texteditorEraserSizeVal) texteditorEraserSizeVal.innerText = `${texteditorEraserSize}px`;
+    });
+}
 
 function loadTextEditorFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
@@ -591,9 +637,16 @@ if (texteditorBgImage) {
         texteditorCanvas.width = texteditorBgImage.width;
         texteditorCanvas.height = texteditorBgImage.height;
 
+        // 一時背景キャンバスも初期化して背景画像を描画
+        texteditorBgCanvas.width = texteditorBgImage.width;
+        texteditorBgCanvas.height = texteditorBgImage.height;
+        texteditorBgCtx.clearRect(0, 0, texteditorBgCanvas.width, texteditorBgCanvas.height);
+        texteditorBgCtx.drawImage(texteditorBgImage, 0, 0);
+
         // 初期状態で再リセット
         texteditorTexts = [];
         selectedTextIndex = -1;
+        switchTextEditorTool('select');
         
         drawTextEditor();
         updateTextEditorLayerList();
@@ -642,6 +695,7 @@ const syncStyleToSelectedText = () => {
     if (selectedTextIndex === -1 || !texteditorTexts[selectedTextIndex]) return;
     const txt = texteditorTexts[selectedTextIndex];
     txt.font = texteditorFontSelect.value;
+    txt.writingMode = texteditorWritingModeSelect.value;
     txt.bold = texteditorBoldCb.checked;
     txt.italic = texteditorItalicCb.checked;
     txt.color = texteditorFillColor.value;
@@ -652,6 +706,7 @@ const syncStyleToSelectedText = () => {
 };
 
 if (texteditorFontSelect) texteditorFontSelect.addEventListener('change', syncStyleToSelectedText);
+if (texteditorWritingModeSelect) texteditorWritingModeSelect.addEventListener('change', syncStyleToSelectedText);
 if (texteditorBoldCb) texteditorBoldCb.addEventListener('change', syncStyleToSelectedText);
 if (texteditorItalicCb) texteditorItalicCb.addEventListener('change', syncStyleToSelectedText);
 if (texteditorFillColor) texteditorFillColor.addEventListener('input', syncStyleToSelectedText);
@@ -683,6 +738,7 @@ if (texteditorAddBtn) {
             x: texteditorCanvas.width / 2,
             y: texteditorCanvas.height / 2,
             font: texteditorFontSelect.value,
+            writingMode: texteditorWritingModeSelect.value,
             size: parseInt(texteditorSizeSlider.value),
             bold: texteditorBoldCb.checked,
             italic: texteditorItalicCb.checked,
@@ -719,7 +775,7 @@ function updateTextEditorLayerList() {
         }`;
 
         item.innerHTML = `
-            <span class="truncate max-w-[150px] cursor-pointer flex-grow" onclick="selectTextLayer(${i})">${txt.text}</span>
+            <span class="truncate max-w-[150px] cursor-pointer flex-grow" onclick="selectTextLayer(${i})">${txt.text.replace(/\n/g, ' ')}</span>
             <div class="flex items-center gap-1">
                 <button onclick="moveLayerUp(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="前面へ">▲</button>
                 <button onclick="moveLayerDown(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="背面へ">▼</button>
@@ -737,6 +793,7 @@ function selectTextLayer(index) {
         // UIフォームの値を同期
         texteditorTextInput.value = txt.text;
         texteditorFontSelect.value = txt.font;
+        texteditorWritingModeSelect.value = txt.writingMode || 'horizontal';
         texteditorBoldCb.checked = txt.bold;
         texteditorItalicCb.checked = txt.italic;
         texteditorFillColor.value = txt.color;
@@ -745,6 +802,9 @@ function selectTextLayer(index) {
         document.getElementById('texteditor-size-val').innerText = `${txt.size}px`;
         texteditorStrokeSlider.value = txt.strokeWidth;
         document.getElementById('texteditor-stroke-val').innerText = `${txt.strokeWidth}px`;
+        
+        // ツールを選択モードへ自動切り替え
+        switchTextEditorTool('select');
     }
     updateTextEditorLayerList();
     drawTextEditor();
@@ -791,6 +851,40 @@ function moveLayerDown(index) {
 }
 window.moveLayerDown = moveLayerDown;
 
+// テキストサイズとバウンディングボックスの計測用ヘルパー
+function measureMultilineText(txt) {
+    const lines = txt.text.split('\n');
+    texteditorCtx.save();
+    let fontStyle = '';
+    if (txt.italic) fontStyle += 'italic ';
+    if (txt.bold) fontStyle += 'bold ';
+    texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+    
+    let w = 0;
+    let h = 0;
+    
+    if (txt.writingMode === 'vertical') {
+        // 縦書き：幅は行数、高さは最大文字数
+        const lineCount = lines.length;
+        let maxChars = 0;
+        lines.forEach(l => { if (l.length > maxChars) maxChars = l.length; });
+        
+        h = maxChars * txt.size;
+        w = lineCount * txt.size * 1.2;
+    } else {
+        // 横書き：高さは行数、幅は計測した最大幅
+        const lineCount = lines.length;
+        lines.forEach(l => {
+            const metrics = texteditorCtx.measureText(l);
+            if (metrics.width > w) w = metrics.width;
+        });
+        h = lineCount * txt.size * 1.2;
+    }
+    
+    texteditorCtx.restore();
+    return { width: w, height: h };
+}
+
 // キャンバス描画
 function drawTextEditor(hideSelection = false) {
     if (!texteditorCanvas || !texteditorCtx || !texteditorBgImage.src) return;
@@ -798,10 +892,10 @@ function drawTextEditor(hideSelection = false) {
     // 画面クリア
     texteditorCtx.clearRect(0, 0, texteditorCanvas.width, texteditorCanvas.height);
 
-    // フィルターの適用と画像描画
+    // フィルターの適用と画像描画（消しゴムで削られたBgCanvasを使用）
     texteditorCtx.save();
     texteditorCtx.filter = `brightness(${texteditorBrightness}%) contrast(${texteditorContrast}%)`;
-    texteditorCtx.drawImage(texteditorBgImage, 0, 0);
+    texteditorCtx.drawImage(texteditorBgCanvas, 0, 0);
     texteditorCtx.restore();
 
     // テキストの描画
@@ -816,23 +910,68 @@ function drawTextEditor(hideSelection = false) {
         texteditorCtx.textAlign = 'center';
         texteditorCtx.textBaseline = 'middle';
 
-        // 縁取り描画
-        if (txt.strokeWidth > 0) {
-            texteditorCtx.strokeStyle = txt.strokeColor;
-            texteditorCtx.lineWidth = txt.strokeWidth;
-            texteditorCtx.lineJoin = 'round';
-            texteditorCtx.strokeText(txt.text, txt.x, txt.y);
-        }
+        const lines = txt.text.split('\n');
+        const box = measureMultilineText(txt);
 
-        // 塗りつぶし描画
-        texteditorCtx.fillStyle = txt.color;
-        texteditorCtx.fillText(txt.text, txt.x, txt.y);
+        // 共通の描画処理
+        const renderText = (str, x, y) => {
+            if (txt.strokeWidth > 0) {
+                texteditorCtx.strokeStyle = txt.strokeColor;
+                texteditorCtx.lineWidth = txt.strokeWidth;
+                texteditorCtx.lineJoin = 'round';
+                texteditorCtx.strokeText(str, x, y);
+            }
+            texteditorCtx.fillStyle = txt.color;
+            texteditorCtx.fillText(str, x, y);
+        };
+
+        if (txt.writingMode === 'vertical') {
+            // 縦書き描画（右の行から左へと描画）
+            lines.forEach((line, lineIdx) => {
+                // 行のX座標（中心基準なので、行全体幅の半分からずらす）
+                const offsetX = (lines.length - 1) * txt.size * 0.6;
+                const lineX = txt.x + offsetX - (lineIdx * txt.size * 1.2);
+                
+                // 1行の中の文字ループ
+                for (let cIdx = 0; cIdx < line.length; cIdx++) {
+                    let char = line[cIdx];
+                    
+                    // 縦書き時の記号調整
+                    let rotateChar = false;
+                    if (char === 'ー' || char === '―' || char === '─' || char === '-') {
+                        char = '丨';
+                    } else if (char === '…' || char === '‥') {
+                        rotateChar = true;
+                    }
+                    
+                    // 文字のY座標
+                    const offsetY = (line.length - 1) * txt.size * 0.5;
+                    const charY = txt.y - offsetY + (cIdx * txt.size);
+                    
+                    if (rotateChar) {
+                        texteditorCtx.save();
+                        texteditorCtx.translate(lineX, charY);
+                        texteditorCtx.rotate(Math.PI / 2);
+                        renderText(char, 0, 0);
+                        texteditorCtx.restore();
+                    } else {
+                        renderText(char, lineX, charY);
+                    }
+                }
+            });
+        } else {
+            // 横書き描画（上から下へ）
+            lines.forEach((line, lineIdx) => {
+                const offsetY = (lines.length - 1) * txt.size * 0.6;
+                const lineY = txt.y - offsetY + (lineIdx * txt.size * 1.2);
+                renderText(line, txt.x, lineY);
+            });
+        }
 
         // 選択枠の描画 (hideSelectionがfalseのときのみ)
         if (!hideSelection && index === selectedTextIndex) {
-            const metrics = texteditorCtx.measureText(txt.text);
-            const w = metrics.width + 16;
-            const h = txt.size + 16;
+            const w = box.width + 16;
+            const h = box.height + 16;
             
             texteditorCtx.strokeStyle = '#3b82f6';
             texteditorCtx.lineWidth = 2;
@@ -862,29 +1001,33 @@ const getTextEditorPos = (e) => {
     return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
 };
 
-// マウスイベントによるドラッグ＆ドロップと選択
+// マウスイベントによるドラッグ＆ドロップと選択、消しゴム操作
 if (texteditorCanvas) {
     const handleStart = (e) => {
         if (!texteditorBgImage.src) return;
         const p = getTextEditorPos(e);
         
+        if (texteditorActiveTool === 'eraser') {
+            // 消しゴムツール処理
+            isEraserDrawing = true;
+            texteditorBgCtx.save();
+            texteditorBgCtx.globalCompositeOperation = 'destination-out';
+            texteditorBgCtx.beginPath();
+            texteditorBgCtx.moveTo(p.x, p.y);
+            e.preventDefault();
+            return;
+        }
+        
+        // 選択/移動モード処理
         // 当たり判定：上にあるレイヤー（配列末尾）から順にチェック
         let clickedIndex = -1;
         
         for (let i = texteditorTexts.length - 1; i >= 0; i--) {
             const txt = texteditorTexts[i];
+            const box = measureMultilineText(txt);
             
-            // テキスト幅の計測
-            texteditorCtx.save();
-            let fontStyle = '';
-            if (txt.italic) fontStyle += 'italic ';
-            if (txt.bold) fontStyle += 'bold ';
-            texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
-            const metrics = texteditorCtx.measureText(txt.text);
-            texteditorCtx.restore();
-            
-            const w = metrics.width + 16;
-            const h = txt.size + 16;
+            const w = box.width + 16;
+            const h = box.height + 16;
             
             if (p.x >= txt.x - w / 2 && p.x <= txt.x + w / 2 &&
                 p.y >= txt.y - h / 2 && p.y <= txt.y + h / 2) {
@@ -908,9 +1051,23 @@ if (texteditorCanvas) {
     };
 
     const handleMove = (e) => {
+        const p = getTextEditorPos(e);
+        
+        if (texteditorActiveTool === 'eraser') {
+            if (!isEraserDrawing) return;
+            e.preventDefault();
+            texteditorBgCtx.lineTo(p.x, p.y);
+            texteditorBgCtx.strokeStyle = 'rgba(0,0,0,1)';
+            texteditorBgCtx.lineWidth = texteditorEraserSize;
+            texteditorBgCtx.lineCap = 'round';
+            texteditorBgCtx.lineJoin = 'round';
+            texteditorBgCtx.stroke();
+            drawTextEditor();
+            return;
+        }
+
         if (!isTextDragging || selectedTextIndex === -1) return;
         e.preventDefault();
-        const p = getTextEditorPos(e);
         const txt = texteditorTexts[selectedTextIndex];
         txt.x = p.x - dragStartX;
         txt.y = p.y - dragStartY;
@@ -918,6 +1075,13 @@ if (texteditorCanvas) {
     };
 
     const handleEnd = () => {
+        if (texteditorActiveTool === 'eraser') {
+            if (isEraserDrawing) {
+                texteditorBgCtx.restore();
+                isEraserDrawing = false;
+            }
+            return;
+        }
         isTextDragging = false;
     };
 
@@ -948,3 +1112,4 @@ if (texteditorDownloadBtn) {
         drawTextEditor(false);
     });
 }
+
