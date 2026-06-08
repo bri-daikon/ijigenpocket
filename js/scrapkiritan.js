@@ -27,6 +27,7 @@ window.switchMainTab = switchMainTab;
 const fileInput = document.getElementById('fileInput');
 const imageToCrop = document.getElementById('imageToCrop');
 const cropButton = document.getElementById('cropButton');
+const cropButtonBottom = document.getElementById('cropButtonBottom');
 const downloadButton = document.getElementById('downloadButton');
 const resultWrapper = document.getElementById('resultWrapper');
 const dropZone = document.getElementById('dropZone');
@@ -51,6 +52,7 @@ function loadFile(file) {
         imageToCrop.classList.remove('hidden');
         initialGuide.classList.add('hidden');
         cropButton.classList.remove('hidden');
+        if (cropButtonBottom) cropButtonBottom.classList.remove('hidden');
         resultWrapper.classList.add('hidden');
         cropper = new Cropper(imageToCrop, { viewMode: 1, aspectRatio: NaN });
     };
@@ -89,17 +91,22 @@ if (dropZone) {
     dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drop-active'); loadFile(e.dataTransfer.files[0]); });
 }
 
+const handleCrop = () => {
+    if (!cropper) return;
+    const cropped = cropper.getCroppedCanvas();
+    canvas.width = cropped.width;
+    canvas.height = cropped.height;
+    ctx.drawImage(cropped, 0, 0);
+    originalCroppedImage = cropped;
+    resultWrapper.classList.remove('hidden');
+    setTimeout(() => resultWrapper.scrollIntoView({ behavior: 'smooth' }), 100);
+};
+
 if (cropButton) {
-    cropButton.addEventListener('click', () => {
-        if (!cropper) return;
-        const cropped = cropper.getCroppedCanvas();
-        canvas.width = cropped.width;
-        canvas.height = cropped.height;
-        ctx.drawImage(cropped, 0, 0);
-        originalCroppedImage = cropped;
-        resultWrapper.classList.remove('hidden');
-        setTimeout(() => resultWrapper.scrollIntoView({ behavior: 'smooth' }), 100);
-    });
+    cropButton.addEventListener('click', handleCrop);
+}
+if (cropButtonBottom) {
+    cropButtonBottom.addEventListener('click', handleCrop);
 }
 
 const getPos = (e) => {
