@@ -146,11 +146,11 @@
                     </div>
                 </div>
 
-                <!-- 最高売上日 -->
+                <!-- 集計期間 -->
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">最高売上日</p>
-                    <p class="text-2xl font-bold text-slate-950 mt-2 truncate" id="kpi-peak-day">--</p>
-                    <p class="text-xs text-slate-400 mt-1" id="kpi-peak-day-amount">¥0 の販売</p>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">集計期間</p>
+                    <p class="text-lg font-bold text-slate-950 mt-2 truncate" id="kpi-period">--</p>
+                    <p class="text-xs text-slate-400 mt-1" id="kpi-period-detail">CSVデータより抽出</p>
                 </div>
 
                 <!-- トップスタンプ -->
@@ -162,32 +162,18 @@
             </div>
 
             <!-- グラフ表示エリア -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- 日別売上推移 (メイン折れ線) -->
-                <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-bold text-slate-800 flex items-center">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span>
-                            日別の売上(分配金)推移
-                        </h3>
-                        <span class="text-xs text-slate-400">日付ごとの獲得金額</span>
-                    </div>
-                    <div class="h-80 relative">
-                        <canvas id="chart-daily-trend"></canvas>
-                    </div>
-                </div>
-
-                <!-- スタンプ別売上シェア (ドーナツ) -->
+            <div class="grid grid-cols-1 gap-6">
+                <!-- スタンプ別売上 (メイン横棒) -->
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-slate-800 flex items-center">
-                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2"></span>
-                            スタンプ別売上シェア
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2"></span>
+                            スタンプごとの売上（分配金）
                         </h3>
-                        <span class="text-xs text-slate-400">アイテム別の分配金比率</span>
+                        <span class="text-xs text-slate-400">アイテム別の合計分配金比較</span>
                     </div>
-                    <div class="h-80 relative flex items-center justify-center">
-                        <canvas id="chart-item-pie"></canvas>
+                    <div class="h-96 relative">
+                        <canvas id="chart-daily-trend"></canvas>
                     </div>
                 </div>
             </div>
@@ -249,8 +235,8 @@
         // KPI要素
         const kpiRevenue = document.getElementById('kpi-total-revenue');
         const kpiUnits = document.getElementById('kpi-total-units');
-        const kpiPeakDay = document.getElementById('kpi-peak-day');
-        const kpiPeakDayAmount = document.getElementById('kpi-peak-day-amount');
+        const kpiPeriod = document.getElementById('kpi-period');
+        const kpiPeriodDetail = document.getElementById('kpi-period-detail');
         const kpiBestItem = document.getElementById('kpi-best-item');
         const kpiBestItemSales = document.getElementById('kpi-best-item-sales');
         
@@ -260,7 +246,6 @@
 
         // Chartインスタンス用
         let dailyChart = null;
-        let pieChart = null;
 
         // ドラッグ＆ドロップイベントの制御
         ['dragenter', 'dragover'].forEach(eventName => {
@@ -342,22 +327,30 @@
                 // ヘッダー行 (日付, アイテム名などの行) を探索
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
-                    if (line.includes('日付') || line.includes('Date')) {
+                    if (line.includes('日付') || line.includes('Date') || line.includes('From (GMT') || line.includes('Item ID')) {
                         headerIndex = i;
                         break;
                     }
                 }
 
                 if (headerIndex === -1) {
-                    throw new Error('CSVの中に「日付」列が見つかりませんでした。LINEマイページからダウンロードした正しいCSVか確認してください。');
+                    throw new Error('CSVの中に「日付」や「From (GMT」列が見つかりませんでした。LINEマイページからダウンロードした正しいCSVか確認してください。');
                 }
 
                 // ヘッダーのカラム位置をマッピング
                 const headerCols = parseCSVLine(lines[headerIndex]);
-                const dateIdx = headerCols.findIndex(c => c.includes('日付') || c.toLowerCase().includes('date'));
-                const nameIdx = headerCols.findIndex(c => c.includes('アイテム名') || c.toLowerCase().includes('item name') || c.includes('スタンプ名'));
-                const unitsIdx = headerCols.findIndex(c => c.includes('個数') || c.toLowerCase().includes('unit') || c.includes('数量'));
-                const revenueIdx = headerCols.findIndex(c => c.includes('分配') || c.includes('金額') || c.includes('円') || c.toLowerCase().includes('revenue'));
+                const dateIdx = headerCols.findIndex(c => c.includes('日付') || c.toLowerCase().includes('date') || c.includes('From (GMT'));
+                const nameIdx = headerCols.findIndex(c => c.includes('アイテム名') || c.toLowerCase().includes('item name') || c.includes('スタンプ名') || c.includes('Item Title'));
+                const unitsIdx = headerCols.findIndex(c => c.includes('個数') || c.toLowerCase().includes('unit') || c.includes('数量') || c.includes('Sales Counts'));
+                
+                const fromIdx = headerCols.findIndex(c => c.includes('From') || c.includes('開始'));
+                const toIdx = headerCols.findIndex(c => c.includes('To') || c.includes('終了'));
+
+                // 「Revenue Share」に完全一致するものを優先して探す
+                let revenueIdx = headerCols.findIndex(c => c === 'Revenue Share');
+                if (revenueIdx === -1) {
+                    revenueIdx = headerCols.findIndex(c => c.includes('分配') || c.includes('金額') || c.includes('円') || c.toLowerCase().includes('revenue'));
+                }
 
                 if (dateIdx === -1 || unitsIdx === -1 || revenueIdx === -1) {
                     throw new Error('CSVの項目（日付、個数、分配金など）が不足しています。');
@@ -371,15 +364,24 @@
                     const cols = parseCSVLine(line);
                     if (cols.length <= Math.max(dateIdx, nameIdx, unitsIdx, revenueIdx)) continue;
 
-                    const dateStr = cols[dateIdx];
+                    let dateStr = cols[dateIdx];
+                    if (dateStr && dateStr.includes('.')) {
+                        dateStr = dateStr.replace(/\./g, '/');
+                    }
+                    
                     const itemName = nameIdx !== -1 ? cols[nameIdx] : 'スタンプA';
                     const units = parseInt(cols[unitsIdx].replace(/,/g, '')) || 0;
                     const revenue = parseInt(cols[revenueIdx].replace(/,/g, '')) || 0;
+
+                    const fromDate = fromIdx !== -1 ? cols[fromIdx] : '';
+                    const toDate = toIdx !== -1 ? cols[toIdx] : '';
 
                     if (units === 0 && revenue === 0) continue; // 売上のない行はスキップ
 
                     rows.push({
                         date: dateStr,
+                        fromDate: fromDate,
+                        toDate: toDate,
                         itemName: itemName,
                         units: units,
                         revenue: revenue
@@ -451,17 +453,21 @@
             kpiRevenue.innerText = totalRevenue.toLocaleString();
             kpiUnits.innerText = totalUnits.toLocaleString();
 
-            // 最高売上日の算出
-            let peakDay = '--';
-            let peakAmount = 0;
-            Object.keys(dailySummary).forEach(day => {
-                if (dailySummary[day] > peakAmount) {
-                    peakAmount = dailySummary[day];
-                    peakDay = day;
+            // 集計期間の計算
+            let periodText = '--';
+            if (data.length > 0) {
+                const firstRow = data[0];
+                if (firstRow.fromDate && firstRow.toDate) {
+                    periodText = `${formatDate(firstRow.fromDate)} 〜 ${formatDate(firstRow.toDate)}`;
+                } else {
+                    const dates = data.map(r => r.date).filter(Boolean);
+                    if (dates.length > 0) {
+                        const sortedDates = [...dates].sort((a, b) => new Date(a) - new Date(b));
+                        periodText = `${formatDate(sortedDates[0])} 〜 ${formatDate(sortedDates[sortedDates.length - 1])}`;
+                    }
                 }
-            });
-            kpiPeakDay.innerText = formatDate(peakDay);
-            kpiPeakDayAmount.innerText = `¥${peakAmount.toLocaleString()} の売上`;
+            }
+            kpiPeriod.innerText = periodText;
 
             // 一番売れたスタンプの算出
             let bestItem = '--';
@@ -477,8 +483,7 @@
             kpiBestItemSales.innerText = `${bestUnits.toLocaleString()} 個販売 (¥${(itemSummary[bestItem] || 0).toLocaleString()}相当)`;
 
             // 2. グラフ描画
-            drawDailyTrendChart(dailySummary);
-            drawItemPieChart(itemSummary);
+            drawDailyTrendChart(data);
 
             // 3. データテーブル描画
             renderTable(data);
@@ -521,51 +526,66 @@
             });
         }
 
-        // 日別トレンド折れ線グラフの描画
-        function drawDailyTrendChart(dailyData) {
+        // スタンプごとの売上グラフ（横棒グラフ）の描画
+        function drawDailyTrendChart(data) {
             if (dailyChart) {
                 dailyChart.destroy();
             }
 
-            const dates = Object.keys(dailyData);
-            const amounts = Object.values(dailyData);
+            // スタンプごとの売上合計を計算
+            const itemSummary = {};
+            data.forEach(row => {
+                itemSummary[row.itemName] = (itemSummary[row.itemName] || 0) + row.revenue;
+            });
+
+            // 売上金額の降順にソート
+            const sortedItems = Object.keys(itemSummary)
+                .map(name => ({ name: name, value: itemSummary[name] }))
+                .sort((a, b) => b.value - a.value);
+
+            const labels = sortedItems.map(item => item.name);
+            const amounts = sortedItems.map(item => item.value);
+
+            const colors = [
+                '#10b981', // エメラルド
+                '#3b82f6', // ブルー
+                '#f59e0b', // アンバー
+                '#ec4899', // ピンク
+                '#8b5cf6', // バイオレット
+                '#06b6d4', // シアン
+                '#f43f5e', // ローズ
+                '#64748b'  // スレート
+            ];
+            
+            // 各棒に異なる色を割り当てる
+            const barColors = labels.map((_, idx) => colors[idx % colors.length]);
 
             const ctx = document.getElementById('chart-daily-trend').getContext('2d');
             dailyChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: dates.map(formatDate),
+                    labels: labels,
                     datasets: [{
                         label: '分配金 (円)',
                         data: amounts,
-                        backgroundColor: 'rgba(16, 185, 129, 0.15)', // 透明感のあるエメラルド
-                        borderColor: '#10b981', // エメラルドグリーン
-                        borderWidth: 2,
+                        backgroundColor: barColors,
+                        borderWidth: 0,
                         borderRadius: 6,
-                        hoverBackgroundColor: '#059669',
-                        type: 'bar', // 基本は棒グラフ
-                    }, {
-                        label: 'トレンドライン',
-                        data: amounts,
-                        borderColor: '#047857',
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#fff',
-                        type: 'line', // 折れ線も重ねる
-                        tension: 0.3
+                        barThickness: 20
                     }]
                 },
                 options: {
+                    indexAxis: 'y', // 横棒グラフにする
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false // すっきりさせるため凡例は非表示
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: '#1e293b',
                             titleFont: { family: 'Noto Sans JP', size: 12 },
-                            bodyFont: { family: 'Noto Sans JP', size: 14, weight: 'bold' },
+                            bodyFont: { family: 'Noto Sans JP', size: 13, weight: 'bold' },
                             padding: 12,
                             cornerRadius: 8,
                             callbacks: {
@@ -576,7 +596,7 @@
                         }
                     },
                     scales: {
-                        y: {
+                        x: {
                             beginAtZero: true,
                             grid: {
                                 color: '#f1f5f9'
@@ -588,77 +608,19 @@
                                 }
                             }
                         },
-                        x: {
+                        y: {
                             grid: {
                                 display: false
                             },
                             ticks: {
-                                font: { family: 'Noto Sans JP', size: 10 }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // スタンプ別円グラフの描画
-        function drawItemPieChart(itemData) {
-            if (pieChart) {
-                pieChart.destroy();
-            }
-
-            const items = Object.keys(itemData);
-            const amounts = Object.values(itemData);
-
-            const colors = [
-                '#10b981', // エメラルド
-                '#3b82f6', // ブルー
-                '#f59e0b', // アンバー
-                '#ec4899', // ピンク
-                '#8b5cf6', // バイオレット
-                '#64748b'  // スレート
-            ];
-
-            const ctx = document.getElementById('chart-item-pie').getContext('2d');
-            pieChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: items,
-                    datasets: [{
-                        data: amounts,
-                        backgroundColor: colors.slice(0, items.length),
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: { family: 'Noto Sans JP', size: 11 },
-                                padding: 15,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleFont: { family: 'Noto Sans JP', size: 12 },
-                            bodyFont: { family: 'Noto Sans JP', size: 13 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.raw / total) * 105).toFixed(0); // 100%調整
-                                    return ` ¥${context.raw.toLocaleString()} (${Math.min(100, Math.round(context.raw / total * 100))}%シェア)`;
+                                font: { family: 'Noto Sans JP', size: 12 },
+                                callback: function(value) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 20 ? label.slice(0, 20) + '...' : label;
                                 }
                             }
                         }
-                    },
-                    cutout: '65%' // 真ん中の穴の太さ
+                    }
                 }
             });
         }
