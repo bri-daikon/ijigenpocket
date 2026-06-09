@@ -540,7 +540,15 @@ if (iconDownloadBtn) {
     iconDownloadBtn.addEventListener('click', () => {
         if (!iconCanvas) return;
         const link = document.createElement('a');
-        link.download = 'icon_ijigenpocket.png';
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        link.download = `icon_${timestamp}.png`;
         link.href = iconCanvas.toDataURL('image/png');
         link.click();
     });

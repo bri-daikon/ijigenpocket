@@ -858,6 +858,12 @@ canvasSizeSelect.addEventListener('change', (e) => {
   } else if (value === '1920x1080') {
     canvasWidth = 1920;
     canvasHeight = 1080;
+  } else if (value === '720x1280') {
+    canvasWidth = 720;
+    canvasHeight = 1280;
+  } else if (value === '1080x1920') {
+    canvasWidth = 1080;
+    canvasHeight = 1920;
   }
   updateUI();
 });
@@ -1604,6 +1610,86 @@ updateUI();
 // AI Room Generator (AI社員に依頼) 機能
 // ==========================================
 
+const SYSTEM_RULE_PORTRAIT = `◯ココフォリア部屋縦長用
+まず下記のココフォリア部屋画像生成ルールを学習して下さい。
+
+＜ルール＞
+指示されたテーマにそって独創的で魅力的にデザインする。
+ココフォリアの基本構造（メニュー、タイトル、前景、立ち絵置き場、特殊エリア、便利ボタン）を維持し、縦長の画像範囲内に縦に順に並べて(最上にメニュー、その下にタイトル、前景、立ち絵置き場、特殊エリア、最下に便利ボタン)美しく配置されたレイアウトにする。
+タイトルとメニューと便利ボタン以外の文字情報を画像内に描画しないこと。（エリア名、枠の解説、項目名などの文字は一切描写しない）
+エリアの大きさ（占有率）の優先順位は、PC立ち絵置き場 ＞ 前景窓 ＞ 特殊エリア ＞ メニュー ＞ タイトル ＞ 便利ボタン とする。
+画面全体にギチギチに配置せず、TRPGのセッション時に窮屈さを感じないよう、美しい余白 and ゆとりを持たせ、全てのパーツは重ならないようにする。
+
+1) 前景エリア（優先度：高）
+ゲームのシーン写真や背景が表示される主要な窓（フレーム）。四角や丸型など、全体のデザインテーマに合わせた枠線や装飾で表現する。文字情報はなし。
+
+2) PC立ち絵エリア（優先度：最高）
+キャラクターの全身立ち絵が並ぶための透過スペース、または枠線を確保する。
+ユーザーから指定された人数分（可変）の縦長のスペースを、横に並べる。
+※重要：キャラクターのイラストやシルエット、は一切画像内に描かないでください。純粋な「スペース・枠」のみを描写します。文字情報はなし。
+
+3) メニュー（5項目 / 優先度：中）
+'HouseRule'、'Battle'、'Insanity'、'Growth'、'Other'を配置する。
+全体の雰囲気に合わせ、以下のいずれか「1つのスタイルのみ」に統一して小さく綺麗に配置する。
+①英語表記のみ、②日本語表記のみ、③漢字一文字のみ、④イラストアイコンのみ
+※重要：表記を重複させないこと（アイコン＋英字などはNG）。デフォルトは英語表記。
+便利ボタンという項目名はなし。
+
+4) 便利ボタン（6項目 / 優先度：中）
+'目星'、'聞き耳'、'図書館'、'アイデア'、'SANc'、'塩'を配置する。
+メニューよりもさらに小さく、画面の下部や右側などの目立たない場所に配置する。
+デザインスタイルは、上記「メニュー」で選択したものと完全に統一する。
+便利ボタンという項目名はなし。
+
+5) 特殊エリア
+ユーザーから明示的な指示（マップ、NPC置き場など）があった場合のみ、そのスペースを確保する。指示がない場合は描かない。文字情報はなし。
+
+6) タイトル
+ユーザーから明示的な指示があった場合のみ、既存のフォントに囚われずタイトルと雰囲気から連想されるイメージで装飾した文字で描画する。指示がない場合は描かない。
+
+学習した指示に基づき、以下の指定でココフォリア部屋画像を生成してください。`;
+
+const SYSTEM_RULE_LANDSCAPE = `◯ココフォリア部屋横長用
+まず下記のココフォリア部屋画像生成ルールを学習して下さい。
+
+＜ルール＞
+指示されたテーマにそって独創的で魅力的にデザインする。
+ココフォリアの基本構造（メニュー、前景、立ち絵置き場、特殊エリア、便利ボタン）を維持し、横長の画像範囲内に順に並べて(左上にメニュー、左に前景、左下に特殊エリア、右に立ち絵置き場、右上に便利ボタン)美しく配置されたレイアウトにする。
+タイトルとメニューと便利ボタン以外の文字情報を画像内に描画しないこと。（エリア名、枠の解説、項目名などの文字は一切描写しない）
+エリアの大きさ（占有率）の優先順位は、PC立ち絵置き場 ＞ 前景窓 ＞ 特殊エリア ＞ メニュー ＞ タイトル ＞ 便利ボタン とする。
+画面全体にギチギチに配置せず、TRPGのセッション時に窮屈さを感じないよう、美しい余白 and ゆとりを持たせ、全てのパーツは重ならないようにする。
+
+1) 前景エリア（優先度：高）
+ゲームのシーン写真や背景が表示される主要な窓（フレーム）。四角や丸型など、全体のデザインテーマに合わせた枠線や装飾で表現する。文字情報はなし。
+
+2) PC立ち絵エリア（優先度：最高）
+キャラクターの全身立ち絵が並ぶための透過スペース、または枠線を確保する。
+ユーザーから指定された人数分（可変）の縦長のスペースを、横に並べる。
+※重要：キャラクターのイラストやシルエット、は一切画像内に描かないでください。純粋な「スペース・枠」のみを描写します。文字情報はなし。
+
+3) メニュー（5項目 / 優先度：中）
+'HouseRule'、'Battle'、'Insanity'、'Growth'、'Other'を配置する。
+全体の雰囲気に合わせ、以下のいずれか「1つのスタイルのみ」に統一して小さく綺麗に配置する。
+①英語表記のみ、②日本語表記のみ、③漢字一文字のみ、④イラストアイコンのみ
+※重要：表記を重複させないこと（アイコン＋英字などはNG）。デフォルトは英語表記。
+便利ボタンという項目名はなし。
+
+4) 便利ボタン（6項目 / 優先度：中）
+'目星'、'聞き耳'、'図書館'、'アイデア'、'SANc'、'塩'を配置する。
+メニューよりもさらに小さく、画面の下部や右側などの目立たない場所に配置する。
+デザインスタイルは、上記「メニュー」で選択したものと完全に統一する。
+便利ボタンという項目名はなし。
+
+5) 特殊エリア
+ユーザーから明示的な指示（マップ、NPC置き場など）があった場合のみ、そのスペースを確保する。指示がない場合は描かない。文字情報はなし。
+
+6) タイトル
+ユーザーから明示的な指示があった場合のみ、既存のフォントに囚われずタイトルと雰囲気から連想されるイメージで装飾した文字で描画する。指示がない場合は描かない。
+
+学習した指示に基づき、以下の指定でココフォリア部屋画像を生成してください。`;
+
+
+
 const aiGenerateBtn = document.getElementById('ai-generate-btn');
 const aiThemeSelect = document.getElementById('ai-theme-select');
 const aiPlayersSelect = document.getElementById('ai-players-select');
@@ -1612,6 +1698,7 @@ const aiChatBox = document.getElementById('ai-chat-box');
 const aiPromptInput = document.getElementById('ai-prompt-input');
 const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
 const aiGenPartsToggle = document.getElementById('ai-gen-parts-toggle');
+const aiBgOnlyToggle = document.getElementById('ai-bg-only-toggle');
 const aiApiKeyInput = document.getElementById('ai-api-key');
 
 if (aiApiKeyInput) {
@@ -1887,7 +1974,7 @@ CEOから以下のパターン（1〜7）の指定、あるいはそれに類似
   }
 }
 
-async function callImagenApiForBackground(apiKey, prompt) {
+async function callImagenApiForBackground(apiKey, prompt, aspectRatio = '16:9') {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
   
   let delay = 1000;
@@ -1903,7 +1990,10 @@ async function callImagenApiForBackground(apiKey, prompt) {
             }]
           }],
           generationConfig: {
-            responseModalities: ["IMAGE"]
+            responseModalities: ["IMAGE"],
+            imageConfig: {
+              aspectRatio: aspectRatio
+            }
           }
         })
       });
@@ -2074,16 +2164,14 @@ const themeSvgGenerators = {
   <rect width="100%" height="100%" fill="#140827"/>
   <rect x="25" y="25" width="1230" height="670" fill="none" stroke="#7b68ee" stroke-width="1.5" opacity="0.4" rx="8"/>
 </svg>`,
-    window: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 720 405">
-  <rect x="5" y="5" width="710" height="395" fill="#0d091a" fill-opacity="0.55" stroke="#7b68ee" stroke-width="2" rx="4"/>
-  <text x="360" y="30" font-family="'Cinzel', serif" font-size="12" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="3">PORTAL</text>
-</svg>`,
     pl: (design, w = 180, h = 200) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect x="4" y="4" width="${w - 8}" height="${h - 8}" fill="#0d091a" fill-opacity="0.6" stroke="#7b68ee" stroke-width="1.5" rx="4"/>
   <line x1="20" y1="${h - 60}" x2="${w - 20}" y2="${h - 60}" stroke="#4b0082" stroke-width="1"/>
   <rect x="20" y="${h - 48}" width="${w - 40}" height="26" fill="#07040f" stroke="#7b68ee" stroke-width="1" rx="2"/>
+  <text x="${w / 2}" y="${h - 31}" font-family="'Cinzel', serif" font-size="11" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="1">HERO</text>
+</svg>`,
+    menu: (text) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
   <rect x="2" y="2" width="176" height="32" fill="#0d091a" fill-opacity="0.8" stroke="#7b68ee" stroke-width="1.5" rx="3"/>
   <text x="95" y="22" font-family="sans-serif" font-size="11" font-weight="bold" fill="#7b68ee" text-anchor="middle" letter-spacing="2">${text.toUpperCase()}</text>
@@ -2170,7 +2258,6 @@ const themeSvgGenerators = {
   }
 };
 
-// 依頼実行ハンドラ
 if (aiGenerateBtn) {
   aiGenerateBtn.addEventListener('click', async () => {
     const theme = aiThemeSelect.value;
@@ -2179,6 +2266,7 @@ if (aiGenerateBtn) {
     const customPrompt = aiPromptInput ? aiPromptInput.value.trim() : '';
     const genBg = aiGenBgToggle ? aiGenBgToggle.checked : false;
     const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
+    const bgOnly = aiBgOnlyToggle ? aiBgOnlyToggle.checked : false;
     
     // UIをロード状態にする
     aiGenerateBtn.disabled = true;
@@ -2192,69 +2280,136 @@ if (aiGenerateBtn) {
     
     if (apiKey && (theme === 'custom' || customPrompt !== '')) {
       // リアルAI生成モード
-      addChatMessage(employees.takumi, `CEO、ご要望を承りました！リクエスト「${customPrompt || theme}」について、これからアオイと相談して最適な部屋を作ります！`);
-      
-      try {
-        const responseText = await callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt);
-        let cleanedJson = responseText.replace(/```json|```/g, '').trim();
-        const responseData = JSON.parse(cleanedJson);
+      if (bgOnly) {
+        addChatMessage(employees.takumi, `CEO、ご要望を承りました！パーツは配置せず、ご指示のルール「${customPrompt || theme}」に沿って部屋画像を1枚で美しくレンダリングします！`);
         
-        // 議論ログを順次表示
-        const steps = responseData.discussion || [];
-        for (let idx = 0; idx < steps.length; idx++) {
+        try {
           await new Promise(resolve => setTimeout(resolve, 1500));
-          const msg = steps[idx];
-          const speakerObj = msg.speaker === 'aoi' ? employees.aoi : employees.takumi;
-          addChatMessage(speakerObj, msg.text);
-        }
-        
-        let bgImageUrl = null;
-        if (genBg) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+          addChatMessage(employees.aoi, "任せて！指定された要素や枠線、雰囲気を1枚のイラスト背景画像としてしっかりモデリング（生成）するね！");
           
-          try {
-            const styleDesc = responseData.design.style_description || "beautiful illustration";
-            const basePrompt = customPrompt || theme;
-            const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, no text.`;
+          let bgImageUrl = null;
+          if (genBg) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            addChatMessage(employees.aoi, "ご指示通りの部屋画像のレンダリング（画像生成）を開始するね！数秒かかるから待っててね。");
             
-            const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt);
-            bgImageUrl = `data:image/png;base64,${imageBytes}`;
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            addChatMessage(employees.aoi, "背景アセットの画像生成が完了したよ！キャンバスにロードするね！");
-          } catch (imgErr) {
-            console.error(imgErr);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            addChatMessage(employees.takumi, `背景画像の生成中にエラーが発生しました (${imgErr.message})。安全のため、SVGグラデーション背景で代行します。`);
+            try {
+              const isPortrait = canvasWidth < canvasHeight;
+              const aspectRatio = isPortrait ? "9:16" : "16:9";
+              const systemRule = isPortrait ? SYSTEM_RULE_PORTRAIT : SYSTEM_RULE_LANDSCAPE;
+              
+              let imagenPrompt = `${systemRule}\n\n`;
+              if (theme && theme !== 'custom') {
+                imagenPrompt += `テーマ: ${theme}\n`;
+              }
+              if (customPrompt) {
+                imagenPrompt += `指定項目: ${customPrompt}\n`;
+              } else {
+                imagenPrompt += `指定項目: なし\n`;
+              }
+              imagenPrompt += `PL人数: ${numPlayers}人\n`;
+              
+              const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
+              bgImageUrl = `data:image/png;base64,${imageBytes}`;
+              
+              await new Promise(resolve => setTimeout(resolve, 500));
+              addChatMessage(employees.aoi, "お待たせしました！ココフォリア部屋画像の生成が完了したよ！");
+            } catch (imgErr) {
+              console.error(imgErr);
+              await new Promise(resolve => setTimeout(resolve, 500));
+              addChatMessage(employees.takumi, `画像の生成中にエラーが発生しました (${imgErr.message})。`);
+            }
           }
+          
+          if (bgImageUrl) {
+            frame = {
+              url: bgImageUrl,
+              x: 0,
+              y: 0,
+              width: canvasWidth,
+              height: canvasHeight,
+              originalRatio: canvasWidth / canvasHeight
+            };
+          }
+          panels = [];
+          selectedPanelIds = [];
+          updateUI();
+          
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          addChatMessage(employees.takumi, "作成完了しました。個別パネルは配置しておりませんので、このまま保存してご活用ください！");
+        } catch (err) {
+          console.error(err);
+          addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。`);
+        } finally {
+          aiGenerateBtn.disabled = false;
+          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+          if (typeof lucide !== 'undefined') lucide.createIcons();
         }
+      } else {
+        // 通常のリアルAI生成モード（パーツあり）
+        addChatMessage(employees.takumi, `CEO、ご要望を承りました！リクエスト「${customPrompt || theme}」について、これからアオイと相談して最適な部屋を作ります！`);
+        
+        try {
+          const responseText = await callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt);
+          let cleanedJson = responseText.replace(/```json|```/g, '').trim();
+          const responseData = JSON.parse(cleanedJson);
+          
+          // 議論ログを順次表示
+          const steps = responseData.discussion || [];
+          for (let idx = 0; idx < steps.length; idx++) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            const msg = steps[idx];
+            const speakerObj = msg.speaker === 'aoi' ? employees.aoi : employees.takumi;
+            addChatMessage(speakerObj, msg.text);
+          }
+          
+          let bgImageUrl = null;
+          if (genBg) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+            
+            try {
+              const styleDesc = responseData.design.style_description || "beautiful illustration";
+              const basePrompt = customPrompt || theme;
+              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, no text.`;
+              
+              const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt);
+              bgImageUrl = `data:image/png;base64,${imageBytes}`;
+              
+              await new Promise(resolve => setTimeout(resolve, 500));
+              addChatMessage(employees.aoi, "背景アセットの画像生成が完了したよ！キャンバスにロードするね！");
+            } catch (imgErr) {
+              console.error(imgErr);
+              await new Promise(resolve => setTimeout(resolve, 500));
+              addChatMessage(employees.takumi, `背景画像の生成中にエラーが発生しました (${imgErr.message})。安全のため、SVGグラデーション背景で代行します。`);
+            }
+          }
 
-        let partsImageUrl = null;
-        if (genParts && bgImageUrl) {
-          partsImageUrl = bgImageUrl;
-          await new Promise(resolve => setTimeout(resolve, 500));
-          addChatMessage(employees.aoi, "背景画像から各パーツ（メイン枠や立ち絵枠など）をシームレスに切り出して合成するね！");
+          let partsImageUrl = null;
+          if (genParts && bgImageUrl) {
+            partsImageUrl = bgImageUrl;
+            await new Promise(resolve => setTimeout(resolve, 500));
+            addChatMessage(employees.aoi, "背景画像から各パーツ（メイン枠や立ち絵枠など）をシームレスに切り出して合成するね！");
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          addChatMessage(employees.aoi, `デザイン設計完了！「${responseData.design.style_description}」テーマの部屋レイアウトをキャンバスに出力したよ！`);
+          
+          // dynamicテーマのレイアウト生成
+          await generateAndLoadDynamicLayout(responseData.design, numPlayers, layoutType, bgImageUrl, partsImageUrl);
+          
+        } catch (err) {
+          console.error(err);
+          addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。安全のため、デフォルトのテーマで代行して生成します。`);
+          
+          // デモモードへフォールバック
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const fallbackTheme = theme === 'custom' ? 'cyberpunk' : theme;
+          await generateAndLoadLayout(fallbackTheme, numPlayers, layoutType);
+        } finally {
+          aiGenerateBtn.disabled = false;
+          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+          if (typeof lucide !== 'undefined') lucide.createIcons();
         }
-
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        addChatMessage(employees.aoi, `デザイン設計完了！「${responseData.design.style_description}」テーマの部屋レイアウトをキャンバスに出力したよ！`);
-        
-        // dynamicテーマのレイアウト生成
-        await generateAndLoadDynamicLayout(responseData.design, numPlayers, layoutType, bgImageUrl, partsImageUrl);
-        
-      } catch (err) {
-        console.error(err);
-        addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。安全のため、デフォルトのテーマで代行して生成します。`);
-        
-        // デモモードへフォールバック
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const fallbackTheme = theme === 'custom' ? 'cyberpunk' : theme;
-        await generateAndLoadLayout(fallbackTheme, numPlayers, layoutType);
-      } finally {
-        aiGenerateBtn.disabled = false;
-        aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
       }
       
     } else {
@@ -2277,13 +2432,23 @@ if (aiGenerateBtn) {
       }
 
       setTimeout(() => {
-        addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutName}】ですね。さっそく企画立案しました。`);
+        if (bgOnly) {
+          addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！今回はパーツを配置せず、テーマ【${themeName}】に沿って1枚絵のデモ画像を出力しますね。`);
+        } else {
+          addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutName}】ですね。さっそく企画立案しました。`);
+        }
         
         setTimeout(() => {
-          addChatMessage(employees.aoi, `任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
+          if (bgOnly) {
+            addChatMessage(employees.aoi, `了解！キャンバスに合わせた比率で1枚のココフォリア背景（デモ）を描画するね！`);
+          } else {
+            addChatMessage(employees.aoi, `任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
+          }
           
           setTimeout(() => {
-            addChatMessage(employees.takumi, `前景くり抜き窓は中央左、PLパネルは指定配置に。メニュー用とクリックアクション用（目星、聞き耳、図書館、アイデア、SAN、塩）のボタンを綺麗に自動整列させます！`);
+            if (!bgOnly) {
+              addChatMessage(employees.takumi, `前景くり抜き窓は中央左、PLパネルは指定配置に。メニュー用とクリックアクション用（目星、聞き耳、図書館、アイデア、SAN、塩）のボタンを綺麗に自動整列させます！`);
+            }
             
             if (genBg) {
               setTimeout(() => {
@@ -2297,9 +2462,22 @@ if (aiGenerateBtn) {
                     mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
                   }
                   
-                  let mockPartsUrl = genParts ? mockBgUrl : null;
-                  
-                  await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, mockPartsUrl);
+                  if (bgOnly) {
+                    frame = {
+                      url: mockBgUrl,
+                      x: 0,
+                      y: 0,
+                      width: canvasWidth,
+                      height: canvasHeight,
+                      originalRatio: canvasWidth / canvasHeight
+                    };
+                    panels = [];
+                    selectedPanelIds = [];
+                    updateUI();
+                  } else {
+                    let mockPartsUrl = genParts ? mockBgUrl : null;
+                    await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, mockPartsUrl);
+                  }
                   
                   aiGenerateBtn.disabled = false;
                   aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
@@ -2308,12 +2486,26 @@ if (aiGenerateBtn) {
               }, 1500);
             } else {
               setTimeout(async () => {
-                addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
+                addChatMessage(employees.aoi, `組み立て完了したよ！キャンバスに出力したから確認してみて！CEO！`);
                 
                 let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
-                let mockPartsUrl = genParts ? mockBgUrl : null;
                 
-                await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, null, mockPartsUrl);
+                if (bgOnly) {
+                  frame = {
+                    url: mockBgUrl,
+                    x: 0,
+                    y: 0,
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    originalRatio: canvasWidth / canvasHeight
+                  };
+                  panels = [];
+                  selectedPanelIds = [];
+                  updateUI();
+                } else {
+                  let mockPartsUrl = genParts ? mockBgUrl : null;
+                  await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, null, mockPartsUrl);
+                }
                 
                 aiGenerateBtn.disabled = false;
                 aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
