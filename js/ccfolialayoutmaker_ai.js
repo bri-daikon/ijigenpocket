@@ -1,22 +1,22 @@
-// アイコンの初期化
+// アイコンの初期?
 if (typeof lucide !== 'undefined') {
   lucide.createIcons();
 }
 
-// === 状態管理（データ） ===
+// === 状態管??データ?? ===
 let frame = null; // { url: url, x: 0, y: 0, width: 1280, height: 720 }
 let panels = [];
-let selectedPanelIds = []; // 'frame', またはパネルのidの配列
-let copiedPanelData = []; // コピーされたパネルデータの配列
-let zoomScale = null; // null は自動フィット、数値は固定倍率
-let actionHistory = []; // 操作履歴スタック
+let selectedPanelIds = []; // 'frame', また?パネルのidの配??
+let copiedPanelData = []; // コピ?されたパネル?ータの配??
+let zoomScale = null; // null は自動フィ?ト、数値は固定倍率
+let actionHistory = []; // 操作履歴スタ?ク
 const bgColors = ['white', 'gray', 'black', 'blue'];
 const canvasBgColorsList = ['trans', 'white', 'gray', 'black'];
 const canvasTargetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
-let previewBgColor = 'blue'; // 'white', 'gray', 'black', 'blue' (Undo対象外)
+let previewBgColor = 'blue'; // 'white', 'gray', 'black', 'blue' (Undo対象?)
 let canvasBgColor = 'black'; // 'transparent', 'white', 'gray', 'black' (Undo対象)
 
-// === フレーム画像編集モーダル用の状態変数 ===
+// === フレーム画像編?モーダル用の状態変数 ===
 let editOriginalUrl = null;
 let editHistory = [];
 let activeTool = 'free';
@@ -29,14 +29,14 @@ let editImage = null;
 let isDragging = false;
 let isResizing = false;
 let dragOffset = { x: 0, y: 0 };
-let dragStartPositions = []; // 複数移動用：{ id, x, y } の配列
+let dragStartPositions = []; // ?数移動用?{ id, x, y } の配??
 
 let canvasWidth = 1280;
 let canvasHeight = 720;
 let showGrid = false;
 let snapToGrid = false;
 
-// === DOM要素の取得 ===
+// === DOM要素の取? ===
 const canvasArea = document.getElementById('canvas-area');
 const panelList = document.getElementById('panel-list');
 const panelCount = document.getElementById('panel-count');
@@ -62,7 +62,7 @@ const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const saveEditBtn = document.getElementById('save-edit-btn');
 const frameEditCanvas = document.getElementById('frame-edit-canvas');
 
-// === 操作履歴（Undo）の管理 ===
+// === 操作履歴??Undo??管? ===
 function saveStateToHistory() {
   const currentState = {
     frame: frame ? JSON.parse(JSON.stringify(frame)) : null,
@@ -107,7 +107,7 @@ const zoomInBtn = document.getElementById('zoom-in-btn');
 const zoomOutBtn = document.getElementById('zoom-out-btn');
 const zoomFitBtn = document.getElementById('zoom-fit-btn');
 
-// === 画面の更新（描画）関数 ===
+// === 画面の更新?描画?関数 ===
 function updateUI() {
   // 1. キャンバスの再描画
   canvasArea.innerHTML = ''; // 一旦空にする
@@ -153,7 +153,7 @@ function updateUI() {
     canvasArea.appendChild(frameEl);
   }
 
-  // グリッドの描画
+  // グリ?ド?描画
   if (showGrid) {
     const grid = document.createElement('div');
     grid.className = 'absolute inset-0 grid-bg';
@@ -164,7 +164,7 @@ function updateUI() {
 
   // パネルの描画
   panels.forEach(panel => {
-    if (panel.visible === false) return; // 非表示の場合はメインキャンバスに描画しない
+    if (panel.visible === false) return; // 非表示の場合?メインキャンバスに描画しな?
     
     const pEl = document.createElement('div');
     const isSelected = selectedPanelIds.includes(panel.id);
@@ -176,7 +176,7 @@ function updateUI() {
     pEl.style.height = `${panel.height}px`;
     pEl.style.opacity = panel.opacity !== undefined ? panel.opacity : 1;
 
-    // 反転表示のためのインナー要素
+    // 反転表示のためのインナ?要素
     const imgEl = document.createElement('div');
     imgEl.className = 'w-full h-full';
     imgEl.style.backgroundImage = `url(${panel.url})`;
@@ -192,17 +192,17 @@ function updateUI() {
     }
     pEl.appendChild(imgEl);
     
-    // パネルをマウスで押した時の処理
+    // パネルを?ウスで押した時?処?
     pEl.addEventListener('mousedown', (e) => handlePanelMouseDown(e, panel.id));
 
-    // 選択中かつ単一選択ならリサイズ用のツマミとクイックツールバーを表示
+    // 選択中かつ単一選択ならリサイズ用の?マミとクイ?ク?ールバ?を表示
     if (isSelected && selectedPanelIds.length === 1) {
       const resizeHandle = document.createElement('div');
       resizeHandle.className = 'resize-handle absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-sm z-30';
       resizeHandle.style.transform = 'translate(50%, 50%)';
       pEl.appendChild(resizeHandle);
 
-      // クイックツールバー
+      // クイ?ク?ールバ?
       const toolbar = document.createElement('div');
       if (panel.y < 50) {
         toolbar.className = 'quick-toolbar absolute top-full mt-2 left-1/2 bg-gray-800 border border-gray-600 rounded px-1.5 py-1 flex items-center gap-1.5 shadow-xl z-30 pointer-events-auto origin-top';
@@ -264,7 +264,7 @@ function updateUI() {
       };
       toolbar.appendChild(toBackBtn);
 
-      // 区切り線
+      // 区?り?
       const divider = document.createElement('div');
       divider.className = 'w-px h-4 bg-gray-600 mx-1';
       toolbar.appendChild(divider);
@@ -295,22 +295,22 @@ function updateUI() {
       };
       toolbar.appendChild(flipVBtn);
 
-      // 画像を差し替え
+      // 画像を差し替?
       const replaceBtn = document.createElement('button');
       replaceBtn.className = 'text-gray-300 hover:text-blue-400';
       replaceBtn.innerHTML = '<i data-lucide="image" class="w-4 h-4"></i>';
-      replaceBtn.title = '画像を差し替え';
+      replaceBtn.title = '画像を差し替?';
       replaceBtn.onclick = (e) => {
         e.stopPropagation();
         replacePanelUpload.click();
       };
       toolbar.appendChild(replaceBtn);
 
-      // 複製
+      // ?製
       const copyBtn = document.createElement('button');
       copyBtn.className = 'text-gray-300 hover:text-blue-400';
       copyBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
-      copyBtn.title = '複製';
+      copyBtn.title = '?製';
       copyBtn.onclick = (e) => {
         e.stopPropagation();
         duplicatePanel(panel);
@@ -331,7 +331,7 @@ function updateUI() {
       };
       toolbar.appendChild(hideBtn);
 
-      // 透過率スライダー
+      // 透過?スライダー
       const opacityContainer = document.createElement('div');
       opacityContainer.className = 'flex items-center gap-1.5 ml-1 mr-1 pointer-events-auto';
       opacityContainer.innerHTML = '<i data-lucide="droplet" class="w-3.5 h-3.5 text-gray-400"></i>';
@@ -345,11 +345,11 @@ function updateUI() {
       opacityRange.step = '0.05';
       opacityRange.value = panel.opacity !== undefined ? panel.opacity : 1;
       opacityRange.className = 'w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500';
-      opacityRange.title = `透過率: ${Math.round((panel.opacity !== undefined ? panel.opacity : 1) * 100)}%`;
+      opacityRange.title = `透過?: ${Math.round((panel.opacity !== undefined ? panel.opacity : 1) * 100)}%`;
 
       opacityRange.addEventListener('input', (e) => {
         panel.opacity = parseFloat(e.target.value);
-        opacityRange.title = `透過率: ${Math.round(panel.opacity * 100)}%`;
+        opacityRange.title = `透過?: ${Math.round(panel.opacity * 100)}%`;
         pEl.style.opacity = panel.opacity;
       });
 
@@ -381,15 +381,15 @@ function updateUI() {
     canvasArea.appendChild(pEl);
   });
 
-  // ガイドテキストの表示
+  // ガイドテキスト?表示
   if (!frame && panels.length === 0) {
     const guide = document.createElement('div');
     guide.className = 'absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none';
-    guide.innerHTML = '<p>左のメニューから画像をアップロードしてください</p>';
+    guide.innerHTML = '<p>左のメニューから画像をア?プロードしてください</p>';
     canvasArea.appendChild(guide);
   }
 
-  // 2. パネルリストの再描画
+  // 2. パネルリスト?再描画
   panelCount.innerText = panels.length;
   panelList.innerHTML = '';
   if (panels.length === 0) {
@@ -423,7 +423,7 @@ function updateUI() {
       const btnContainer = document.createElement('div');
       btnContainer.className = 'flex items-center gap-1.5';
 
-      // 上へ移動
+      // 上へ移?
       const upBtn = document.createElement('button');
       upBtn.className = `text-gray-400 hover:text-blue-400 ${index === panels.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`;
       upBtn.innerHTML = '<i data-lucide="chevron-up" class="w-4 h-4"></i>';
@@ -434,7 +434,7 @@ function updateUI() {
       };
       btnContainer.appendChild(upBtn);
 
-      // 下へ移動
+      // 下へ移?
       const downBtn = document.createElement('button');
       downBtn.className = `text-gray-400 hover:text-blue-400 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`;
       downBtn.innerHTML = '<i data-lucide="chevron-down" class="w-4 h-4"></i>';
@@ -445,7 +445,7 @@ function updateUI() {
       };
       btnContainer.appendChild(downBtn);
 
-      // 表示/非表示の切り替え
+      // 表示/非表示の?り替?
       const toggleVisibleBtn = document.createElement('button');
       toggleVisibleBtn.className = 'text-gray-400 hover:text-blue-400';
       const isVisible = panel.visible !== false;
@@ -462,7 +462,7 @@ function updateUI() {
       };
       btnContainer.appendChild(toggleVisibleBtn);
 
-      // 複製
+      // ?製
       const copyBtn = document.createElement('button');
       copyBtn.className = 'text-gray-400 hover:text-blue-400';
       copyBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
@@ -497,20 +497,21 @@ function updateUI() {
   clearFrameBtn.style.display = frame ? 'block' : 'none';
   editFrameBtn.style.display = frame ? 'block' : 'none';
 
-  // 3.3 整列・配置ボタンの有効化/無効化制御
+  // 3.3 整列?配置ボタンの有効?/無効化制御
   const selectedPanelCount = selectedPanelIds.filter(id => id !== 'frame').length;
+  const hasOneOrMore = selectedPanelCount >= 1;
   const hasMultiple = selectedPanelCount >= 2;
   const hasThreeOrMore = selectedPanelCount >= 3;
-  if (alignTopBtn) alignTopBtn.disabled = !hasMultiple;
-  if (alignCenterBtn) alignCenterBtn.disabled = !hasMultiple;
-  if (alignBottomBtn) alignBottomBtn.disabled = !hasMultiple;
-  if (alignLeftBtn) alignLeftBtn.disabled = !hasMultiple;
-  if (alignCenterHBtn) alignCenterHBtn.disabled = !hasMultiple;
-  if (alignRightBtn) alignRightBtn.disabled = !hasMultiple;
+  if (alignTopBtn) alignTopBtn.disabled = !hasOneOrMore;
+  if (alignCenterBtn) alignCenterBtn.disabled = !hasOneOrMore;
+  if (alignBottomBtn) alignBottomBtn.disabled = !hasOneOrMore;
+  if (alignLeftBtn) alignLeftBtn.disabled = !hasOneOrMore;
+  if (alignCenterHBtn) alignCenterHBtn.disabled = !hasOneOrMore;
+  if (alignRightBtn) alignRightBtn.disabled = !hasOneOrMore;
   if (distributeHBtn) distributeHBtn.disabled = !hasThreeOrMore;
   if (distributeVBtn) distributeVBtn.disabled = !hasThreeOrMore;
 
-  // 3.5 操作履歴「一つ戻る」ボタンの制御
+  // 3.5 操作履歴「一つ戻る」?タンの制御
   if (undoActionBtn) {
     undoActionBtn.disabled = actionHistory.length === 0;
   }
@@ -535,7 +536,7 @@ function updateUI() {
   updateCanvasScale();
 }
 
-// === 画像の読み込み処理 ===
+// === 画像?読み込み処? ===
 function handleFileUpload(event, type) {
   const files = Array.from(event.target.files);
   if (files.length === 0) return;
@@ -629,7 +630,7 @@ function handleFileUpload(event, type) {
   event.target.value = '';
 }
 
-// イベントリスナーの登録
+// イベントリスナ?の登録
 document.getElementById('frame-upload').addEventListener('change', (e) => handleFileUpload(e, 'frame'));
 document.getElementById('panel-upload').addEventListener('change', (e) => handleFileUpload(e, 'panel'));
 
@@ -640,7 +641,7 @@ clearFrameBtn.addEventListener('click', () => {
   updateUI(); 
 });
 
-// === ドラッグ＆ドロップ、リサイズの処理 ===
+// === ドラ?グ??ドロ?プ、リサイズの処? ===
 function handleSpecialMouseDown(e, type) {
   e.stopPropagation();
   saveStateToHistory();
@@ -669,7 +670,7 @@ function handlePanelMouseDown(e, panelId) {
   e.stopPropagation();
   saveStateToHistory();
   
-  // パネルを最前面（配列の末尾）に移動
+  // パネルを最前面????末尾?に移?
   const panelIndex = panels.findIndex(p => p.id === panelId);
   if (panelIndex > -1) {
     const clickedPanel = panels[panelIndex];
@@ -842,7 +843,7 @@ function updateCanvasScale() {
   const scaleDisplay = document.getElementById('scale-display');
   if (scaleDisplay) {
     scaleDisplay.innerText = zoomScale === null
-      ? `${Math.round(scale * 100)}% (フィット)`
+      ? `${Math.round(scale * 100)}% (フィ??)`
       : `${Math.round(scale * 100)}%`;
   }
 }
@@ -994,7 +995,7 @@ async function exportToPNG() {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('画像のロードに失敗しました'));
+        img.onerror = () => reject(new Error('画像?ロードに失敗しました'));
         img.src = url;
       });
     };
@@ -1057,7 +1058,7 @@ async function exportToPNG() {
 
   } catch (error) {
     console.error(error);
-    alert('画像の出力中にエラーが発生しました。');
+    alert('画像?出力中にエラーが発生しました?');
   } finally {
     exportBtn.disabled = false;
     exportBtn.innerHTML = originalText;
@@ -1076,7 +1077,7 @@ async function exportPartsToZIP() {
 
   try {
     if (typeof JSZip === 'undefined') {
-      throw new Error("JSZipライブラリが読み込まれていません。");
+      throw new Error("JSZipライブラリが読み込まれて?ません?");
     }
 
     const zip = new JSZip();
@@ -1085,12 +1086,12 @@ async function exportPartsToZIP() {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('画像のロードに失敗しました'));
+        img.onerror = () => reject(new Error('画像?ロードに失敗しました'));
         img.src = url;
       });
     };
 
-    // 1. フレーム画像の処理
+    // 1. フレーム画像?処?
     if (frame) {
       const img = await loadImage(frame.url);
       const canvas = document.createElement('canvas');
@@ -1104,7 +1105,7 @@ async function exportPartsToZIP() {
       zip.file("00_frame.png", b64Data, {base64: true});
     }
 
-    // 2. 各パネルの処理
+    // 2. ?パネルの処?
     const activePanels = panels.filter(p => p.visible !== false);
     for (let i = 0; i < activePanels.length; i++) {
       const panel = activePanels[i];
@@ -1115,7 +1116,7 @@ async function exportPartsToZIP() {
       const ctx = canvas.getContext('2d');
 
       ctx.save();
-      // 不透明度
+      // 不透?度
       if (panel.opacity !== undefined) {
         ctx.globalAlpha = panel.opacity;
       }
@@ -1139,7 +1140,7 @@ async function exportPartsToZIP() {
     }
 
     if (!frame && activePanels.length === 0) {
-      alert("配置されている画像がありません。");
+      alert("配置されて?る画像がありません?");
       return;
     }
 
@@ -1153,7 +1154,7 @@ async function exportPartsToZIP() {
 
   } catch (error) {
     console.error(error);
-    alert('ZIPファイルの作成中にエラーが発生しました: ' + error.message);
+    alert('ZIPファイルの作?中にエラーが発生しました: ' + error.message);
   } finally {
     exportPartsBtn.disabled = false;
     exportPartsBtn.innerHTML = originalText;
@@ -1171,7 +1172,7 @@ if (exportPartsBtnElement) {
   exportPartsBtnElement.addEventListener('click', exportPartsToZIP);
 }
 
-// === フレーム画像編集モーダルの処理関数 ===
+// === フレーム画像編?モーダルの処?関数 ===
 function openFrameEditModal() {
   if (!frame) return;
   
@@ -1200,7 +1201,7 @@ function closeFrameEditModal() {
   editImage = null;
 }
 
-// 選択ツールの操作
+// 選択ツールの操?
 function saveHistoryState() {
   const ctx = frameEditCanvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, frameEditCanvas.width, frameEditCanvas.height);
@@ -1417,6 +1418,15 @@ if (undoActionBtn) {
   undoActionBtn.addEventListener('click', undoAction);
 }
 
+if (alignTopBtn) alignTopBtn.addEventListener('click', () => alignPanels('top'));
+if (alignCenterBtn) alignCenterBtn.addEventListener('click', () => alignPanels('center'));
+if (alignBottomBtn) alignBottomBtn.addEventListener('click', () => alignPanels('bottom'));
+if (alignLeftBtn) alignLeftBtn.addEventListener('click', () => alignPanels('left'));
+if (alignCenterHBtn) alignCenterHBtn.addEventListener('click', () => alignPanels('center-h'));
+if (alignRightBtn) alignRightBtn.addEventListener('click', () => alignPanels('right'));
+if (distributeHBtn) distributeHBtn.addEventListener('click', () => alignPanels('distribute-h'));
+if (distributeVBtn) distributeVBtn.addEventListener('click', () => alignPanels('distribute-v'));
+
 if (zoomInBtn && zoomOutBtn && zoomFitBtn) {
   zoomInBtn.addEventListener('click', () => adjustZoom(0.1));
   zoomOutBtn.addEventListener('click', () => adjustZoom(-0.1));
@@ -1473,72 +1483,91 @@ function handleReplacePanelUpload(event) {
 function alignPanels(type) {
   const targetIds = selectedPanelIds.filter(id => id !== 'frame');
   const targetPanels = panels.filter(p => targetIds.includes(p.id));
-  if (targetPanels.length < 2) return;
+  if (targetPanels.length === 0) return;
 
   saveStateToHistory();
 
-  if (type === 'top') {
-    const minY = Math.min(...targetPanels.map(p => p.y));
-    targetPanels.forEach(p => {
-      p.y = minY;
-    });
-  } else if (type === 'bottom') {
-    const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
-    targetPanels.forEach(p => {
-      p.y = maxY - p.height;
-    });
-  } else if (type === 'center') {
-    const minY = Math.min(...targetPanels.map(p => p.y));
-    const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
-    const centerY = (minY + maxY) / 2;
-    targetPanels.forEach(p => {
-      p.y = centerY - p.height / 2;
-    });
-  } else if (type === 'left') {
-    const minX = Math.min(...targetPanels.map(p => p.x));
-    targetPanels.forEach(p => {
-      p.x = minX;
-    });
-  } else if (type === 'right') {
-    const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
-    targetPanels.forEach(p => {
-      p.x = maxX - p.width;
-    });
-  } else if (type === 'center-h') {
-    const minX = Math.min(...targetPanels.map(p => p.x));
-    const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
-    const centerX = (minX + maxX) / 2;
-    targetPanels.forEach(p => {
-      p.x = centerX - p.width / 2;
-    });
-  } else if (type === 'distribute-h') {
-    if (targetPanels.length < 3) return;
-    const sorted = [...targetPanels].sort((a, b) => a.x - b.x);
-    const minX = sorted[0].x;
-    const maxX = sorted[sorted.length - 1].x + sorted[sorted.length - 1].width;
-    const totalWidth = sorted.reduce((sum, p) => sum + p.width, 0);
-    const totalGap = (maxX - minX) - totalWidth;
-    const gap = totalGap / (sorted.length - 1);
+  if (targetPanels.length === 1) {
+    // 選択パネルが1つの場合、キャンバス全体を基準にして整列
+    const p = targetPanels[0];
+    if (type === 'top') {
+      p.y = 0;
+    } else if (type === 'bottom') {
+      p.y = canvasHeight - p.height;
+    } else if (type === 'center') {
+      p.y = (canvasHeight - p.height) / 2;
+    } else if (type === 'left') {
+      p.x = 0;
+    } else if (type === 'right') {
+      p.x = canvasWidth - p.width;
+    } else if (type === 'center-h') {
+      p.x = (canvasWidth - p.width) / 2;
+    }
+  } else {
+    // 選択パネルが複数の場合、従来通り選択オブジェクト同士で整列
+    if (type === 'top') {
+      const minY = Math.min(...targetPanels.map(p => p.y));
+      targetPanels.forEach(p => {
+        p.y = minY;
+      });
+    } else if (type === 'bottom') {
+      const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
+      targetPanels.forEach(p => {
+        p.y = maxY - p.height;
+      });
+    } else if (type === 'center') {
+      const minY = Math.min(...targetPanels.map(p => p.y));
+      const maxY = Math.max(...targetPanels.map(p => p.y + p.height));
+      const centerY = (minY + maxY) / 2;
+      targetPanels.forEach(p => {
+        p.y = centerY - p.height / 2;
+      });
+    } else if (type === 'left') {
+      const minX = Math.min(...targetPanels.map(p => p.x));
+      targetPanels.forEach(p => {
+        p.x = minX;
+      });
+    } else if (type === 'right') {
+      const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
+      targetPanels.forEach(p => {
+        p.x = maxX - p.width;
+      });
+    } else if (type === 'center-h') {
+      const minX = Math.min(...targetPanels.map(p => p.x));
+      const maxX = Math.max(...targetPanels.map(p => p.x + p.width));
+      const centerX = (minX + maxX) / 2;
+      targetPanels.forEach(p => {
+        p.x = centerX - p.width / 2;
+      });
+    } else if (type === 'distribute-h') {
+      if (targetPanels.length < 3) return;
+      const sorted = [...targetPanels].sort((a, b) => a.x - b.x);
+      const minX = sorted[0].x;
+      const maxX = sorted[sorted.length - 1].x + sorted[sorted.length - 1].width;
+      const totalWidth = sorted.reduce((sum, p) => sum + p.width, 0);
+      const totalGap = (maxX - minX) - totalWidth;
+      const gap = totalGap / (sorted.length - 1);
 
-    let currentX = minX;
-    sorted.forEach((p, idx) => {
-      p.x = currentX;
-      currentX += p.width + gap;
-    });
-  } else if (type === 'distribute-v') {
-    if (targetPanels.length < 3) return;
-    const sorted = [...targetPanels].sort((a, b) => a.y - b.y);
-    const minY = sorted[0].y;
-    const maxY = sorted[sorted.length - 1].y + sorted[sorted.length - 1].height;
-    const totalHeight = sorted.reduce((sum, p) => sum + p.height, 0);
-    const totalGap = (maxY - minY) - totalHeight;
-    const gap = totalGap / (sorted.length - 1);
+      let currentX = minX;
+      sorted.forEach((p, idx) => {
+        p.x = currentX;
+        currentX += p.width + gap;
+      });
+    } else if (type === 'distribute-v') {
+      if (targetPanels.length < 3) return;
+      const sorted = [...targetPanels].sort((a, b) => a.y - b.y);
+      const minY = sorted[0].y;
+      const maxY = sorted[sorted.length - 1].y + sorted[sorted.length - 1].height;
+      const totalHeight = sorted.reduce((sum, p) => sum + p.height, 0);
+      const totalGap = (maxY - minY) - totalHeight;
+      const gap = totalGap / (sorted.length - 1);
 
-    let currentY = minY;
-    sorted.forEach((p, idx) => {
-      p.y = currentY;
-      currentY += p.height + gap;
-    });
+      let currentY = minY;
+      sorted.forEach((p, idx) => {
+        p.y = currentY;
+        currentY += p.height + gap;
+      });
+    }
   }
   updateUI();
 }
@@ -1565,37 +1594,15 @@ function setPreviewBg(color) {
         btn.classList.remove('ring-1', 'ring-blue-500');
       } else {
         btn.classList.remove('ring-2', 'ring-blue-500');
-        if (c === 'blue') {
-          btn.classList.add('ring-1', 'ring-blue-500');
-        }
+        btn.classList.add('ring-1', 'ring-blue-500');
       }
     }
   });
 }
 
-if (alignTopBtn) alignTopBtn.addEventListener('click', () => alignPanels('top'));
-if (alignCenterBtn) alignCenterBtn.addEventListener('click', () => alignPanels('center'));
-if (alignBottomBtn) alignBottomBtn.addEventListener('click', () => alignPanels('bottom'));
-if (alignLeftBtn) alignLeftBtn.addEventListener('click', () => alignPanels('left'));
-if (alignCenterHBtn) alignCenterHBtn.addEventListener('click', () => alignPanels('center-h'));
-if (alignRightBtn) alignRightBtn.addEventListener('click', () => alignPanels('right'));
-if (distributeHBtn) distributeHBtn.addEventListener('click', () => alignPanels('distribute-h'));
-if (distributeVBtn) distributeVBtn.addEventListener('click', () => alignPanels('distribute-v'));
-
-bgColors.forEach(color => {
-  const btn = document.getElementById(`bg-color-${color}`);
-  if (btn) {
-    btn.addEventListener('click', () => setPreviewBg(color));
-  }
-});
-
-function setCanvasBg(color) {
-  saveStateToHistory();
-  canvasBgColor = color;
-  updateUI();
-}
-
-canvasBgColorsList.forEach(c => {
+const canvasBgColors = ['trans', 'white', 'gray', 'black'];
+const targetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
+canvasBgColors.forEach(c => {
   const btn = document.getElementById(`canvas-bg-${c}`);
   if (btn) {
     btn.addEventListener('click', () => setCanvasBg(canvasTargetMap[c]));
@@ -1610,84 +1617,50 @@ updateUI();
 // AI Room Generator (AI社員に依頼) 機能
 // ==========================================
 
-const SYSTEM_RULE_PORTRAIT = `◯ココフォリア部屋縦長用
-まず下記のココフォリア部屋画像生成ルールを学習して下さい。
+const SYSTEM_RULE_PORTRAIT = `A highly detailed, aesthetically stunning, and immersive background illustration for a TRPG session room. 
+The image must have a vertical aspect ratio.
+The artistic style must be premium professional digital art with rich details, cinematic lighting, dramatic shadows, and atmospheric depth.
+The layout consists of several frames and buttons arranged vertically from top to bottom.
+All UI frames, slots, and boxes must be rendered as integrated physical structures, glowing neon lines, or holographic overlays that seamlessly blend into the beautiful background scene, rather than flat drawings.
+The layout should have beautiful margin and breathing room. All frames must be separated without overlapping.
 
-＜ルール＞
-指示されたテーマにそって独創的で魅力的にデザインする。
-ココフォリアの基本構造（メニュー、タイトル、前景、立ち絵置き場、特殊エリア、便利ボタン）を維持し、縦長の画像範囲内に縦に順に並べて(最上にメニュー、その下にタイトル、前景、立ち絵置き場、特殊エリア、最下に便利ボタン)美しく配置されたレイアウトにする。
-タイトルとメニューと便利ボタン以外の文字情報を画像内に描画しないこと。（エリア名、枠の解説、項目名などの文字は一切描写しない）
-エリアの大きさ（占有率）の優先順位は、PC立ち絵置き場 ＞ 前景窓 ＞ 特殊エリア ＞ メニュー ＞ タイトル ＞ 便利ボタン とする。
-画面全体にギチギチに配置せず、TRPGのセッション時に窮屈さを感じないよう、美しい余白 and ゆとりを持たせ、全てのパーツは重ならないようにする。
+CRITICAL DIRECTIVES:
+- The ONLY text strings allowed to be printed on the image are the following items:
+  * Five menu labels: 'HouseRule', 'Battle', 'Insanity', 'Growth', 'Other' (or their Japanese translations if preferred, but no other text).
+  * Six button labels: '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩' (or their English translations if preferred, but no other text).
+- The 6 buttons for '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩' must be extremely small and compact. They must be strictly designed to be half (50%) the size of the top menu buttons ('HouseRule', 'Battle', etc.) to maintain a clean layout hierarchy.
+- ABSOLUTELY DO NOT print any other words, names, labels, or annotations (such as "Menu", "Title", "Foreground", "PC Standing", "Special Area", "Useful Buttons", "priority", "items", "players", "window", "buttons").
+- All other UI boxes and areas must be represented as pure graphical borders, empty slots, or empty frames with ZERO text inside or next to them.
 
-1) 前景エリア（優先度：高）
-ゲームのシーン写真や背景が表示される主要な窓（フレーム）。四角や丸型など、全体のデザインテーマに合わせた枠線や装飾で表現する。文字情報はなし。
+Details of elements from top to bottom:
+1) At the very top: 5 small menu buttons containing only the labels: 'HouseRule', 'Battle', 'Insanity', 'Growth', 'Other'.
+2) Near the top: An empty decorative title frame (no text).
+3) Upper middle: One large main frame (window) for display (no text).
+4) Lower middle: [NUM_PLAYERS] very tall, vertically long rectangular slots side-by-side (no text, no character silhouettes). These slots must be elongated vertically to accommodate full-body character illustrations.
+5) Near the bottom: One extra empty box/frame (no text).
+6) At the very bottom: 6 small buttons containing only the labels: '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩'.`;
 
-2) PC立ち絵エリア（優先度：最高）
-キャラクターの全身立ち絵が並ぶための透過スペース、または枠線を確保する。
-ユーザーから指定された人数分（可変）の縦長のスペースを、横に並べる。
-※重要：キャラクターのイラストやシルエット、は一切画像内に描かないでください。純粋な「スペース・枠」のみを描写します。文字情報はなし。
+const SYSTEM_RULE_LANDSCAPE = `A highly detailed, aesthetically stunning, and immersive background illustration for a TRPG session room. 
+The image must have a horizontal aspect ratio.
+The artistic style must be premium professional digital art with rich details, cinematic lighting, dramatic shadows, and atmospheric depth.
+The layout consists of several frames and buttons arranged beautifully.
+All UI frames, slots, and boxes must be rendered as integrated physical structures, glowing neon lines, or holographic overlays that seamlessly blend into the beautiful background scene, rather than flat drawings.
+The layout should have beautiful margin and breathing room. All frames must be separated without overlapping.
 
-3) メニュー（5項目 / 優先度：中）
-'HouseRule'、'Battle'、'Insanity'、'Growth'、'Other'を配置する。
-全体の雰囲気に合わせ、以下のいずれか「1つのスタイルのみ」に統一して小さく綺麗に配置する。
-①英語表記のみ、②日本語表記のみ、③漢字一文字のみ、④イラストアイコンのみ
-※重要：表記を重複させないこと（アイコン＋英字などはNG）。デフォルトは英語表記。
-便利ボタンという項目名はなし。
+CRITICAL DIRECTIVES:
+- The ONLY text strings allowed to be printed on the image are the following items:
+  * Five menu labels: 'HouseRule', 'Battle', 'Insanity', 'Growth', 'Other' (or their Japanese translations if preferred, but no other text).
+  * Six button labels: '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩' (or their English translations if preferred, but no other text).
+- The 6 buttons for '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩' must be extremely small and compact. They must be strictly designed to be half (50%) the size of the top menu buttons ('HouseRule', 'Battle', etc.) to maintain a clean layout hierarchy.
+- ABSOLUTELY DO NOT print any other words, names, labels, or annotations (such as "Menu", "Title", "Foreground", "PC Standing", "Special Area", "Useful Buttons", "priority", "items", "players", "window", "buttons").
+- All other UI boxes and areas must be represented as pure graphical borders, empty slots, or empty frames with ZERO text inside or next to them.
 
-4) 便利ボタン（6項目 / 優先度：中）
-'目星'、'聞き耳'、'図書館'、'アイデア'、'SANc'、'塩'を配置する。
-メニューよりもさらに小さく、画面の下部や右側などの目立たない場所に配置する。
-デザインスタイルは、上記「メニュー」で選択したものと完全に統一する。
-便利ボタンという項目名はなし。
-
-5) 特殊エリア
-ユーザーから明示的な指示（マップ、NPC置き場など）があった場合のみ、そのスペースを確保する。指示がない場合は描かない。文字情報はなし。
-
-6) タイトル
-ユーザーから明示的な指示があった場合のみ、既存のフォントに囚われずタイトルと雰囲気から連想されるイメージで装飾した文字で描画する。指示がない場合は描かない。
-
-学習した指示に基づき、以下の指定でココフォリア部屋画像を生成してください。`;
-
-const SYSTEM_RULE_LANDSCAPE = `◯ココフォリア部屋横長用
-まず下記のココフォリア部屋画像生成ルールを学習して下さい。
-
-＜ルール＞
-指示されたテーマにそって独創的で魅力的にデザインする。
-ココフォリアの基本構造（メニュー、前景、立ち絵置き場、特殊エリア、便利ボタン）を維持し、横長の画像範囲内に順に並べて(左上にメニュー、左に前景、左下に特殊エリア、右に立ち絵置き場、右上に便利ボタン)美しく配置されたレイアウトにする。
-タイトルとメニューと便利ボタン以外の文字情報を画像内に描画しないこと。（エリア名、枠の解説、項目名などの文字は一切描写しない）
-エリアの大きさ（占有率）の優先順位は、PC立ち絵置き場 ＞ 前景窓 ＞ 特殊エリア ＞ メニュー ＞ タイトル ＞ 便利ボタン とする。
-画面全体にギチギチに配置せず、TRPGのセッション時に窮屈さを感じないよう、美しい余白 and ゆとりを持たせ、全てのパーツは重ならないようにする。
-
-1) 前景エリア（優先度：高）
-ゲームのシーン写真や背景が表示される主要な窓（フレーム）。四角や丸型など、全体のデザインテーマに合わせた枠線や装飾で表現する。文字情報はなし。
-
-2) PC立ち絵エリア（優先度：最高）
-キャラクターの全身立ち絵が並ぶための透過スペース、または枠線を確保する。
-ユーザーから指定された人数分（可変）の縦長のスペースを、横に並べる。
-※重要：キャラクターのイラストやシルエット、は一切画像内に描かないでください。純粋な「スペース・枠」のみを描写します。文字情報はなし。
-
-3) メニュー（5項目 / 優先度：中）
-'HouseRule'、'Battle'、'Insanity'、'Growth'、'Other'を配置する。
-全体の雰囲気に合わせ、以下のいずれか「1つのスタイルのみ」に統一して小さく綺麗に配置する。
-①英語表記のみ、②日本語表記のみ、③漢字一文字のみ、④イラストアイコンのみ
-※重要：表記を重複させないこと（アイコン＋英字などはNG）。デフォルトは英語表記。
-便利ボタンという項目名はなし。
-
-4) 便利ボタン（6項目 / 優先度：中）
-'目星'、'聞き耳'、'図書館'、'アイデア'、'SANc'、'塩'を配置する。
-メニューよりもさらに小さく、画面の下部や右側などの目立たない場所に配置する。
-デザインスタイルは、上記「メニュー」で選択したものと完全に統一する。
-便利ボタンという項目名はなし。
-
-5) 特殊エリア
-ユーザーから明示的な指示（マップ、NPC置き場など）があった場合のみ、そのスペースを確保する。指示がない場合は描かない。文字情報はなし。
-
-6) タイトル
-ユーザーから明示的な指示があった場合のみ、既存のフォントに囚われずタイトルと雰囲気から連想されるイメージで装飾した文字で描画する。指示がない場合は描かない。
-
-学習した指示に基づき、以下の指定でココフォリア部屋画像を生成してください。`;
-
+Details of elements:
+1) Top-Left: 5 small menu buttons containing only the labels: 'HouseRule', 'Battle', 'Insanity', 'Growth', 'Other'.
+2) Center-Left: One large main frame (window) for display (no text).
+3) Bottom-Left: One extra empty box/frame (no text).
+4) Center-Right: [NUM_PLAYERS] vertical rectangular slots side-by-side (no text, no character silhouettes).
+5) Top-Right: 6 small buttons containing only the labels: '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩'.`;
 
 
 const aiGenerateBtn = document.getElementById('ai-generate-btn');
@@ -1712,7 +1685,7 @@ if (aiApiKeyInput) {
 const actionIconsData = [
   {
     name: "spot",
-    label: "目星",
+    label: "目?",
     sub: "SPOT",
     path: `<path d="M15,40 Q40,15 65,40 Q40,65 15,40 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="8" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#ff007f"/>`
   },
@@ -1730,13 +1703,13 @@ const actionIconsData = [
   },
   {
     name: "idea",
-    label: "アイデア",
+    label: "アイ?ア",
     sub: "IDEA",
     path: `<path d="M40,20 C28,20 28,38 34,45 L34,55 L46,55 L46,45 C52,38 52,20 40,20 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="34" y1="58" x2="46" y2="58" stroke="#ff007f" stroke-width="2"/><line x1="40" y1="62" x2="40" y2="62" stroke="#00f0ff" stroke-width="3" stroke-linecap="round"/>`
   },
   {
     name: "san",
-    label: "SANチェック",
+    label: "SANチェ?ク",
     sub: "SAN",
     path: `<path d="M40,40 m-25,0 a25,25 0 1,0 50,0 a25,25 0 1,0 -50,0 M40,40 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 M40,40 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" fill="none" stroke="#00f0ff" stroke-width="1.5" opacity="0.6"/><path d="M40,40 L40,22 M40,40 L53,50 M40,40 L27,50" stroke="#ff007f" stroke-width="2"/>`
   },
@@ -1749,8 +1722,8 @@ const actionIconsData = [
 ];
 
 const employees = {
-  takumi: { name: 'タクミ (プランナー)', color: '#60a5fa', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Takumi' },
-  aoi: { name: 'アオイ (デザイナー)', color: '#f472b6', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aoi' }
+  takumi: { name: 'タク? (プランナ?)', color: '#60a5fa', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Takumi' },
+  aoi: { name: 'アオイ (?ザイナ?)', color: '#f472b6', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aoi' }
 };
 
 function createSvgUrl(svgString) {
@@ -1765,10 +1738,10 @@ function combineImageAndSvg(img, sx, sy, sw, sh, svgString, targetW, targetH) {
     canvas.height = targetH;
     const ctx = canvas.getContext('2d');
     
-    // 1. 画像から指定の範囲を切り出して描画
+    // 1. 画像から指定??囲を??り?して描画
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
     
-    // 2. SVGを重ねる
+    // 2. SVGを重ね?
     const svgImg = new Image();
     svgImg.onload = () => {
       ctx.drawImage(svgImg, 0, 0, targetW, targetH);
@@ -1801,119 +1774,119 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
   
   let layoutName = '右側に縦並び';
   if (layoutType === 'bottom-horizontal') layoutName = '下部に横並び';
-  else if (layoutType === 'pattern1') layoutName = 'パターン1 (メイン左上・立ち絵右・アクション右下)';
-  else if (layoutType === 'pattern2') layoutName = 'パターン2 (メイン左下・立ち絵右・アクション右上)';
-  else if (layoutType === 'pattern3') layoutName = 'パターン3 (メイン右上・立ち絵下・アクション右縦)';
-  else if (layoutType === 'pattern4') layoutName = 'パターン4 (メイン右・立ち絵左・アクション下)';
-  else if (layoutType === 'pattern5') layoutName = 'パターン5 (メイン中央上・立ち絵下・メニュー最上・アクション最下)';
-  else if (layoutType === 'pattern6') layoutName = 'パターン6 (メイン最上・立ち絵最下・メニュー&アクション中央)';
-  else if (layoutType === 'pattern7') layoutName = 'パターン7 (メイン最下・立ち絵上・メニュー最上・アクション中央下)';
+  else if (layoutType === 'pattern1') layoutName = 'パターン1 (メイン左上?立ち絵右・アクション右?)';
+  else if (layoutType === 'pattern2') layoutName = 'パターン2 (メイン左下?立ち絵右・アクション右?)';
+  else if (layoutType === 'pattern3') layoutName = 'パターン3 (メイン右上?立ち絵下?アクション右縦)';
+  else if (layoutType === 'pattern4') layoutName = 'パターン4 (メイン右・立ち絵左・アクション?)';
+  else if (layoutType === 'pattern5') layoutName = 'パターン5 (メイン中央上?立ち絵下?メニュー最上?アクション最?)';
+  else if (layoutType === 'pattern6') layoutName = 'パターン6 (メイン最上?立ち絵最下?メニュー&アクション中央)';
+  else if (layoutType === 'pattern7') layoutName = 'パターン7 (メイン最下?立ち絵上?メニュー最上?アクション中央?)';
 
   const systemPrompt = `
-あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
-以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
+あなた?ココフォリアの部屋レイアウトを設計するAI社員チ?ムです?
+以下?メンバ?構?でCEO?ユーザー??要望を議論し、最終的な?ザイン配色とアセ?ト?方向性を決定してください?
 
-【チームメンバー】
-- タクミ (プランナー): 部屋全体の配置や使いやすさを企画する
-- アオイ (デザイナー): 部屋のカラーコーディネートや装飾のスタイルを担当する
+【チームメンバ??
+- タク? (プランナ?): 部屋?体?配置?使??すさを企画する
+- アオイ (?ザイナ?): 部屋?カラーコー?ィネ?トや?飾のスタイルを担当す?
 
-【CEOからの要望】
-- 大枠のテーマ: ${theme}
-- プレイヤー人数: ${numPlayers}人部屋
+【CEOからの要望?
+- 大枠の?ー?: ${theme}
+- プレイヤー人数: ${numPlayers}人部?
 - 配置: ${layoutName}
-- 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
+- 追加の要望?フリー入力?: "${customPrompt || '特にな?'}"
 
-【レイアウト配置の動的設計指示】
-キャンバス全体の解像度は 1280x720 ピクセルです。
-CEOからの追加の要望（フリー入力）に、PLパネルやメイン画面、メニュー、アクションアイコンの配置位置やサイズ、または背景（フレーム）の有無に関する具体的な要望がある場合、その要望を満たすように各コンテナの座標（X座標、Y座標、横幅、縦幅）を動的に計算してJSONに出力してください。
-特に配置に関する要望がない場合、または判断がつかない場合は、デフォルトの配置ルール（layoutType）に基づく標準的な座標を出力してください。
+【レイアウト?置の動的設計指示?
+キャンバス全体?解像度は 1280x720 ピクセルです?
+CEOからの追加の要望?フリー入力）に、PLパネル?メイン画面、メニュー、アクションアイコンの配置位置?サイズ、また?背景?フレーム??有無に関する具体的な要望がある場合、その要望を満たすように?コン?ナ?座標?X座標、Y座標、横?、縦??を動的に計算してJSONに出力してください?
+特に配置に関する要望がな?場合、また?判断がつかな?場合?、デフォルト?配置ルール??layoutType?に基づく標準的な座標を出力してください?
 
-【全身立ち絵用PLパネル（立ち絵重視）の基本設計】
-- CEOから「全身立ち絵」「立ち絵重視」「立ち絵が入るように」などの要望がある場合、PLパネル（pl_panels）は縦長（横幅 140〜160px、高さ 300〜350px 程度、アスペクト比 1:2 〜 1:2.5 程度）の比率で設計してください。デフォルトのPLパネル（横 160 x 縦 170）とは異なるサイズになります。
+【?身立ち絵用PLパネル?立ち絵重視）?基本設計?
+- CEOから「?身立ち絵」「立ち絵重視」「立ち絵が?るよ?に」などの要望がある場合、PLパネル??pl_panels??縦長?横? 140?160px?高さ 300?350px 程度、アスペクト? 1:2 ? 1:2.5 程度??比率で設計してください。デフォルト?PLパネル?横 160 x 縦 170?とは異なるサイズになります?
 
-【背景透過（フレームなし）の設計】
-- CEOから「背景なし」「フレームなし」「背景透過」「グレーの部分は不要」などの要望がある場合、またはココフォリアで透過PNG枠パーツとして使いたいという意図がある場合は、デザインパラメータの no_background を true に設定し、背景（フレーム画像）を出力しないように指示してください。
+【背景透過?フレームなし）?設計?
+- CEOから「背景なし」「フレームなし」「背景透過」「グレーの部?は不要」などの要望がある場合、また?ココフォリアで透過PNG枠パ??として使?たいと??意図がある場合?、デザインパラメータの no_background ? true に設定し、背景?フレーム画像）を出力しな?ように?示してください?
 
-【7つの代表的レイアウトパターンと座標ガイド】
-CEOから以下のパターン（1〜7）の指定、あるいはそれに類似する配置指示（例:「PLパネルは下部、メインは最上部」など）があった場合、以下の座標設計ガイドに従って各パーツをレイアウトしてください。
-（各パーツは重なり合わないように調整すること）
+?7つの代表?レイアウトパターンと座標ガイド?
+CEOから以下?パターン??1?7???定、あるいはそれに類似する配置?示??:「PLパネルは下部、メインは最上部」など?があった場合、以下?座標設計ガイドに従って?パ??をレイアウトしてください?
+?各パ??は重なり合わな?ように調整すること??
 
-- パターン1 (メイン画面左上、メニュー左下、PL立ち絵右、アクション右下):
+- パターン1 (メイン画面左上、メニュー左下、PL立ち絵右、アクション右?):
   - メイン画面 (window): X: 50, Y: 50, W: 500, H: 300
-  - メニュー (menu): X: 120, Y: 380, 方向: "vertical"
-  - PL立ち絵 (pl_panels): Y: 150, W: 140, H: 350 (右側空きスペース X: 600, 760, 920, 1080 に人数分配置)
+  - メニュー (menu): X: 120, Y: 380, 方?: "vertical"
+  - PL立ち絵 (pl_panels): Y: 150, W: 140, H: 350 (右側空きスペ?ス X: 600, 760, 920, 1080 に人数?配置)
   - アクション (action): X: 600, Y: 530
-- パターン2 (メイン画面左下、メニュー左上、PL立ち絵右、アクション右上):
+- パターン2 (メイン画面左下、メニュー左上、PL立ち絵右、アクション右?):
   - メイン画面 (window): X: 50, Y: 370, W: 500, H: 300
-  - メニュー (menu): X: 120, Y: 50, 方向: "vertical"
-  - PL立ち絵 (pl_panels): Y: 220, W: 140, H: 350 (右側空きスペース X: 600, 760, 920, 1080 に配置)
+  - メニュー (menu): X: 120, Y: 50, 方?: "vertical"
+  - PL立ち絵 (pl_panels): Y: 220, W: 140, H: 350 (右側空きスペ?ス X: 600, 760, 920, 1080 に配置)
   - アクション (action): X: 600, Y: 110
 - パターン3 (メイン画面右上、メニュー左上、PL立ち絵下、アクション右下縦並び):
   - メイン画面 (window): X: 350, Y: 80, W: 700, H: 320
-  - メニュー (menu): X: 50, Y: 100, 方向: "vertical"
+  - メニュー (menu): X: 50, Y: 100, 方?: "vertical"
   - PL立ち絵 (pl_panels): Y: 430, W: 140, H: 260 (下部 X: 300, 460, 620, 780 に配置)
-  - アクション (action): X: 950, Y: 430, 方向: "vertical"（X固定でYが下に向かって展開）
-- パターン4 (PL立ち絵左、メイン画面右、メニュー左下、アクション下):
+  - アクション (action): X: 950, Y: 430, 方?: "vertical"??X固定でYが下に向かって展開??
+- パターン4 (PL立ち絵左、メイン画面右、メニュー左下、アクション?):
   - PL立ち絵 (pl_panels): Y: 50, W: 140, H: 350 (左側 X: 50, 210, 370, 530 に配置)
   - メイン画面 (window): X: 720, Y: 50, W: 500, H: 320
-  - メニュー (menu): X: 50, Y: 430, 方向: "vertical"
+  - メニュー (menu): X: 50, Y: 430, 方?: "vertical"
   - アクション (action): X: 300, Y: 500
 - パターン5 (メニュー最上部横、メイン画面中央上、PL立ち絵下、アクション最下部):
-  - メニュー (menu): X: 200, Y: 30, 方向: "horizontal"
+  - メニュー (menu): X: 200, Y: 30, 方?: "horizontal"
   - メメイン画面 (window): X: 280, Y: 80, W: 720, H: 320
-  - PL立ち絵 (pl_panels): Y: 420, W: 140, H: 260 (中央下 X: 280, 460, 640, 820 に配置)
+  - PL立ち絵 (pl_panels): Y: 420, W: 140, H: 260 (中央? X: 280, 460, 640, 820 に配置)
   - アクション (action): X: 360, Y: 600
 - パターン6 (メイン画面最上部、メニュー中央横、アクション中央横、PL立ち絵最下部):
   - メイン画面 (window): X: 150, Y: 50, W: 980, H: 300
-  - メニュー (menu): X: 150, Y: 370, 方向: "horizontal"
+  - メニュー (menu): X: 150, Y: 370, 方?: "horizontal"
   - アクション (action): X: 150, Y: 430
   - PL立ち絵 (pl_panels): Y: 510, W: 140, H: 180 (下部 X: 150, 410, 670, 930 に配置)
 - パターン7 (メニュー最上部横、PL立ち絵上、アクション下、メイン画面最下部):
-  - メニュー (menu): X: 150, Y: 30, 方向: "horizontal"
+  - メニュー (menu): X: 150, Y: 30, 方?: "horizontal"
   - PL立ち絵 (pl_panels): Y: 80, W: 180, H: 280 (上部 X: 150, 410, 670, 930 に配置)
   - アクション (action): X: 150, Y: 380
   - メイン画面 (window): X: 150, Y: 440, W: 980, H: 250
 
-【各コンテナの標準サイズ（デフォルト値）】
-上記パターンの指定がない場合の、レイアウトタイプ（layoutType）に基づく標準座標：
+【各コン?ナ?標準サイズ?デフォルト値??
+上記パターンの?定がな?場合?、レイアウトタイプ?layoutType?に基づく標準座標?
 - キャンバスサイズ: 1280 x 720
-- メイン画面 (window): 横 720 x 縦 405 (右側縦並びなら X: 50, Y: 110、下部横並びなら X: 280, Y: 50)
-- PLパネル (pl_panels): 横 160, 縦 170 (右側縦並びなら X: 1050, Y: 40〜680等間隔、下部横並びなら Y: 510, X: 280〜1000等間隔)
-- メニュー (menu): 5つのボタン。右側縦並びなら X: 50, Y: 50（横並び）、下部横並びなら X: 50, Y: 50（縦並び）
-- アクションアイコン (action): 6つのボタン（横 75 x 縦 75）。右側縦並びなら X: 50, Y: 550（横並び）、下部横並びなら X: 50, Y: 350〜（縦2列）
+- メイン画面 (window): 横 720 x 縦 405 (右側縦並びな? X: 50, Y: 110、下部横並びな? X: 280, Y: 50)
+- PLパネル (pl_panels): 横 160, 縦 170 (右側縦並びな? X: 1050, Y: 40?680等間隔、下部横並びな? Y: 510, X: 280?1000等間?)
+- メニュー (menu): 5つのボタン。右側縦並びな? X: 50, Y: 50?横並び?、下部横並びな? X: 50, Y: 50?縦並び??
+- アクションアイコン (action): 6つのボタン?横 75 x 縦 75?。右側縦並びな? X: 50, Y: 550?横並び?、下部横並びな? X: 50, Y: 350〜（縦2列?
 
-【出力指示】
-1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーやレイアウトにするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
-2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコードおよびレイアウト座標パラメータで指定してください。
-   - bg_gradient_start: 背景のグラデーション開始色 (ダークカラー推奨、16進数)
-   - bg_gradient_end: 背景のグラデーション終了色 (ダークカラー推奨、16進数)
-   - accent_color: アクセントとして輝かせるネオンやスリットなどの色 (16進数)
-   - accent_color_rgb: 上記アクセント色のRGB成分 (例: "0, 240, 255")
-   - border_color: 窓やPLパネルの主な枠線の色 (16進数)
-   - text_color: 各種ラベルのテキスト文字色 (16進数)
-   - panel_bg: 前景窓やPLパネルなどのコンテナの内側背景色 (透過半透明で表示されるため、暗めの色推奨、16進数)
-   - style_description: 今回設計したスタイルの短い説明 (例: "夕暮れのアンティークカフェ")
+【?力指示?
+1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラー?レイアウトにするかを相?する会話ログを「合計で4回?発話?タク?2回、アオイ2回）」で作?してください?
+2. 次に、相?の結果決定した部屋?「デザインパラメータ」を以下?カラーコードおよ?レイアウト座標パラメータで?定してください?
+   - bg_gradient_start: 背景のグラ?ーション開始色 (ダークカラー推奨?16進数)
+   - bg_gradient_end: 背景のグラ?ーション終?色 (ダークカラー推奨?16進数)
+   - accent_color: アクセントとして輝かせるネオン?スリ?トなどの色 (16進数)
+   - accent_color_rgb: 上記アクセント色のRGB成?? (?: "0, 240, 255")
+   - border_color: 窓やPLパネルの主な枠線?色 (16進数)
+   - text_color: ?種ラベルの?キスト文字色 (16進数)
+   - panel_bg: 前景窓やPLパネルなどのコン?ナ??側背景色 (透過半透?で表示されるため、暗め?色推奨?16進数)
+   - style_description: 今回設計したスタイルの短?説? (?: "夕暮れ?アン?ィークカフェ")
    
-   【レイアウト座標パラメータ】※CEOの要望に応じて適切に変更し、必ず含めてください。
-   - no_background: 背景を完全に透明（透過）にする場合は true、そうでない場合は false（または指定しない）
-   - window_x: メイン画面 of X座標（数値）
-   - window_y: メイン画面 of Y座標（数値）
-   - window_width: メイン画面 of 横幅（数値）
-   - window_height: メイン画面 of 縦幅（数値）
-   - pl_panels: プレイヤー人数分（${numPlayers}個）の座標オブジェクト配列。各要素は {"x": 数値, "y": 数値, "width": 数値, "height": 数値}
-   - menu_x: メニュー開始X座標（数値）
-   - menu_y: メニュー開始Y座標（数値）
-   - menu_layout: "horizontal" または "vertical"
-   - action_x: アクション開始X座標（数値）
-   - action_y: アクション開始Y座標（数値）
+   【レイアウト座標パラメータ】※CEOの要望に応じて適?に変更し、?ず含めてください?
+   - no_background: 背景を完?に透?（透過?にする場合? true、そ?でな?場合? false?また??定しな???
+   - window_x: メイン画面 of X座標（数値??
+   - window_y: メイン画面 of Y座標（数値??
+   - window_width: メイン画面 of 横??数値??
+   - window_height: メイン画面 of 縦??数値??
+   - pl_panels: プレイヤー人数???${numPlayers}個）?座標オブジェクト??。各要素は {"x": 数値, "y": 数値, "width": 数値, "height": 数値}
+   - menu_x: メニュー開始X座標（数値??
+   - menu_y: メニュー開始Y座標（数値??
+   - menu_layout: "horizontal" また? "vertical"
+   - action_x: アクション開始X座標（数値??
+   - action_y: アクション開始Y座標（数値??
 
-出力は必ず以下の有効なJSONフォーマットのみとしてください。前置きや\`\`\`json マークダウンなどは含めないでください。
+出力??ず以下?有効なJSONフォーマット?みとしてください。前置きや\`\`\`json マ?クダウンなどは含めな?でください?
 
 {
   "discussion": [
-    {"speaker": "takumi", "text": "タクミの発言1"},
+    {"speaker": "takumi", "text": "タクミ?発言1"},
     {"speaker": "aoi", "text": "アオイの発言1"},
-    {"speaker": "takumi", "text": "タクミの発言2"},
+    {"speaker": "takumi", "text": "タクミ?発言2"},
     {"speaker": "aoi", "text": "アオイの発言2"}
   ],
   "design": {
@@ -1924,19 +1897,19 @@ CEOから以下のパターン（1〜7）の指定、あるいはそれに類似
     "border_color": "#XXXXXX",
     "text_color": "#XXXXXX",
     "panel_bg": "#XXXXXX",
-    "style_description": "説明",
-    "no_background": true または false,
+    "style_description": "説?",
+    "no_background": true また? false,
     "window_x": 座標数値,
     "window_y": 座標数値,
-    "window_width": 横幅数値,
-    "window_height": 縦幅数値,
+    "window_width": 横?数値,
+    "window_height": 縦?数値,
     "pl_panels": [
-      {"x": X座標数値, "y": Y座標数値, "width": 横幅数値, "height": 縦幅数値},
+      {"x": X座標数値, "y": Y座標数値, "width": 横?数値, "height": 縦?数値},
       ...
     ],
     "menu_x": X座標数値,
     "menu_y": Y座標数値,
-    "menu_layout": "horizontal" または "vertical",
+    "menu_layout": "horizontal" また? "vertical",
     "action_x": X座標数値,
     "action_y": Y座標数値
   }
@@ -2028,7 +2001,7 @@ async function callImagenApiForBackground(apiKey, prompt, aspectRatio = '16:9') 
   }
 }
 
-// テーマ別のSVG生成ロジック
+// ?ーマ別のSVG生?ロジ?ク
 const themeSvgGenerators = {
   cyberpunk: {
     bg: () => `
@@ -2107,7 +2080,7 @@ const themeSvgGenerators = {
   <text x="${w / 2}" y="${h - 24}" font-family="serif" font-size="12" font-weight="bold" fill="#8a0c0c" text-anchor="middle">登 場 人 物</text>
 </svg>`,
     menu: (text) => {
-      const trans = { "houserule": "定法", "battle": "合戦", "insanity": "狂気", "growth": "成長", "other": "雑記" };
+      const trans = { "houserule": "定?", "battle": "合戦", "insanity": "狂?", "growth": "成長", "other": "雑?" };
       const jpText = trans[text.toLowerCase()] || text;
       return `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
@@ -2270,7 +2243,7 @@ if (aiGenerateBtn) {
     
     // UIをロード状態にする
     aiGenerateBtn.disabled = true;
-    aiGenerateBtn.innerHTML = '<i data-lucide="loader" class="animate-spin mr-1.5 w-4 h-4"></i>作成中...';
+    aiGenerateBtn.innerHTML = '<i data-lucide="loader" class="animate-spin mr-1.5 w-4 h-4"></i>作?中...';
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
     aiChatBox.innerHTML = '';
@@ -2279,44 +2252,81 @@ if (aiGenerateBtn) {
     const apiKey = localStorage.getItem('stampToolApiKey');
     
     if (apiKey && (theme === 'custom' || customPrompt !== '')) {
-      // リアルAI生成モード
+      // リアルAI生?モー?
       if (bgOnly) {
-        addChatMessage(employees.takumi, `CEO、ご要望を承りました！パーツは配置せず、ご指示のルール「${customPrompt || theme}」に沿って部屋画像を1枚で美しくレンダリングします！`);
+        addChatMessage(employees.takumi, `CEO、ご要望を承りました?パー?は配置せず、ご?示のルール?${customPrompt || theme}」に沿って部屋画像を1枚で美しくレンダリングします！`);
         
         try {
           await new Promise(resolve => setTimeout(resolve, 1500));
-          addChatMessage(employees.aoi, "任せて！指定された要素や枠線、雰囲気を1枚のイラスト背景画像としてしっかりモデリング（生成）するね！");
+          addChatMessage(employees.aoi, "任せて?指定された要素?枠線?雰囲気を1枚?イラスト背景画像としてしっかりモ?リング?生成）する???");
           
           let bgImageUrl = null;
           if (genBg) {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            addChatMessage(employees.aoi, "ご指示通りの部屋画像のレンダリング（画像生成）を開始するね！数秒かかるから待っててね。");
+            addChatMessage(employees.aoi, "ご指示通りの部屋画像?レンダリング?画像生成）を開始する??数秒かかるから?っててね?");
             
             try {
               const isPortrait = canvasWidth < canvasHeight;
               const aspectRatio = isPortrait ? "9:16" : "16:9";
-              const systemRule = isPortrait ? SYSTEM_RULE_PORTRAIT : SYSTEM_RULE_LANDSCAPE;
+              const rawSystemRule = isPortrait ? SYSTEM_RULE_PORTRAIT : SYSTEM_RULE_LANDSCAPE;
+              const systemRule = rawSystemRule.replace(/\[NUM_PLAYERS\]/g, numPlayers);
               
-              let imagenPrompt = `${systemRule}\n\n`;
+              let imagenPrompt = `${systemRule}
+
+`;
               if (theme && theme !== 'custom') {
-                imagenPrompt += `テーマ: ${theme}\n`;
+                imagenPrompt += `Theme/Style: ${theme}
+`;
               }
               if (customPrompt) {
-                imagenPrompt += `指定項目: ${customPrompt}\n`;
-              } else {
-                imagenPrompt += `指定項目: なし\n`;
+                imagenPrompt += `User Custom Requirements: ${customPrompt}
+`;
               }
-              imagenPrompt += `PL人数: ${numPlayers}人\n`;
+              imagenPrompt += `Number of players (PC slots): ${numPlayers}
+`;
+              
+              // Add layout pattern details for the background generator to respect
+              const layoutDescriptions = {
+                'right-vertical': 'PC slots are vertically aligned on the right side of the screen.',
+                'bottom-horizontal': 'PC slots are horizontally aligned at the bottom of the screen.',
+                'pattern1': 'The main window is on the top-left, PC slots are vertically aligned on the right, and the actions/menu are on the bottom-right.',
+                'pattern2': 'The main window is on the bottom-left, PC slots are vertically aligned on the right, and the actions/menu are on the top-right.',
+                'pattern3': 'The main window is on the top-right, PC slots are at the bottom, and the actions/menu are vertically aligned on the right.',
+                'pattern4': 'The main window is on the right side, PC slots are on the left side, and the actions/menu are at the bottom.',
+                'pattern5': 'The main window is at the center-top, PC slots are aligned horizontally below it, menu buttons are at the very top, and useful buttons are at the very bottom.',
+                'pattern6': 'The main window is at the top, PC slots are at the bottom, and the menu and useful buttons are aligned in the center between them.',
+                'pattern7': 'The main window is at the bottom, PC slots are aligned horizontally above it, menu buttons are at the very top, and useful buttons are in the middle-bottom.'
+              };
+              const layoutPatternDesc = layoutDescriptions[layoutType] || '';
+              if (layoutPatternDesc) {
+                imagenPrompt += `Layout Pattern: ${layoutPatternDesc}
+`;
+              }
+
+              imagenPrompt += `
+CRITICAL Directives for Image Generation:
+- The ONLY text strings allowed to be written on the image are the following exact words:
+  * 'HouseRule', 'Battle', 'Insanity', 'Growth', 'Other'
+  * '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩'
+- The 6 buttons for '目星', '聞き耳', '図書館', 'アイデア', 'SANc', '塩' must be extremely small and compact. They must be strictly designed to be half (50%) the size of the top menu buttons ('HouseRule', 'Battle', etc.) to maintain a clean layout hierarchy.
+- DO NOT draw any other text, labels, annotations, or explanatory words (such as "Menu", "Foreground", "PC Standing", "Useful Buttons", "Title", "priority", "items", "players").
+- All frames, windows, and slots must be represented as pure graphical borders, boxes, or lines with absolutely ZERO alphabetic or Japanese text labels inside or next to them.
+- Any specification pointing to area names like "メニュー" (Menu), "クリックアクション/便利ボタン" (Useful Buttons), "前景" (Foreground), "立ち絵" (Standing) are only describing the visual theme or style (e.g., "decorate with stars"). DO NOT write those names as text on the image. Render only the visual stars and styling on the frames, with absolutely ZERO alphabetic or Japanese text labels.
+`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
               
               await new Promise(resolve => setTimeout(resolve, 500));
-              addChatMessage(employees.aoi, "お待たせしました！ココフォリア部屋画像の生成が完了したよ！");
+              addChatMessage(employees.aoi, "お?たせしました?ココフォリア部屋画像?生?が完?したよ?");
             } catch (imgErr) {
               console.error(imgErr);
               await new Promise(resolve => setTimeout(resolve, 500));
-              addChatMessage(employees.takumi, `画像の生成中にエラーが発生しました (${imgErr.message})。`);
+              if (imgErr.message.includes('429')) {
+                addChatMessage(employees.takumi, `画像?生?制限（レートリミット?429?に達しました?Google APIの無料枠制限などの可能性があるため、しばらく時間?数?〜数十???を置?てから再度お試しください。`);
+              } else {
+                addChatMessage(employees.takumi, `画像?生?中にエラーが発生しました (${imgErr.message})。`);
+              }
             }
           }
           
@@ -2335,25 +2345,25 @@ if (aiGenerateBtn) {
           updateUI();
           
           await new Promise(resolve => setTimeout(resolve, 1000));
-          addChatMessage(employees.takumi, "作成完了しました。個別パネルは配置しておりませんので、このまま保存してご活用ください！");
+          addChatMessage(employees.takumi, "作?完?しました。個別パネルは配置しておりませんので、このまま保存してご活用ください??");
         } catch (err) {
           console.error(err);
           addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。`);
         } finally {
           aiGenerateBtn.disabled = false;
-          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作?を依頼する';
           if (typeof lucide !== 'undefined') lucide.createIcons();
         }
       } else {
-        // 通常のリアルAI生成モード（パーツあり）
-        addChatMessage(employees.takumi, `CEO、ご要望を承りました！リクエスト「${customPrompt || theme}」について、これからアオイと相談して最適な部屋を作ります！`);
+        // 通常のリアルAI生?モード（パー?あり??
+        addChatMessage(employees.takumi, `CEO、ご要望を承りました?リクエスト?${customPrompt || theme}」につ?て、これからアオイと相?して最適な部屋を作ります！`);
         
         try {
           const responseText = await callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt);
           let cleanedJson = responseText.replace(/```json|```/g, '').trim();
           const responseData = JSON.parse(cleanedJson);
           
-          // 議論ログを順次表示
+          // 議論ログを?次表示
           const steps = responseData.discussion || [];
           for (let idx = 0; idx < steps.length; idx++) {
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -2365,22 +2375,26 @@ if (aiGenerateBtn) {
           let bgImageUrl = null;
           if (genBg) {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+            addChatMessage(employees.aoi, "要望に合わせた背景のモ?リング?画像生成）を開始する??数秒かかるから?っててね?");
             
             try {
               const styleDesc = responseData.design.style_description || "beautiful illustration";
               const basePrompt = customPrompt || theme;
-              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, no text.`;
+              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, absolutely no text, no labels, no letters, no numbers, no words. Avoid any UI elements or text overlays on the image.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
               
               await new Promise(resolve => setTimeout(resolve, 500));
-              addChatMessage(employees.aoi, "背景アセットの画像生成が完了したよ！キャンバスにロードするね！");
+              addChatMessage(employees.aoi, "背景アセ?ト?画像生成が完?したよ！キャンバスにロードする???");
             } catch (imgErr) {
               console.error(imgErr);
               await new Promise(resolve => setTimeout(resolve, 500));
-              addChatMessage(employees.takumi, `背景画像の生成中にエラーが発生しました (${imgErr.message})。安全のため、SVGグラデーション背景で代行します。`);
+              if (imgErr.message.includes('429')) {
+                addChatMessage(employees.takumi, `背景画像?生?制限（レートリミット?429?に達しました。少し時間を置?てから再試行するか、安?のため一時的にSVGグラ?ーション背景で代行します。`);
+              } else {
+                addChatMessage(employees.takumi, `背景画像?生?中にエラーが発生しました (${imgErr.message})。安?のため、SVGグラ?ーション背景で代行します。`);
+              }
             }
           }
 
@@ -2388,38 +2402,38 @@ if (aiGenerateBtn) {
           if (genParts && bgImageUrl) {
             partsImageUrl = bgImageUrl;
             await new Promise(resolve => setTimeout(resolve, 500));
-            addChatMessage(employees.aoi, "背景画像から各パーツ（メイン枠や立ち絵枠など）をシームレスに切り出して合成するね！");
+            addChatMessage(employees.aoi, "背景画像から各パ???メイン枠?立ち絵枠など?をシームレスに?り?して合?する???");
           }
 
           await new Promise(resolve => setTimeout(resolve, 1500));
-          addChatMessage(employees.aoi, `デザイン設計完了！「${responseData.design.style_description}」テーマの部屋レイアウトをキャンバスに出力したよ！`);
+          addChatMessage(employees.aoi, `?ザイン設計完???${responseData.design.style_description}」テーマ?部屋レイアウトをキャンバスに出力したよ?`);
           
-          // dynamicテーマのレイアウト生成
+          // dynamic?ーマ?レイアウト生?
           await generateAndLoadDynamicLayout(responseData.design, numPlayers, layoutType, bgImageUrl, partsImageUrl);
           
         } catch (err) {
           console.error(err);
-          addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。安全のため、デフォルトのテーマで代行して生成します。`);
+          addChatMessage(employees.takumi, `申し訳ありません、API連携中にエラーが発生しました (${err.message})。安?のため、デフォルト??ーマで代行して生?します。`);
           
-          // デモモードへフォールバック
+          // ?モモードへフォールバック
           await new Promise(resolve => setTimeout(resolve, 1000));
           const fallbackTheme = theme === 'custom' ? 'cyberpunk' : theme;
           await generateAndLoadLayout(fallbackTheme, numPlayers, layoutType);
         } finally {
           aiGenerateBtn.disabled = false;
-          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+          aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作?を依頼する';
           if (typeof lucide !== 'undefined') lucide.createIcons();
         }
       }
       
     } else {
-      // 従来通りのモックデモモード
+      // 従来通りのモ?ク?モモー?
       const themeNames = {
         custom: 'AIにおまかせ',
-        cyberpunk: 'サイバーパンク',
+        cyberpunk: 'サイバ?パンク',
         horror: '和風ホラー',
-        classic: 'クラシック洋館',
-        fantasy: 'ファンタジー・魔法'
+        classic: 'クラシ?ク洋館',
+        fantasy: 'ファンタジー・魔?'
       };
       const selectedThemeVal = theme === 'custom' ? 'cyberpunk' : theme;
       const themeName = themeNames[theme];
@@ -2433,33 +2447,33 @@ if (aiGenerateBtn) {
 
       setTimeout(() => {
         if (bgOnly) {
-          addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！今回はパーツを配置せず、テーマ【${themeName}】に沿って1枚絵のデモ画像を出力しますね。`);
+          addChatMessage(employees.takumi, `CEO、ご?示ありがと?ござ?ます！今回はパ??を?置せず、テーマ?${themeName}】に沿って1枚絵の?モ画像を出力します?。`);
         } else {
-          addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutName}】ですね。さっそく企画立案しました。`);
+          addChatMessage(employees.takumi, `CEO、ご?示ありがと?ござ?ます！テーマ?${themeName}】、人数?${numPlayers}人】?配置?${layoutName}】です?。さっそく企画立案しました。`);
         }
         
         setTimeout(() => {
           if (bgOnly) {
-            addChatMessage(employees.aoi, `了解！キャンバスに合わせた比率で1枚のココフォリア背景（デモ）を描画するね！`);
+            addChatMessage(employees.aoi, `?解?キャンバスに合わせた比率で1枚?ココフォリア背景?デモ?を描画するね?`);
           } else {
-            addChatMessage(employees.aoi, `任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
+            addChatMessage(employees.aoi, `任せて??${themeName}】?雰囲気を最大限に引き出すカラーパレ?トで背景とパネル?飾を今からモ?リングするね。パー?生?スタート！`);
           }
           
           setTimeout(() => {
             if (!bgOnly) {
-              addChatMessage(employees.takumi, `前景くり抜き窓は中央左、PLパネルは指定配置に。メニュー用とクリックアクション用（目星、聞き耳、図書館、アイデア、SAN、塩）のボタンを綺麗に自動整列させます！`);
+              addChatMessage(employees.takumi, `前景くり抜き窓?中央左、PLパネルは?定?置に。メニュー用とクリ?クアクション用?目星、聞き耳、図書館、アイ?ア、SAN、塩??ボタンを綺麗に自動整列させます！`);
             }
             
             if (genBg) {
               setTimeout(() => {
-                addChatMessage(employees.aoi, `背景アセット用のイメージ画像（デモ）を取得するね。`);
+                addChatMessage(employees.aoi, `背景アセ?ト用のイメージ画像（デモ?を取得する?。`);
                 
                 setTimeout(async () => {
-                  addChatMessage(employees.aoi, `画像の読み込みが完了したよ！キャンバスに自動レイアウトを出力するね！CEO！`);
+                  addChatMessage(employees.aoi, `画像?読み込みが完?したよ！キャンバスに自動レイアウトを出力する??CEO?`);
                   
-                  let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80"; // ジェネリックなグラデーション
+                  let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80"; // ジェネリ?クなグラ?ーション
                   if (customPrompt.includes("彼岸花")) {
-                    mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
+                    mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤?
                   }
                   
                   if (bgOnly) {
@@ -2480,13 +2494,13 @@ if (aiGenerateBtn) {
                   }
                   
                   aiGenerateBtn.disabled = false;
-                  aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+                  aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作?を依頼する';
                   if (typeof lucide !== 'undefined') lucide.createIcons();
                 }, 1500);
               }, 1500);
             } else {
               setTimeout(async () => {
-                addChatMessage(employees.aoi, `組み立て完了したよ！キャンバスに出力したから確認してみて！CEO！`);
+                addChatMessage(employees.aoi, `?み立て完?したよ！キャンバスに出力したから確認してみて?CEO?`);
                 
                 let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
                 
@@ -2508,7 +2522,7 @@ if (aiGenerateBtn) {
                 }
                 
                 aiGenerateBtn.disabled = false;
-                aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+                aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作?を依頼する';
                 if (typeof lucide !== 'undefined') lucide.createIcons();
               }, 1500);
             }
@@ -2534,9 +2548,9 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       url: bgImageUrl,
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   } else {
     const bgSvg = gen.bg();
@@ -2544,9 +2558,9 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       url: createSvgUrl(bgSvg),
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   }
 
@@ -2879,27 +2893,27 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   panels = [];
   selectedPanelIds = [];
 
-  if (design && design.no_background) {
-    frame = null;
-    canvasBgColor = 'transparent';
-  } else if (bgImageUrl) {
+  if (bgImageUrl) {
     frame = {
       url: bgImageUrl,
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
+  } else if (design && design.no_background) {
+    frame = null;
+    canvasBgColor = 'transparent';
   } else {
     const bgSvg = gen.bg(design);
     frame = {
       url: createSvgUrl(bgSvg),
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   }
 
@@ -2923,7 +2937,7 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   let windowY = design.window_y !== undefined ? design.window_y : 110;
 
   if (design.window_x === undefined) {
-    // 従来のフォールバック計算
+    // 従来のフォールバック計?
     if (layoutType === 'bottom-horizontal') {
       windowX = 280;
       windowY = 50;
@@ -2970,7 +2984,7 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       plW = plPanelsData[i].width !== undefined ? plPanelsData[i].width : plW;
       plH = plPanelsData[i].height !== undefined ? plPanelsData[i].height : plH;
     } else {
-      // 従来のフォールバック計算
+      // 従来のフォールバック計?
       if (layoutType === 'right-vertical') {
         if (numPlayers <= 3) { plW = 180; plH = 200; }
         else if (numPlayers === 4) { plW = 170; plH = 150; }
@@ -3032,7 +3046,7 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   let baseMenuY = design.menu_y !== undefined ? design.menu_y : 50;
 
   if (design.menu_x === undefined) {
-    // 従来のフォールバック計算
+    // 従来のフォールバック計?
     if (layoutType === 'right-vertical') {
       baseMenuY = 50;
       baseMenuX = 50;
@@ -3144,3 +3158,4 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
   updateUI();
 }
+
