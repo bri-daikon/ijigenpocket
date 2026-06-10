@@ -123,6 +123,28 @@ document.addEventListener('DOMContentLoaded', () => {
             status: 'オンライン',
             progress: 85,
             task: 'イメージイラスト制作'
+        },
+        {
+            id: 'emp_layout_takumi',
+            name: 'タクミ',
+            role: 'レイアウトメーカー相談員',
+            department: 'trpg_scenario',
+            avatar: 'LayoutTakumi',
+            description: '「ココフォリア・レイアウトメーカー」の自動配置設計を担当。PL人数に応じた最適なグリッド配置や、画面設計のアルゴリズム提案を行います。',
+            status: 'オンライン',
+            progress: 85,
+            task: '配置アルゴリズム監修'
+        },
+        {
+            id: 'emp_layout_aoi',
+            name: 'アオイ',
+            role: 'レイアウトメーカー相談員',
+            department: 'trpg_scenario',
+            avatar: 'LayoutAoi',
+            description: '「ココフォリア・レイアウトメーカー」のデザイン・相談役。テーマカラー選定や、ユーザーが迷わないUI設計のアドバイスを担当。',
+            status: 'オンライン',
+            progress: 90,
+            task: 'テーマパレット設計'
         }
     ];
 
@@ -197,6 +219,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const yu = defaultEmployees.find(emp => emp.id === 'emp_trpg_graphic');
             if (yu) {
                 employees.push(yu);
+                migrated = true;
+            }
+        }
+
+        const hasTakumi = employees.some(emp => emp.id === 'emp_layout_takumi');
+        const hasAoi = employees.some(emp => emp.id === 'emp_layout_aoi');
+        if (!hasTakumi) {
+            const takumi = defaultEmployees.find(emp => emp.id === 'emp_layout_takumi');
+            if (takumi) {
+                employees.push(takumi);
+                migrated = true;
+            }
+        }
+        if (!hasAoi) {
+            const aoi = defaultEmployees.find(emp => emp.id === 'emp_layout_aoi');
+            if (aoi) {
+                employees.push(aoi);
                 migrated = true;
             }
         }
@@ -672,6 +711,13 @@ document.addEventListener('DOMContentLoaded', () => {
             { sender: 'ユウ', role: 'TRPGグラフィックデザイナー', avatar: 'TRPGGraphicDesigner', dept: 'trpg_scenario', text: '私はトレーラー用バナーやNPCのビジュアル、シーンのイメージイラストを担当します。生成AIと連携して、キービジュアルも自動で作り出せますよ！' },
             { sender: 'ミヤビ', role: 'TRPGシナリオ校正者', avatar: 'TRPGEditor', dept: 'trpg_scenario', text: '執筆されたテキストの表記揺れチェックやルールの整合性確認に加え、マップの部屋構成と描写文の矛盾がないかも含めて校正フローに入れました。' },
             { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: '心強いですね。執筆・マップ設計・グラフィック制作がシームレスに回るよう、AI画像生成も含めた統合ワークフローを構築していきましょう！' }
+        ],
+        ccfolia: [
+            { sender: 'タクミ', role: 'レイアウトメーカー相談員', avatar: 'LayoutTakumi', dept: 'trpg_scenario', text: 'CEO、レイアウトメーカーの自動レイアウト配置アルゴリズムについて相談です。現在、PL人数（1人〜5人）に応じた複数の最適なパネル配置パターンを設計しています。' },
+            { sender: 'アオイ', role: 'レイアウトメーカー相談員', avatar: 'LayoutAoi', dept: 'trpg_scenario', text: 'そうですね。さらに、サイバーパンクや和風ホラー、クラシック洋館といったテーマごとのカラーパレットや背景 of 自動透過トリミング機能との親和性も考慮しています。' },
+            { sender: 'ガクト', role: 'TRPGシナリオ構成者', avatar: 'TRPGPlanner', dept: 'trpg_scenario', text: '素晴らしい！シナリオの展開に合わせて部屋のレイアウトを自動切り替えするような、ダイナミックな連動機能も将来的に視野に入れたいですね。' },
+            { sender: 'アオイ', role: 'レイアウトメーカー相談員', avatar: 'LayoutAoi', dept: 'trpg_scenario', text: 'いいですね！トレーラー画像やNPC立ち絵の配置も含めて、ワンクリックで世界観が完成する『レイアウトメーカー』ならではの強みを磨いていきましょう。' },
+            { sender: 'タクミ', role: 'レイアウトメーカー相談員', avatar: 'LayoutTakumi', dept: 'trpg_scenario', text: '了解しました。まずは現在の7パターンの配置アルゴリズムの調整を完了させ、自動生成機能に組み込みます！' }
         ]
     };
 
