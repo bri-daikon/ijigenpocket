@@ -1,4 +1,9 @@
-﻿// アイコンの初期化
+window.onerror = function(message, source, lineno, colno, error) {
+  alert("エラーが発生しました:\n" + message + "\nファイル: " + source + "\n行: " + lineno + "\n列: " + colno);
+  return false;
+};
+
+// アイコンの初期化
 if (typeof lucide !== 'undefined') {
   lucide.createIcons();
 }
