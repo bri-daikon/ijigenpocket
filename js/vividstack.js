@@ -1,12 +1,13 @@
 let canvas;
 const gridSize = 50;
 let backgroundImageObject = null; // 背景画像を保持
+let objectSequence = 0; // 重ね順管理用の連番
 
-window.onload = function() {
+window.onload = function () {
     initCanvas();
     const loader = document.getElementById('imageLoader');
     if (loader) loader.addEventListener('change', handleImageUpload);
-    
+
     // ウィンドウリサイズ時にズームを更新
     window.addEventListener('resize', updateCanvasZoom);
 };
@@ -18,16 +19,29 @@ function initCanvas() {
         backgroundColor: '#ffffff'
     });
 
+    // discardActiveObject をラップして、選択解除時に元の重ね順が崩れないようにソートする
+    const originalDiscard = canvas.discardActiveObject;
+    canvas.discardActiveObject = function (e) {
+        const activeObject = this.getActiveObject();
+        if (activeObject && activeObject.type === 'activeSelection') {
+            activeObject._objects.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+        }
+        return originalDiscard.call(this, e);
+    };
+
     // オブジェクト追加時にアスペクト比固定設定を適用
-    canvas.on('object:added', function(e) {
+    canvas.on('object:added', function (e) {
         const obj = e.target;
         if (obj && obj.name !== 'gridLine') {
             setupObjectControls(obj);
+            if (obj.zIndex === undefined) {
+                obj.zIndex = objectSequence++;
+            }
         }
     });
 
     // スナップ機能
-    canvas.on('object:moving', function(options) {
+    canvas.on('object:moving', function (options) {
         if (document.getElementById('gridToggle').checked) {
             options.target.set({
                 left: Math.round(options.target.left / gridSize) * gridSize,
@@ -38,7 +52,7 @@ function initCanvas() {
 
     canvas.on('selection:created', updateFontDropdown);
     canvas.on('selection:updated', updateFontDropdown);
-    
+
     // 初期ズーム状態を適用
     setTimeout(updateCanvasZoom, 100);
 }
@@ -54,7 +68,7 @@ function setupObjectControls(obj) {
         cornerStrokeColor: '#ffffff',
         cornerStyle: 'circle'
     });
-    
+
     // 辺のハンドル（中央上下左右）を非表示にする
     obj.setControlsVisibility({
         mt: false, // middle top
@@ -98,16 +112,16 @@ window.applyBackground = applyBackground;
 // 背景ぼかしを適用
 function applyBlur() {
     if (!backgroundImageObject) return;
-    
+
     const blurValue = parseFloat(document.getElementById('bgBlurSlider').value);
     backgroundImageObject.filters = [];
-    
+
     if (blurValue > 0) {
         backgroundImageObject.filters.push(new fabric.Image.filters.Blur({
             blur: blurValue
         }));
     }
-    
+
     backgroundImageObject.applyFilters();
     canvas.renderAll();
 }
@@ -173,9 +187,9 @@ function changeCanvasSize() {
     const [width, height] = sizeValue.split('x').map(Number);
     canvas.setWidth(width);
     canvas.setHeight(height);
-    
+
     applyBackground();
-    
+
     if (document.getElementById('gridToggle').checked) toggleGrid(true);
     canvas.renderAll();
     updateCanvasZoom(); // サイズ変更後にズームを更新
@@ -193,12 +207,12 @@ function updateCanvasZoom() {
         const padding = 40;
         const availableWidth = wrapper.clientWidth - padding;
         const availableHeight = wrapper.clientHeight - padding;
-        
+
         const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
-        
+
         // Fabric.jsのズームを設定（座標計算を正しく保つ）
         canvas.setZoom(scale);
-        
+
         // CSS上の表示サイズのみを変更（画質は落とさない）
         canvas.setDimensions({
             width: canvas.width * scale,
@@ -253,9 +267,9 @@ async function handleImageUpload(e) {
     if (files.length === 0) return;
 
     const showName = document.getElementById('filenameToggle').checked;
-    const margin_default = 20; 
+    const margin_default = 20;
     const labelHeight_default = 30;
-    
+
     const loadPromises = files.map(file => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -271,9 +285,9 @@ async function handleImageUpload(e) {
 
     const imageDataList = await Promise.all(loadPromises);
     const count = imageDataList.length;
-    
+
     const margin = gridSize; // グリッド1マス分 (50px)
-    const labelHeight = showName ? 18 : 0; 
+    const labelHeight = showName ? 18 : 0;
     const targetHeight = 250; // 基準となる画像の高さ
 
     let currentX = margin;
@@ -329,7 +343,7 @@ async function handleImageUpload(e) {
     // 読み込み後にズームを更新して全体が見えるようにする
     canvas.renderAll();
     if (document.getElementById('zoomFitToggle').checked) updateCanvasZoom();
-    
+
     e.target.value = '';
     alertBox(`${count}枚の画像を読み込み、整列しました`);
 }
@@ -371,7 +385,7 @@ function deleteSelected() {
 window.deleteSelected = deleteSelected;
 
 function clearCanvas() {
-    if(confirm('すべて削除しますか？')) {
+    if (confirm('すべて削除しますか？')) {
         canvas.clear();
         canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
         backgroundImageObject = null;
@@ -387,7 +401,7 @@ function alignHorizontal() {
     const objs = canvas.getActiveObjects();
     if (objs.length < 2) return alertBox("2つ以上選択してください");
     objs.sort((a, b) => a.left - b.left);
-    const dist = objs[objs.length-1].left - objs[0].left;
+    const dist = objs[objs.length - 1].left - objs[0].left;
     const step = dist / (objs.length - 1);
     objs.forEach((obj, i) => {
         obj.set({ left: objs[0].left + (step * i), top: objs[0].top });
@@ -401,7 +415,7 @@ function alignVertical() {
     const objs = canvas.getActiveObjects();
     if (objs.length < 2) return alertBox("2つ以上選択してください");
     objs.sort((a, b) => a.top - b.top);
-    const dist = objs[objs.length-1].top - objs[0].top;
+    const dist = objs[objs.length - 1].top - objs[0].top;
     const step = dist / (objs.length - 1);
     objs.forEach((obj, i) => {
         obj.set({ top: objs[0].top + (step * i), left: objs[0].left });
@@ -415,7 +429,10 @@ function cropToSelection() {
     const activeObjects = canvas.getActiveObjects();
     if (activeObjects.length === 0) return alertBox("切り抜きたい範囲のオブジェクトを選択してください");
 
-    // 選択されているオブジェクトの範囲を計算
+    // 選択を解除してオブジェクトの座標を絶対座標に戻す
+    canvas.discardActiveObject();
+
+    // 選択されていたオブジェクトの範囲を計算
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     activeObjects.forEach(obj => {
@@ -452,10 +469,10 @@ function cropToSelection() {
 
     canvas.setWidth(newWidth);
     canvas.setHeight(newHeight);
-    
+
     // グリッドのリフレッシュ
     if (document.getElementById('gridToggle').checked) toggleGrid(true);
-    
+
     canvas.renderAll();
     updateCanvasZoom();
     alertBox(`キャンバスを ${Math.round(newWidth)} x ${Math.round(newHeight)} に切り抜きました`);
