@@ -1699,6 +1699,8 @@ const aiGenerateBtn = document.getElementById('ai-generate-btn');
 const aiThemeSelect = document.getElementById('ai-theme-select');
 const aiPlayersSelect = document.getElementById('ai-players-select');
 const aiLayoutSelect = document.getElementById('ai-layout-select');
+const aiMenuStyleSelect = document.getElementById('ai-menu-style-select');
+const aiActionStyleSelect = document.getElementById('ai-action-style-select');
 const aiChatBox = document.getElementById('ai-chat-box');
 const aiPromptInput = document.getElementById('ai-prompt-input');
 const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
@@ -1713,6 +1715,17 @@ if (aiApiKeyInput) {
     localStorage.setItem('stampToolApiKey', e.target.value.trim());
   });
 }
+
+const menuTranslations = {
+  en: { houserule: "HouseRule", battle: "Battle", insanity: "Insanity", growth: "Growth", other: "Other" },
+  ja: { houserule: "ハウスルール", battle: "戦闘", insanity: "正気度", growth: "成長", other: "その他" }
+};
+
+const actionTranslations = {
+  ja: ["目星", "聞き耳", "図書館", "アイデア", "SANc", "塩"],
+  en: ["Spot hidden", "Listen", "Library use", "i-dea", "SANC", "Solt"],
+  icon: ["", "", "", "", "", ""]
+};
 
 const actionIconsData = [
   {
@@ -1804,6 +1817,9 @@ function addChatMessage(employee, text) {
 async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
+  const menuStyleVal = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
+  const actionStyleVal = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
+
   let layoutName = '右に縦並び';
   if (layoutType === 'bottom-horizontal') layoutName = '下部に横並び';
   else if (layoutType === 'pattern1') layoutName = 'パターン1 (メイン左・メニュー左・PL枠右・アクション右)';
@@ -1826,7 +1842,13 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
 - テーマ: ${theme}
 - プレイヤー人数: ${numPlayers}人
 - 配置: ${layoutName}
+- メニュー表記: ${menuStyleVal === 'ja' ? '日本語表記 ("ハウスルール", "戦闘", "正気度", "成長", "その他")' : '英語表記 ("HouseRule", "Battle", "Insanity", "Growth", "Other")'}
+- 便利ボタン表記: ${actionStyleVal === 'ja' ? '日本語表記 ("目星", "聞き耳", "図書館", "アイデア", "SANc", "塩")' : actionStyleVal === 'en' ? '英語表記 ("Spot hidden", "Listen", "Library use", "i-dea", "SANC", "Solt")' : 'テキストなし（アイコンのみ、文字を描画しない）'}
 - 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
+
+【テキスト表記指示】※超重要
+- メニュー (menu) に配置する5つの項目名は、必ず「${menuStyleVal === 'ja' ? '日本語（ハウスルール、戦闘、正気度、成長、その他）' : '英語（HouseRule、Battle、Insanity、Growth、Other）'}」で統一して配置してください。
+- アクションアイコン (action) に配置する6つの便利ボタン項目名は、必ず「${actionStyleVal === 'ja' ? '日本語（目星、聞き耳、図書館、アイデア、SANc、塩）' : actionStyleVal === 'en' ? '英語（Spot hidden、Listen、Library use、i-dea、SANC、Solt）' : 'テキストなし（アイコンマークのみで文字は一切描画しない）'}」で統一して配置してください。
 
 【レイアウト配置の設計指針】
 キャンバス全体の解像度は 1280x720 ピクセルです。
@@ -2367,9 +2389,11 @@ if (aiGenerateBtn) {
             try {
               const styleDesc = responseData.design.style_description || "beautiful illustration";
               const basePrompt = customPrompt || theme;
-              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, no text.`;
+              const isPortrait = canvasWidth < canvasHeight;
+              const aspectRatio = isPortrait ? "9:16" : "16:9";
+              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio, clean, no text.`;
               
-              const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt);
+              const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
               
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -2454,9 +2478,12 @@ if (aiGenerateBtn) {
                 setTimeout(async () => {
                   addChatMessage(employees.aoi, `画像の読み込みが完了したよ！キャンバスに自動レイアウトを出力するね！CEO！`);
                   
-                  let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80"; // ジェネリックなグラデーション
+                  const isPortrait = canvasWidth < canvasHeight;
+                  let mockBgUrl = isPortrait
+                    ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=720&h=1280&q=80"
+                    : "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
                   if (customPrompt.includes("彼岸花")) {
-                    mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
+                    mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=" + (isPortrait ? "720&h=1280" : "1280&h=720") + "&q=80";
                   }
                   
                   if (bgOnly) {
@@ -2485,7 +2512,10 @@ if (aiGenerateBtn) {
               setTimeout(async () => {
                 addChatMessage(employees.aoi, `組み立て完了したよ！キャンバスに出力したから確認してみて！CEO！`);
                 
-                let mockBgUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
+                const isPortrait = canvasWidth < canvasHeight;
+                let mockBgUrl = isPortrait
+                  ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=720&h=1280&q=80"
+                  : "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
                 
                 if (bgOnly) {
                   frame = {
@@ -2531,9 +2561,9 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       url: bgImageUrl,
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   } else {
     const bgSvg = gen.bg();
@@ -2541,9 +2571,9 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       url: createSvgUrl(bgSvg),
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   }
 
@@ -2737,9 +2767,11 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   const menuW = (menuLayout === 'horizontal') ? 180 : 130;
   const menuH = (menuLayout === 'horizontal') ? 36 : 32;
 
+  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
-    const menuSvg = gen.menu(label);
+    const labelText = menuTranslations[menuStyle][label];
+    const menuSvg = gen.menu(labelText);
     let menuX = 50;
     let menuY = 50;
 
@@ -2802,9 +2834,11 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   const actionW = 75;
   const actionH = 75;
 
+  const actionStyle = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
-    const actionSvg = gen.action(icon.label, icon.sub, icon.path);
+    const labelText = actionTranslations[actionStyle][i];
+    const actionSvg = gen.action(labelText, icon.sub, icon.path);
     let actionX = 50;
     let actionY = 550;
 
@@ -2884,9 +2918,9 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       url: bgImageUrl,
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   } else {
     const bgSvg = gen.bg(design);
@@ -2894,9 +2928,9 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       url: createSvgUrl(bgSvg),
       x: 0,
       y: 0,
-      width: 1280,
-      height: 720,
-      originalRatio: 1280 / 720
+      width: canvasWidth,
+      height: canvasHeight,
+      originalRatio: canvasWidth / canvasHeight
     };
   }
 
@@ -3039,9 +3073,11 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
     }
   }
 
+  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
-    const menuSvg = gen.menu(design, label);
+    const labelText = menuTranslations[menuStyle][label];
+    const menuSvg = gen.menu(design, labelText);
     let menuX = baseMenuX;
     let menuY = baseMenuY;
 
@@ -3094,9 +3130,11 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
 
+  const actionStyle = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
-    const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+    const labelText = actionTranslations[actionStyle][i];
+    const actionSvg = gen.action(design, labelText, icon.sub, icon.path);
     let actionX = baseActionX;
     let actionY = baseActionY;
 
