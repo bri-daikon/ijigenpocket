@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2画面並列エクスプローラー</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    }
+    /* スクロールバーのカスタマイズ */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+    /* クリック無効化時のスタイル */
+    .disabled-btn {
+      opacity: 0.3;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    /* ドラッグオーバー時のスタイル */
+    .drag-over-dir {
+      border-color: #3b82f6 !important;
+      background-color: rgba(59, 130, 246, 0.1) !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="bg-gray-900 border-b border-gray-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-3">
+      <div class="p-2.5 bg-blue-600 rounded-lg text-white shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-folder-tree text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight">Weby Twin Explorer</h1>
+        <p class="text-xs text-gray-400">File System Access API を搭載した2画面リアルファイラー</p>
+      </div>
+    </div>
+    <!-- ブラウザ互換性チェック -->
+    <div id="compat-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium">
+      <!-- JavaScriptでステータスを書き換えます -->
+    </div>
+  </header>
+
+  <!-- 上部アドバイスバー -->
+  <div class="bg-blue-950/40 border-b border-blue-900/40 px-6 py-2.5 text-xs text-blue-300 flex items-center gap-2.5">
+    <i class="fa-solid fa-lightbulb text-amber-400 animate-pulse text-sm shrink-0"></i>
+    <span>
+      <strong>💡 エラーを回避するヒント：</strong> 
+      「ダウンロード」や「デスクトップ」そのものを直接開くと、ブラウザの安全制限（セキュリティ）によりエラーになります。
+      そのフォルダの中に<strong>新しいフォルダ（例: 「整理用」など）を作成し、それを選択する</strong>とスムーズに開けます！
+    </span>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-1 flex flex-col lg:flex-row p-4 lg:p-6 gap-4 overflow-hidden h-[calc(100vh-210px)]">
+
+    <!-- 左ペイン（エクスプローラー 1） -->
+    <section class="flex-1 bg-gray-900 border border-gray-800 rounded-xl flex flex-col overflow-hidden shadow-xl">
+      <!-- ツールバー -->
+      <div class="p-4 bg-gray-800/50 border-b border-gray-800 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 overflow-hidden flex-1">
+          <button id="open-dir-1" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shrink-0">
+            <i class="fa-solid fa-folder-open"></i> フォルダを開く
+          </button>
+          <div class="flex items-center gap-1.5 overflow-hidden text-sm text-gray-300 font-mono bg-gray-950 px-3 py-1.5 rounded-lg border border-gray-800/80 flex-1">
+            <i class="fa-solid fa-home text-xs text-gray-500"></i>
+            <span id="path-display-1" class="truncate">フォルダが選択されていません</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <!-- プレビューボタン -->
+          <button id="preview-btn-1" class="disabled-btn p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0" title="ファイルをプレビュー" disabled>
+            <i class="fa-solid fa-eye text-sm"></i>
+          </button>
+          
+          <!-- 表示形式切り替えボタン -->
+          <div class="flex items-center bg-gray-950 border border-gray-800 rounded-lg p-0.5 shrink-0">
+            <button id="view-list-1" class="px-2 py-1 rounded text-xs transition-colors bg-gray-800 text-white" title="リスト表示">
+              <i class="fa-solid fa-list"></i>
+            </button>
+            <button id="view-grid-1" class="px-2 py-1 rounded text-xs transition-colors text-gray-400 hover:text-white" title="アイコン表示">
+              <i class="fa-solid fa-border-all"></i>
+            </button>
+          </div>
+          <button id="up-dir-1" class="disabled-btn p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0" title="上の階層へ" disabled>
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ファイルリスト表示エリア -->
+      <div class="flex-1 overflow-y-auto transition-colors" id="list-container-1"
+           ondragover="event.preventDefault();"
+           ondragenter="this.classList.add('bg-gray-800/10')"
+           ondragleave="this.classList.remove('bg-gray-800/10')"
+           ondrop="handleContainerDrop(event, 1)">
+        <div class="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center max-w-md mx-auto">
+          <i class="fa-solid fa-folder-open text-5xl mb-4 text-gray-700"></i>
+          <p class="text-sm font-medium mb-2 text-gray-300">左側のフォルダを開いてください</p>
+          <p class="text-xs text-gray-500 leading-relaxed">
+            ※「ダウンロード」や「デスクトップ」を開く場合は、その中にフォルダを作成し、その作成したフォルダを選択してください。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中央操作パネル -->
+    <section class="flex flex-row lg:flex-col items-center justify-center gap-3 lg:px-2 shrink-0">
+      <!-- 左から右へ -->
+      <div class="flex lg:flex-col gap-2">
+        <button id="action-copy-to-right" class="disabled-btn flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium shadow-lg shadow-emerald-500/10 transition-all text-sm w-36 lg:w-40" disabled>
+          <span>コピー</span> <i class="fa-solid fa-angles-right hidden lg:inline"></i><i class="fa-solid fa-angles-down lg:hidden"></i>
+        </button>
+        <button id="action-move-to-right" class="disabled-btn flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl font-medium shadow-lg shadow-indigo-500/10 transition-all text-sm w-36 lg:w-40" disabled>
+          <span>移動</span> <i class="fa-solid fa-circle-arrow-right hidden lg:inline"></i><i class="fa-solid fa-circle-arrow-down lg:hidden"></i>
+        </button>
+      </div>
+
+      <div class="w-px h-8 lg:w-12 lg:h-px bg-gray-800 my-1"></div>
+
+      <!-- 右から左へ -->
+      <div class="flex lg:flex-col gap-2">
+        <button id="action-copy-to-left" class="disabled-btn flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium shadow-lg shadow-emerald-500/10 transition-all text-sm w-36 lg:w-40" disabled>
+          <i class="fa-solid fa-angles-left hidden lg:inline"></i><i class="fa-solid fa-angles-up lg:hidden"></i> <span>コピー</span>
+        </button>
+        <button id="action-move-to-left" class="disabled-btn flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl font-medium shadow-lg shadow-indigo-500/10 transition-all text-sm w-36 lg:w-40" disabled>
+          <i class="fa-solid fa-circle-arrow-left hidden lg:inline"></i><i class="fa-solid fa-circle-arrow-up lg:hidden"></i> <span>移動</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 右ペイン（エクスプローラー 2） -->
+    <section class="flex-1 bg-gray-900 border border-gray-800 rounded-xl flex flex-col overflow-hidden shadow-xl">
+      <!-- ツールバー -->
+      <div class="p-4 bg-gray-800/50 border-b border-gray-800 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 overflow-hidden flex-1">
+          <button id="open-dir-2" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shrink-0">
+            <i class="fa-solid fa-folder-open"></i> フォルダを開く
+          </button>
+          <div class="flex items-center gap-1.5 overflow-hidden text-sm text-gray-300 font-mono bg-gray-950 px-3 py-1.5 rounded-lg border border-gray-800/80 flex-1">
+            <i class="fa-solid fa-home text-xs text-gray-500"></i>
+            <span id="path-display-2" class="truncate">フォルダが選択されていません</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <!-- プレビューボタン -->
+          <button id="preview-btn-2" class="disabled-btn p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0" title="ファイルをプレビュー" disabled>
+            <i class="fa-solid fa-eye text-sm"></i>
+          </button>
+
+          <!-- 表示形式切り替えボタン -->
+          <div class="flex items-center bg-gray-950 border border-gray-800 rounded-lg p-0.5 shrink-0">
+            <button id="view-list-2" class="px-2 py-1 rounded text-xs transition-colors bg-gray-800 text-white" title="リスト表示">
+              <i class="fa-solid fa-list"></i>
+            </button>
+            <button id="view-grid-2" class="px-2 py-1 rounded text-xs transition-colors text-gray-400 hover:text-white" title="アイコン表示">
+              <i class="fa-solid fa-border-all"></i>
+            </button>
+          </div>
+          <button id="up-dir-2" class="disabled-btn p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0" title="上の階層へ" disabled>
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ファイルリスト表示エリア -->
+      <div class="flex-1 overflow-y-auto transition-colors" id="list-container-2"
+           ondragover="event.preventDefault();"
+           ondragenter="this.classList.add('bg-gray-800/10')"
+           ondragleave="this.classList.remove('bg-gray-800/10')"
+           ondrop="handleContainerDrop(event, 2)">
+        <div class="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center max-w-md mx-auto">
+          <i class="fa-solid fa-folder-open text-5xl mb-4 text-gray-700"></i>
+          <p class="text-sm font-medium mb-2 text-gray-300">右側のフォルダを開いてください</p>
+          <p class="text-xs text-gray-500 leading-relaxed">
+            ※「ダウンロード」や「デスクトップ」を開く場合は、その中にフォルダを作成し、その作成したフォルダを選択してください。
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 操作ログ & ステータスバー -->
+  <footer class="bg-gray-900 border-t border-gray-800 p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 text-xs">
+    <div class="flex items-center gap-2 text-gray-400">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>ステータス: 待機中</span>
+    </div>
+    <!-- 簡易コンソールログ -->
+    <div class="flex-1 max-w-2xl bg-gray-950 border border-gray-800 rounded-lg p-2 font-mono text-[11px] h-12 overflow-y-auto" id="console-log">
+      <div class="text-gray-500">[システム] アプリケーションが起動しました。</div>
+    </div>
+    <div class="text-gray-500 flex items-center gap-1">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>安全なサンドボックス内動作</span>
+    </div>
+  </footer>
+
+  <!-- カスタムダイアログ（上書き確認、ローディング、エラー） -->
+  <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-start gap-4">
+        <div id="modal-icon-container" class="p-3 rounded-full text-white shrink-0">
+          <!-- JSで動的にアイコンを挿入 -->
+        </div>
+        <div class="flex-1">
+          <h3 id="modal-title" class="text-base font-bold text-white mb-2">タイトル</h3>
+          <p id="modal-message" class="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">メッセージ内容</p>
+        </div>
+      </div>
+      <div id="modal-progress" class="hidden mt-4 w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+        <div id="modal-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+      <div class="mt-6 flex justify-end gap-3" id="modal-actions">
+        <!-- JSで動的にボタンを生成 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ファイルプレビュー用モーダル -->
+  <div id="preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-4xl w-full h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- プレビューヘッダー -->
+      <div class="px-6 py-4 border-b border-gray-800 bg-gray-900 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <i id="preview-type-icon" class="fa-regular fa-file text-blue-400 text-lg"></i>
+          <h3 id="preview-file-name" class="text-sm font-semibold text-white truncate">ファイル名</h3>
+          <span id="preview-file-size" class="text-xs text-gray-500 font-mono shrink-0">0 Bytes</span>
+        </div>
+        <button id="close-preview-btn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <!-- プレビュー本体表示エリア -->
+      <div id="preview-body" class="flex-1 overflow-auto bg-gray-950 flex items-center justify-center p-6 relative">
+        <!-- JSにより動的に以下が配置されます -->
+        <!-- 画像: <img class="max-h-full max-w-full object-contain"> -->
+        <!-- テキスト: <pre class="font-mono text-xs text-gray-300 w-full text-left whitespace-pre-wrap"></pre> -->
+      </div>
+      
+      <!-- プレビューフッター -->
+      <div class="px-6 py-3 border-t border-gray-800 bg-gray-900 flex justify-between items-center text-xs text-gray-500 shrink-0">
+        <span id="preview-meta">プレビューモード</span>
+        <span>閉じるには右上か枠外をクリック</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // --- 状態管理 ---
+    const state = {
+      pane1: {
+        rootHandle: null,    // ユーザーが最初に選択したルート
+        currentHandle: null, // 現在開いているディレクトリハンドル
+        history: [],         // 履歴スタック（戻る用）
+        entries: [],         // 表示中のファイル・フォルダのリスト
+        selectedEntries: [], // 選択されているファイル・フォルダのエントリ（複数選択）
+        lastSelectedIndex: null, // 範囲選択のための直前選択インデックス
+        thumbnailUrls: [],   // 生成したサムネイル用のObject URLリスト
+        viewMode: 'list'     // 表示モード: 'list' (詳細一覧) または 'grid' (アイコン表示)
+      },
+      pane2: {
+        rootHandle: null,
+        currentHandle: null,
+        history: [],
+        entries: [],
+        selectedEntries: [],
+        lastSelectedIndex: null,
+        thumbnailUrls: [],
+        viewMode: 'list'
+      },
+      currentPreviewUrl: null // 画像などのプレビュー時に作成した一時的なObjectURL
+    };
+
+    // --- DOM要素の参照取得 ---
+    const el = {
+      compatBadge: document.getElementById('compat-badge'),
+      
+      // ペイン1 (左)
+      openDir1: document.getElementById('open-dir-1'),
+      pathDisplay1: document.getElementById('path-display-1'),
+      upDir1: document.getElementById('up-dir-1'),
+      listContainer1: document.getElementById('list-container-1'),
+      btnViewList1: document.getElementById('view-list-1'),
+      btnViewGrid1: document.getElementById('view-grid-1'),
+      btnPreview1: document.getElementById('preview-btn-1'),
+
+      // ペイン2 (右)
+      openDir2: document.getElementById('open-dir-2'),
+      pathDisplay2: document.getElementById('path-display-2'),
+      upDir2: document.getElementById('up-dir-2'),
+      listContainer2: document.getElementById('list-container-2'),
+      btnViewList2: document.getElementById('view-list-2'),
+      btnViewGrid2: document.getElementById('view-grid-2'),
+      btnPreview2: document.getElementById('preview-btn-2'),
+
+      // アクションボタン
+      btnCopyToRight: document.getElementById('action-copy-to-right'),
+      btnMoveToRight: document.getElementById('action-move-to-right'),
+      btnCopyToLeft: document.getElementById('action-copy-to-left'),
+      btnMoveToLeft: document.getElementById('action-move-to-left'),
+
+      // ログ・ダイアログ
+      consoleLog: document.getElementById('console-log'),
+      modal: document.getElementById('custom-modal'),
+      modalIcon: document.getElementById('modal-icon-container'),
+      modalTitle: document.getElementById('modal-title'),
+      modalMessage: document.getElementById('modal-message'),
+      modalProgress: document.getElementById('modal-progress'),
+      modalProgressBar: document.getElementById('modal-progress-bar'),
+      modalActions: document.getElementById('modal-actions'),
+
+      // プレビューモーダル
+      previewModal: document.getElementById('preview-modal'),
+      previewFileName: document.getElementById('preview-file-name'),
+      previewFileSize: document.getElementById('preview-file-size'),
+      previewTypeIcon: document.getElementById('preview-type-icon'),
+      previewBody: document.getElementById('preview-body'),
+      previewMeta: document.getElementById('preview-meta'),
+      btnClosePreview: document.getElementById('close-preview-btn')
+    };
+
+    // --- ブラウザ互換性チェック ---
+    const isSupported = 'showDirectoryPicker' in window;
+    if (isSupported) {
+      el.compatBadge.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+      el.compatBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> 動作環境: 対応ブラウザ';
+    } else {
+      el.compatBadge.classList.add('bg-rose-500/10', 'text-rose-400', 'border', 'border-rose-500/20');
+      el.compatBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 非対応ブラウザ (Chrome/Edge推奨)';
+      writeLog('警告: お使い of ブラウザは File System Access API をサポートしていません。Chrome や Edge でお試しください。', 'error');
+    }
+
+    // --- ログ出力関数 ---
+    function writeLog(message, type = 'info') {
+      const logDiv = document.createElement('div');
+      const time = new Date().toLocaleTimeString();
+      let colorClass = 'text-gray-400';
+      let icon = '🔧';
+
+      if (type === 'success') {
+        colorClass = 'text-emerald-400';
+        icon = '✅';
+      } else if (type === 'error') {
+        colorClass = 'text-rose-400 font-bold';
+        icon = '🚨';
+      } else if (type === 'warn') {
+        colorClass = 'text-amber-400';
+        icon = '⚠️';
+      }
+
+      logDiv.className = `${colorClass} py-0.5`;
+      logDiv.innerHTML = `[${time}] ${icon} ${message}`;
+      el.consoleLog.appendChild(logDiv);
+      el.consoleLog.scrollTop = el.consoleLog.scrollHeight;
+    }
+
+    // --- サイズフォーマッタ ---
+    function formatBytes(bytes) {
+      if (bytes === null || bytes === undefined || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // --- モーダルダイアログ表示用ユーティリティ ---
+    function showModal({ title, message, type, actions = [], showProgress = false }) {
+      el.modalTitle.textContent = title;
+      el.modalMessage.textContent = message;
+
+      // アイコンスタイル切り替え
+      el.modalIcon.className = 'p-3 rounded-full text-white shrink-0 ';
+      if (type === 'error') {
+        el.modalIcon.classList.add('bg-rose-600');
+        el.modalIcon.innerHTML = '<i class="fa-solid fa-circle-xmark text-xl"></i>';
+      } else if (type === 'warn') {
+        el.modalIcon.classList.add('bg-amber-500');
+        el.modalIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-xl"></i>';
+      } else if (type === 'loading') {
+        el.modalIcon.classList.add('bg-blue-600', 'animate-spin');
+        el.modalIcon.innerHTML = '<i class="fa-solid fa-spinner text-xl"></i>';
+      } else {
+        el.modalIcon.classList.add('bg-emerald-600');
+        el.modalIcon.innerHTML = '<i class="fa-solid fa-circle-check text-xl"></i>';
+      }
+
+      // 進捗バー
+      if (showProgress) {
+        el.modalProgress.classList.remove('hidden');
+        el.modalProgressBar.style.width = '0%';
+      } else {
+        el.modalProgress.classList.add('hidden');
+      }
+
+      // アクションボタン生成
+      el.modalActions.innerHTML = '';
+      actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.textContent = action.label;
+        btn.className = `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${action.style || 'bg-gray-800 hover:bg-gray-700 text-gray-300'}`;
+        btn.onclick = () => {
+          if (action.onClick) action.onClick();
+          if (!action.keepOpen) closeModal();
+        };
+        el.modalActions.appendChild(btn);
+      });
+
+      el.modal.classList.remove('hidden');
+    }
+
+    function updateModalProgress(percent, message = null) {
+      el.modalProgressBar.style.width = `${percent}%`;
+      if (message) {
+        el.modalMessage.textContent = message;
+      }
+    }
+
+    function closeModal() {
+      el.modal.classList.add('hidden');
+    }
+
+    // --- 画像ファイル判定 ---
+    function isImageFile(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+    }
+
+    // --- ディレクトリ走査 & リスト生成 ---
+    async function readDirectory(dirHandle) {
+      const entries = [];
+      try {
+        const iterator = dirHandle.values();
+        while (true) {
+          try {
+            const { value: entry, done } = await iterator.next();
+            if (done) break;
+
+            let size = null;
+            let mtime = null;
+
+            if (entry.kind === 'file') {
+              try {
+                const file = await entry.getFile();
+                size = file.size;
+                mtime = new Date(file.lastModified).toLocaleString();
+              } catch (err) {
+                // ダウンロード中のファイルや他でロックされているファイル、権限不足のファイルは、
+                // エラーで全体を止めず、一覧には表示しつつサイズ等を代替値にします
+                size = 0;
+                mtime = 'アクセス不可';
+              }
+            }
+
+            entries.push({
+              name: entry.name,
+              kind: entry.kind, // 'file' or 'directory'
+              handle: entry,
+              size: size,
+              mtime: mtime
+            });
+          } catch (entryErr) {
+            // ディレクトリのイテレーション中に壊れた一時ファイルなどがあった場合は、その要素のみスキップ
+            console.warn('個別ファイル情報取得スキップ:', entryErr);
+          }
+        }
+      } catch (err) {
+        console.error('ディレクトリ読み込み中に大域エラーが発生しました', err);
+        writeLog('フォルダ情報の一部を取得できませんでした（システム制限またはロック中の可能性があります）', 'warn');
+      }
+
+      // フォルダを上に、名前順にソート
+      return entries.sort((a, b) => {
+        if (a.kind !== b.kind) {
+          return a.kind === 'directory' ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name, 'ja');
+      });
+    }
+
+    // --- パス表示の更新 ---
+    function updatePathDisplay(paneId) {
+      const pane = state[`pane${paneId}`];
+      const display = el[`pathDisplay${paneId}`];
+      if (!pane.currentHandle) {
+        display.textContent = 'フォルダが選択されていません';
+        return;
+      }
+
+      // ルートからの階層を文字列にする
+      const pathParts = pane.history.map(h => h.name);
+      display.textContent = pathParts.join(' / ') || pane.currentHandle.name;
+    }
+
+    // --- 表示モード切り替えトグル ---
+    function switchViewMode(paneId, mode) {
+      const pane = state[`pane${paneId}`];
+      if (pane.viewMode === mode) return;
+
+      pane.viewMode = mode;
+
+      const btnList = el[`btnViewList${paneId}`];
+      const btnGrid = el[`btnViewGrid${paneId}`];
+
+      if (mode === 'list') {
+        btnList.className = "px-2 py-1 rounded text-xs transition-colors bg-gray-800 text-white";
+        btnGrid.className = "px-2 py-1 rounded text-xs transition-colors text-gray-400 hover:text-white";
+      } else {
+        btnList.className = "px-2 py-1 rounded text-xs transition-colors text-gray-400 hover:text-white";
+        btnGrid.className = "px-2 py-1 rounded text-xs transition-colors bg-gray-800 text-white";
+      }
+
+      renderPane(paneId);
+    }
+
+    // --- サムネイル用 Object URL の一括解放 ---
+    function cleanupThumbnails(paneId) {
+      const pane = state[`pane${paneId}`];
+      if (pane.thumbnailUrls && pane.thumbnailUrls.length > 0) {
+        pane.thumbnailUrls.forEach(url => {
+          URL.revokeObjectURL(url);
+        });
+        pane.thumbnailUrls = [];
+      }
+    }
+
+    // --- 画面表示（レンダリング） ---
+    async function renderPane(paneId) {
+      const pane = state[`pane${paneId}`];
+      const container = el[`listContainer${paneId}`];
+      const upButton = el[`upDir${paneId}`];
+
+      // 前回のサムネイル一時URLをクリーンアップ
+      cleanupThumbnails(paneId);
+
+      // 「上の階層へ」ボタンの活性状態
+      if (pane.history.length > 1) {
+        upButton.removeAttribute('disabled');
+        upButton.classList.remove('disabled-btn');
+      } else {
+        upButton.setAttribute('disabled', 'true');
+        upButton.classList.add('disabled-btn');
+      }
+
+      // パス表示更新
+      updatePathDisplay(paneId);
+
+      // リスト再取得
+      try {
+        pane.entries = await readDirectory(pane.currentHandle);
+      } catch (err) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-rose-400 p-8 text-center">
+            <i class="fa-solid fa-circle-exclamation text-4xl mb-2"></i>
+            <p class="text-sm">ディレクトリの読み込み中にエラーが発生しました。<br>アクセス権限を確認してください。</p>
+          </div>
+        `;
+        return;
+      }
+
+      // リストが空の場合
+      if (pane.entries.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-gray-600 p-8 text-center">
+            <i class="fa-regular fa-folder-open text-4xl mb-2"></i>
+            <p class="text-sm">このフォルダは空です</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+
+      if (pane.viewMode === 'grid') {
+        // --- アイコン（グリッド）ビューの描画 ---
+        html = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 p-4">`;
+        
+        pane.entries.forEach((entry, idx) => {
+          const isSelected = pane.selectedEntries.some(e => e.name === entry.name);
+          const isUnavailable = entry.mtime === 'アクセス不可';
+          const isImg = isImageFile(entry.name);
+
+          // 選択時・ホバー時のスタイル
+          const tileClass = isSelected 
+            ? 'bg-blue-600/20 border-blue-500 text-white ring-2 ring-blue-500/20' 
+            : 'bg-gray-800/20 hover:bg-gray-800/50 border-gray-800 text-gray-300';
+
+          const nameColorClass = isUnavailable ? 'text-gray-500 italic' : '';
+
+          // アイコンまたはサムネイル枠の選定
+          let icon = '';
+          if (entry.kind === 'directory') {
+            icon = '<i class="fa-solid fa-folder text-amber-500 text-4xl mb-2.5 drop-shadow"></i>';
+          } else if (isUnavailable) {
+            icon = '<i class="fa-regular fa-file-excel text-gray-600 text-4xl mb-2.5"></i>';
+          } else if (isImg) {
+            // 画像ファイルの場合は非同期ロード用プレースホルダーを配置
+            const thumbId = `thumb-${paneId}-${idx}`;
+            icon = `
+              <div class="w-10 h-10 flex items-center justify-center mb-2.5 overflow-hidden rounded bg-gray-950 border border-gray-800 shrink-0">
+                <img id="${thumbId}" data-filename="${entry.name}" class="hidden w-full h-full object-cover">
+                <i id="placeholder-${thumbId}" class="fa-regular fa-image text-blue-400 text-xl"></i>
+              </div>
+            `;
+          } else {
+            icon = '<i class="fa-regular fa-file text-blue-400 text-4xl mb-2.5"></i>';
+          }
+
+          const sizeText = entry.kind === 'directory' ? 'フォルダ' : formatBytes(entry.size);
+
+          html += `
+            <div class="flex flex-col items-center justify-center p-4 rounded-xl border transition-all cursor-pointer text-center relative ${tileClass}" 
+                onclick="selectRow(${paneId}, ${idx}, event)" 
+                ondblclick="handleDoubleClick(${paneId}, ${idx})"
+                draggable="true"
+                ondragstart="handleDragStart(event, ${paneId}, ${idx})"
+                ondragend="handleDragEnd(event)"
+                ondragenter="handleDragEnter(event, ${paneId}, ${idx})"
+                ondragleave="handleDragLeave(event, ${paneId}, ${idx})"
+                ondrop="handleDrop(event, ${paneId}, ${idx})"
+                title="${entry.name}">
+              <!-- チェックボックスの絶対配置 -->
+              <input type="checkbox" class="absolute top-2 left-2 z-10 w-4 h-4 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500"
+                     ${isSelected ? 'checked' : ''}
+                     onclick="event.stopPropagation(); selectRow(${paneId}, ${idx}, {ctrlKey: true})">
+              ${icon}
+              <span class="text-xs font-medium w-full truncate px-1 ${nameColorClass}">${entry.name}</span>
+              <span class="text-[10px] text-gray-500 mt-1 font-mono">${sizeText}</span>
+              ${isUnavailable ? '<span class="absolute top-1.5 right-1.5 text-[8px] bg-gray-800 text-gray-400 px-1 py-0.5 rounded">制限</span>' : ''}
+            </div>
+          `;
+        });
+
+        html += '</div>';
+      } else {
+        // --- 詳細（リスト）ビューの描画 ---
+        html = `
+          <table class="w-full text-left text-sm text-gray-300 border-collapse">
+            <thead>
+              <tr class="text-xs text-gray-500 uppercase border-b border-gray-800/80 bg-gray-900/30 sticky top-0 backdrop-blur-sm">
+                <th class="px-4 py-3 font-semibold w-10"></th>
+                <th class="px-4 py-3 font-semibold">名前</th>
+                <th class="px-4 py-3 font-semibold w-24">サイズ</th>
+                <th class="px-4 py-3 font-semibold w-40">更新日時</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        pane.entries.forEach((entry, idx) => {
+          const isSelected = pane.selectedEntries.some(e => e.name === entry.name);
+          const rowClass = isSelected 
+            ? 'bg-blue-600/20 border-l-2 border-blue-500 text-white' 
+            : 'hover:bg-gray-800/40 border-l-2 border-transparent transition-colors';
+
+          const isUnavailable = entry.mtime === 'アクセス不可';
+          const nameColorClass = isUnavailable ? 'text-gray-500 italic' : '';
+
+          const icon = entry.kind === 'directory' 
+            ? '<i class="fa-solid fa-folder text-amber-500 mr-2.5"></i>' 
+            : (isUnavailable 
+                ? '<i class="fa-regular fa-file-excel text-gray-600 mr-2.5"></i>' 
+                : '<i class="fa-regular fa-file text-blue-400 mr-2.5"></i>');
+
+          const sizeText = entry.kind === 'directory' ? '--' : formatBytes(entry.size);
+          const mtimeText = entry.mtime || '--';
+
+          html += `
+            <tr class="cursor-pointer border-b border-gray-800/50 ${rowClass}" 
+                onclick="selectRow(${paneId}, ${idx}, event)" 
+                ondblclick="handleDoubleClick(${paneId}, ${idx})"
+                draggable="true"
+                ondragstart="handleDragStart(event, ${paneId}, ${idx})"
+                ondragend="handleDragEnd(event)"
+                ondragenter="handleDragEnter(event, ${paneId}, ${idx})"
+                ondragleave="handleDragLeave(event, ${paneId}, ${idx})"
+                ondrop="handleDrop(event, ${paneId}, ${idx})">
+              <td class="px-4 py-3 text-center">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500"
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); selectRow(${paneId}, ${idx}, {ctrlKey: true})">
+              </td>
+              <td class="px-4 py-3 flex items-center font-medium truncate max-w-xs md:max-w-md ${nameColorClass}">
+                ${icon} <span class="truncate">${entry.name}</span> ${isUnavailable ? ' <span class="text-[10px] bg-gray-800 text-gray-400 px-1 py-0.5 rounded ml-2">ロック中/制限</span>' : ''}
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-400 font-mono">${sizeText}</td>
+              <td class="px-4 py-3 text-xs text-gray-400 font-mono">${mtimeText}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+      }
+
+      container.innerHTML = html;
+
+      // 各種ボタンの活性状態を再評価
+      evaluateActionButtons();
+
+      // サムネイル画像の非同期ロードを開始
+      loadThumbnails(paneId);
+    }
+
+    // --- サムネイル画像の非同期ロード ---
+    async function loadThumbnails(paneId) {
+      const pane = state[`pane${paneId}`];
+      if (pane.viewMode !== 'grid') return;
+
+      const imgs = el[`listContainer${paneId}`].querySelectorAll('img[id^="thumb-"]');
+      
+      for (const img of imgs) {
+        const thumbId = img.id;
+        const filename = img.getAttribute('data-filename');
+        const placeholder = document.getElementById(`placeholder-${thumbId}`);
+
+        try {
+          const fileHandle = await pane.currentHandle.getFileHandle(filename);
+          const file = await fileHandle.getFile();
+          
+          const url = URL.createObjectURL(file);
+          pane.thumbnailUrls.push(url);
+
+          img.src = url;
+          img.classList.remove('hidden');
+          if (placeholder) placeholder.classList.add('hidden');
+        } catch (err) {
+          console.warn(`サムネイル生成に失敗しました: ${filename}`, err);
+          // 失敗した場合はプレースホルダーが表示されたままになります
+        }
+      }
+    }
+
+    // --- 行の選択ロジック (Shift / Ctrl対応) ---
+    function selectRow(paneId, index, event) {
+      const pane = state[`pane${paneId}`];
+      const entry = pane.entries[index];
+      const otherPaneId = paneId === 1 ? 2 : 1;
+      const otherPane = state[`pane${otherPaneId}`];
+
+      // 反対側の選択を全解除
+      otherPane.selectedEntries = [];
+      otherPane.lastSelectedIndex = null;
+
+      if (event && event.shiftKey && pane.lastSelectedIndex !== null) {
+        // Shiftキーによる範囲選択
+        const start = Math.min(pane.lastSelectedIndex, index);
+        const end = Math.max(pane.lastSelectedIndex, index);
+        
+        // 範囲内をすべて追加
+        for (let i = start; i <= end; i++) {
+          const targetEntry = pane.entries[i];
+          if (!pane.selectedEntries.some(e => e.name === targetEntry.name)) {
+            pane.selectedEntries.push(targetEntry);
+          }
+        }
+      } else if (event && (event.ctrlKey || event.metaKey)) {
+        // Ctrlキーによるトグル追加/解除
+        const existIdx = pane.selectedEntries.findIndex(e => e.name === entry.name);
+        if (existIdx >= 0) {
+          pane.selectedEntries.splice(existIdx, 1);
+        } else {
+          pane.selectedEntries.push(entry);
+        }
+        pane.lastSelectedIndex = index;
+      } else {
+        // 通常のクリック（単一選択トグル）
+        const isAlreadySelectedOnly = pane.selectedEntries.length === 1 && pane.selectedEntries[0].name === entry.name;
+        if (isAlreadySelectedOnly) {
+          pane.selectedEntries = [];
+          pane.lastSelectedIndex = null;
+        } else {
+          pane.selectedEntries = [entry];
+          pane.lastSelectedIndex = index;
+        }
+      }
+
+      renderPane(1);
+      renderPane(2);
+    }
+
+    // --- ダブルクリック（フォルダ侵入） ---
+    async function handleDoubleClick(paneId, index) {
+      const pane = state[`pane${paneId}`];
+      const entry = pane.entries[index];
+
+      if (entry.kind === 'directory') {
+        try {
+          // サブフォルダを開く
+          const subDirHandle = await pane.currentHandle.getDirectoryHandle(entry.name);
+          pane.history.push({ name: entry.name, handle: subDirHandle });
+          pane.currentHandle = subDirHandle;
+          pane.selectedEntries = [];
+          pane.lastSelectedIndex = null;
+          writeLog(`[ペイン${paneId}] フォルダへ入りました: ${entry.name}`, 'info');
+          renderPane(paneId);
+        } catch (err) {
+          writeLog(`フォルダの展開に失敗しました: ${err.message}`, 'error');
+          showModal({
+            title: 'フォルダの展開エラー',
+            message: 'このフォルダへのアクセスが拒否されたか、開けません。',
+            type: 'error',
+            actions: [{ label: '閉じる' }]
+          });
+        }
+      }
+    }
+
+    // --- 上の階層に戻る ---
+    function navigateUp(paneId) {
+      const pane = state[`pane${paneId}`];
+      if (pane.history.length > 1) {
+        pane.history.pop(); // 現在のディレクトリを取り除く
+        pane.currentHandle = pane.history[pane.history.length - 1].handle;
+        pane.selectedEntries = [];
+        pane.lastSelectedIndex = null;
+        writeLog(`[ペイン${paneId}] 親フォルダへ移動しました`, 'info');
+        renderPane(paneId);
+      }
+    }
+
+    // --- 各種ボタン活性状態の変更（複数選択対応） ---
+    function evaluateActionButtons() {
+      const sel1 = state.pane1.selectedEntries;
+      const sel2 = state.pane2.selectedEntries;
+      const hasDir1 = !!state.pane1.currentHandle;
+      const hasDir2 = !!state.pane2.currentHandle;
+
+      // プレビューボタンは「選択がちょうど1つ」かつ「ファイル」のとき有効
+      const canPreview1 = sel1.length === 1 && sel1[0].kind === 'file' && sel1[0].mtime !== 'アクセス不可';
+      const canPreview2 = sel2.length === 1 && sel2[0].kind === 'file' && sel2[0].mtime !== 'アクセス不可';
+
+      if (canPreview1) {
+        el.btnPreview1.removeAttribute('disabled');
+        el.btnPreview1.classList.remove('disabled-btn');
+      } else {
+        el.btnPreview1.setAttribute('disabled', 'true');
+        el.btnPreview1.classList.add('disabled-btn');
+      }
+
+      if (canPreview2) {
+        el.btnPreview2.removeAttribute('disabled');
+        el.btnPreview2.classList.remove('disabled-btn');
+      } else {
+        el.btnPreview2.setAttribute('disabled', 'true');
+        el.btnPreview2.classList.add('disabled-btn');
+      }
+
+      // コピー・移動元ファイルにアクセス制限（アクセス不可）のものがあるか
+      const hasInvalid1 = sel1.some(e => e.mtime === 'アクセス不可');
+      const hasInvalid2 = sel2.some(e => e.mtime === 'アクセス不可');
+
+      // 左から右へのコピー / 移動ボタン
+      if (sel1.length > 0 && hasDir2 && !hasInvalid1) {
+        el.btnCopyToRight.removeAttribute('disabled');
+        el.btnCopyToRight.classList.remove('disabled-btn');
+        el.btnMoveToRight.removeAttribute('disabled');
+        el.btnMoveToRight.classList.remove('disabled-btn');
+      } else {
+        el.btnCopyToRight.setAttribute('disabled', 'true');
+        el.btnCopyToRight.classList.add('disabled-btn');
+        el.btnMoveToRight.setAttribute('disabled', 'true');
+        el.btnMoveToRight.classList.add('disabled-btn');
+      }
+
+      // 右から左へのコピー / 移動ボタン
+      if (sel2.length > 0 && hasDir1 && !hasInvalid2) {
+        el.btnCopyToLeft.removeAttribute('disabled');
+        el.btnCopyToLeft.classList.remove('disabled-btn');
+        el.btnMoveToLeft.removeAttribute('disabled');
+        el.btnMoveToLeft.classList.remove('disabled-btn');
+      } else {
+        el.btnCopyToLeft.setAttribute('disabled', 'true');
+        el.btnCopyToLeft.classList.add('disabled-btn');
+        el.btnMoveToLeft.setAttribute('disabled', 'true');
+        el.btnMoveToLeft.classList.add('disabled-btn');
+      }
+    }
+
+    // --- フォルダ選択アクション ---
+    async function handleOpenDirectory(paneId) {
+      if (!isSupported) {
+        showModal({
+          title: '非対応ブラウザ',
+          message: 'お使いのブラウザではこの機能が使えません。Google Chromeなどのモダンブラウザをお使いください。',
+          type: 'error',
+          actions: [{ label: '閉じる' }]
+        });
+        return;
+      }
+
+      try {
+        const handle = await window.showDirectoryPicker({
+          mode: 'readwrite'
+        });
+
+        state[`pane${paneId}`].rootHandle = handle;
+        state[`pane${paneId}`].currentHandle = handle;
+        state[`pane${paneId}`].history = [{ name: handle.name, handle: handle }];
+        state[`pane${paneId}`].selectedEntries = [];
+        state[`pane${paneId}`].lastSelectedIndex = null;
+
+        writeLog(`[ペイン${paneId}] フォルダを選択しました: ${handle.name}`, 'success');
+        await renderPane(paneId);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          writeLog(`フォルダ選択エラー: ${err.message}`, 'error');
+
+          // ブラウザのセキュリティガードレールにかかった場合の警告文
+          let errorTitle = 'セキュリティ制限 / アクセス拒否';
+          let errorMsg = `フォルダの選択に失敗しました: ${err.message}`;
+
+          if (err.name === 'SecurityError' || err.message.includes('sensitive') || err.message.includes('safe') || err.message.includes('permission')) {
+            errorTitle = '🔒 ブラウザの保護システムによる制限';
+            errorMsg = `「ダウンロード」や「デスクトップ」などの主要な場所そのものを直接開くことは、ブラウザ(Chrome/Edge)のセキュリティ仕様により禁止されています。\n\n【解決するには？】\n1. 該当フォルダの中に、新しいフォルダ（例: 「整理用」「移動フォルダ」など）を新しく作成します。\n2. 「フォルダを開く」ボタンを押し、作成した新しいフォルダのみを選択してください。これで正常にファイルを操作できます！`;
+          }
+
+          showModal({
+            title: errorTitle,
+            message: errorMsg,
+            type: 'warn',
+            actions: [
+              {
+                label: '別フォルダを再選択',
+                style: 'bg-blue-600 hover:bg-blue-500 text-white',
+                onClick: () => handleOpenDirectory(paneId)
+              },
+              {
+                label: '閉じる',
+                style: 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+              }
+            ]
+          });
+        }
+      }
+    }
+
+    // --- ディレクトリ内にあるすべてのファイルを再帰コピー ---
+    async function copyDirectoryRecursive(srcDirHandle, destDirHandle, folderName, progressCallback) {
+      // コピー先に新規フォルダを作成
+      const newDestDirHandle = await destDirHandle.getDirectoryHandle(folderName, { create: true });
+      
+      for await (const entry of srcDirHandle.values()) {
+        if (progressCallback) progressCallback(entry.name);
+        
+        if (entry.kind === 'file') {
+          try {
+            const srcFileHandle = await srcDirHandle.getFileHandle(entry.name);
+            const file = await srcFileHandle.getFile();
+            const destFileHandle = await newDestDirHandle.getFileHandle(entry.name, { create: true });
+            const writable = await destFileHandle.createWritable();
+            await writable.write(file);
+            await writable.close();
+          } catch (err) {
+            console.warn(`再帰コピー中にスキップされたファイル: ${entry.name}`, err);
+          }
+        } else if (entry.kind === 'directory') {
+          try {
+            const srcSubDirHandle = await srcDirHandle.getDirectoryHandle(entry.name);
+            await copyDirectoryRecursive(srcSubDirHandle, newDestDirHandle, entry.name, progressCallback);
+          } catch (err) {
+            console.warn(`再帰コピー中にスキップされたフォルダ: ${entry.name}`, err);
+          }
+        }
+      }
+    }
+
+    // --- コピー・移動処理のアクション起動口 (複数ファイル対応) ---
+    async function executeCopy(srcPaneId, destPaneId, isMove = false) {
+      const srcPane = state[`pane${srcPaneId}`];
+      const destPane = state[`pane${destPaneId}`];
+
+      const names = srcPane.selectedEntries.map(e => e.name);
+      if (names.length === 0) return;
+
+      // 重複（同名）チェック
+      let hasDuplicate = false;
+      for (const entry of srcPane.selectedEntries) {
+        try {
+          if (entry.kind === 'file') {
+            await destPane.currentHandle.getFileHandle(entry.name);
+          } else {
+            await destPane.currentHandle.getDirectoryHandle(entry.name);
+          }
+          hasDuplicate = true;
+          break;
+        } catch (e) {}
+      }
+
+      if (hasDuplicate) {
+        showModal({
+          title: '上書き確認',
+          message: `コピー先に同名のファイル/フォルダが既に存在します。上書きして続行しますか？`,
+          type: 'warn',
+          actions: [
+            {
+              label: '上書きして続行',
+              style: 'bg-amber-600 hover:bg-amber-500 text-white',
+              onClick: () => executeBulkTransfer(srcPaneId, destPaneId, names, destPane.currentHandle, isMove)
+            },
+            {
+              label: 'キャンセル',
+              style: 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+            }
+          ]
+        });
+      } else {
+        await executeBulkTransfer(srcPaneId, destPaneId, names, destPane.currentHandle, isMove);
+      }
+    }
+
+    // --- 複数ファイル一括転送の実処理 ---
+    async function executeBulkTransfer(srcPaneId, destPaneId, entryNames, destDirHandle, isMove = false) {
+      const srcPane = state[`pane${srcPaneId}`];
+      const srcDir = srcPane.currentHandle;
+      const opName = isMove ? '移動' : 'コピー';
+      const count = entryNames.length;
+
+      showModal({
+        title: `${opName}処理中... (0 / ${count})`,
+        message: '処理の準備をしています...',
+        type: 'loading',
+        showProgress: true,
+        actions: [] // キャンセルさせない
+      });
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < count; i++) {
+        const name = entryNames[i];
+        const percent = Math.floor((i / count) * 100);
+        updateModalProgress(percent, `[${i + 1}/${count}] ${name} を${opName}中...`);
+
+        const entry = srcPane.entries.find(e => e.name === name);
+        if (!entry) {
+          failCount++;
+          writeLog(`エラー: エントリが見つかりません: ${name}`, 'error');
+          continue;
+        }
+
+        if (entry.mtime === 'アクセス不可') {
+          failCount++;
+          writeLog(`制限あり: ${name} はアクセスできません。`, 'warn');
+          continue;
+        }
+
+        try {
+          if (entry.kind === 'file') {
+            const srcFileHandle = await srcDir.getFileHandle(entry.name);
+            const file = await srcFileHandle.getFile();
+            const destFileHandle = await destDirHandle.getFileHandle(entry.name, { create: true });
+            const writable = await destFileHandle.createWritable();
+            await writable.write(file);
+            await writable.close();
+          } else {
+            const srcSubDirHandle = await srcDir.getDirectoryHandle(entry.name);
+            await copyDirectoryRecursive(srcSubDirHandle, destDirHandle, entry.name, null);
+          }
+
+          if (isMove) {
+            await srcDir.removeEntry(entry.name, { recursive: true });
+          }
+          successCount++;
+          writeLog(`${name} を${opName}しました。`, 'success');
+        } catch (err) {
+          console.error(err);
+          failCount++;
+          writeLog(`${name} の${opName}エラー: ${err.message}`, 'error');
+        }
+      }
+
+      updateModalProgress(100, `完了しました。`);
+
+      showModal({
+        title: `${opName}完了`,
+        message: `${opName}処理が完了しました。\n成功: ${successCount} 件\n失敗: ${failCount} 件`,
+        type: failCount > 0 ? 'warn' : 'success',
+        actions: [{ label: '閉じる' }]
+      });
+
+      // 状態クリアと再描画
+      srcPane.selectedEntries = [];
+      srcPane.lastSelectedIndex = null;
+      await renderPane(1);
+      await renderPane(2);
+    }
+
+    // --- ドラッグ＆ドロップ処理のイベントハンドラ ---
+    function handleDragStart(e, paneId, index) {
+      const pane = state[`pane${paneId}`];
+      const entry = pane.entries[index];
+
+      // もしドラッグされたアイテムが現在選択中でなければ、それを単一選択にする
+      if (!pane.selectedEntries.some(item => item.name === entry.name)) {
+        pane.selectedEntries = [entry];
+        pane.lastSelectedIndex = index;
+        renderPane(paneId);
+      }
+
+      e.dataTransfer.setData('srcPaneId', paneId.toString());
+      const names = pane.selectedEntries.map(item => item.name);
+      e.dataTransfer.setData('entryNames', JSON.stringify(names));
+      e.dataTransfer.effectAllowed = 'copyMove';
+      
+      // ドラッグ中の視覚効果（透明度）
+      e.currentTarget.style.opacity = '0.4';
+    }
+
+    function handleDragEnd(e) {
+      e.currentTarget.style.opacity = '1';
+      // ドラッグ用のスタイルをすべて除去
+      document.querySelectorAll('.drag-over-dir').forEach(el => {
+        el.classList.remove('drag-over-dir', 'bg-blue-600/10');
+      });
+    }
+
+    function handleDragEnter(e, paneId, index) {
+      e.preventDefault();
+      const pane = state[`pane${paneId}`];
+      const entry = pane.entries[index];
+      
+      // ディレクトリの場合のみ、その上にドロップ可能なスタイルを適用
+      if (entry.kind === 'directory') {
+        e.currentTarget.classList.add('drag-over-dir', 'bg-blue-600/10');
+      }
+    }
+
+    function handleDragLeave(e, paneId, index) {
+      e.currentTarget.classList.remove('drag-over-dir', 'bg-blue-600/10');
+    }
+
+    async function handleDrop(e, destPaneId, index) {
+      e.preventDefault();
+      e.stopPropagation(); // コンテナへの伝播を防ぐ
+      e.currentTarget.classList.remove('drag-over-dir', 'bg-blue-600/10');
+
+      const srcPaneId = parseInt(e.dataTransfer.getData('srcPaneId'));
+      if (srcPaneId === destPaneId) return; // 同じペイン内は無視
+
+      const entryNames = JSON.parse(e.dataTransfer.getData('entryNames'));
+      const destPane = state[`pane${destPaneId}`];
+      const targetEntry = destPane.entries[index];
+
+      let destDirHandle = destPane.currentHandle;
+      let targetFolderName = null;
+
+      if (targetEntry && targetEntry.kind === 'directory') {
+        try {
+          destDirHandle = await destPane.currentHandle.getDirectoryHandle(targetEntry.name);
+          targetFolderName = targetEntry.name;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      promptDragAction(srcPaneId, destPaneId, entryNames, destDirHandle, targetFolderName);
+    }
+
+    function handleContainerDrop(e, destPaneId) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('bg-gray-800/10');
+
+      const srcPaneId = parseInt(e.dataTransfer.getData('srcPaneId'));
+      if (srcPaneId === destPaneId) return;
+
+      const entryNames = JSON.parse(e.dataTransfer.getData('entryNames'));
+      const destPane = state[`pane${destPaneId}`];
+
+      promptDragAction(srcPaneId, destPaneId, entryNames, destPane.currentHandle, null);
+    }
+
+    function promptDragAction(srcPaneId, destPaneId, entryNames, destDirHandle, destSubDirName) {
+      const count = entryNames.length;
+      const destName = destSubDirName ? `フォルダ「${destSubDirName}」の中` : '現在のフォルダ';
+      
+      const fileListText = entryNames.slice(0, 3).join(', ') + (count > 3 ? ` など他 ${count - 3} 件` : '');
+      const message = `${count} 個の項目（${fileListText}）を ${destName} へどのように転送しますか？`;
+
+      showModal({
+        title: 'ファイルをドロップしました',
+        message: message,
+        type: 'warn',
+        actions: [
+          {
+            label: 'コピーする',
+            style: 'bg-emerald-600 hover:bg-emerald-500 text-white',
+            onClick: () => executeBulkTransfer(srcPaneId, destPaneId, entryNames, destDirHandle, false)
+          },
+          {
+            label: '移動する',
+            style: 'bg-indigo-600 hover:bg-indigo-500 text-white',
+            onClick: () => executeBulkTransfer(srcPaneId, destPaneId, entryNames, destDirHandle, true)
+          },
+          {
+            label: 'キャンセル',
+            style: 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+          }
+        ]
+      });
+    }
+
+    // --- ファイルプレビュー機能の実装 ---
+    async function showFilePreview(paneId) {
+      const pane = state[`pane${paneId}`];
+      const entry = pane.selectedEntries[0];
+      if (!entry || entry.kind !== 'file') return;
+
+      try {
+        cleanupPreviewUrl();
+
+        const fileHandle = await pane.currentHandle.getFileHandle(entry.name);
+        const file = await fileHandle.getFile();
+
+        el.previewFileName.textContent = file.name;
+        el.previewFileSize.textContent = formatBytes(file.size);
+        el.previewBody.innerHTML = '';
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        
+        const isImage = file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+        const isText = file.type.startsWith('text/') || ['txt', 'js', 'json', 'css', 'html', 'md', 'xml', 'yaml', 'yml', 'ini', 'csv'].includes(ext);
+
+        if (isImage) {
+          el.previewTypeIcon.className = 'fa-regular fa-image text-emerald-400 text-lg';
+          el.previewMeta.textContent = `画像プレビュー (${file.type || 'イメージ'})`;
+
+          const img = document.createElement('img');
+          img.className = 'max-h-full max-w-full object-contain drop-shadow-xl border border-gray-800 rounded';
+          
+          state.currentPreviewUrl = URL.createObjectURL(file);
+          img.src = state.currentPreviewUrl;
+          el.previewBody.appendChild(img);
+        } else if (isText) {
+          el.previewTypeIcon.className = 'fa-regular fa-file-code text-blue-400 text-lg';
+          el.previewMeta.textContent = 'テキストプレビュー';
+
+          let textContent = '';
+          const maxTextSize = 100 * 1024;
+          
+          if (file.size > maxTextSize) {
+            const blob = file.slice(0, maxTextSize);
+            textContent = await blob.text() + '\n\n...[ファイルサイズが大きいため、プレビュー用に一部のみ読み込みました]';
+          } else {
+            textContent = await file.text();
+          }
+
+          const pre = document.createElement('pre');
+          pre.className = 'font-mono text-xs text-gray-300 w-full h-full text-left whitespace-pre-wrap overflow-auto p-4 bg-gray-950 rounded border border-gray-900';
+          pre.textContent = textContent;
+          el.previewBody.appendChild(pre);
+        } else {
+          el.previewTypeIcon.className = 'fa-regular fa-file-excel text-rose-400 text-lg';
+          el.previewMeta.textContent = '未対応フォーマット';
+
+          const container = document.createElement('div');
+          container.className = 'text-center p-6 text-gray-400';
+          container.innerHTML = `
+            <i class="fa-regular fa-circle-question text-5xl text-gray-600 mb-3 block"></i>
+            <p class="text-sm font-medium text-gray-300 mb-1">このファイルのプレビューには対応していません。</p>
+            <p class="text-xs text-gray-500">拡張子: ${ext.toUpperCase()}</p>
+          `;
+          el.previewBody.appendChild(container);
+        }
+
+        el.previewModal.classList.remove('hidden');
+
+      } catch (err) {
+        console.error(err);
+        writeLog(`プレビューエラー: ${err.message}`, 'error');
+        showModal({
+          title: 'プレビューエラー',
+          message: `ファイルの読み込みに失敗しました。\n詳細: ${err.message}`,
+          type: 'error',
+          actions: [{ label: '閉じる' }]
+        });
+      }
+    }
+
+    // --- メモリ解放用のObjectURL破棄処理 ---
+    function cleanupPreviewUrl() {
+      if (state.currentPreviewUrl) {
+        URL.revokeObjectURL(state.currentPreviewUrl);
+        state.currentPreviewUrl = null;
+      }
+    }
+
+    // --- イベントリスナーの設定 ---
+    
+    // フォルダを開く
+    el.openDir1.onclick = () => handleOpenDirectory(1);
+    el.openDir2.onclick = () => handleOpenDirectory(2);
+
+    // 上の階層へ
+    el.upDir1.onclick = () => navigateUp(1);
+    el.upDir2.onclick = () => navigateUp(2);
+
+    // 表示モードの切り替え
+    el.btnViewList1.onclick = () => switchViewMode(1, 'list');
+    el.btnViewGrid1.onclick = () => switchViewMode(1, 'grid');
+    el.btnViewList2.onclick = () => switchViewMode(2, 'list');
+    el.btnViewGrid2.onclick = () => switchViewMode(2, 'grid');
+
+    // プレビュー
+    el.btnPreview1.onclick = () => showFilePreview(1);
+    el.btnPreview2.onclick = () => showFilePreview(2);
+
+    // コピー・移動アクション
+    el.btnCopyToRight.onclick = () => executeCopy(1, 2, false);
+    el.btnMoveToRight.onclick = () => executeCopy(1, 2, true);
+    el.btnCopyToLeft.onclick = () => executeCopy(2, 1, false);
+    el.btnMoveToLeft.onclick = () => executeCopy(2, 1, true);
+
+    // プレビューモーダルを閉じる
+    el.btnClosePreview.onclick = () => {
+      el.previewModal.classList.add('hidden');
+      cleanupPreviewUrl();
+    };
+
+    // プレビューモーダルの枠外クリックで閉じる
+    el.previewModal.onclick = (e) => {
+      if (e.target === el.previewModal) {
+        el.previewModal.classList.add('hidden');
+        cleanupPreviewUrl();
+      }
+    };
+  </script>
+</body>
+</html>
