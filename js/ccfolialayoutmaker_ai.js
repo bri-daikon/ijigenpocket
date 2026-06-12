@@ -844,6 +844,12 @@ function updateCanvasScale() {
     canvasArea.style.setProperty('--canvas-scale', scale);
   }
   
+  if (zoomScale === null) {
+    wrapper.style.overflow = 'hidden';
+  } else {
+    wrapper.style.overflow = 'auto';
+  }
+  
   const scaleDisplay = document.getElementById('scale-display');
   if (scaleDisplay) {
     scaleDisplay.innerText = zoomScale === null
@@ -1699,22 +1705,14 @@ const aiGenerateBtn = document.getElementById('ai-generate-btn');
 const aiThemeSelect = document.getElementById('ai-theme-select');
 const aiPlayersSelect = document.getElementById('ai-players-select');
 const aiLayoutSelect = document.getElementById('ai-layout-select');
-const aiMenuStyleSelect = document.getElementById('ai-menu-style-select');
-const aiActionStyleSelect = document.getElementById('ai-action-style-select');
 const aiChatBox = document.getElementById('ai-chat-box');
 const aiPromptInput = document.getElementById('ai-prompt-input');
 const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
 const aiGenPartsToggle = document.getElementById('ai-gen-parts-toggle');
 const aiBgOnlyToggle = document.getElementById('ai-bg-only-toggle');
 const aiApiKeyInput = document.getElementById('ai-api-key');
-
-if (aiApiKeyInput) {
-  const savedApiKey = localStorage.getItem('stampToolApiKey');
-  if (savedApiKey) aiApiKeyInput.value = savedApiKey;
-  aiApiKeyInput.addEventListener('input', (e) => {
-    localStorage.setItem('stampToolApiKey', e.target.value.trim());
-  });
-}
+const aiMenuStyleSelect = document.getElementById('ai-menu-style-select');
+const aiActionStyleSelect = document.getElementById('ai-action-style-select');
 
 const menuTranslations = {
   en: { houserule: "HouseRule", battle: "Battle", insanity: "Insanity", growth: "Growth", other: "Other" },
@@ -1726,6 +1724,14 @@ const actionTranslations = {
   en: ["Spot hidden", "Listen", "Library use", "i-dea", "SANC", "Solt"],
   icon: ["", "", "", "", "", ""]
 };
+
+if (aiApiKeyInput) {
+  const savedApiKey = localStorage.getItem('stampToolApiKey');
+  if (savedApiKey) aiApiKeyInput.value = savedApiKey;
+  aiApiKeyInput.addEventListener('input', (e) => {
+    localStorage.setItem('stampToolApiKey', e.target.value.trim());
+  });
+}
 
 const actionIconsData = [
   {
@@ -1851,9 +1857,57 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
 - アクションアイコン (action) に配置する6つの便利ボタン項目名は、必ず「${actionStyleVal === 'ja' ? '日本語（目星、聞き耳、図書館、アイデア、SANc、塩）' : actionStyleVal === 'en' ? '英語（Spot hidden、Listen、Library use、i-dea、SANC、Solt）' : 'テキストなし（アイコンマークのみで文字は一切描画しない）'}」で統一して配置してください。
 
 【レイアウト配置の設計指針】
-キャンバス全体の解像度は 1280x720 ピクセルです。
+キャンバス全体の解像度は ${canvasWidth}x${canvasHeight} ピクセルです。
 
-【7つの代表的レイアウトパターンと座標ガイド】
+${canvasWidth < canvasHeight ? `
+【7つの代表的レイアウトパターンと座標ガイド（縦長キャンバス 720x1280 時）】
+（各パーツは重なり合わないように配置すること。X軸の最大は720、Y軸の最大は1280です）
+
+- パターン1 (メイン左・メニュー左・PL枠右・アクション右):
+  - メイン (window): X: 30, Y: 110, W: 480, H: 270
+  - メニュー (menu): X: 30, Y: 50, 向き: "horizontal"
+  - PL枠 (pl_panels): X: 530, Y: 110, W: 160, H: 240 (右側に縦並びで配置)
+  - アクション (action): X: 30, Y: 900
+- パターン2 (メイン左下・メニュー左上・PL枠右上・アクション中右):
+  - メイン (window): X: 30, Y: 430, W: 480, H: 270
+  - メニュー (menu): X: 30, Y: 50, 向き: "horizontal"
+  - PL枠 (pl_panels): X: 530, Y: 110, W: 160, H: 240 (右側に縦並びで配置)
+  - アクション (action): X: 30, Y: 900
+- パターン3 (メイン右上・立ち絵下・アクション右下縦):
+  - メイン (window): X: 40, Y: 110, W: 640, H: 360
+  - メニュー (menu): X: 40, Y: 50, 向き: "horizontal"
+  - PL枠 (pl_panels): X: 40, Y: 530, W: 140, H: 240 (下部に横並びで配置)
+  - アクション (action): X: 40, Y: 900, 向き: "horizontal"
+- パターン4 (PL枠上・メイン右下・メニュー左・アクション下):
+  - PL枠 (pl_panels): X: 30, Y: 110, W: 160, H: 240 (左側に縦並びで配置)
+  - メイン (window): X: 210, Y: 110, W: 480, H: 270
+  - メニュー (menu): X: 210, Y: 50, 向き: "horizontal"
+  - アクション (action): X: 210, Y: 900
+- パターン5 (メニュー最上部・メイン中央・PL枠下・アクション最下部):
+  - メニュー (menu): X: 40, Y: 50, 向き: "horizontal"
+  - メイン (window): X: 40, Y: 110, W: 640, H: 360
+  - PL枠 (pl_panels): X: 40, Y: 530, W: 140, H: 240 (下部に横並びで配置)
+  - アクション (action): X: 40, Y: 900
+- パターン6 (メイン最上部・メニュー下・アクション下・PL枠最下部):
+  - メイン (window): X: 40, Y: 110, W: 640, H: 360
+  - メニュー (menu): X: 40, Y: 50, 向き: "horizontal"
+  - アクション (action): X: 40, Y: 500
+  - PL枠 (pl_panels): X: 40, Y: 900, W: 140, H: 200 (最下部に横並びで配置)
+- パターン7 (メニュー最上部・PL枠上・アクション中・メイン最下部):
+  - メニュー (menu): X: 40, Y: 50, 向き: "horizontal"
+  - PL枠 (pl_panels): X: 40, Y: 110, W: 140, H: 200 (上部に横並びで配置)
+  - アクション (action): X: 40, Y: 350
+  - メイン (window): X: 40, Y: 470, W: 640, H: 360
+
+【各コンテナの標準サイズ（デフォルト値）】
+特定のパターン指定がない場合、レイアウトタイプ（layoutType）に基づき以下を設計：
+- キャンバスサイズ: 720 x 1280
+- メイン (window): 横 640 x 縦 360 (X: 40, Y: 110)
+- PLパネル (pl_panels): 横 140, 縦 240 (Y: 530 に横並び間隔)
+- メニュー (menu): 5つのボタン。X: 40, Y: 50（横向き）
+- アクションアイコン (action): 6つのボタン。X: 40, Y: 900
+` : `
+【7つの代表的レイアウトパターンと座標ガイド（横長キャンバス 1280x720 時）】
 CEOが以下のパターン（1〜7）の指示、あるいはそれに類似する配置を要望した場合（例：「PLパネルは右、メイン枠は最上部」など）、以下の座標設計ガイドに従って各パーツをレイアウトしてください。
 （各パーツは重なり合わないように配置すること）
 
@@ -1900,6 +1954,7 @@ CEOが以下のパターン（1〜7）の指示、あるいはそれに類似す
 - PLパネル (pl_panels): 横 160, 縦 170 (右縦並びなら X: 1050, Y: 40〜680間隔、下横並びなら Y: 510, X: 280〜1000間隔)
 - メニュー (menu): 5つのボタン。右縦並びなら X: 50, Y: 50（縦向き）、下横並びなら X: 50, Y: 50（横向き）
 - アクションアイコン (action): 6つのボタン（横 75 x 縦 75）。右縦並びなら X: 50, Y: 550（横向き）、下横並びなら X: 50, Y: 350付近（縦2列など）
+    `}
 
 【出力指示】
 1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーやレイアウトにするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
@@ -2050,14 +2105,14 @@ async function callImagenApiForBackground(apiKey, prompt, aspectRatio = '16:9') 
 // テーマ別のSVG生成ロジック
 const themeSvgGenerators = {
   cyberpunk: {
-    bg: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    bg: (w = 1280, h = 720) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect width="100%" height="100%" fill="#07080d"/>
   <rect width="100%" height="100%" fill="none" stroke="#00f0ff" stroke-width="0.5" opacity="0.1"/>
-  <path d="M30,30 L200,30 L220,50 L1220,50 L1250,80 L1250,690" fill="none" stroke="#00f0ff" stroke-width="1.5" opacity="0.4"/>
-  <path d="M1250,690 L1080,690 L1060,670 L60,670 L30,640 L30,30" fill="none" stroke="#ff007f" stroke-width="1.5" opacity="0.4"/>
+  <path d="M30,30 L200,30 L220,50 L${w - 60},50 L${w - 30},80 L${w - 30},${h - 30}" fill="none" stroke="#00f0ff" stroke-width="1.5" opacity="0.4"/>
+  <path d="M${w - 30},${h - 30} L${w - 200},${h - 30} L${w - 220},${h - 50} L60,${h - 50} L30,${h - 80} L30,30" fill="none" stroke="#ff007f" stroke-width="1.5" opacity="0.4"/>
   <circle cx="210" cy="40" r="3" fill="#00f0ff" opacity="0.6"/>
-  <circle cx="1070" cy="680" r="3" fill="#ff007f" opacity="0.6"/>
+  <circle cx="${w - 210}" cy="${h - 40}" r="3" fill="#ff007f" opacity="0.6"/>
 </svg>`,
     window: () => `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 720 405">
@@ -2102,14 +2157,14 @@ const themeSvgGenerators = {
 </svg>`
   },
   horror: {
-    bg: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    bg: (w = 1280, h = 720) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect width="100%" height="100%" fill="#050000"/>
-  <rect x="20" y="20" width="1240" height="680" fill="none" stroke="#8a0c0c" stroke-width="2"/>
+  <rect x="20" y="20" width="${w - 40}" height="${h - 40}" fill="none" stroke="#8a0c0c" stroke-width="2"/>
   <path d="M20,50 L20,20 L50,20" fill="none" stroke="#8a0c0c" stroke-width="2"/>
-  <path d="M1260,50 L1260,20 L1230,20" fill="none" stroke="#8a0c0c" stroke-width="2"/>
-  <path d="M20,670 L20,700 L50,700" fill="none" stroke="#8a0c0c" stroke-width="2"/>
-  <path d="M1260,670 L1260,700 L1230,700" fill="none" stroke="#8a0c0c" stroke-width="2"/>
+  <path d="M${w - 20},50 L${w - 20},20 L${w - 50},20" fill="none" stroke="#8a0c0c" stroke-width="2"/>
+  <path d="M20,${h - 50} L20,${h - 20} L50,${h - 20}" fill="none" stroke="#8a0c0c" stroke-width="2"/>
+  <path d="M${w - 20},${h - 50} L${w - 20},${h - 20} L${w - 50},${h - 20}" fill="none" stroke="#8a0c0c" stroke-width="2"/>
 </svg>`,
     window: () => `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 720 405">
@@ -2144,12 +2199,14 @@ const themeSvgGenerators = {
 </svg>`
   },
   classic: {
-    bg: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    bg: (w = 1280, h = 720) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect width="100%" height="100%" fill="#1b241b"/>
-  <rect x="30" y="30" width="1220" height="660" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
+  <rect x="30" y="30" width="${w - 60}" height="${h - 60}" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
   <rect x="25" y="25" width="16" height="16" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
-  <rect x="1239" y="25" width="16" height="16" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
+  <rect x="${w - 41}" y="25" width="16" height="16" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
+  <rect x="25" y="${h - 41}" width="16" height="16" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
+  <rect x="${w - 41}" y="${h - 41}" width="16" height="16" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.6"/>
 </svg>`,
     window: () => `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 720 405">
@@ -2178,10 +2235,10 @@ const themeSvgGenerators = {
 </svg>`
   },
   fantasy: {
-    bg: () => `
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    bg: (w = 1280, h = 720) => `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <rect width="100%" height="100%" fill="#140827"/>
-  <rect x="25" y="25" width="1230" height="670" fill="none" stroke="#7b68ee" stroke-width="1.5" opacity="0.4" rx="8"/>
+  <rect x="25" y="25" width="${w - 50}" height="${h - 50}" fill="none" stroke="#7b68ee" stroke-width="1.5" opacity="0.4" rx="8"/>
 </svg>`,
     pl: (design, w = 180, h = 200) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
@@ -2205,8 +2262,16 @@ const themeSvgGenerators = {
 </svg>`
   },
   dynamic: {
-    bg: (d) => `
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    bg: (d, w = 1280, h = 720) => {
+      let paths = '';
+      for (let y = 80; y < h; y += 80) {
+        paths += `M0,${y} L${w},${y} `;
+      }
+      for (let x = 80; x < w; x += 120) {
+        paths += `M${x},0 L${x},${h} `;
+      }
+      return `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <defs>
     <linearGradient id="bg-grad-dyn" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="${d.bg_gradient_start || '#07080d'}"/>
@@ -2220,14 +2285,14 @@ const themeSvgGenerators = {
   <rect width="100%" height="100%" fill="url(#bg-grad-dyn)"/>
   <rect width="100%" height="100%" fill="url(#glow-accent)"/>
   <g stroke="${d.border_color || '#00f0ff'}" stroke-width="0.5" opacity="0.1">
-    <path d="M0,40 L1280,40 M0,120 L1280,120 M0,200 L1280,200 M0,280 L1280,280 M0,360 L1280,360 M0,440 L1280,440 M0,520 L1280,520 M0,600 L1280,600 M0,680 L1280,680"/>
-    <path d="M80,0 L80,720 M200,0 L200,720 M320,0 L320,720 M440,0 L440,720 M560,0 L560,720 M680,0 L680,720 M800,0 L800,720 M920,0 L920,720 M1040,0 L1040,720 M1160,0 L1160,720"/>
+    <path d="${paths}"/>
   </g>
-  <path d="M30,30 L200,30 L220,50 L1220,50 L1250,80 L1250,690" fill="none" stroke="${d.border_color || '#00f0ff'}" stroke-width="1.5" opacity="0.4"/>
-  <path d="M1250,690 L1080,690 L1060,670 L60,670 L30,640 L30,30" fill="none" stroke="${d.accent_color || '#ff007f'}" stroke-width="1.5" opacity="0.4"/>
-  <circle cx="210" cy="40" r="3" fill="${d.accent_color || '#00f0ff'}" opacity="0.6"/>
-  <circle cx="1070" cy="680" r="3" fill="${d.accent_color || '#ff007f'}" opacity="0.6"/>
-</svg>`,
+  <path d="M30,30 L200,30 L220,50 L${w - 60},50 L${w - 30},80 L${w - 30},${h - 30}" fill="none" stroke="${d.border_color || '#00f0ff'}" stroke-width="1.5" opacity="0.4"/>
+  <path d="M${w - 30},${h - 30} L${w - 200},${h - 30} L${w - 220},${h - 50} L60,${h - 50} L30,${h - 80} L30,30" fill="none" stroke="${d.accent_color || '#ff007f'}" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="210" cy="40" r="3" fill="${d.border_color || '#00f0ff'}" opacity="0.6"/>
+  <circle cx="${w - 210}" cy="${h - 40}" r="3" fill="${d.accent_color || '#ff007f'}" opacity="0.6"/>
+</svg>`;
+    },
     window: (d) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 720 405">
   <rect x="5" y="5" width="710" height="395" fill="${d.panel_bg || '#06070c'}" fill-opacity="0.5" stroke="${d.border_color || '#00f0ff'}" stroke-width="2.5" rx="6"/>
@@ -2556,6 +2621,8 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   panels = [];
   selectedPanelIds = [];
 
+  const isPortrait = canvasWidth < canvasHeight;
+
   if (bgImageUrl) {
     frame = {
       url: bgImageUrl,
@@ -2566,7 +2633,7 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       originalRatio: canvasWidth / canvasHeight
     };
   } else {
-    const bgSvg = gen.bg();
+    const bgSvg = gen.bg(canvasWidth, canvasHeight);
     frame = {
       url: createSvgUrl(bgSvg),
       x: 0,
@@ -2594,23 +2661,35 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   let windowX = 50;
   let windowY = 110;
 
-  if (layoutType === 'bottom-horizontal') {
-    windowX = 280;
-    windowY = 50;
-  } else if (layoutType === 'pattern1') {
-    windowX = 50; windowY = 50; windowW = 500; windowH = 300;
-  } else if (layoutType === 'pattern2') {
-    windowX = 50; windowY = 370; windowW = 500; windowH = 300;
-  } else if (layoutType === 'pattern3') {
-    windowX = 350; windowY = 80; windowW = 700; windowH = 320;
-  } else if (layoutType === 'pattern4') {
-    windowX = 720; windowY = 50; windowW = 500; windowH = 320;
-  } else if (layoutType === 'pattern5') {
-    windowX = 280; windowY = 80; windowW = 720; windowH = 320;
-  } else if (layoutType === 'pattern6') {
-    windowX = 150; windowY = 50; windowW = 980; windowH = 300;
-  } else if (layoutType === 'pattern7') {
-    windowX = 150; windowY = 440; windowW = 980; windowH = 250;
+  if (isPortrait) {
+    if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2') {
+      windowW = 460; windowH = 260; windowX = 30; windowY = 120;
+    } else if (layoutType === 'pattern4') {
+      windowW = 460; windowH = 260; windowX = 230; windowY = 120;
+    } else if (layoutType === 'pattern7') {
+      windowW = 640; windowH = 360; windowX = 40; windowY = 650;
+    } else {
+      windowW = 640; windowH = 360; windowX = 40; windowY = 120;
+    }
+  } else {
+    if (layoutType === 'bottom-horizontal') {
+      windowX = 280;
+      windowY = 50;
+    } else if (layoutType === 'pattern1') {
+      windowX = 50; windowY = 50; windowW = 500; windowH = 300;
+    } else if (layoutType === 'pattern2') {
+      windowX = 50; windowY = 370; windowW = 500; windowH = 300;
+    } else if (layoutType === 'pattern3') {
+      windowX = 350; windowY = 80; windowW = 700; windowH = 320;
+    } else if (layoutType === 'pattern4') {
+      windowX = 720; windowY = 50; windowW = 500; windowH = 320;
+    } else if (layoutType === 'pattern5') {
+      windowX = 280; windowY = 80; windowW = 720; windowH = 320;
+    } else if (layoutType === 'pattern6') {
+      windowX = 150; windowY = 50; windowW = 980; windowH = 300;
+    } else if (layoutType === 'pattern7') {
+      windowX = 150; windowY = 440; windowW = 980; windowH = 250;
+    }
   }
 
   const windowSvg = gen.window();
@@ -2642,88 +2721,131 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
 
   let plW = 160;
   let plH = 170;
-  if (layoutType === 'right-vertical') {
-    if (numPlayers <= 3) { plW = 180; plH = 200; }
-    else if (numPlayers === 4) { plW = 170; plH = 150; }
-    else { plW = 160; plH = 120; }
-  } else if (layoutType === 'bottom-horizontal') {
-    plW = 160; plH = 170;
-  } else if (layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
-    plW = 140; plH = 350;
-  } else if (layoutType === 'pattern3' || layoutType === 'pattern5') {
-    plW = 140; plH = 260;
-  } else if (layoutType === 'pattern6') {
-    plW = 140; plH = 180;
-  } else if (layoutType === 'pattern7') {
-    plW = 180; plH = 280;
+
+  if (isPortrait) {
+    if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
+      plW = 170; plH = 240;
+    } else if (layoutType === 'pattern6' || layoutType === 'pattern7') {
+      plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
+      plH = 200;
+    } else {
+      plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
+      plH = 240;
+    }
+  } else {
+    if (layoutType === 'right-vertical') {
+      if (numPlayers <= 3) { plW = 180; plH = 200; }
+      else if (numPlayers === 4) { plW = 170; plH = 150; }
+      else { plW = 160; plH = 120; }
+    } else if (layoutType === 'bottom-horizontal') {
+      plW = 160; plH = 170;
+    } else if (layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
+      plW = 140; plH = 350;
+    } else if (layoutType === 'pattern3' || layoutType === 'pattern5') {
+      plW = 140; plH = 260;
+    } else if (layoutType === 'pattern6') {
+      plW = 140; plH = 180;
+    } else if (layoutType === 'pattern7') {
+      plW = 180; plH = 280;
+    }
   }
 
   for (let i = 0; i < numPlayers; i++) {
     let plX = 1050;
     let plY = 40;
     
-    if (layoutType === 'right-vertical') {
-      plX = 1050;
-      if (numPlayers === 1) {
-        plY = 260;
+    if (isPortrait) {
+      if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2') {
+        plX = 520;
+        if (numPlayers === 1) {
+          plY = 300;
+        } else {
+          plY = 120 + i * (900 - plH) / (numPlayers - 1);
+        }
+      } else if (layoutType === 'pattern4') {
+        plX = 30;
+        if (numPlayers === 1) {
+          plY = 300;
+        } else {
+          plY = 120 + i * (900 - plH) / (numPlayers - 1);
+        }
+      } else if (layoutType === 'pattern6') {
+        plY = 900;
+        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
+      } else if (layoutType === 'pattern7') {
+        plY = 120;
+        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
       } else {
-        plY = 40 + i * (640 - plH) / (numPlayers - 1);
+        plY = 530;
+        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
       }
-    } else if (layoutType === 'bottom-horizontal') {
-      plY = 510;
-      if (numPlayers === 1) {
-        plX = 660;
-      } else {
-        plX = 280 + i * (720 - plW) / (numPlayers - 1);
-      }
-    } else if (layoutType === 'pattern1') {
-      plY = 150;
-      if (numPlayers === 1) {
-        plX = 600;
-      } else {
-        plX = 600 + i * 160;
-      }
-    } else if (layoutType === 'pattern2') {
-      plY = 220;
-      if (numPlayers === 1) {
-        plX = 600;
-      } else {
-        plX = 600 + i * 160;
-      }
-    } else if (layoutType === 'pattern3') {
-      plY = 430;
-      if (numPlayers === 1) {
-        plX = 630;
-      } else {
-        plX = 300 + i * 160;
-      }
-    } else if (layoutType === 'pattern4') {
-      plY = 50;
-      if (numPlayers === 1) {
-        plX = 290;
-      } else {
-        plX = 50 + i * 160;
-      }
-    } else if (layoutType === 'pattern5') {
-      plY = 420;
-      if (numPlayers === 1) {
-        plX = 570;
-      } else {
-        plX = 280 + i * 180;
-      }
-    } else if (layoutType === 'pattern6') {
-      plY = 510;
-      if (numPlayers === 1) {
-        plX = 570;
-      } else {
-        plX = 150 + i * 260;
-      }
-    } else if (layoutType === 'pattern7') {
-      plY = 80;
-      if (numPlayers === 1) {
-        plX = 550;
-      } else {
-        plX = 150 + i * 260;
+    } else {
+      if (layoutType === 'right-vertical') {
+        plX = 1050;
+        if (numPlayers === 1) {
+          plY = 260;
+        } else {
+          plY = 40 + i * (640 - plH) / (numPlayers - 1);
+        }
+      } else if (layoutType === 'bottom-horizontal') {
+        plY = 510;
+        if (numPlayers === 1) {
+          plX = 660;
+        } else {
+          plX = 280 + i * (720 - plW) / (numPlayers - 1);
+        }
+      } else if (layoutType === 'pattern1') {
+        plY = 150;
+        if (numPlayers === 1) {
+          plX = 600;
+        } else {
+          plX = 600 + i * 160;
+        }
+      } else if (layoutType === 'pattern2') {
+        plY = 220;
+        if (numPlayers === 1) {
+          plX = 600;
+        } else {
+          plX = 600 + i * 160;
+        }
+      } else if (layoutType === 'pattern3') {
+        plY = 430;
+        if (numPlayers === 1) {
+          plX = 630;
+        } else {
+          plX = 300 + i * 160;
+        }
+      } else if (layoutType === 'pattern4') {
+        plY = 50;
+        if (numPlayers === 1) {
+          plX = 290;
+        } else {
+          plX = 50 + i * 160;
+        }
+      } else if (layoutType === 'pattern5') {
+        plY = 420;
+        if (numPlayers === 1) {
+          plX = 570;
+        } else {
+          plX = 280 + i * 180;
+        }
+      } else if (layoutType === 'pattern6') {
+        plY = 510;
+        if (numPlayers === 1) {
+          plX = 570;
+        } else {
+          plX = 150 + i * 260;
+        }
+      } else if (layoutType === 'pattern7') {
+        plY = 80;
+        if (numPlayers === 1) {
+          plX = 550;
+        } else {
+          plX = 150 + i * 260;
+        }
       }
     }
 
@@ -2756,18 +2878,22 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   }
 
   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
+  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   
   let menuLayout = 'horizontal';
-  if (layoutType === 'bottom-horizontal' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern3' || layoutType === 'pattern4') {
-    menuLayout = 'vertical';
-  } else {
+  if (isPortrait) {
     menuLayout = 'horizontal';
+  } else {
+    if (layoutType === 'bottom-horizontal' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern3' || layoutType === 'pattern4') {
+      menuLayout = 'vertical';
+    } else {
+      menuLayout = 'horizontal';
+    }
   }
 
-  const menuW = (menuLayout === 'horizontal') ? 180 : 130;
+  const menuW = (menuLayout === 'horizontal') ? (isPortrait ? 120 : 180) : 130;
   const menuH = (menuLayout === 'horizontal') ? 36 : 32;
 
-  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
@@ -2775,33 +2901,39 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     let menuX = 50;
     let menuY = 50;
 
-    if (layoutType === 'right-vertical') {
+    if (isPortrait) {
+      const totalMenuW = menuW * 5 + 10 * 4;
+      menuX = (canvasWidth - totalMenuW) / 2 + i * (menuW + 10);
       menuY = 50;
-      menuX = 50 + i * 145;
-    } else if (layoutType === 'bottom-horizontal') {
-      menuX = 50;
-      menuY = 50 + i * 55;
-    } else if (layoutType === 'pattern1') {
-      menuX = 120;
-      menuY = 380 + i * 40;
-    } else if (layoutType === 'pattern2') {
-      menuX = 120;
-      menuY = 50 + i * 40;
-    } else if (layoutType === 'pattern3') {
-      menuX = 50;
-      menuY = 100 + i * 40;
-    } else if (layoutType === 'pattern4') {
-      menuX = 50;
-      menuY = 430 + i * 40;
-    } else if (layoutType === 'pattern5') {
-      menuX = 200 + i * 195;
-      menuY = 30;
-    } else if (layoutType === 'pattern6') {
-      menuX = 150 + i * 195;
-      menuY = 370;
-    } else if (layoutType === 'pattern7') {
-      menuX = 150 + i * 195;
-      menuY = 30;
+    } else {
+      if (layoutType === 'right-vertical') {
+        menuY = 50;
+        menuX = 50 + i * 145;
+      } else if (layoutType === 'bottom-horizontal') {
+        menuX = 50;
+        menuY = 50 + i * 55;
+      } else if (layoutType === 'pattern1') {
+        menuX = 120;
+        menuY = 380 + i * 40;
+      } else if (layoutType === 'pattern2') {
+        menuX = 120;
+        menuY = 50 + i * 40;
+      } else if (layoutType === 'pattern3') {
+        menuX = 50;
+        menuY = 100 + i * 40;
+      } else if (layoutType === 'pattern4') {
+        menuX = 50;
+        menuY = 430 + i * 40;
+      } else if (layoutType === 'pattern5') {
+        menuX = 200 + i * 195;
+        menuY = 30;
+      } else if (layoutType === 'pattern6') {
+        menuX = 150 + i * 195;
+        menuY = 370;
+      } else if (layoutType === 'pattern7') {
+        menuX = 150 + i * 195;
+        menuY = 30;
+      }
     }
 
     let menuUrl = createSvgUrl(menuSvg);
@@ -2842,33 +2974,43 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     let actionX = 50;
     let actionY = 550;
 
-    if (layoutType === 'right-vertical') {
-      actionY = 550;
-      actionX = 50 + i * 125;
-    } else if (layoutType === 'bottom-horizontal') {
-      actionX = 50 + (i % 2) * 90;
-      actionY = 350 + Math.floor(i / 2) * 90;
-    } else if (layoutType === 'pattern1') {
-      actionX = 600 + i * 90;
-      actionY = 530;
-    } else if (layoutType === 'pattern2') {
-      actionX = 600 + i * 90;
-      actionY = 110;
-    } else if (layoutType === 'pattern3') {
-      actionX = 950;
-      actionY = 430 + i * 45;
-    } else if (layoutType === 'pattern4') {
-      actionX = 300 + i * 90;
-      actionY = 500;
-    } else if (layoutType === 'pattern5') {
-      actionX = 360 + i * 90;
-      actionY = 600;
-    } else if (layoutType === 'pattern6') {
-      actionX = 150 + i * 90;
-      actionY = 430;
-    } else if (layoutType === 'pattern7') {
-      actionX = 150 + i * 90;
-      actionY = 380;
+    if (isPortrait) {
+      const totalActionW = actionW * 6 + 15 * 5;
+      actionX = (canvasWidth - totalActionW) / 2 + i * (actionW + 15);
+      if (layoutType === 'pattern6' || layoutType === 'pattern7') {
+        actionY = 530;
+      } else {
+        actionY = 1050;
+      }
+    } else {
+      if (layoutType === 'right-vertical') {
+        actionY = 550;
+        actionX = 50 + i * 125;
+      } else if (layoutType === 'bottom-horizontal') {
+        actionX = 50 + (i % 2) * 90;
+        actionY = 350 + Math.floor(i / 2) * 90;
+      } else if (layoutType === 'pattern1') {
+        actionX = 600 + i * 90;
+        actionY = 530;
+      } else if (layoutType === 'pattern2') {
+        actionX = 600 + i * 90;
+        actionY = 110;
+      } else if (layoutType === 'pattern3') {
+        actionX = 950;
+        actionY = 430 + i * 45;
+      } else if (layoutType === 'pattern4') {
+        actionX = 300 + i * 90;
+        actionY = 500;
+      } else if (layoutType === 'pattern5') {
+        actionX = 360 + i * 90;
+        actionY = 600;
+      } else if (layoutType === 'pattern6') {
+        actionX = 150 + i * 90;
+        actionY = 430;
+      } else if (layoutType === 'pattern7') {
+        actionX = 150 + i * 90;
+        actionY = 380;
+      }
     }
 
     let actionUrl = createSvgUrl(actionSvg);
@@ -2910,6 +3052,8 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   panels = [];
   selectedPanelIds = [];
 
+  const isPortrait = canvasWidth < canvasHeight;
+
   if (design && design.no_background) {
     frame = null;
     canvasBgColor = 'transparent';
@@ -2923,7 +3067,7 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       originalRatio: canvasWidth / canvasHeight
     };
   } else {
-    const bgSvg = gen.bg(design);
+    const bgSvg = gen.bg(design, canvasWidth, canvasHeight);
     frame = {
       url: createSvgUrl(bgSvg),
       x: 0,
@@ -2948,16 +3092,42 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
   // 1. メイン画面の描画
   const windowSvg = gen.window(design);
-  const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
-  const windowPanelHeight = design.window_height !== undefined ? design.window_height : 405;
-  let windowX = design.window_x !== undefined ? design.window_x : 50;
-  let windowY = design.window_y !== undefined ? design.window_y : 110;
+  
+  // 縦型かつ座標指定がない場合は動的にサイズを決定
+  let defaultWindowW = isPortrait ? 640 : 720;
+  if (isPortrait && (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4')) {
+    defaultWindowW = 460;
+  }
+  let defaultWindowH = Math.floor(defaultWindowW * (260 / 460));
+  if (isPortrait && !(layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4')) {
+    defaultWindowH = 360;
+  }
+  
+  const windowPanelWidth = design.window_width !== undefined ? design.window_width : defaultWindowW;
+  const windowPanelHeight = design.window_height !== undefined ? design.window_height : defaultWindowH;
+  
+  let defaultWindowX = isPortrait ? 40 : 50;
+  if (isPortrait && (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2')) {
+    defaultWindowX = 30;
+  } else if (isPortrait && layoutType === 'pattern4') {
+    defaultWindowX = 230;
+  }
+  
+  let defaultWindowY = isPortrait ? 120 : 110;
+  if (isPortrait && layoutType === 'pattern7') {
+    defaultWindowY = 650;
+  }
+  
+  let windowX = design.window_x !== undefined ? design.window_x : defaultWindowX;
+  let windowY = design.window_y !== undefined ? design.window_y : defaultWindowY;
 
   if (design.window_x === undefined) {
     // 従来のフォールバック計算
-    if (layoutType === 'bottom-horizontal') {
-      windowX = 280;
-      windowY = 50;
+    if (!isPortrait) {
+      if (layoutType === 'bottom-horizontal') {
+        windowX = 280;
+        windowY = 50;
+      }
     }
   }
 
@@ -3002,25 +3172,65 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       plH = plPanelsData[i].height !== undefined ? plPanelsData[i].height : plH;
     } else {
       // 従来のフォールバック計算
-      if (layoutType === 'right-vertical') {
-        if (numPlayers <= 3) { plW = 180; plH = 200; }
-        else if (numPlayers === 4) { plW = 170; plH = 150; }
-        else { plW = 160; plH = 120; }
-        
-        plX = 1050;
-        if (numPlayers === 1) {
-          plY = 260;
+      if (isPortrait) {
+        if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
+          plW = 170; plH = 240;
+        } else if (layoutType === 'pattern6' || layoutType === 'pattern7') {
+          plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
+          plH = 200;
         } else {
-          plY = 40 + i * (640 - plH) / (numPlayers - 1);
+          plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
+          plH = 240;
+        }
+        
+        if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2') {
+          plX = 520;
+          if (numPlayers === 1) {
+            plY = 300;
+          } else {
+            plY = 120 + i * (900 - plH) / (numPlayers - 1);
+          }
+        } else if (layoutType === 'pattern4') {
+          plX = 30;
+          if (numPlayers === 1) {
+            plY = 300;
+          } else {
+            plY = 120 + i * (900 - plH) / (numPlayers - 1);
+          }
+        } else if (layoutType === 'pattern6') {
+          plY = 900;
+          const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+          plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
+        } else if (layoutType === 'pattern7') {
+          plY = 120;
+          const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+          plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
+        } else {
+          plY = 530;
+          const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+          plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
         }
       } else {
-        plW = 160;
-        plH = 170;
-        plY = 510;
-        if (numPlayers === 1) {
-          plX = 660;
+        if (layoutType === 'right-vertical') {
+          if (numPlayers <= 3) { plW = 180; plH = 200; }
+          else if (numPlayers === 4) { plW = 170; plH = 150; }
+          else { plW = 160; plH = 120; }
+          
+          plX = 1050;
+          if (numPlayers === 1) {
+            plY = 260;
+          } else {
+            plY = 40 + i * (640 - plH) / (numPlayers - 1);
+          }
         } else {
-          plX = 280 + i * (720 - plW) / (numPlayers - 1);
+          plW = 160;
+          plH = 170;
+          plY = 510;
+          if (numPlayers === 1) {
+            plX = 660;
+          } else {
+            plX = 280 + i * (720 - plW) / (numPlayers - 1);
+          }
         }
       }
     }
@@ -3055,8 +3265,10 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
   // 3. メニューボタンの描画
   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
-  const menuLayoutType = design.menu_layout || ((layoutType === 'bottom-horizontal') ? 'horizontal' : 'vertical');
-  const menuW = (menuLayoutType === 'horizontal') ? 180 : 130;
+  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
+  
+  const menuLayoutType = isPortrait ? 'horizontal' : (design.menu_layout || ((layoutType === 'bottom-horizontal') ? 'horizontal' : 'vertical'));
+  const menuW = (menuLayoutType === 'horizontal') ? (isPortrait ? 120 : 180) : 130;
   const menuH = (menuLayoutType === 'horizontal') ? 36 : 32;
 
   let baseMenuX = design.menu_x !== undefined ? design.menu_x : 50;
@@ -3064,16 +3276,21 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
 
   if (design.menu_x === undefined) {
     // 従来のフォールバック計算
-    if (layoutType === 'right-vertical') {
+    if (isPortrait) {
+      const totalMenuW = menuW * 5 + 10 * 4;
+      baseMenuX = (canvasWidth - totalMenuW) / 2;
       baseMenuY = 50;
-      baseMenuX = 50;
     } else {
-      baseMenuX = 50;
-      baseMenuY = 50;
+      if (layoutType === 'right-vertical') {
+        baseMenuY = 50;
+        baseMenuX = 50;
+      } else {
+        baseMenuX = 50;
+        baseMenuY = 50;
+      }
     }
   }
 
-  const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
@@ -3082,12 +3299,17 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
     let menuY = baseMenuY;
 
     if (design.menu_x === undefined) {
-      if (layoutType === 'right-vertical') {
-        menuY = 50;
-        menuX = 50 + i * 145;
+      if (isPortrait) {
+        menuX = baseMenuX + i * (menuW + 10);
+        menuY = baseMenuY;
       } else {
-        menuX = 50;
-        menuY = 50 + i * 55;
+        if (layoutType === 'right-vertical') {
+          menuY = 50;
+          menuX = 50 + i * 145;
+        } else {
+          menuX = 50;
+          menuY = 50 + i * 55;
+        }
       }
     } else {
       if (menuLayoutType === 'horizontal') {
@@ -3127,10 +3349,21 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   // 4. アクションアイコンの描画
   const actionW = 75;
   const actionH = 75;
-  const baseActionX = design.action_x !== undefined ? design.action_x : 50;
-  const baseActionY = design.action_y !== undefined ? design.action_y : 550;
-
   const actionStyle = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
+  
+  let baseActionX = design.action_x !== undefined ? design.action_x : 50;
+  let baseActionY = design.action_y !== undefined ? design.action_y : 550;
+  
+  if (design.action_x === undefined && isPortrait) {
+    const totalActionW = actionW * 6 + 15 * 5;
+    baseActionX = (canvasWidth - totalActionW) / 2;
+    if (layoutType === 'pattern6' || layoutType === 'pattern7') {
+      baseActionY = 530;
+    } else {
+      baseActionY = 1050;
+    }
+  }
+
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
     const labelText = actionTranslations[actionStyle][i];
@@ -3139,12 +3372,17 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
     let actionY = baseActionY;
 
     if (design.action_x === undefined) {
-      if (layoutType === 'right-vertical') {
-        actionY = 550;
-        actionX = 50 + i * 125;
+      if (isPortrait) {
+        actionX = baseActionX + i * (actionW + 15);
+        actionY = baseActionY;
       } else {
-        actionX = 50 + (i % 2) * 90;
-        actionY = 350 + Math.floor(i / 2) * 90;
+        if (layoutType === 'right-vertical') {
+          actionY = 550;
+          actionX = 50 + i * 125;
+        } else {
+          actionX = 50 + (i % 2) * 90;
+          actionY = 350 + Math.floor(i / 2) * 90;
+        }
       }
     } else {
       actionX = baseActionX + i * (actionW + 15);
