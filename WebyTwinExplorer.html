@@ -787,14 +787,20 @@
         }
         pane.lastSelectedIndex = index;
       } else {
-        // 通常のクリック（単一選択トグル）
-        const isAlreadySelectedOnly = pane.selectedEntries.length === 1 && pane.selectedEntries[0].name === entry.name;
-        if (isAlreadySelectedOnly) {
-          pane.selectedEntries = [];
-          pane.lastSelectedIndex = null;
-        } else {
-          pane.selectedEntries = [entry];
+        // 通常のクリック（単一選択トグル、ドラッグ時の複数選択維持を考慮）
+        const isAlreadySelected = pane.selectedEntries.some(e => e.name === entry.name);
+        if (isAlreadySelected && pane.selectedEntries.length > 1) {
+          // すでに複数選択されている項目のクリック時は、ドラッグ開始を阻害しないよう選択状態をクリアしない
           pane.lastSelectedIndex = index;
+        } else {
+          const isAlreadySelectedOnly = pane.selectedEntries.length === 1 && pane.selectedEntries[0].name === entry.name;
+          if (isAlreadySelectedOnly) {
+            pane.selectedEntries = [];
+            pane.lastSelectedIndex = null;
+          } else {
+            pane.selectedEntries = [entry];
+            pane.lastSelectedIndex = index;
+          }
         }
       }
 
@@ -997,6 +1003,8 @@
       const names = srcPane.selectedEntries.map(e => e.name);
       if (names.length === 0) return;
 
+      writeLog(`${isMove ? '移動' : 'コピー'}対象の選択数: ${names.length} 件 (${names.join(', ')})`, 'info');
+
       // 重複（同名）チェック
       let hasDuplicate = false;
       for (const entry of srcPane.selectedEntries) {
@@ -1033,7 +1041,7 @@
       }
     }
 
-    // --- 複数ファイル一括転送の実処理 ---
+    // --- 複数ファイル一括転送の実処理 (全コピー後に全削除を行う2フェーズ方式) ---
     async function executeBulkTransfer(srcPaneId, destPaneId, entryNames, destDirHandle, isMove = false) {
       const srcPane = state[`pane${srcPaneId}`];
       const srcDir = srcPane.currentHandle;
@@ -1048,13 +1056,15 @@
         actions: [] // キャンセルさせない
       });
 
-      let successCount = 0;
+      let successEntries = [];
       let failCount = 0;
 
+      // フェーズ1: コピーの実行
       for (let i = 0; i < count; i++) {
         const name = entryNames[i];
-        const percent = Math.floor((i / count) * 100);
-        updateModalProgress(percent, `[${i + 1}/${count}] ${name} を${opName}中...`);
+        // 移動の場合は、進捗の半分をコピーに割り当て、残りを削除に割り当てる
+        const percent = isMove ? Math.floor((i / count) * 50) : Math.floor((i / count) * 100);
+        updateModalProgress(percent, `[${i + 1}/${count}] ${name} をコピー中...`);
 
         const entry = srcPane.entries.find(e => e.name === name);
         if (!entry) {
@@ -1081,16 +1091,31 @@
             const srcSubDirHandle = await srcDir.getDirectoryHandle(entry.name);
             await copyDirectoryRecursive(srcSubDirHandle, destDirHandle, entry.name, null);
           }
-
-          if (isMove) {
-            await srcDir.removeEntry(entry.name, { recursive: true });
-          }
-          successCount++;
-          writeLog(`${name} を${opName}しました。`, 'success');
+          successEntries.push(entry);
+          writeLog(`${name} をコピーしました。`, 'success');
         } catch (err) {
           console.error(err);
           failCount++;
-          writeLog(`${name} の${opName}エラー: ${err.message}`, 'error');
+          writeLog(`${name} のコピーエラー: ${err.message}`, 'error');
+        }
+      }
+
+      // フェーズ2: 移動の場合、コピーに成功した元のファイルを削除する
+      if (isMove && successEntries.length > 0) {
+        const successCount = successEntries.length;
+        for (let i = 0; i < successCount; i++) {
+          const entry = successEntries[i];
+          const percent = 50 + Math.floor((i / successCount) * 50);
+          updateModalProgress(percent, `[${i + 1}/${successCount}] 元の ${entry.name} を削除中...`);
+
+          try {
+            await srcDir.removeEntry(entry.name, { recursive: true });
+            writeLog(`元の ${entry.name} を削除しました。`, 'success');
+          } catch (err) {
+            console.error(err);
+            failCount++;
+            writeLog(`元の ${entry.name} の削除エラー: ${err.message}`, 'error');
+          }
         }
       }
 
@@ -1098,7 +1123,7 @@
 
       showModal({
         title: `${opName}完了`,
-        message: `${opName}処理が完了しました。\n成功: ${successCount} 件\n失敗: ${failCount} 件`,
+        message: `${opName}処理が完了しました。\n成功: ${successEntries.length} 件\n失敗: ${failCount} 件`,
         type: failCount > 0 ? 'warn' : 'success',
         actions: [{ label: '閉じる' }]
       });
