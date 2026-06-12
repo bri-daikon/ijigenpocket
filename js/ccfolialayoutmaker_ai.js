@@ -2379,18 +2379,11 @@ if (aiGenerateBtn) {
             try {
               const isPortrait = canvasWidth < canvasHeight;
               const aspectRatio = isPortrait ? "9:16" : "16:9";
-              const systemRule = isPortrait ? SYSTEM_RULE_PORTRAIT : SYSTEM_RULE_LANDSCAPE;
               
-              let imagenPrompt = `${systemRule}\n\n`;
-              if (theme && theme !== 'custom') {
-                imagenPrompt += `テーマ: ${theme}\n`;
-              }
-              if (customPrompt) {
-                imagenPrompt += `指定項目: ${customPrompt}\n`;
-              } else {
-                imagenPrompt += `指定項目: なし\n`;
-              }
-              imagenPrompt += `PL人数: ${numPlayers}人\n`;
+              let themeStr = (theme && theme !== 'custom') ? theme : '';
+              let specStr = customPrompt ? customPrompt : '';
+              
+              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and character sheets. Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
