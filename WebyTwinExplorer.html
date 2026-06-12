@@ -450,6 +450,23 @@
       return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
     }
 
+    // --- 同時実行数制限付きの並列実行ヘルパー ---
+    async function runWithConcurrencyLimit(limit, items, iteratorFn) {
+      const results = [];
+      const executing = new Set();
+      for (const item of items) {
+        const p = Promise.resolve().then(() => iteratorFn(item));
+        results.push(p);
+        executing.add(p);
+        const clean = () => executing.delete(p);
+        p.then(clean, clean);
+        if (executing.size >= limit) {
+          await Promise.race(executing);
+        }
+      }
+      return Promise.all(results);
+    }
+
     // --- ディレクトリ走査 & リスト生成 ---
     async function readDirectory(dirHandle) {
       const entries = [];
@@ -1041,7 +1058,7 @@
       }
     }
 
-    // --- 複数ファイル一括転送の実処理 (全コピー後に全削除を行う2フェーズ方式) ---
+    // --- 複数ファイル一括転送の実処理 (並列実行・2フェーズ方式) ---
     async function executeBulkTransfer(srcPaneId, destPaneId, entryNames, destDirHandle, isMove = false) {
       const srcPane = state[`pane${srcPaneId}`];
       const srcDir = srcPane.currentHandle;
@@ -1058,25 +1075,31 @@
 
       let successEntries = [];
       let failCount = 0;
+      let finishedCount = 0;
 
-      // フェーズ1: コピーの実行
-      for (let i = 0; i < count; i++) {
-        const name = entryNames[i];
-        // 移動の場合は、進捗の半分をコピーに割り当て、残りを削除に割り当てる
-        const percent = isMove ? Math.floor((i / count) * 50) : Math.floor((i / count) * 100);
-        updateModalProgress(percent, `[${i + 1}/${count}] ${name} をコピー中...`);
+      // 進捗状況をリアルタイムで安全に更新するインナー関数
+      function updateProgress() {
+        finishedCount++;
+        // 移動の場合はコピーで半分（最大50%）、削除で半分（最大50%）に分ける
+        const basePercent = isMove ? Math.floor((finishedCount / count) * 50) : Math.floor((finishedCount / count) * 100);
+        updateModalProgress(basePercent, `[${finishedCount}/${count}] 項目をコピー中...`);
+      }
 
+      // フェーズ1: コピーの並列実行 (同時実行数 = 8)
+      await runWithConcurrencyLimit(8, entryNames, async (name) => {
         const entry = srcPane.entries.find(e => e.name === name);
         if (!entry) {
           failCount++;
           writeLog(`エラー: エントリが見つかりません: ${name}`, 'error');
-          continue;
+          updateProgress();
+          return;
         }
 
         if (entry.mtime === 'アクセス不可') {
           failCount++;
           writeLog(`制限あり: ${name} はアクセスできません。`, 'warn');
-          continue;
+          updateProgress();
+          return;
         }
 
         try {
@@ -1098,16 +1121,15 @@
           failCount++;
           writeLog(`${name} のコピーエラー: ${err.message}`, 'error');
         }
-      }
+        updateProgress();
+      });
 
-      // フェーズ2: 移動の場合、コピーに成功した元のファイルを削除する
+      // フェーズ2: 移動の場合、コピーに成功した元のファイルを並列で一括削除する
       if (isMove && successEntries.length > 0) {
         const successCount = successEntries.length;
-        for (let i = 0; i < successCount; i++) {
-          const entry = successEntries[i];
-          const percent = 50 + Math.floor((i / successCount) * 50);
-          updateModalProgress(percent, `[${i + 1}/${successCount}] 元の ${entry.name} を削除中...`);
+        let deleteFinished = 0;
 
+        await runWithConcurrencyLimit(8, successEntries, async (entry) => {
           try {
             await srcDir.removeEntry(entry.name, { recursive: true });
             writeLog(`元の ${entry.name} を削除しました。`, 'success');
@@ -1116,7 +1138,10 @@
             failCount++;
             writeLog(`元の ${entry.name} の削除エラー: ${err.message}`, 'error');
           }
-        }
+          deleteFinished++;
+          const percent = 50 + Math.floor((deleteFinished / successCount) * 50);
+          updateModalProgress(percent, `[${deleteFinished}/${successCount}] 元のファイルを削除中...`);
+        });
       }
 
       updateModalProgress(100, `完了しました。`);
