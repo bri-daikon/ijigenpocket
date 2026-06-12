@@ -2397,19 +2397,7 @@ if (aiGenerateBtn) {
             }
           }
           
-          if (bgImageUrl) {
-            frame = {
-              url: bgImageUrl,
-              x: 0,
-              y: 0,
-              width: canvasWidth,
-              height: canvasHeight,
-              originalRatio: canvasWidth / canvasHeight
-            };
-          }
-          panels = [];
-          selectedPanelIds = [];
-          updateUI();
+          await generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, null);
           
           await new Promise(resolve => setTimeout(resolve, 1000));
           addChatMessage(employees.takumi, "作成完了しました。個別パネルは配置しておりませんので、このまま保存してご活用ください！");
@@ -2545,17 +2533,7 @@ if (aiGenerateBtn) {
                   }
                   
                   if (bgOnly) {
-                    frame = {
-                      url: mockBgUrl,
-                      x: 0,
-                      y: 0,
-                      width: canvasWidth,
-                      height: canvasHeight,
-                      originalRatio: canvasWidth / canvasHeight
-                    };
-                    panels = [];
-                    selectedPanelIds = [];
-                    updateUI();
+                    await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, null);
                   } else {
                     let mockPartsUrl = genParts ? mockBgUrl : null;
                     await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, mockPartsUrl);
@@ -2576,17 +2554,7 @@ if (aiGenerateBtn) {
                   : "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80";
                 
                 if (bgOnly) {
-                  frame = {
-                    url: mockBgUrl,
-                    x: 0,
-                    y: 0,
-                    width: canvasWidth,
-                    height: canvasHeight,
-                    originalRatio: canvasWidth / canvasHeight
-                  };
-                  panels = [];
-                  selectedPanelIds = [];
-                  updateUI();
+                  await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl, null);
                 } else {
                   let mockPartsUrl = genParts ? mockBgUrl : null;
                   await generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, null, mockPartsUrl);
