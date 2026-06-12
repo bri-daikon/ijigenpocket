@@ -2383,7 +2383,7 @@ if (aiGenerateBtn) {
               let themeStr = (theme && theme !== 'custom') ? theme : '';
               let specStr = customPrompt ? customPrompt : '';
               
-              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and character sheets. Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
+              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and exactly ${numPlayers} character sheets (or PC stand frames). Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
@@ -2575,8 +2575,10 @@ if (aiGenerateBtn) {
 async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, partsImageUrl) {
   saveStateToHistory();
   
-  const gen = themeSvgGenerators[theme];
-  if (!gen) return;
+  let gen = themeSvgGenerators[theme];
+  if (!gen) {
+    gen = themeSvgGenerators.cyberpunk;
+  }
 
   frame = null;
   panels = [];
