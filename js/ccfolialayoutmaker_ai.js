@@ -182,12 +182,7 @@ function updateUI() {
     const pEl = document.createElement('div');
     const isSelected = selectedPanelIds.includes(panel.id);
     
-    const bgOnly = document.getElementById('ai-bg-only-toggle')?.checked;
-    if (bgOnly) {
-      pEl.className = `absolute z-20 pointer-events-none`;
-    } else {
-      pEl.className = `absolute z-20 cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
-    }
+    pEl.className = `absolute z-20 cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
     pEl.style.left = `${panel.x}px`;
     pEl.style.top = `${panel.y}px`;
     pEl.style.width = `${panel.width}px`;
@@ -1790,6 +1785,16 @@ const employees = {
   aoi: { name: 'アオイ (デザイナー)', color: '#f472b6', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Aoi' }
 };
 
+
+function cleanPromptText(text) {
+  if (!text) return "";
+  return text
+    .replace(/[便利ボタン|アクション|メニュー]/g, "")
+    .replace(/\b(handy buttons|handy button|action buttons|action button|action|menu|header)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function createSvgUrl(svgString) {
   const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
   return URL.createObjectURL(blob);
@@ -1871,6 +1876,17 @@ async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, cus
 
 【レイアウト配置の設計指針】
 キャンバス全体の解像度は ${canvasWidth}x${canvasHeight} ピクセルです。
+【重要】キャンバス内における各パーツの面積（占有率）の優先順位と比率は厳格に以下に従ってください：
+- PC立ち絵置き場（PL枠）：40%（一番大きく目立たせる）
+- 前景窓（メインモニター）：30%
+- メニュー枠：15%
+- 便利ボタン（アクション）：5%
+- シナリオタイトル：5%
+- 隙間（余白・境界）：5%
+
+【重要】立ち絵枠（PL枠）の配置要件：
+- 立ち絵を配置するため、各枠の比率は必ず「縦長（幅1に対して縦3の比率、アスペクト比 1:3）」にしてください。
+- 複数の立ち絵枠は、縦に並べずに必ず「横一列に並べて配置（水平方向に並列）」してください。
 
 ${canvasWidth < canvasHeight ? `
 【7つの代表的レイアウトパターンと座標ガイド（縦長キャンバス 720x1280 時）】
@@ -2359,7 +2375,8 @@ if (aiGenerateBtn) {
   aiGenerateBtn.addEventListener('click', async () => {
     const theme = aiThemeSelect.value;
     const numPlayers = parseInt(aiPlayersSelect.value, 10);
-    const layoutType = aiLayoutSelect.value;
+    let layoutType = aiLayoutSelect.value;
+    if (layoutType === 'right-vertical' || layoutType === 'bottom-horizontal') layoutType = 'pattern1';
     const customPrompt = aiPromptInput ? aiPromptInput.value.trim() : '';
     const genBg = aiGenBgToggle ? aiGenBgToggle.checked : false;
     const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
@@ -2393,22 +2410,23 @@ if (aiGenerateBtn) {
               const isPortrait = canvasWidth < canvasHeight;
               const aspectRatio = isPortrait ? "9:16" : "16:9";
               
-              let themeStr = (theme && theme !== 'custom') ? theme : '';
+              let themeStr = cleanPromptText((theme && theme !== 'custom') ? theme : '');
               let specStr = customPrompt ? customPrompt : '';
+              let cleanedSpecStr = cleanPromptText(specStr);
               
               let layoutDesc = '';
               if (layoutType === 'right-vertical') {
-                layoutDesc = 'The main monitor frame must be placed on the left side, and the character sheets must be arranged in a vertical column on the right side.';
+                layoutDesc = 'The main monitor frame must be placed on the left side, and the character sheets must be arranged in a horizontal row on the right side. They must be placed side-by-side horizontally.';
               } else if (layoutType === 'bottom-horizontal') {
                 layoutDesc = 'The main monitor frame must be placed in the center-top, and the character sheets must be arranged in a horizontal row at the bottom.';
               } else if (layoutType === 'pattern1') {
-                layoutDesc = 'The main monitor frame must be on the top-left, and the character sheets must be on the right side in a vertical column.';
+                layoutDesc = 'The main monitor frame must be on the top-left, and the character sheets must be on the right side arranged horizontally in a row.';
               } else if (layoutType === 'pattern2') {
-                layoutDesc = 'The main monitor frame must be on the bottom-left, and the character sheets must be on the right side in a vertical column.';
+                layoutDesc = 'The main monitor frame must be on the bottom-left, and the character sheets must be on the right side arranged horizontally in a row.';
               } else if (layoutType === 'pattern3') {
                 layoutDesc = 'The main monitor frame must be on the top-right, and the character sheets must be at the bottom in a horizontal row.';
               } else if (layoutType === 'pattern4') {
-                layoutDesc = 'The main monitor frame must be on the right side, and the character sheets must be on the left side in a vertical column.';
+                layoutDesc = 'The main monitor frame must be on the right side, and the character sheets must be on the left side arranged horizontally in a row.';
               } else if (layoutType === 'pattern5') {
                 layoutDesc = 'The main monitor frame must be in the top-center, and the character sheets must be at the bottom.';
               } else if (layoutType === 'pattern6') {
@@ -2417,7 +2435,7 @@ if (aiGenerateBtn) {
                 layoutDesc = 'The main monitor frame must be at the very bottom, and the character sheets must be in a horizontal row near the top.';
               }
 
-              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and exactly ${numPlayers} character sheets (or PC stand frames). Each character sheet frame must be vertically long (tall portrait ratio, such as 1:1.5 or 2:3, for displaying character standing pictures). ${layoutDesc} Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
+              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${cleanedSpecStr}. The image must include empty decorative UI frames and borders for the main screen monitor and exactly ${numPlayers} character sheets (or PC stand frames). Each character sheet slot must be a single vertically long rectangle with a 1:4 ratio. The slots must always be arranged horizontally side-by-side in a horizontal row. Do NOT stack the character sheet frames vertically under any circumstances. ${layoutDesc} The size hierarchy (occupancy area) of the UI elements in the layout must strictly prioritize: PC stand slots (largest) > main screen monitor window > special area (if any) > menu buttons > scenario title > handy action buttons (smallest). At the menu area, the image must include exactly 5 symbolic design elements representing "House Rules" (a book or scroll symbol), "Combat" (crossed swords or shield symbol), "Sanity" (a cracked brain or heart symbol), "Growth" (a sprout or rising arrow symbol), and "Other" (a gear or star symbol). At the action area, the image must include exactly 6 symbolic design elements representing "Spot Hidden" (an eye symbol), "Listen" (an ear symbol), "Library Use" (an open book symbol), "Idea" (a lightbulb symbol), "Sanity Check" (a brain symbol), and "Salt" (a salt pile or crystal symbol). These symbols must be integrated into the layout frames beautifully. Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any English or Japanese text labels, words, letters, titles, or numbers on the image. Absolutely NO text like "FOREGROUND", "PC POSITION AREA", "TITLE", "HANDY BUTTONS", "MENU", "PC NAME", "便利ボタン", "アクション", "Menu", "Action", or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames. CRITICAL: The image must be a single, cohesive, unified room background illustration. Absolutely do NOT split, slice, tile, or duplicate the scene vertically or horizontally. Do NOT show multiple copies of the staircase, room, or monitor frames. It must be ONE single room view stretching across the entire aspect ratio. CRITICAL quality specs: masterpiece, best quality, ultra-high definition, extremely detailed texture, UHD 8k resolution, sharp focus, professionally rendered, vibrant colors, absolutely no JPEG compression artifacts or blurriness.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
@@ -2467,11 +2485,11 @@ if (aiGenerateBtn) {
             addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
             
             try {
-              const styleDesc = responseData.design.style_description || "beautiful illustration";
-              const basePrompt = customPrompt || theme;
+              const styleDesc = cleanPromptText(responseData.design.style_description || "beautiful illustration");
+              const basePrompt = cleanPromptText(customPrompt || theme);
               const isPortrait = canvasWidth < canvasHeight;
               const aspectRatio = isPortrait ? "9:16" : "16:9";
-              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio, clean, no text.`;
+              const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} The size hierarchy (occupancy area) of the UI elements in the layout must strictly prioritize: PC stand slots (largest) > main screen monitor window > special area (if any) > menu buttons > scenario title > handy action buttons (smallest). CRITICAL: Every menu icon and action button icon must be rendered extremely small, compact, and tiny (occupying less than 10% of the screen height). Do NOT draw large buttons or frames. They must be neat and subtle graphical elements. Each character sheet slot must be a single vertically long rectangle with a 1:4 ratio, and all slots must always be arranged horizontally side-by-side in a horizontal row. Do NOT stack them vertically. The image must include exactly 5 symbolic design elements for the menu buttons representing "House Rules" (book/scroll), "Combat" (crossed swords/shield), "Sanity" (cracked brain/heart), "Growth" (rising arrow/sprout), and "Other" (gear/star) integrated beautifully. CRITICAL: The image must be a single, cohesive, unified room background illustration. Absolutely do NOT split, slice, tile, or duplicate the scene vertically or horizontally. Do NOT show multiple copies of the staircase, room, or monitor frames. It must be ONE single room view stretching across the entire aspect ratio. It also must include exactly 6 symbolic design elements for the action buttons representing "Spot Hidden" (eye), "Listen" (ear), "Library Use" (open book), "Idea" (lightbulb), "Sanity Check" (brain), and "Salt" (salt pile/crystal) integrated beautifully. CRITICAL: The image must be a single, cohesive, unified room background illustration. Absolutely do NOT split, slice, tile, or duplicate the scene vertically or horizontally. Do NOT show multiple copies of the staircase, room, or monitor frames. It must be ONE single room view stretching across the entire aspect ratio. Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio, clean. CRITICAL: Do NOT write any English or Japanese text labels, words, letters, titles, or numbers on the image. Absolutely NO text like "便利ボタン", "アクション", "Menu", "Action", "Handy Buttons", or scenario titles. Every icon and frame must be a pure graphical symbol/border without text. CRITICAL quality specs: masterpiece, best quality, ultra-high definition, extremely detailed texture, UHD 8k resolution, sharp focus, professionally rendered, vibrant colors, absolutely no JPEG compression artifacts or blurriness.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
@@ -2723,31 +2741,12 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   let plH = 170;
 
   if (isPortrait) {
-    if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
-      plW = 170; plH = 240;
-    } else if (layoutType === 'pattern6' || layoutType === 'pattern7') {
-      plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
-      plH = 200;
-    } else {
-      plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
-      plH = 240;
-    }
+    plW = Math.min(140, Math.floor((canvasWidth - 80 - 10 * (numPlayers - 1)) / numPlayers));
+    plH = plW * 4;
   } else {
-    if (layoutType === 'right-vertical') {
-      if (numPlayers <= 3) { plW = 180; plH = 200; }
-      else if (numPlayers === 4) { plW = 170; plH = 150; }
-      else { plW = 160; plH = 120; }
-    } else if (layoutType === 'bottom-horizontal') {
-      plW = 160; plH = 170;
-    } else if (layoutType === 'pattern1' || layoutType === 'pattern2' || layoutType === 'pattern4') {
-      plW = 140; plH = 350;
-    } else if (layoutType === 'pattern3' || layoutType === 'pattern5') {
-      plW = 140; plH = 260;
-    } else if (layoutType === 'pattern6') {
-      plW = 140; plH = 180;
-    } else if (layoutType === 'pattern7') {
-      plW = 180; plH = 280;
-    }
+    // 横長の場合は立ち絵が収まるように少し小さめの幅にして縦を3倍にする
+    plW = 100;
+    plH = 400;
   }
 
   for (let i = 0; i < numPlayers; i++) {
@@ -2755,98 +2754,17 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     let plY = 40;
     
     if (isPortrait) {
-      if (layoutType === 'right-vertical' || layoutType === 'pattern1' || layoutType === 'pattern2') {
-        plX = 520;
-        if (numPlayers === 1) {
-          plY = 300;
-        } else {
-          plY = 120 + i * (900 - plH) / (numPlayers - 1);
-        }
-      } else if (layoutType === 'pattern4') {
-        plX = 30;
-        if (numPlayers === 1) {
-          plY = 300;
-        } else {
-          plY = 120 + i * (900 - plH) / (numPlayers - 1);
-        }
-      } else if (layoutType === 'pattern6') {
-        plY = 900;
-        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
-        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
-      } else if (layoutType === 'pattern7') {
-        plY = 120;
-        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
-        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
-      } else {
-        plY = 530;
-        const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
-        plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
-      }
+      // 縦長画面：下部に横並び
+      plY = 750;
+      const totalPlW = plW * numPlayers + 10 * (numPlayers - 1);
+      plX = (canvasWidth - totalPlW) / 2 + i * (plW + 10);
     } else {
-      if (layoutType === 'right-vertical') {
-        plX = 1050;
-        if (numPlayers === 1) {
-          plY = 260;
-        } else {
-          plY = 40 + i * (640 - plH) / (numPlayers - 1);
-        }
-      } else if (layoutType === 'bottom-horizontal') {
-        plY = 510;
-        if (numPlayers === 1) {
-          plX = 660;
-        } else {
-          plX = 280 + i * (720 - plW) / (numPlayers - 1);
-        }
-      } else if (layoutType === 'pattern1') {
-        plY = 150;
-        if (numPlayers === 1) {
-          plX = 600;
-        } else {
-          plX = 600 + i * 160;
-        }
-      } else if (layoutType === 'pattern2') {
-        plY = 220;
-        if (numPlayers === 1) {
-          plX = 600;
-        } else {
-          plX = 600 + i * 160;
-        }
-      } else if (layoutType === 'pattern3') {
-        plY = 430;
-        if (numPlayers === 1) {
-          plX = 630;
-        } else {
-          plX = 300 + i * 160;
-        }
-      } else if (layoutType === 'pattern4') {
-        plY = 50;
-        if (numPlayers === 1) {
-          plX = 290;
-        } else {
-          plX = 50 + i * 160;
-        }
-      } else if (layoutType === 'pattern5') {
-        plY = 420;
-        if (numPlayers === 1) {
-          plX = 570;
-        } else {
-          plX = 280 + i * 180;
-        }
-      } else if (layoutType === 'pattern6') {
-        plY = 510;
-        if (numPlayers === 1) {
-          plX = 570;
-        } else {
-          plX = 150 + i * 260;
-        }
-      } else if (layoutType === 'pattern7') {
-        plY = 80;
-        if (numPlayers === 1) {
-          plX = 550;
-        } else {
-          plX = 150 + i * 260;
-        }
-      }
+      // 横長画面：常に右側に横並びで配置（Y座標固定）
+      plY = 180;
+      // 横幅に合わせて配置開始位置を計算
+      const totalPlW = plW * numPlayers + 15 * (numPlayers - 1);
+      const startX = 1200 - totalPlW; // キャンバス右端付近から左に展開
+      plX = startX + i * (plW + 15);
     }
 
     const plSvg = gen.pl(null, plW, plH);
@@ -2893,50 +2811,58 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     }
   }
 
-  const menuW = (menuLayout === 'horizontal') ? (isPortrait ? 120 : 180) : 130;
-  const menuH = (menuLayout === 'horizontal') ? 36 : 32;
+  const menuW = (menuLayout === 'horizontal') ? (isPortrait ? 15 : 22) : 16;
+  const menuH = (menuLayout === 'horizontal') ? 5 : 4;
 
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
-    let menuSvg = gen.menu(labelText);
+    let menuSvg = '';
     if (bgOnly) {
-      menuSvg = makeSvgTransparentForBgOnly(menuSvg);
+      menuSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
+  <style>
+    .txt { font-family: sans-serif; font-size: 14px; font-weight: bold; fill: #ffffff; paint-order: stroke fill; stroke: #000000; stroke-width: 3px; stroke-linejoin: round; }
+  </style>
+  <text x="90" y="22" class="txt" text-anchor="middle">${labelText}</text>
+</svg>`;
+    } else {
+      menuSvg = gen.menu(labelText);
     }
     let menuX = 50;
     let menuY = 50;
 
     if (isPortrait) {
-      const totalMenuW = menuW * 5 + 10 * 4;
-      menuX = (canvasWidth - totalMenuW) / 2 + i * (menuW + 10);
+      const totalMenuW = menuW * 5 + 2 * 4;
+      menuX = (canvasWidth - totalMenuW) / 2 + i * (menuW + 2);
       menuY = 50;
     } else {
       if (layoutType === 'right-vertical') {
         menuY = 50;
-        menuX = 50 + i * 145;
+        menuX = 50 + i * 24;
       } else if (layoutType === 'bottom-horizontal') {
         menuX = 50;
-        menuY = 50 + i * 55;
+        menuY = 50 + i * 6;
       } else if (layoutType === 'pattern1') {
         menuX = 120;
-        menuY = 380 + i * 40;
+        menuY = 380 + i * 6;
       } else if (layoutType === 'pattern2') {
         menuX = 120;
-        menuY = 50 + i * 40;
+        menuY = 50 + i * 6;
       } else if (layoutType === 'pattern3') {
         menuX = 50;
-        menuY = 100 + i * 40;
+        menuY = 100 + i * 6;
       } else if (layoutType === 'pattern4') {
         menuX = 50;
-        menuY = 430 + i * 40;
+        menuY = 430 + i * 6;
       } else if (layoutType === 'pattern5') {
-        menuX = 200 + i * 195;
+        menuX = 200 + i * 24;
         menuY = 30;
       } else if (layoutType === 'pattern6') {
-        menuX = 150 + i * 195;
+        menuX = 150 + i * 24;
         menuY = 370;
       } else if (layoutType === 'pattern7') {
-        menuX = 150 + i * 195;
+        menuX = 150 + i * 24;
         menuY = 30;
       }
     }
@@ -2970,23 +2896,43 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     }
   }
 
-  const actionW = 75;
-  const actionH = 75;
+  const actionW = 12;
+  const actionH = 12;
 
   const actionStyle = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
     const labelText = actionTranslations[actionStyle][i];
-    let actionSvg = gen.action(labelText, icon.sub, icon.path);
+    let actionSvg = '';
     if (bgOnly) {
-      actionSvg = makeSvgTransparentForBgOnly(actionSvg);
+      if (actionStyle === 'icon') {
+        actionSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="75" height="75" viewBox="0 0 75 75">
+  <g stroke="#000000" stroke-width="5" fill="none" stroke-linejoin="round" transform="translate(-2.5, -7.5)">
+    ${icon.path.replace(/stroke="[^"]*"/g, 'stroke="#000000"').replace(/stroke-width="[^"]*"/g, 'stroke-width="5"')}
+  </g>
+  <g stroke="#ffffff" stroke-width="2" fill="none" transform="translate(-2.5, -7.5)">
+    ${icon.path.replace(/stroke="[^"]*"/g, 'stroke="#ffffff"').replace(/stroke-width="[^"]*"/g, 'stroke-width="2"')}
+  </g>
+</svg>`;
+      } else {
+        actionSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="75" height="75" viewBox="0 0 75 75">
+  <style>
+    .txt { font-family: sans-serif; font-size: 13px; font-weight: bold; fill: #ffffff; paint-order: stroke fill; stroke: #000000; stroke-width: 3px; stroke-linejoin: round; }
+  </style>
+  <text x="37.5" y="42" class="txt" text-anchor="middle">${labelText}</text>
+</svg>`;
+      }
+    } else {
+      actionSvg = gen.action(labelText, icon.sub, icon.path);
     }
     let actionX = 50;
     let actionY = 550;
 
     if (isPortrait) {
-      const totalActionW = actionW * 6 + 15 * 5;
-      actionX = (canvasWidth - totalActionW) / 2 + i * (actionW + 15);
+      const totalActionW = actionW * 6 + 3 * 5;
+      actionX = (canvasWidth - totalActionW) / 2 + i * (actionW + 5);
       if (layoutType === 'pattern6' || layoutType === 'pattern7') {
         actionY = 530;
       } else {
@@ -2995,30 +2941,30 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     } else {
       if (layoutType === 'right-vertical') {
         actionY = 550;
-        actionX = 50 + i * 125;
+        actionX = 50 + i * 15;
       } else if (layoutType === 'bottom-horizontal') {
-        actionX = 50 + (i % 2) * 90;
-        actionY = 350 + Math.floor(i / 2) * 90;
+        actionX = 50 + (i % 2) * 15;
+        actionY = 350 + Math.floor(i / 2) * 15;
       } else if (layoutType === 'pattern1') {
-        actionX = 600 + i * 90;
+        actionX = 600 + i * 15;
         actionY = 530;
       } else if (layoutType === 'pattern2') {
-        actionX = 600 + i * 90;
+        actionX = 600 + i * 15;
         actionY = 110;
       } else if (layoutType === 'pattern3') {
         actionX = 950;
-        actionY = 430 + i * 45;
+        actionY = 430 + i * 15;
       } else if (layoutType === 'pattern4') {
-        actionX = 300 + i * 90;
+        actionX = 300 + i * 15;
         actionY = 500;
       } else if (layoutType === 'pattern5') {
-        actionX = 360 + i * 90;
+        actionX = 360 + i * 15;
         actionY = 600;
       } else if (layoutType === 'pattern6') {
-        actionX = 150 + i * 90;
+        actionX = 150 + i * 15;
         actionY = 430;
       } else if (layoutType === 'pattern7') {
-        actionX = 150 + i * 90;
+        actionX = 150 + i * 15;
         actionY = 380;
       }
     }
@@ -3285,8 +3231,8 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   const menuStyle = aiMenuStyleSelect ? aiMenuStyleSelect.value : 'en';
   
   const menuLayoutType = isPortrait ? 'horizontal' : (design.menu_layout || ((layoutType === 'bottom-horizontal') ? 'horizontal' : 'vertical'));
-  const menuW = (menuLayoutType === 'horizontal') ? (isPortrait ? 120 : 180) : 130;
-  const menuH = (menuLayoutType === 'horizontal') ? 36 : 32;
+  const menuW = (menuLayoutType === 'horizontal') ? (isPortrait ? 15 : 22) : 16;
+  const menuH = (menuLayoutType === 'horizontal') ? 5 : 4;
 
   let baseMenuX = design.menu_x !== undefined ? design.menu_x : 50;
   let baseMenuY = design.menu_y !== undefined ? design.menu_y : 50;
@@ -3294,7 +3240,7 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   if (design.menu_x === undefined) {
     // 従来のフォールバック計算
     if (isPortrait) {
-      const totalMenuW = menuW * 5 + 10 * 4;
+      const totalMenuW = menuW * 5 + 2 * 4;
       baseMenuX = (canvasWidth - totalMenuW) / 2;
       baseMenuY = 50;
     } else {
@@ -3311,31 +3257,39 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
-    let menuSvg = gen.menu(design, labelText);
+    let menuSvg = '';
     if (bgOnly) {
-      menuSvg = makeSvgTransparentForBgOnly(menuSvg);
+      menuSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="36" viewBox="0 0 180 36">
+  <style>
+    .txt { font-family: sans-serif; font-size: 14px; font-weight: bold; fill: #ffffff; paint-order: stroke fill; stroke: #000000; stroke-width: 3px; stroke-linejoin: round; }
+  </style>
+  <text x="90" y="22" class="txt" text-anchor="middle">${labelText}</text>
+</svg>`;
+    } else {
+      menuSvg = gen.menu(design, labelText);
     }
     let menuX = baseMenuX;
     let menuY = baseMenuY;
 
     if (design.menu_x === undefined) {
       if (isPortrait) {
-        menuX = baseMenuX + i * (menuW + 10);
+        menuX = baseMenuX + i * (menuW + 2);
         menuY = baseMenuY;
       } else {
         if (layoutType === 'right-vertical') {
           menuY = 50;
-          menuX = 50 + i * 145;
+          menuX = 50 + i * 24;
         } else {
           menuX = 50;
-          menuY = 50 + i * 55;
+          menuY = 50 + i * 6;
         }
       }
     } else {
       if (menuLayoutType === 'horizontal') {
-        menuX = baseMenuX + i * (menuW + 15);
+        menuX = baseMenuX + i * (menuW + 2);
       } else {
-        menuY = baseMenuY + i * (menuH + 10);
+        menuY = baseMenuY + i * (menuH + 2);
       }
     }
 
@@ -3369,15 +3323,15 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   }
 
   // 4. アクションアイコンの描画
-  const actionW = 75;
-  const actionH = 75;
+  const actionW = 12;
+  const actionH = 12;
   const actionStyle = aiActionStyleSelect ? aiActionStyleSelect.value : 'ja';
   
   let baseActionX = design.action_x !== undefined ? design.action_x : 50;
   let baseActionY = design.action_y !== undefined ? design.action_y : 550;
   
   if (design.action_x === undefined && isPortrait) {
-    const totalActionW = actionW * 6 + 15 * 5;
+    const totalActionW = actionW * 6 + 3 * 5;
     baseActionX = (canvasWidth - totalActionW) / 2;
     if (layoutType === 'pattern6' || layoutType === 'pattern7') {
       baseActionY = 530;
@@ -3389,28 +3343,48 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
     const labelText = actionTranslations[actionStyle][i];
-    let actionSvg = gen.action(design, labelText, icon.sub, icon.path);
+    let actionSvg = '';
     if (bgOnly) {
-      actionSvg = makeSvgTransparentForBgOnly(actionSvg);
+      if (actionStyle === 'icon') {
+        actionSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="75" height="75" viewBox="0 0 75 75">
+  <g stroke="#000000" stroke-width="5" fill="none" stroke-linejoin="round" transform="translate(-2.5, -7.5)">
+    ${icon.path.replace(/stroke="[^"]*"/g, 'stroke="#000000"').replace(/stroke-width="[^"]*"/g, 'stroke-width="5"')}
+  </g>
+  <g stroke="#ffffff" stroke-width="2" fill="none" transform="translate(-2.5, -7.5)">
+    ${icon.path.replace(/stroke="[^"]*"/g, 'stroke="#ffffff"').replace(/stroke-width="[^"]*"/g, 'stroke-width="2"')}
+  </g>
+</svg>`;
+      } else {
+        actionSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="75" height="75" viewBox="0 0 75 75">
+  <style>
+    .txt { font-family: sans-serif; font-size: 13px; font-weight: bold; fill: #ffffff; paint-order: stroke fill; stroke: #000000; stroke-width: 3px; stroke-linejoin: round; }
+  </style>
+  <text x="37.5" y="42" class="txt" text-anchor="middle">${labelText}</text>
+</svg>`;
+      }
+    } else {
+      actionSvg = gen.action(design, labelText, icon.sub, icon.path);
     }
     let actionX = baseActionX;
     let actionY = baseActionY;
 
     if (design.action_x === undefined) {
       if (isPortrait) {
-        actionX = baseActionX + i * (actionW + 15);
+        actionX = baseActionX + i * (actionW + 3);
         actionY = baseActionY;
       } else {
         if (layoutType === 'right-vertical') {
           actionY = 550;
-          actionX = 50 + i * 125;
+          actionX = 50 + i * 15;
         } else {
-          actionX = 50 + (i % 2) * 90;
-          actionY = 350 + Math.floor(i / 2) * 90;
+          actionX = 50 + (i % 2) * 15;
+          actionY = 350 + Math.floor(i / 2) * 15;
         }
       }
     } else {
-      actionX = baseActionX + i * (actionW + 15);
+      actionX = baseActionX + i * (actionW + 3);
     }
 
     let actionUrl = createSvgUrl(actionSvg);
