@@ -112,6 +112,14 @@ const zoomInBtn = document.getElementById('zoom-in-btn');
 const zoomOutBtn = document.getElementById('zoom-out-btn');
 const zoomFitBtn = document.getElementById('zoom-fit-btn');
 
+function makeSvgTransparentForBgOnly(svgString) {
+  return svgString.replace(/<(rect|circle)\s+[^>]*>/g, (match) => {
+    return match
+      .replace(/fill="[^"]*"/, 'fill="none"')
+      .replace(/stroke="[^"]*"/, 'stroke="none"');
+  });
+}
+
 // === 画面の更新（描画）関数 ===
 function updateUI() {
   // 1. キャンバスの再描画
@@ -174,7 +182,12 @@ function updateUI() {
     const pEl = document.createElement('div');
     const isSelected = selectedPanelIds.includes(panel.id);
     
-    pEl.className = `absolute z-20 cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
+    const bgOnly = document.getElementById('ai-bg-only-toggle')?.checked;
+    if (bgOnly) {
+      pEl.className = `absolute z-20 pointer-events-none`;
+    } else {
+      pEl.className = `absolute z-20 cursor-move ${isSelected ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/30' : 'hover:ring-1 hover:ring-gray-400'}`;
+    }
     pEl.style.left = `${panel.x}px`;
     pEl.style.top = `${panel.y}px`;
     pEl.style.width = `${panel.width}px`;
@@ -2383,7 +2396,28 @@ if (aiGenerateBtn) {
               let themeStr = (theme && theme !== 'custom') ? theme : '';
               let specStr = customPrompt ? customPrompt : '';
               
-              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and exactly ${numPlayers} character sheets (or PC stand frames). Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
+              let layoutDesc = '';
+              if (layoutType === 'right-vertical') {
+                layoutDesc = 'The main monitor frame must be placed on the left side, and the character sheets must be arranged in a vertical column on the right side.';
+              } else if (layoutType === 'bottom-horizontal') {
+                layoutDesc = 'The main monitor frame must be placed in the center-top, and the character sheets must be arranged in a horizontal row at the bottom.';
+              } else if (layoutType === 'pattern1') {
+                layoutDesc = 'The main monitor frame must be on the top-left, and the character sheets must be on the right side in a vertical column.';
+              } else if (layoutType === 'pattern2') {
+                layoutDesc = 'The main monitor frame must be on the bottom-left, and the character sheets must be on the right side in a vertical column.';
+              } else if (layoutType === 'pattern3') {
+                layoutDesc = 'The main monitor frame must be on the top-right, and the character sheets must be at the bottom in a horizontal row.';
+              } else if (layoutType === 'pattern4') {
+                layoutDesc = 'The main monitor frame must be on the right side, and the character sheets must be on the left side in a vertical column.';
+              } else if (layoutType === 'pattern5') {
+                layoutDesc = 'The main monitor frame must be in the top-center, and the character sheets must be at the bottom.';
+              } else if (layoutType === 'pattern6') {
+                layoutDesc = 'The main monitor frame must be at the very top, and the character sheets must be in a horizontal row at the very bottom, and menu/handy buttons in the middle.';
+              } else if (layoutType === 'pattern7') {
+                layoutDesc = 'The main monitor frame must be at the very bottom, and the character sheets must be in a horizontal row near the top.';
+              }
+
+              let imagenPrompt = `A beautiful TRPG room layout background illustration for CCfolia, themed as ${themeStr}. ${specStr}. The image must include empty decorative UI frames and borders for the main screen monitor and exactly ${numPlayers} character sheets (or PC stand frames). Each character sheet frame must be vertically long (tall portrait ratio, such as 1:1.5 or 2:3, for displaying character standing pictures). ${layoutDesc} Dark, atmospheric, high quality digital art, ${aspectRatio} aspect ratio. CRITICAL: Do NOT write any text labels, words, letters, titles, or numbers on the image. Absolutely NO text like 'FOREGROUND', 'PC POSITION AREA', 'TITLE', 'HANDY BUTTONS', 'MENU', 'PC NAME', or scenario titles. All frames and slots must be completely empty borders and shapes, designed as plain UI frames.`;
               
               const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt, aspectRatio);
               bgImageUrl = `data:image/png;base64,${imageBytes}`;
@@ -2668,19 +2702,22 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
     );
   }
 
-  panels.push({
-    id: 'ai-window-' + Date.now(),
-    url: windowUrl,
-    x: windowX,
-    y: windowY,
-    width: windowW,
-    height: windowH,
-    originalRatio: windowW / windowH,
-    flipH: false,
-    flipV: false,
-    visible: true,
-    opacity: 1
-  });
+  const bgOnly = aiBgOnlyToggle ? aiBgOnlyToggle.checked : false;
+  if (!bgOnly) {
+    panels.push({
+      id: 'ai-window-' + Date.now(),
+      url: windowUrl,
+      x: windowX,
+      y: windowY,
+      width: windowW,
+      height: windowH,
+      originalRatio: windowW / windowH,
+      flipH: false,
+      flipV: false,
+      visible: true,
+      opacity: 1
+    });
+  }
 
   let plW = 160;
   let plH = 170;
@@ -2825,19 +2862,21 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       );
     }
 
-    panels.push({
-      id: `ai-pl-${i}-${Date.now()}`,
-      url: plUrl,
-      x: plX,
-      y: plY,
-      width: plW,
-      height: plH,
-      originalRatio: plW / plH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-pl-${i}-${Date.now()}`,
+        url: plUrl,
+        x: plX,
+        y: plY,
+        width: plW,
+        height: plH,
+        originalRatio: plW / plH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
@@ -2860,7 +2899,10 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
-    const menuSvg = gen.menu(labelText);
+    let menuSvg = gen.menu(labelText);
+    if (bgOnly) {
+      menuSvg = makeSvgTransparentForBgOnly(menuSvg);
+    }
     let menuX = 50;
     let menuY = 50;
 
@@ -2911,19 +2953,21 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       );
     }
 
-    panels.push({
-      id: `ai-menu-${label}-${Date.now()}`,
-      url: menuUrl,
-      x: menuX,
-      y: menuY,
-      width: menuW,
-      height: menuH,
-      originalRatio: menuW / menuH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-menu-${label}-${Date.now()}`,
+        url: menuUrl,
+        x: menuX,
+        y: menuY,
+        width: menuW,
+        height: menuH,
+        originalRatio: menuW / menuH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   const actionW = 75;
@@ -2933,7 +2977,10 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
     const labelText = actionTranslations[actionStyle][i];
-    const actionSvg = gen.action(labelText, icon.sub, icon.path);
+    let actionSvg = gen.action(labelText, icon.sub, icon.path);
+    if (bgOnly) {
+      actionSvg = makeSvgTransparentForBgOnly(actionSvg);
+    }
     let actionX = 50;
     let actionY = 550;
 
@@ -2988,19 +3035,21 @@ async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, 
       );
     }
 
-    panels.push({
-      id: `ai-action-${icon.name}-${Date.now()}`,
-      url: actionUrl,
-      x: actionX,
-      y: actionY,
-      width: actionW,
-      height: actionH,
-      originalRatio: actionW / actionH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-action-${icon.name}-${Date.now()}`,
+        url: actionUrl,
+        x: actionX,
+        y: actionY,
+        width: actionW,
+        height: actionH,
+        originalRatio: actionW / actionH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   updateUI();
@@ -3106,19 +3155,22 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
     );
   }
 
-  panels.push({
-    id: 'ai-window-' + Date.now(),
-    url: windowUrl,
-    x: windowX,
-    y: windowY,
-    width: windowPanelWidth,
-    height: windowPanelHeight,
-    originalRatio: windowPanelWidth / windowPanelHeight,
-    flipH: false,
-    flipV: false,
-    visible: true,
-    opacity: 1
-  });
+  const bgOnly = aiBgOnlyToggle ? aiBgOnlyToggle.checked : false;
+  if (!bgOnly) {
+    panels.push({
+      id: 'ai-window-' + Date.now(),
+      url: windowUrl,
+      x: windowX,
+      y: windowY,
+      width: windowPanelWidth,
+      height: windowPanelHeight,
+      originalRatio: windowPanelWidth / windowPanelHeight,
+      flipH: false,
+      flipV: false,
+      visible: true,
+      opacity: 1
+    });
+  }
 
   // 2. PLパネルの描画
   const plPanelsData = design.pl_panels || [];
@@ -3211,19 +3263,21 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       );
     }
 
-    panels.push({
-      id: `ai-pl-${i}-${Date.now()}`,
-      url: plUrl,
-      x: plX,
-      y: plY,
-      width: plW,
-      height: plH,
-      originalRatio: plW / plH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-pl-${i}-${Date.now()}`,
+        url: plUrl,
+        x: plX,
+        y: plY,
+        width: plW,
+        height: plH,
+        originalRatio: plW / plH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   // 3. メニューボタンの描画
@@ -3257,7 +3311,10 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   for (let i = 0; i < menuLabels.length; i++) {
     const label = menuLabels[i];
     const labelText = menuTranslations[menuStyle][label];
-    const menuSvg = gen.menu(design, labelText);
+    let menuSvg = gen.menu(design, labelText);
+    if (bgOnly) {
+      menuSvg = makeSvgTransparentForBgOnly(menuSvg);
+    }
     let menuX = baseMenuX;
     let menuY = baseMenuY;
 
@@ -3294,19 +3351,21 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       );
     }
 
-    panels.push({
-      id: `ai-menu-${label}-${Date.now()}`,
-      url: menuUrl,
-      x: menuX,
-      y: menuY,
-      width: menuW,
-      height: menuH,
-      originalRatio: menuW / menuH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-menu-${label}-${Date.now()}`,
+        url: menuUrl,
+        x: menuX,
+        y: menuY,
+        width: menuW,
+        height: menuH,
+        originalRatio: menuW / menuH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   // 4. アクションアイコンの描画
@@ -3330,7 +3389,10 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
   for (let i = 0; i < actionIconsData.length; i++) {
     const icon = actionIconsData[i];
     const labelText = actionTranslations[actionStyle][i];
-    const actionSvg = gen.action(design, labelText, icon.sub, icon.path);
+    let actionSvg = gen.action(design, labelText, icon.sub, icon.path);
+    if (bgOnly) {
+      actionSvg = makeSvgTransparentForBgOnly(actionSvg);
+    }
     let actionX = baseActionX;
     let actionY = baseActionY;
 
@@ -3363,19 +3425,21 @@ async function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgIm
       );
     }
 
-    panels.push({
-      id: `ai-action-${icon.name}-${Date.now()}`,
-      url: actionUrl,
-      x: actionX,
-      y: actionY,
-      width: actionW,
-      height: actionH,
-      originalRatio: actionW / actionH,
-      flipH: false,
-      flipV: false,
-      visible: true,
-      opacity: 1
-    });
+    if (!bgOnly) {
+      panels.push({
+        id: `ai-action-${icon.name}-${Date.now()}`,
+        url: actionUrl,
+        x: actionX,
+        y: actionY,
+        width: actionW,
+        height: actionH,
+        originalRatio: actionW / actionH,
+        flipH: false,
+        flipV: false,
+        visible: true,
+        opacity: 1
+      });
+    }
   }
 
   updateUI();
