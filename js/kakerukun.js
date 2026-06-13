@@ -427,7 +427,7 @@ function exportHTML() {
                 width: 100%; 
             }
         }
-        .scenario-text-block {
+        .scenario-text-block, .page-content > ul, .page-content > ol, .page-content > blockquote {
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
             border-radius: 6px;
@@ -435,7 +435,7 @@ function exportHTML() {
             margin: 0.5rem -8px;
             border: 1px solid transparent;
         }
-        .scenario-text-block:hover {
+        .scenario-text-block:hover, .page-content > ul:hover, .page-content > ol:hover, .page-content > blockquote:hover {
             background-color: rgba(79, 70, 229, 0.08);
             border-color: rgba(79, 70, 229, 0.35);
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
@@ -588,8 +588,40 @@ function exportHTML() {
                 setTimeout(() => { toast.style.opacity = '0'; }, 1500);
             };
 
-            // コピー可能なdiv要素にツールチップを設定 (キャラクターシートは除外)
-            document.querySelectorAll('.page-content > div:not(.box-char-sheet)').forEach(el => {
+            // コピー用共通ヘルパー関数（セキュアコンテキスト外/file://対応）
+            const copyTextToClipboard = (text) => {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    return navigator.clipboard.writeText(text).catch(err => {
+                        return fallbackCopyTextToClipboard(text);
+                    });
+                } else {
+                    return Promise.resolve(fallbackCopyTextToClipboard(text));
+                }
+            };
+
+            const fallbackCopyTextToClipboard = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.top = "-9999px";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                let successful = false;
+                try {
+                    successful = document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback copy failed', err);
+                }
+                document.body.removeChild(textArea);
+                if (!successful) {
+                    throw new Error('execCommand copy failed');
+                }
+            };
+
+            // コピー可能な要素にツールチップを設定 (キャラクターシートは除外)
+            document.querySelectorAll('.page-content .scenario-text-block, .page-content .kp-info, .page-content .quote, .page-content .box-summary, .page-content .box-check, .page-content .box-spot, .page-content .box-search, .page-content .box-listen, .page-content .box-library, .page-content .box-san, .page-content .box-secret, .page-content .box-gimmick, .page-content .box-tendency, .page-content .box-custom, .page-content .box-special, .page-content .box-custom-snippet, .page-content > ul, .page-content > ol, .page-content > blockquote').forEach(el => {
                 el.setAttribute('title', 'クリックでテキストをコピー');
             });
 
@@ -598,10 +630,17 @@ function exportHTML() {
                 // インプットやボタン、キャラクターシート関連の要素をクリックした時はコピー処理をスキップ
                 if (e.target.closest('input') || e.target.closest('button') || e.target.closest('textarea')) return;
 
-                const div = e.target.closest('.page-content > div');
-                if (div && div.classList.contains('box-char-sheet')) return; // キャラクターシート自体は除外
-                if (div) {
-                    navigator.clipboard.writeText(div.innerText).then(() => showToast('コピーしました')).catch(console.error);
+                // TRPGボックスのいずれかをクリックしたか判定 (キャラクターシートは除外)
+                const box = e.target.closest('.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet');
+                if (box) {
+                    copyTextToClipboard(box.innerText).then(() => showToast('コピーしました')).catch(console.error);
+                    return;
+                }
+
+                const targetEl = e.target.closest('.page-content > div, .page-content > ul, .page-content > ol, .page-content > blockquote');
+                if (targetEl && targetEl.classList.contains('box-char-sheet')) return; // キャラクターシート自体は除外
+                if (targetEl) {
+                    copyTextToClipboard(targetEl.innerText).then(() => showToast('コピーしました')).catch(console.error);
                     return;
                 }
             });
@@ -615,10 +654,33 @@ function exportHTML() {
                 
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
-                div.innerHTML = '<input type="text" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute(\'value\', this.value)">' +
-                                '<input type="number" placeholder="初期値" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute(\'value\', this.value)">' +
-                                '<span class="text-[9px] text-slate-400">%</span>' +
-                                '<button onclick="this.parentNode.remove()" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>';
+                
+                const inputName = document.createElement('input');
+                inputName.type = 'text';
+                inputName.placeholder = '技能名';
+                inputName.className = 'char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300';
+                inputName.addEventListener('input', (e) => e.target.setAttribute('value', e.target.value));
+
+                const inputValue = document.createElement('input');
+                inputValue.type = 'number';
+                inputValue.placeholder = '初期値';
+                inputValue.className = 'char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300';
+                inputValue.addEventListener('input', (e) => e.target.setAttribute('value', e.target.value));
+
+                const span = document.createElement('span');
+                span.className = 'text-[9px] text-slate-400';
+                span.textContent = '%';
+
+                const btn = document.createElement('button');
+                btn.className = 'text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5';
+                btn.textContent = '×';
+                btn.addEventListener('click', () => div.remove());
+
+                div.appendChild(inputName);
+                div.appendChild(inputValue);
+                div.appendChild(span);
+                div.appendChild(btn);
+
                 container.appendChild(div);
             };
 
@@ -709,7 +771,7 @@ function exportHTML() {
                     }
                 };
                 
-                navigator.clipboard.writeText(JSON.stringify(ccfoliaData, null, 2)).then(() => {
+                copyTextToClipboard(JSON.stringify(ccfoliaData, null, 2)).then(() => {
                     if (typeof showToast === 'function') {
                         showToast("ココフォリア用データをコピーしました！");
                     } else {
@@ -2072,12 +2134,42 @@ function addSkillToSheet(sheetId) {
     
     const div = document.createElement('div');
     div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
-    div.innerHTML = `
-        <input type="text" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-        <input type="number" placeholder="初期値" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-        <span class="text-[9px] text-slate-400">%</span>
-        <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
-    `;
+    
+    const inputName = document.createElement('input');
+    inputName.type = 'text';
+    inputName.placeholder = '技能名';
+    inputName.className = 'char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300';
+    inputName.addEventListener('input', (e) => {
+        e.target.setAttribute('value', e.target.value);
+        autoUpdateUI();
+    });
+
+    const inputValue = document.createElement('input');
+    inputValue.type = 'number';
+    inputValue.placeholder = '初期値';
+    inputValue.className = 'char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300';
+    inputValue.addEventListener('input', (e) => {
+        e.target.setAttribute('value', e.target.value);
+        autoUpdateUI();
+    });
+
+    const span = document.createElement('span');
+    span.className = 'text-[9px] text-slate-400';
+    span.textContent = '%';
+
+    const btn = document.createElement('button');
+    btn.className = 'text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5';
+    btn.textContent = '×';
+    btn.addEventListener('click', () => {
+        div.remove();
+        autoUpdateUI();
+    });
+
+    div.appendChild(inputName);
+    div.appendChild(inputValue);
+    div.appendChild(span);
+    div.appendChild(btn);
+
     container.appendChild(div);
     autoUpdateUI();
 }
@@ -2171,7 +2263,7 @@ function copyToCcfolia(sheetId) {
         }
     };
     
-    navigator.clipboard.writeText(JSON.stringify(ccfoliaData, null, 2)).then(() => {
+    copyTextToClipboard(JSON.stringify(ccfoliaData, null, 2)).then(() => {
         showToast("ココフォリア用データをコピーしました！");
     }).catch(err => {
         console.error("CCFOLIAコピー失敗", err);
@@ -2179,7 +2271,40 @@ function copyToCcfolia(sheetId) {
     });
 }
 
+// コピー用共通ヘルパー関数（セキュアコンテキスト外/file://対応）
+function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).catch(err => {
+            return fallbackCopyTextToClipboard(text);
+        });
+    } else {
+        return Promise.resolve(fallbackCopyTextToClipboard(text));
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "-9999px";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    let successful = false;
+    try {
+        successful = document.execCommand('copy');
+    } catch (err) {
+        console.error('Fallback copy failed', err);
+    }
+    document.body.removeChild(textArea);
+    if (!successful) {
+        throw new Error('execCommand copy failed');
+    }
+}
+
 // グローバルスコープバインド
 window.insertCharacterSheet = insertCharacterSheet;
 window.addSkillToSheet = addSkillToSheet;
 window.copyToCcfolia = copyToCcfolia;
+window.copyTextToClipboard = copyTextToClipboard;
