@@ -353,6 +353,7 @@
     let previewScale = 1.0; // プレビューの拡大率倍率
     let pdfOutline = []; // PDFのしおりツリー
     let isOutlineOpen = false; // 目次パネルが開いているかどうか
+    let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -454,10 +455,13 @@
             // 1. 本紙プレビューの初回描画
             renderPreviewPage(1);
 
-            // 2. 整形テキストのロード
+            // 2. 話者名の自動抽出
+            buildSpeakerSet();
+
+            // 3. 整形テキストのロード
             processAndDisplay(true);
 
-            // 3. PDFしおりの抽出
+            // 4. PDFしおりの抽出
             await extractPdfOutline(pdfDoc);
           } catch (error) {
             console.error(error);
@@ -535,6 +539,84 @@
       if (targetPage >= 1 && targetPage <= pdfDoc.numPages) {
         renderPreviewPage(targetPage);
       }
+    }
+
+    // PDF全体から話者名を自動抽出してリスト化する
+    function buildSpeakerSet() {
+      detectedSpeakers.clear();
+      if (rawTextBlocks.length === 0) return;
+
+      let fullText = '';
+      rawTextBlocks.forEach(block => {
+        block.items.forEach(item => {
+          fullText += item.str;
+        });
+        fullText += '\n';
+      });
+
+      // 行頭（スペースを許容）の1〜8文字で、直後に「や『、またはコロンが続くものを話者名とする
+      const speakerRegex = /^[\s　]*([^「」『』\n\s　：:]{1,8})(?=[「『：:])/gm;
+      let match;
+      while ((match = speakerRegex.exec(fullText)) !== null) {
+        if (match[1] && match[1].trim()) {
+          detectedSpeakers.add(match[1].trim());
+        }
+      }
+      console.log("検出された話者名リスト:", Array.from(detectedSpeakers));
+    }
+
+    // スマートに段落を判定してテキストを配列に分割する処理
+    function splitIntoParagraphs(text) {
+      // 1. 検出された話者名リストを使って、地の文の直後に結合しているセリフを切り分ける
+      detectedSpeakers.forEach(speaker => {
+        if (speaker.length >= 1) {
+          const escaped = speaker.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const regex = new RegExp(`([^\\n])(${escaped}(?=[「『：:]))`, 'g');
+          text = text.replace(regex, '$1\n\n$2'); // \n を \n\n にして強制的にカードを分ける
+        }
+      });
+
+      // 2. セリフの閉じカッコの直後に改行がある場合、それを段落区切り（\n\n）にする
+      text = text.replace(/([」』])\n(?!\n)/g, '$1\n\n');
+
+      // 物理的な空行 (\n\n) で大枠の段落に分割
+      const blocks = text.split(/\n{2,}/);
+      const finalParagraphs = [];
+
+      blocks.forEach(block => {
+        const lines = block.split('\n');
+        let currentSubBlock = [];
+
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+
+          // セリフ「単独」行であるかどうかの判定を調整
+          // 話者名が1〜12文字で、その後にカギカッコが始まり、閉じカッコで終わる（末尾のスペースや句読点を許容）
+          const isSpeechLine = /^([^「」『』\n]{1,12})([「『].*[」』][\s。]*)$/.test(trimmed) || 
+                               /^[^：:\n]{1,12}[：:]\s*([「『].*[」』][\s。]*)$/.test(trimmed);
+
+          if (isSpeechLine) {
+            // すでに溜まっている通常の段落文章があれば、一度段落カードとして確定する
+            if (currentSubBlock.length > 0) {
+              finalParagraphs.push(currentSubBlock.join('\n'));
+              currentSubBlock = [];
+            }
+            // セリフ単独行は強制的に1行だけの独立したカードにする
+            finalParagraphs.push(trimmed);
+          } else {
+            // 通常の文章（地の文や文中にカギカッコがただ入る文）は段落として溜める
+            currentSubBlock.push(line);
+          }
+        });
+
+        // 最後に残った通常の段落文章をカードにする
+        if (currentSubBlock.length > 0) {
+          finalParagraphs.push(currentSubBlock.join('\n'));
+        }
+      });
+
+      return finalParagraphs;
     }
 
     // 指定されたページ番号へジャンプ（連動用）
@@ -627,9 +709,12 @@
         if (speaker.length >= 1) {
           const escaped = speaker.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
           const regex = new RegExp(`([^\\n])(${escaped}(?=[「『：:]))`, 'g');
-          text = text.replace(regex, '$1\n$2');
+          text = text.replace(regex, '$1\n\n$2'); // \n を \n\n にして強制的にカードを分ける
         }
       });
+
+      // 3. セリフの閉じカッコの直後に改行がある場合、それを段落区切り（\n\n）にする
+      text = text.replace(/([」』])\n(?!\n)/g, '$1\n\n');
 
       // 物理的な空行 (\n\n) で大枠の段落に分割
       const blocks = text.split(/\n{2,}/);
@@ -832,7 +917,30 @@
         const isNextCharNormal = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\w]/.test(firstChar);
         const isNextNotStartBracket = !/[「『（｛【\[＜＜]/.test(firstChar);
 
-        if (isLastCharJapanese && isNotSentenceEnd && isNextCharNormal && isNextNotStartBracket) {
+        // 強力な改行維持条件
+        let preventJoin = false;
+
+        // 1. 次の行が検出された話者名で始まっている場合
+        let isNextSpeaker = false;
+        for (const speaker of detectedSpeakers) {
+          if (nextLine.startsWith(speaker)) {
+            const rest = nextLine.substring(speaker.length).trim();
+            if (/^[「『：:]/.test(rest)) {
+              isNextSpeaker = true;
+              break;
+            }
+          }
+        }
+        if (isNextSpeaker) {
+          preventJoin = true;
+        }
+
+        // 2. 次の行が特定の記号（――、・、-、*）で始まっている場合
+        if (/^(――|・|\-|\*)/.test(nextLine)) {
+          preventJoin = true;
+        }
+
+        if (isLastCharJapanese && isNotSentenceEnd && isNextCharNormal && isNextNotStartBracket && !preventJoin) {
           lines[i + 1] = currentLine + nextLine;
         } else {
           result.push(currentLine);
@@ -1156,6 +1264,7 @@
       pdfDoc = null;
       pdfOutline = [];
       isOutlineOpen = false;
+      detectedSpeakers.clear();
       document.getElementById('pdf-input').value = '';
       currentFileName = "";
 
