@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "SSCalendar", url: "SSCalendar.html" },
         { name: "HTML比較", url: "HtmlCompare.html" },
         { name: "バトルマネージャー", url: "BattleManager.html" },
-        { name: "スケジュールマネージャー", url: "ScheduleManager.html" }
+        { name: "スケジュールマネージャー", url: "ScheduleManager.html" },
+        { name: "PDF楽々変換ツール", url: "PdfEasyConverter.html" }
     ];
 
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
