@@ -333,7 +333,7 @@
   <!-- フッター -->
   <footer class="bg-slate-800 text-slate-400 py-3 px-6 text-center text-[11px] flex-shrink-0 border-t border-slate-700">
     <div class="max-w-[1800px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 2026 Weby PDF Utilities - 快適なシナリオ整形ライフを！</p>
+      <p>Project by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" class="text-teal-400 hover:underline">https://ijigenpocket.booth.pm/</a></p>
       <span class="text-slate-500">HTML-Based Client-Side PDF Workspace</span>
     </div>
   </footer>
@@ -776,6 +776,17 @@
       return false;
     }
 
+    // ページ番号（ノンブル）の自動判別ロジック
+    function isPageNumberLine(text) {
+      const trimmed = text.trim();
+      // "1", "12", "P.1", "p. 12", "- 1 -", "— 1 —", "page 1", "Page 1", "[1]", "【1】"
+      return /^(page\s*)?\d+$/i.test(trimmed) || 
+             /^p\.\s*\d+$/i.test(trimmed) || 
+             /^[-—－—\s]*\d+[-—－—\s]*$/.test(trimmed) ||
+             /^\[\s*\d+\s*\]$/.test(trimmed) ||
+             /^【\s*\d+\s*】$/.test(trimmed);
+    }
+
     // テキストデータの加工と画面表示への出力
     function processAndDisplay(isNewFileLoad = false) {
       if (rawTextBlocks.length === 0) return;
@@ -807,8 +818,8 @@
 
         block.items.forEach(item => {
           if (excludeHeaderFooter) {
-            if (item.y < block.height * 0.07 || item.y > block.height * 0.93) {
-              return; // 端領域を除外
+            if (item.y < block.height * 0.10 || item.y > block.height * 0.90) {
+              return; // 端領域を除外（上下 10% に拡大）
             }
           }
 
@@ -839,6 +850,11 @@
           if (!cleanedText) return;
 
           if (excludeToc && isTocLine(cleanedText)) {
+            return;
+          }
+
+          // ページ番号の除外
+          if (isPageNumberLine(cleanedText)) {
             return;
           }
 
