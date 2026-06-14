@@ -110,7 +110,12 @@
             PDF本紙 プレビュー表示
           </h2>
           <!-- プレビュー用ズーム＆コントロール -->
-          <div class="flex items-center gap-1" id="preview-controls">
+          <div class="flex items-center gap-1.5" id="preview-controls">
+            <!-- PDFしおりトグルボタン (初期は非表示/無効) -->
+            <button id="btn-toggle-pdf-outline" onclick="togglePdfOutlinePanel()" disabled class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded opacity-50 cursor-not-allowed transition-all" title="PDF目次を表示">
+              <i data-lucide="menu" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="h-3 w-[1px] bg-slate-200 mx-0.5" id="preview-divider"></div>
             <button onclick="zoomPreview(-0.1)"
               class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded" title="ズームアウト">
               <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
@@ -135,6 +140,16 @@
           </div>
           <!-- 実際のPDFがここに描画されます -->
           <canvas id="preview-canvas" class="shadow-md bg-white hidden max-w-full"></canvas>
+          <!-- PDF組み込み目次しおりコンテナ -->
+          <div id="preview-outline-container" class="absolute inset-0 bg-white p-4 overflow-y-auto hidden border-t border-slate-150">
+            <h3 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+              <i data-lucide="menu" class="w-3.5 h-3.5 text-teal-600"></i>
+              PDFドキュメント目次
+            </h3>
+            <div id="preview-outline-tree" class="space-y-1.5 text-xs text-slate-700">
+              <!-- 動的生成される目次ツリー -->
+            </div>
+          </div>
         </div>
 
         <!-- プレビューのページ送り -->
@@ -336,6 +351,8 @@
     let pdfDoc = null; // プレビュー用のPDFドキュメントインスタンス
     let currentPreviewPage = 1; // 現在プレビュー表示中のページ
     let previewScale = 1.0; // プレビューの拡大率倍率
+    let pdfOutline = []; // PDFのしおりツリー
+    let isOutlineOpen = false; // 目次パネルが開いているかどうか
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -439,6 +456,9 @@
 
             // 2. 整形テキストのロード
             processAndDisplay(true);
+
+            // 3. PDFしおりの抽出
+            await extractPdfOutline(pdfDoc);
           } catch (error) {
             console.error(error);
             updateStatus('error', 'PDFの解析に失敗しました。');
@@ -865,6 +885,7 @@
         const card = document.createElement('div');
         card.className = "group relative bg-slate-50 hover:bg-teal-50/20 border border-slate-200 hover:border-teal-300 rounded-xl p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 shadow-sm";
         card.setAttribute('data-id', item.id);
+        card.setAttribute('data-page', item.page);
 
         // 表示時は常に話者名を残して表示する
         const displayText = item.text;
@@ -1133,6 +1154,8 @@
       rawTextBlocks = [];
       processedItems = [];
       pdfDoc = null;
+      pdfOutline = [];
+      isOutlineOpen = false;
       document.getElementById('pdf-input').value = '';
       currentFileName = "";
 
@@ -1144,6 +1167,20 @@
       document.getElementById('preview-placeholder').classList.remove('hidden');
       document.getElementById('preview-total-pages').innerText = "0";
       document.getElementById('preview-current-page').innerText = "0";
+
+      // 目次のクリーンアップ
+      const outlineContainer = document.getElementById('preview-outline-container');
+      if (outlineContainer) outlineContainer.classList.add('hidden');
+      const outlineTree = document.getElementById('preview-outline-tree');
+      if (outlineTree) outlineTree.innerHTML = '';
+
+      const btnToggle = document.getElementById('btn-toggle-pdf-outline');
+      if (btnToggle) {
+        btnToggle.disabled = true;
+        btnToggle.classList.add('opacity-50', 'cursor-not-allowed');
+        btnToggle.classList.remove('opacity-100', 'bg-slate-200', 'text-slate-800');
+        btnToggle.classList.add('text-slate-400');
+      }
 
       renderList();
       showToast('クリア完了', '読み込んだデータをすべて削除しました。', 'info');
@@ -1200,6 +1237,158 @@
           toast.remove();
         }, 300);
       }, 4000);
+    }
+
+    // PDFしおりツリーの抽出
+    async function extractPdfOutline(doc) {
+      const btn = document.getElementById('btn-toggle-pdf-outline');
+      try {
+        const outline = await doc.getOutline();
+        if (!outline || outline.length === 0) {
+          pdfOutline = [];
+          if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.remove('opacity-100');
+          }
+          return;
+        }
+
+        // 非同期で再帰的にしおりノードを解決する
+        async function resolveNode(node) {
+          let pageNum = null;
+          if (node.dest) {
+            try {
+              let destObj = node.dest;
+              if (typeof destObj === 'string') {
+                destObj = await doc.getDestination(destObj);
+              }
+              if (Array.isArray(destObj) && destObj.length > 0) {
+                const pageRef = destObj[0];
+                if (pageRef && typeof pageRef === 'object') {
+                  const pageIndex = await doc.getPageIndex(pageRef);
+                  pageNum = pageIndex + 1;
+                }
+              }
+            } catch (e) {
+              console.error("しおりの宛先解決中にエラー:", e);
+            }
+          }
+
+          const resolvedChildren = [];
+          if (node.items && node.items.length > 0) {
+            for (const child of node.items) {
+              resolvedChildren.push(await resolveNode(child));
+            }
+          }
+
+          return {
+            title: node.title,
+            page: pageNum,
+            items: resolvedChildren
+          };
+        }
+
+        const resolvedOutline = [];
+        for (const item of outline) {
+          resolvedOutline.push(await resolveNode(item));
+        }
+
+        pdfOutline = resolvedOutline;
+
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          btn.classList.add('opacity-100');
+        }
+
+        renderPdfOutline();
+      } catch (e) {
+        console.error("しおり抽出エラー:", e);
+        pdfOutline = [];
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+          btn.classList.remove('opacity-100');
+        }
+      }
+    }
+
+    // PDFしおりのHTML描画
+    function renderPdfOutline() {
+      const container = document.getElementById('preview-outline-tree');
+      if (!container) return;
+
+      if (pdfOutline.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-center py-6">目次（しおり）はありません</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      function buildTreeHtml(nodes, depth = 0) {
+        let html = '';
+        nodes.forEach(node => {
+          const paddingLeft = depth * 12; // pxでの左パディング
+          const pageBadge = node.page ? `<span class="ml-auto bg-slate-100 text-slate-500 text-[10px] px-1 rounded">P.${node.page}</span>` : '';
+          const clickableClass = node.page ? 'cursor-pointer hover:bg-slate-100 text-slate-700 font-medium' : 'text-slate-400 cursor-default';
+          const clickHandler = node.page ? `onclick="jumpToPageFromOutline(${node.page})"` : '';
+
+          html += `
+            <div class="flex items-center py-1 px-1.5 rounded transition-all ${clickableClass}" style="padding-left: ${paddingLeft + 6}px" ${clickHandler}>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 mr-1 text-slate-400 flex-shrink-0 ${node.items.length > 0 ? '' : 'opacity-0'}"></i>
+              <span class="truncate" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</span>
+              ${pageBadge}
+            </div>
+          `;
+
+          if (node.items && node.items.length > 0) {
+            html += buildTreeHtml(node.items, depth + 1);
+          }
+        });
+        return html;
+      }
+
+      container.innerHTML = buildTreeHtml(pdfOutline);
+      lucide.createIcons();
+    }
+
+    // PDF目次パネルの表示切り替え
+    function togglePdfOutlinePanel() {
+      const container = document.getElementById('preview-outline-container');
+      const btn = document.getElementById('btn-toggle-pdf-outline');
+      if (!container || !btn) return;
+
+      isOutlineOpen = !isOutlineOpen;
+
+      if (isOutlineOpen) {
+        container.classList.remove('hidden');
+        btn.classList.add('bg-slate-200', 'text-slate-800');
+        btn.classList.remove('text-slate-400');
+      } else {
+        container.classList.add('hidden');
+        btn.classList.remove('bg-slate-200', 'text-slate-800');
+        btn.classList.add('text-slate-400');
+      }
+    }
+
+    // 目次から指定ページへジャンプ ＆ スクロール連動
+    function jumpToPageFromOutline(pageNum) {
+      if (!pageNum) return;
+
+      // 1. 本紙プレビューのページ切り替え
+      jumpToPreviewPage(pageNum);
+
+      // 2. テキスト一覧の対象ページの最初のカードへスクロール
+      const targetCard = document.querySelector(`#text-list [data-page="${pageNum}"]`);
+      if (targetCard) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 一時的にハイライトする
+        targetCard.classList.add('bg-teal-50', 'border-teal-400');
+        setTimeout(() => {
+          targetCard.classList.remove('bg-teal-50', 'border-teal-400');
+        }, 1500);
+      }
     }
 
     // HTMLエスケープ
