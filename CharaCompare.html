@@ -12,7 +12,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 視認性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
+        /* 視視性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
 
         body {
@@ -219,6 +219,57 @@
                 </div>
             </section>
         </div>
+
+        <!-- 探索者選別の儀セクション (NEW!) -->
+        <section id="scoutSection" class="hidden space-y-6 pt-10 border-t border-amber-950/40 bg-[#120e0a]/40 p-6 rounded-2xl border border-amber-950/45 magic-border">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="scale" class="text-amber-500 w-6 h-6"></i>
+                    <h2 class="text-xl font-bold font-header text-amber-400 tracking-wider">探索者選抜の儀（上位10名選別）</h2>
+                </div>
+                <div class="text-[11px] text-stone-500">※シナリオの推奨技能に合わせて優秀な探索者を選び出します</div>
+            </div>
+
+            <!-- 選別設定フォーム -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-[#0a0806] p-4 rounded-xl border border-amber-950/30">
+                <div>
+                    <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第一選抜技能</label>
+                    <select id="scoutSkill1" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
+                        <option value="">-- 未選択 --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第二選抜技能</label>
+                    <select id="scoutSkill2" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
+                        <option value="">-- 未選択 --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第三選抜技能</label>
+                    <select id="scoutSkill3" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
+                        <option value="">-- 未選択 --</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="executeScout()" class="w-full py-2 px-4 bg-amber-700 hover:bg-amber-600 text-stone-100 text-xs font-bold rounded-lg transition-colors border border-amber-600/30 flex items-center justify-center gap-1.5 font-header">
+                        <i data-lucide="search-code" class="w-4 h-4"></i> 適格者を選別する
+                    </button>
+                </div>
+            </div>
+
+            <!-- 選別結果表示エリア -->
+            <div id="scoutResultsArea" class="hidden space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-amber-500 font-header tracking-wider">🔮 選別結果：技能値適正上位10名</h3>
+                    <button id="applyScoutSelectionBtn" class="flex items-center gap-1 px-3 py-1 text-[11px] font-semibold bg-[#261f1a] hover:bg-[#3d3028] text-amber-300 rounded-md border border-amber-800/40 transition-colors">
+                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i> この10名を選択して比較する
+                    </button>
+                </div>
+                <div id="scoutResultsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                    <!-- ここにランキングされた探索者がJSで挿入される -->
+                </div>
+            </div>
+        </section>
 
         <!-- 比較の儀式セクション -->
         <section id="compareSection" class="hidden space-y-10 pt-10 border-t border-amber-950/40">
@@ -598,6 +649,8 @@
                     </div>
                 `;
                 lucide.createIcons();
+                // 比較・選別セクションを隠す
+                document.getElementById('scoutSection').classList.add('hidden');
                 return;
             }
 
@@ -666,15 +719,175 @@
             }).join('');
 
             lucide.createIcons();
+
+            // 選別セクション（スカウト用のドロップダウン選択肢など）を表示＆更新
+            document.getElementById('scoutSection').classList.remove('hidden');
+            populateScoutSkills();
         }
 
-        // --- 基本能力値表のソート制御 ---
+        // --- 選別技能のセレクトボックスオプションを動的生成 (NEW!) ---
+        function populateScoutSkills() {
+            // 全キャラクターが持っているユニークな全技能名を集める
+            const allSkillsSet = new Set();
+            characters.forEach(char => {
+                const skills = char.skills || [];
+                skills.forEach(s => allSkillsSet.add(s.label));
+            });
+
+            const sortedSkills = Array.from(allSkillsSet).sort();
+            const selectors = ['scoutSkill1', 'scoutSkill2', 'scoutSkill3'];
+
+            selectors.forEach(selectorId => {
+                const selectEl = document.getElementById(selectorId);
+                const currentValue = selectEl.value; // 現在の選択値をキープ
+
+                selectEl.innerHTML = '<option value="">-- 未選択 --</option>';
+                sortedSkills.forEach(skillName => {
+                    const option = document.createElement('option');
+                    option.value = skillName;
+                    option.textContent = skillName;
+                    selectEl.appendChild(option);
+                });
+
+                // 選択を復元
+                if (sortedSkills.includes(currentValue)) {
+                    selectEl.value = currentValue;
+                }
+            });
+        }
+
+        // --- 選別（スカウト）の実行 (NEW!) ---
+        function executeScout() {
+            const skill1 = document.getElementById('scoutSkill1').value;
+            const skill2 = document.getElementById('scoutSkill2').value;
+            const skill3 = document.getElementById('scoutSkill3').value;
+
+            const selectedSkills = [skill1, skill2, skill3].filter(s => s !== '');
+
+            if (selectedSkills.length === 0) {
+                showToast("選別するための技能を少なくとも1つ選択してください", "error");
+                return;
+            }
+
+            // キャラクターごとに、選択した技能の合計値を計算してスコアリング
+            const scoredCharacters = characters.map(char => {
+                let totalScore = 0;
+                const skillDetails = [];
+
+                selectedSkills.forEach(targetSkillName => {
+                    const charSkillObj = (char.skills || []).find(s => s.label === targetSkillName);
+                    // 初期値などのTRPGの仕様を踏まえ、技能がパースされていなければ0%として扱う
+                    const value = charSkillObj ? charSkillObj.value : 0;
+                    totalScore += value;
+                    skillDetails.push({ label: targetSkillName, value: value });
+                });
+
+                return {
+                    character: char,
+                    totalScore: totalScore,
+                    details: skillDetails
+                };
+            });
+
+            // 合計値が高い順（降順）にソート
+            scoredCharacters.sort((a, b) => b.totalScore - a.totalScore);
+
+            // 上位10名（10枠）を選出
+            const topScouted = scoredCharacters.slice(0, 10);
+
+            // 結果一覧を表示
+            renderScoutResults(topScouted, selectedSkills);
+        }
+
+        // --- 選別結果のレンダリング (NEW!) ---
+        function renderScoutResults(scoutedList, selectedSkills) {
+            const resultsArea = document.getElementById('scoutResultsArea');
+            const resultsList = document.getElementById('scoutResultsList');
+            const applyBtn = document.getElementById('applyScoutSelectionBtn');
+
+            resultsArea.classList.remove('hidden');
+
+            if (scoutedList.length === 0 || scoutedList[0].totalScore === 0) {
+                resultsList.innerHTML = `
+                    <div class="col-span-full py-8 text-center text-stone-500 text-xs">
+                        指定した技能を誰も習得していないか、すべて0%です。
+                    </div>
+                `;
+                applyBtn.classList.add('hidden');
+                return;
+            }
+
+            applyBtn.classList.remove('hidden');
+
+            // 抽出された上位10人のID一覧を一時保持
+            const scoutedIds = scoutedList.map(s => s.character.id);
+            applyBtn.onclick = () => {
+                selectedIds.clear();
+                scoutedIds.forEach(id => selectedIds.add(id));
+                renderCharacters();
+                updateComparison();
+                showToast("選抜された適格者10名を比較対象に設定しました！", "success");
+                // 比較の儀セクションにスクロール
+                document.getElementById('compareSection').scrollIntoView({ behavior: 'smooth' });
+            };
+
+            resultsList.innerHTML = scoutedList.map((item, index) => {
+                const char = item.character;
+                const rank = index + 1;
+                
+                // 順位ごとの王冠やメダル色
+                let rankBadgeColor = 'bg-stone-800 text-stone-400';
+                if (rank === 1) rankBadgeColor = 'bg-yellow-500 text-stone-950 font-bold animate-pulse';
+                else if (rank === 2) rankBadgeColor = 'bg-slate-300 text-stone-900 font-bold';
+                else if (rank === 3) rankBadgeColor = 'bg-amber-600 text-stone-100 font-bold';
+
+                const detailsHtml = item.details.map(det => {
+                    return `<div class="flex justify-between items-center text-[10px] text-stone-400 mt-1">
+                        <span>${det.label}</span>
+                        <span class="font-mono text-amber-500">${det.value}%</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="bg-[#110d0a] border border-amber-900/30 rounded-xl p-3 flex flex-col justify-between shadow-lg relative magic-border">
+                        <div>
+                            <!-- 順位バッジ -->
+                            <div class="absolute -top-2.5 -left-2 w-6 h-6 rounded-full ${rankBadgeColor} flex items-center justify-center text-[11px] shadow-md">
+                                ${rank}
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-1 mb-2">
+                                ${char.iconUrl 
+                                    ? `<img src="${char.iconUrl}" alt="" class="w-6 h-6 rounded-full object-cover border border-amber-900/30" onerror="this.style.display='none'">` 
+                                    : `<div class="w-6 h-6 rounded-full bg-amber-950 flex items-center justify-center text-[9px] font-bold text-amber-500">${char.name.substring(0,1)}</div>`
+                                }
+                                <div class="font-header text-stone-200 text-xs truncate max-w-[100px]" title="${char.name}">${char.name}</div>
+                            </div>
+                            
+                            <!-- 技能値の内訳 -->
+                            <div class="border-t border-amber-950/20 pt-1">
+                                ${detailsHtml}
+                            </div>
+                        </div>
+
+                        <!-- 合計点数 -->
+                        <div class="border-t border-amber-950/20 mt-2 pt-1.5 flex justify-between items-center">
+                            <span class="text-[9px] text-stone-500 uppercase tracking-wider">合計適正</span>
+                            <span class="text-sm font-bold text-amber-400 font-mono">${item.totalScore}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- 基本属性・特性値表のソート制御 ---
         function setMainTableSort(key) {
             if (mainTableSortKey === key) {
                 mainTableSortDesc = !mainTableSortDesc;
             } else {
                 mainTableSortKey = key;
-                // 名前(name)以外は初期ソートを「降順（大きい順）」にするのが直感的
                 mainTableSortDesc = (key !== 'name');
             }
             updateComparison();
@@ -686,7 +899,6 @@
                 skillTableSortDesc = !skillTableSortDesc;
             } else {
                 skillTableSortKey = key;
-                // 技能名(label)以外は初期ソートを「降順（値が高い順）」にする
                 skillTableSortDesc = (key !== 'label');
             }
             updateComparison();
@@ -771,9 +983,9 @@
                         <td class="p-4 font-bold text-stone-200">
                             <div class="flex items-center gap-2">
                                 ${char.iconUrl
-                        ? `<img src="${char.iconUrl}" alt="" class="w-6 h-6 rounded-full object-cover border border-amber-900/40" onerror="this.style.display='none'">`
-                        : `<div class="w-6 h-6 rounded-full bg-amber-950 flex items-center justify-center text-[10px] font-bold text-amber-500 font-header">${char.name.substring(0, 1)}</div>`
-                    }
+                                    ? `<img src="${char.iconUrl}" alt="" class="w-6 h-6 rounded-full object-cover border border-amber-900/40" onerror="this.style.display='none'">`
+                                    : `<div class="w-6 h-6 rounded-full bg-amber-950 flex items-center justify-center text-[10px] font-bold text-amber-500 font-header">${char.name.substring(0, 1)}</div>`
+                                }
                                 <span class="truncate max-w-[150px] font-header text-stone-100">${char.name}</span>
                             </div>
                         </td>
