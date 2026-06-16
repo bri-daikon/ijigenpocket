@@ -191,20 +191,46 @@
             <!-- 右カラム: 探索者名簿 (8/12) -->
             <section
                 class="lg:col-span-8 bg-[#14100c] border border-amber-950/60 rounded-2xl p-6 shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col min-h-[400px]">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div class="flex items-center gap-2.5">
-                        <i data-lucide="users" class="text-amber-500 w-5 h-5"></i>
-                        <h2 class="text-lg font-bold font-header text-amber-400">契約を交わした探索者一覧 (<span id="characterCount"
-                                class="text-amber-500 font-header">0</span>)</h2>
+                
+                <!-- 名簿上部：タイトル・全体操作・検索と並び替え -->
+                <div class="flex flex-col gap-4 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="users" class="text-amber-500 w-5 h-5"></i>
+                            <h2 class="text-lg font-bold font-header text-amber-400">契約を交わした探索者一覧 (<span id="characterCount"
+                                    class="text-amber-500 font-header">0</span>)</h2>
+                        </div>
+
+                        <!-- 簡易フィルター -->
+                        <div class="flex items-center gap-2.5 text-xs">
+                            <button onclick="selectAll(true)"
+                                class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
+                            <span class="text-amber-950">|</span>
+                            <button onclick="selectAll(false)"
+                                class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
+                        </div>
                     </div>
 
-                    <!-- 簡易フィルター -->
-                    <div class="flex items-center gap-2.5 text-xs">
-                        <button onclick="selectAll(true)"
-                            class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
-                        <span class="text-amber-950">|</span>
-                        <button onclick="selectAll(false)"
-                            class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
+                    <!-- 検索機能 ＆ 召喚カードソート機能 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <!-- キャラクター名リアルタイム検索 -->
+                        <div class="relative sm:col-span-7">
+                            <i data-lucide="search" class="w-4 h-4 text-amber-700 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="charSearchInput" oninput="renderCharacters()" 
+                                class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg py-2 pl-9 pr-4 text-xs text-amber-200 placeholder-stone-750 focus:outline-none transition-all"
+                                placeholder="探索者の名前で検索...">
+                        </div>
+                        <!-- キャラクター追加順・名前・INITでの並び替え -->
+                        <div class="relative sm:col-span-5">
+                            <select id="charSortKey" onchange="renderCharacters()" 
+                                class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none transition-all cursor-pointer">
+                                <option value="id_desc">追加順（新しい順）</option>
+                                <option value="id_asc">追加順（古い順）</option>
+                                <option value="name_asc">名前順（五十音順）</option>
+                                <option value="init_desc">行動順（INIT高い順）</option>
+                                <option value="init_asc">行動順（INIT低い順）</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -318,7 +344,7 @@
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr
-                                class="bg-[#100d0a] border-b border-amber-950 text-amber-600/80 font-header select-none">
+                                class="bg-[#100d0a] border-b border-amber-950 text-amber-600/80 font-header select-none font-semibold">
                                 <th onclick="setMainTableSort('name')"
                                     class="p-4 min-w-[160px] cursor-pointer hover:text-amber-400 transition-colors">探索者
                                     <span id="sort_icon_name" class="inline-block align-middle"></span></th>
@@ -675,10 +701,14 @@
             updateComparison();
         }
 
-        // --- キャラクター一覧表示の更新 ---
+        // --- キャラクター一覧表示の更新 (名前検索 ＆ ソート並び替え魔法の完全統合) ---
         function renderCharacters() {
             const container = document.getElementById('characterList');
             const countEl = document.getElementById('characterCount');
+            
+            // 検索ワード & 並び替えキーを安全に取得
+            const searchQuery = document.getElementById('charSearchInput') ? document.getElementById('charSearchInput').value.toLowerCase().trim() : '';
+            const sortKey = document.getElementById('charSortKey') ? document.getElementById('charSortKey').value : 'id_desc';
 
             countEl.textContent = characters.length;
 
@@ -696,7 +726,46 @@
                 return;
             }
 
-            container.innerHTML = characters.map(char => {
+            // 1. 探索者の名前検索フィルターを適用
+            let filteredChars = characters.filter(char => {
+                return char.name.toLowerCase().includes(searchQuery);
+            });
+
+            // 2. 探索者カード自体の並び替え (ソート) を適用
+            filteredChars.sort((a, b) => {
+                if (sortKey === 'id_desc') {
+                    // 追加順 (新しい順: IDはタイムスタンプベースなのでこれで降順ソート)
+                    return b.id.localeCompare(a.id);
+                } else if (sortKey === 'id_asc') {
+                    // 追加順 (古い順: 昇順)
+                    return a.id.localeCompare(b.id);
+                } else if (sortKey === 'name_asc') {
+                    // 五十音順
+                    return a.name.localeCompare(b.name, 'ja');
+                } else if (sortKey === 'init_desc') {
+                    // 行動順（INIT高い順：降順）
+                    return b.initiative - a.initiative;
+                } else if (sortKey === 'init_asc') {
+                    // 行動順（INIT低い順：昇順）
+                    return a.initiative - b.initiative;
+                }
+                return 0;
+            });
+
+            // 検索結果がゼロの場合の優雅な表示
+            if (filteredChars.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 text-stone-600 space-y-3">
+                        <i data-lucide="search-x" class="w-14 h-14 stroke-[1] text-stone-700"></i>
+                        <p class="text-sm font-header">該当する探索者が見つかりません</p>
+                        <p class="text-xs">呪文（検索ワード）の記述を変えてみてください。</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredChars.map(char => {
                 const isSelected = selectedIds.has(char.id);
 
                 const imageTag = char.iconUrl
@@ -914,6 +983,28 @@
             lucide.createIcons();
         }
 
+        // --- 基本属性・特性値表のソート制御 ---
+        function setMainTableSort(key) {
+            if (mainTableSortKey === key) {
+                mainTableSortDesc = !mainTableSortDesc;
+            } else {
+                mainTableSortKey = key;
+                mainTableSortDesc = (key !== 'name');
+            }
+            updateComparison();
+        }
+
+        // --- 技能比較表のソート制御 ---
+        function setSkillTableSort(key) {
+            if (skillTableSortKey === key) {
+                skillTableSortDesc = !skillTableSortDesc;
+            } else {
+                skillTableSortKey = key;
+                skillTableSortDesc = (key !== 'label');
+            }
+            updateComparison();
+        }
+
         // --- 比較セクション全体の更新 ---
         function updateComparison() {
             const compareSection = document.getElementById('compareSection');
@@ -932,7 +1023,7 @@
             renderSkillCompareTable(selectedChars);
         }
 
-        // --- 属性値比較テーブルのレンダリング ---
+        // --- 基本属性・特性値表のレンダリング ---
         function renderCompareTable(selectedChars) {
             const tbody = document.getElementById('compareTableBody');
 
