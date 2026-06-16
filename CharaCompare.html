@@ -12,7 +12,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 視視性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
+        /* 視認性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
 
         body {
@@ -97,7 +97,7 @@
                 </button>
 
                 <button onclick="clearAllDataPrompt()"
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-950 hover:bg-rose-950/40 text-rose-400 rounded-lg transition-all border border-rose-950/60 hover:border-rose-800 shadow-md">
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-955 hover:bg-rose-950/40 text-rose-400 rounded-lg transition-all border border-rose-950/60 hover:border-rose-800 shadow-md">
                     <i data-lucide="flame" class="w-3.5 h-3.5 text-rose-500"></i> 全てを浄化
                 </button>
             </div>
@@ -230,7 +230,7 @@
                 <div class="text-[11px] text-stone-500">※シナリオの推奨技能に合わせて優秀な探索者を選び出します</div>
             </div>
 
-            <!-- 選別設定フォーム（プルダウンからテキスト自由入力+サジェストに進化！） -->
+            <!-- 選別設定フォーム -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-[#0a0806] p-4 rounded-xl border border-amber-950/30">
                 <div>
                     <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第一選抜技能</label>
@@ -419,7 +419,7 @@
 
         // --- 並び替え（ソート）状態管理 ---
         let mainTableSortKey = 'name';       // 基本属性表のソートキー
-        let mainTableSortDesc = false;       // 基本属性表のソート降順フラグ
+        let mainTableSortDesc = false;       // 基本属性表 of ソート降順フラグ
 
         let skillTableSortKey = 'label';     // 技能一覧表のソートキー ('label' またはキャラクターの id)
         let skillTableSortDesc = false;      // 技能一覧表のソート降順フラグ
@@ -538,23 +538,57 @@
             return skills;
         }
 
-        // --- いあきゃらデータ追加 ---
+        // --- ステータス値の安全取得 ---
+        function getStatusValue(char, label) {
+            if (!char || !char.status || !Array.isArray(char.status)) return 0;
+            const stat = char.status.find(s => s.label.toUpperCase() === label.toUpperCase());
+            return stat ? stat.value : 0;
+        }
+
+        // --- 特性値の安全取得 ---
+        function getParamValue(char, label) {
+            if (!char || !char.params || !Array.isArray(char.params)) return 0;
+            const param = char.params.find(p => p.label.toUpperCase() === label.toUpperCase());
+            return param ? param.value : 0;
+        }
+
+        // --- いあきゃらデータ追加（超・召喚の術式） ---
         function addCharacter() {
-            const jsonText = document.getElementById('jsonInput').value.trim();
+            let jsonText = document.getElementById('jsonInput').value.trim();
             if (!jsonText) {
                 showToast("召喚の魔力(JSON)が入力されていません", "error");
                 return;
             }
 
+            // --- コピペの不要なゴミや全角記号を自動クレンジングする魔術 ---
+            jsonText = jsonText.replace(/[“”]/g, '"'); // 全角ダブルクォーテーションを半角に変換
+            jsonText = jsonText.replace(/：/g, ':'); // 全角コロンを半角に変換
+            
+            // コピペされた文字列の中で { から } までの部分を自動で抜き出してパースする
+            const firstBrace = jsonText.indexOf('{');
+            const lastBrace = jsonText.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+            }
+
             try {
                 const parsed = JSON.parse(jsonText);
+                let charData = null;
 
-                if (parsed.kind !== 'character' || !parsed.data) {
-                    throw new Error("「いあきゃら」の格式に合致しません。");
+                // --- いあきゃらの出力形式（ココフォリア駒 or 直接エクスポート生JSON）を自動判別 ---
+                if (parsed.kind === 'character' && parsed.data) {
+                    // 形式A: ココフォリア駒形式
+                    charData = parsed.data;
+                } else if (parsed.name && (parsed.params || parsed.status || parsed.commands)) {
+                    // 形式B: いあきゃらの直接エクスポート形式（ルートに直接パラメータがある）
+                    charData = parsed;
+                } else {
+                    throw new Error("「ココフォリア駒データ形式」または「いあきゃらエクスポート形式」のいずれの配列構造にも合致しません。");
                 }
 
-                const charData = parsed.data;
-                const parsedSkills = parseSkillsFromCommands(charData.commands);
+                // 技能データのパース（commandsが無い、あるいは別の場所に入っている可能性に備えてフォールバックを設置）
+                const commandsContent = charData.commands || "";
+                const parsedSkills = parseSkillsFromCommands(commandsContent);
 
                 const newChar = {
                     id: 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -574,6 +608,14 @@
                     skills: parsedSkills
                 };
 
+                // もしSkillsが空で、かつparamsの中に技能が混じっているような特殊仕様データの場合に備えての補完
+                if (newChar.skills.length === 0 && charData.skills) {
+                    newChar.skills = (charData.skills || []).map(s => ({
+                        label: s.label,
+                        value: Number(s.value) || 0
+                    }));
+                }
+
                 characters.push(newChar);
                 selectedIds.add(newChar.id);
 
@@ -582,9 +624,9 @@
                 updateComparison();
 
                 document.getElementById('jsonInput').value = "";
-                showToast(`探索者「${newChar.name}」を召喚しました！`);
+                showToast(`探索者「${newChar.name}」を召喚しました！`, "success");
             } catch (error) {
-                showToast("召喚失敗: 刻印(JSON)に誤りがあります。" + error.message, "error");
+                showToast("召喚失敗: データの形式が正しくパースできません。" + error.message, "error");
             }
         }
 
@@ -870,28 +912,6 @@
             }).join('');
 
             lucide.createIcons();
-        }
-
-        // --- 基本属性・特性値表のソート制御 ---
-        function setMainTableSort(key) {
-            if (mainTableSortKey === key) {
-                mainTableSortDesc = !mainTableSortDesc;
-            } else {
-                mainTableSortKey = key;
-                mainTableSortDesc = (key !== 'name');
-            }
-            updateComparison();
-        }
-
-        // --- 技能比較表のソート制御 ---
-        function setSkillTableSort(key) {
-            if (skillTableSortKey === key) {
-                skillTableSortDesc = !skillTableSortDesc;
-            } else {
-                skillTableSortKey = key;
-                skillTableSortDesc = (key !== 'label');
-            }
-            updateComparison();
         }
 
         // --- 比較セクション全体の更新 ---
