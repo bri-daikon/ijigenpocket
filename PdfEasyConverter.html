@@ -120,7 +120,7 @@
               class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded" title="ズームアウト">
               <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
             </button>
-            <span id="zoom-percent" class="text-[10px] text-slate-500 font-bold min-w-[28px] text-center">100%</span>
+            <span id="zoom-percent" class="text-[10px] text-slate-500 font-bold min-w-[28px] text-center">55%</span>
             <button onclick="zoomPreview(0.1)"
               class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded" title="ズームイン">
               <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
@@ -130,7 +130,7 @@
 
         <!-- PDFプレビューキャンバス（スクロールコンテナ・中身だけがスクロールします） -->
         <div
-          class="flex-grow bg-slate-100 rounded-lg overflow-auto flex justify-center items-start border border-slate-200 p-2 relative"
+          class="flex-grow bg-slate-100 rounded-lg overflow-auto flex justify-start items-start border border-slate-200 p-2 relative"
           id="canvas-container">
           <!-- 初期プレースホルダー -->
           <div id="preview-placeholder"
@@ -139,7 +139,7 @@
             <p class="text-xs">PDFを読み込むとここに元のPDFが表示されます。ページの挿絵や全体のルビ確認に便利！</p>
           </div>
           <!-- 実際のPDFがここに描画されます -->
-          <canvas id="preview-canvas" class="shadow-md bg-white hidden max-w-full"></canvas>
+          <canvas id="preview-canvas" class="shadow-md bg-white hidden"></canvas>
           <!-- PDF組み込み目次しおりコンテナ -->
           <div id="preview-outline-container" class="absolute inset-0 bg-white p-4 overflow-y-auto hidden border-t border-slate-150">
             <h3 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
@@ -194,10 +194,10 @@
         <!-- フィルター -->
         <div class="space-y-2 border-t border-slate-100 pt-2.5">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-clean-newlines" checked
+            <input type="checkbox" id="chk-clean-newlines"
               class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
               onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">文章途中の余計な改行を繋ぐ</span>
+            <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="chk-exclude-header-footer" checked
@@ -356,7 +356,7 @@
     let currentFileName = ""; // 現在読み込んでいるファイル名
     let pdfDoc = null; // プレビュー用のPDFドキュメントインスタンス
     let currentPreviewPage = 1; // 現在プレビュー表示中のページ
-    let previewScale = 1.0; // プレビューの拡大率倍率
+    let previewScale = 0.55; // プレビューの拡大率倍率（初期は横幅が収まる55%）
     let pdfOutline = []; // PDFのしおりツリー
     let isOutlineOpen = false; // 目次パネルが開いているかどうか
     let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
@@ -571,59 +571,7 @@
       console.log("検出された話者名リスト:", Array.from(detectedSpeakers));
     }
 
-    // スマートに段落を判定してテキストを配列に分割する処理
-    function splitIntoParagraphs(text) {
-      // 1. 検出された話者名リストを使って、地の文の直後に結合しているセリフを切り分ける
-      detectedSpeakers.forEach(speaker => {
-        if (speaker.length >= 1) {
-          const escaped = speaker.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const regex = new RegExp(`([^\\n])(${escaped}(?=[「『：:]))`, 'g');
-          text = text.replace(regex, '$1\n\n$2'); // \n を \n\n にして強制的にカードを分ける
-        }
-      });
-
-      // 2. セリフの閉じカッコの直後に改行がある場合、それを段落区切り（\n\n）にする
-      text = text.replace(/([」』])\n(?!\n)/g, '$1\n\n');
-
-      // 物理的な空行 (\n\n) で大枠の段落に分割
-      const blocks = text.split(/\n{2,}/);
-      const finalParagraphs = [];
-
-      blocks.forEach(block => {
-        const lines = block.split('\n');
-        let currentSubBlock = [];
-
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-
-          // セリフ「単独」行であるかどうかの判定を調整
-          // 話者名が1〜12文字で、その後にカギカッコが始まり、閉じカッコで終わる（末尾のスペースや句読点を許容）
-          const isSpeechLine = /^([^「」『』\n]{1,12})([「『].*[」』][\s。]*)$/.test(trimmed) || 
-                               /^[^：:\n]{1,12}[：:]\s*([「『].*[」』][\s。]*)$/.test(trimmed);
-
-          if (isSpeechLine) {
-            // すでに溜まっている通常の段落文章があれば、一度段落カードとして確定する
-            if (currentSubBlock.length > 0) {
-              finalParagraphs.push(currentSubBlock.join('\n'));
-              currentSubBlock = [];
-            }
-            // セリフ単独行は強制的に1行だけの独立したカードにする
-            finalParagraphs.push(trimmed);
-          } else {
-            // 通常の文章（地の文や文中にカギカッコがただ入る文）は段落として溜める
-            currentSubBlock.push(line);
-          }
-        });
-
-        // 最後に残った通常の段落文章をカードにする
-        if (currentSubBlock.length > 0) {
-          finalParagraphs.push(currentSubBlock.join('\n'));
-        }
-      });
-
-      return finalParagraphs;
-    }
+    // ※ splitIntoParagraphs は下部（701行付近）に新アルゴリズム版として定義されています
 
     // 指定されたページ番号へジャンプ（連動用）
     function jumpToPreviewPage(pageNum) {
@@ -699,67 +647,93 @@
     }
 
     // スマートに段落を判定してテキストを配列に分割する処理
+    // アルゴリズム：
+    //   1. まず 2個以上の改行（\n\n）で大きく段落に分割する
+    //   2. 各段落ブロック内で、行頭に「名前「」の形式」を検出したらセリフカードとして確定する
+    //   3. セリフでない行は地の文として蓄積し、ブロック内の単一改行（\n）はそのまま保持する
     function splitIntoParagraphs(text) {
-      // 1. テキスト全体から話者名（行頭の1〜8文字で、直後に「や『、またはコロンが続くもの）を自動抽出してリスト化する
-      const speakerSet = new Set();
-      const speakerRegex = /^([^「」『』\n\s：:]{1,8})(?=[「『：:])/gm;
-      let match;
-      while ((match = speakerRegex.exec(text)) !== null) {
-        if (match[1] && match[1].trim()) {
-          speakerSet.add(match[1].trim());
-        }
+      const result = [];
+
+      // 「行頭が 名前「 の形でセリフ行として確定できるか」を判定する
+      function isSpeechStart(line) {
+        return /^[^「」『』\n]{0,12}[「『]/.test(line.trim());
       }
 
-      // 2. 抽出した話者名リストを使って、地の文の直後に結合しているセリフを切り分ける
-      speakerSet.forEach(speaker => {
-        if (speaker.length >= 1) {
-          const escaped = speaker.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const regex = new RegExp(`([^\\n])(${escaped}(?=[「『：:]))`, 'g');
-          text = text.replace(regex, '$1\n\n$2'); // \n を \n\n にして強制的にカードを分ける
+      // 閉じカッコで行が終わっているか
+      function isSpeechEnd(line) {
+        return /[」』][。\s]*$/.test(line.trim());
+      }
+
+      // 2個以上の改行で段落ブロックに分割（ここがカード分割の基本ルール）
+      const rawBlocks = text.split(/\n{2,}/);
+
+      rawBlocks.forEach(block => {
+        const trimmedBlock = block.trim();
+        if (!trimmedBlock) return;
+
+        const lines = trimmedBlock.split('\n');
+        let narrativeBuffer = [];
+
+        // 地の文バッファをカード化してフラッシュする
+        function flushNarrative() {
+          if (narrativeBuffer.length === 0) return;
+          // 単一改行（\n）はそのまま保持して結合する
+          const joined = narrativeBuffer.join('\n').trim();
+          if (joined) result.push(joined);
+          narrativeBuffer = [];
         }
-      });
 
-      // 3. セリフの閉じカッコの直後に改行がある場合、それを段落区切り（\n\n）にする
-      text = text.replace(/([」』])\n(?!\n)/g, '$1\n\n');
+        let i = 0;
+        while (i < lines.length) {
+          const lineTrimmed = lines[i].trim();
 
-      // 物理的な空行 (\n\n) で大枠の段落に分割
-      const blocks = text.split(/\n{2,}/);
-      const finalParagraphs = [];
-
-      blocks.forEach(block => {
-        const lines = block.split('\n');
-        let currentSubBlock = [];
-
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-
-          // セリフ「単独」行であるかどうかの判定を調整
-          // 話者名が1〜12文字で、その後にカギカッコが始まり、閉じカッコで終わる（末尾のスペースや句読点を許容）
-          const isSpeechLine = /^([^「」『』\n]{1,12})([「『].*[」』][\s。]*)$/.test(trimmed) || 
-                               /^[^：:\n]{1,12}[：:]\s*([「『].*[」』][\s。]*)$/.test(trimmed);
-
-          if (isSpeechLine) {
-            // すでに溜まっている通常の段落文章があれば、一度段落カードとして確定する
-            if (currentSubBlock.length > 0) {
-              finalParagraphs.push(currentSubBlock.join('\n'));
-              currentSubBlock = [];
-            }
-            // セリフ単独行は強制的に1行だけの独立したカードにする
-            finalParagraphs.push(trimmed);
-          } else {
-            // 通常の文章（地の文や文中にカギカッコがただ入る文）は段落として溜める
-            currentSubBlock.push(line);
+          if (!lineTrimmed) {
+            i++;
+            continue;
           }
-        });
 
-        // 最後に残った通常の段落文章をカードにする
-        if (currentSubBlock.length > 0) {
-          finalParagraphs.push(currentSubBlock.join('\n'));
+          if (isSpeechStart(lineTrimmed)) {
+            // 地の文バッファを先にフラッシュ
+            flushNarrative();
+
+            // 複数行にまたがるセリフをひとつに結合する
+            let speechLines = [lineTrimmed];
+            let closed = isSpeechEnd(lineTrimmed);
+
+            while (!closed && i + 1 < lines.length) {
+              i++;
+              const nextTrimmed = lines[i].trim();
+
+              // 次の行が新しいセリフ開始なら、ここで打ち切る
+              if (nextTrimmed && isSpeechStart(nextTrimmed)
+                  && !speechLines[speechLines.length - 1].endsWith('「')
+                  && !speechLines[speechLines.length - 1].endsWith('『')) {
+                i--;
+                break;
+              }
+
+              if (nextTrimmed) {
+                speechLines.push(nextTrimmed);
+                closed = isSpeechEnd(nextTrimmed);
+              }
+            }
+
+            // セリフを1枚のカードとして登録
+            const speechText = speechLines.join('').trim();
+            if (speechText) result.push(speechText);
+
+          } else {
+            // 地の文として蓄積（\n は保持）
+            narrativeBuffer.push(lineTrimmed);
+          }
+
+          i++;
         }
+
+        flushNarrative();
       });
 
-      return finalParagraphs;
+      return result;
     }
 
     // 各行頭の全角・半角スペース、タブを完全に取り除く処理
@@ -985,18 +959,20 @@
     }
 
     // セリフのみを抽出する正規表現フィルター関数 (原本のテキストを破壊せず、一時的に抽出します)
+    // コピー時に「話者名を除外」チェックが入っている場合のみ呼び出される
     function cleanSpeechTextOnly(text) {
       return text.split('\n').map(line => {
         const trimmed = line.trim();
-        // パターンA: 麟子「おはようございます～！」 のようなセリフ単独行
-        const bracketMatch = trimmed.match(/^([^「」『』\n]{1,12})([「『].*?[」』])$/);
-        if (bracketMatch) {
-          return bracketMatch[2]; // セリフカッコから後ろのみを返す
+        // パターンA: 名前（0〜12文字、カギカッコ以外）+ 「...」 の形
+        // ※ 名前0文字 = 行頭が「の場合も許容、セリフが長くても対応できるよう [^] を使用
+        const bracketMatch = trimmed.match(/^([^「」『』]{0,12}?)([「『][\s\S]*?[」』])([。\s]*)$/);
+        if (bracketMatch && bracketMatch[1].trim().length <= 12) {
+          return bracketMatch[2] + (bracketMatch[3] || '');
         }
-        // パターンB: 麟子：『お疲れ様です』 or 麟子:「お疲れ様です」 のようなコロン＋セリフ単独行
-        const colonMatch = trimmed.match(/^[^：:\n]{1,12}[：:]\s*([「『].*[」』])$/);
+        // パターンB: 名前：「...」 or 名前:「...」 のようなコロン区切り形式
+        const colonMatch = trimmed.match(/^[^：:\n]{1,12}[：:]\s*([「『][\s\S]*[」』])([。\s]*)$/);
         if (colonMatch) {
-          return colonMatch[1];
+          return colonMatch[1] + (colonMatch[2] || '');
         }
         return line;
       }).join('\n');
