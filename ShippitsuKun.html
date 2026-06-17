@@ -98,7 +98,7 @@
 
       <div class="border-t border-slate-800/60 pt-4 mt-4">
         <div class="bg-slate-900 p-3 rounded-lg border border-emerald-950 text-xs text-slate-400 space-y-2">
-          <div class="font-semibold text-slate-300">👁️ 冒涜的な執筆ステップ</div>
+          <div class="font-semibold text-slate-300">👁️ 冒etrot的（冒涜的）な執筆ステップ</div>
           <ol class="list-decimal list-inside space-y-1.5">
             <li>Notionのネタや脳内の妄想をエディタにコピペ</li>
             <li>推奨人数や舞台などのレギュレーションを設定</li>
@@ -209,7 +209,20 @@
             </span>
             <span class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Mythos AI Partner</span>
           </div>
-          <span class="text-xs text-slate-500">モデル: gemini-2.5-flash</span>
+          
+          <!-- MODEL SELECTOR (NEW) -->
+          <div class="flex items-center space-x-1">
+            <label for="select-model" class="text-[10px] text-slate-500">Model:</label>
+            <select
+              id="select-model"
+              class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded px-2 py-1 focus:outline-none focus:border-emerald-500 transition cursor-pointer"
+            >
+              <option value="gemini-1.5-flash">gemini-1.5-flash (推奨・安定)</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash (最新・高性能)</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash (超高速応答)</option>
+              <option value="gemini-2.5-flash-preview-09-2025">gemini-2.5-flash-preview (環境専用)</option>
+            </select>
+          </div>
         </div>
 
         <!-- PRESET ACTIONS BLOCK -->
@@ -348,7 +361,6 @@
   <!-- JAVASCRIPT LOGIC -->
   <script>
     // --- API Setup & Global variables ---
-    const apiKey = ""; // Runtime automatically injected by preview environment or overriden by local storage
     let systemInstruction = "あなたはクトゥルフ神話TRPG（CoC 6版・7版）において数々の伝説的な狂気シナリオを手がけてきた名キーパーであり、名シナリオデザイナーです。プレイヤーを惹き込むぞっとするあらすじ、正気度を削る生々しく美しい狂気描写、探索者が謎を解き明かすための手がかり配置（「目星」「図書館」「聞き耳」などの各種技能対応）、そして邪神や神話生物（STR, CON, SIZ, INT, POW, DEX, APP, SAN等のステータス、戦闘行動、特殊能力）、カルトや狂信者の不穏なNPC設計まで、非常に高いクオリティでブレインストーミングや推敲を行います。出力はNotionにコピペしやすい美しいマークダウン（トグル、テーブル、箇条書き、H2、H3見出し等）を用いてください。";
     
     let savedNotes = [];
@@ -373,6 +385,7 @@
     const textareaPrompt = document.getElementById('textarea-prompt');
     const btnSubmitPrompt = document.getElementById('btn-submit-prompt');
     const aiChatForm = document.getElementById('ai-chat-form');
+    const selectModel = document.getElementById('select-model');
 
     // --- Launch Initializations ---
     window.addEventListener('DOMContentLoaded', () => {
@@ -395,6 +408,12 @@
         handleNewNote();
       }
 
+      // Load saved model setting
+      const savedModel = localStorage.getItem('weby_gemini_model');
+      if (savedModel) {
+        selectModel.value = savedModel;
+      }
+
       // Event listeners
       document.getElementById('btn-new').addEventListener('click', handleNewNote);
       document.getElementById('btn-save').addEventListener('click', handleSaveNote);
@@ -408,6 +427,12 @@
       
       // API Key Config Event
       document.getElementById('btn-apikey').addEventListener('click', handleApiKeySetting);
+
+      // Model change event
+      selectModel.addEventListener('change', () => {
+        localStorage.setItem('weby_gemini_model', selectModel.value);
+        showNotification(`AIモデルを「${selectModel.value}」に変更しました。`);
+      });
 
       document.getElementById('btn-system-setting').addEventListener('click', () => {
         const val = prompt("AIのキーパー能力・シナリオ設計基本方針を変更できます:", systemInstruction);
@@ -474,7 +499,7 @@
       if (localKey && localKey.trim() !== "") {
         return localKey.trim();
       }
-      return apiKey;
+      return ""; // Default to empty, ensuring the user inputs their key
     }
 
     // --- Note Logic & LocalStorage ---
@@ -673,7 +698,8 @@
       aiActions.classList.add('hidden');
       aiLoading.classList.remove('hidden');
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`;
+      const selectedModel = selectModel.value;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${currentKey}`;
       const payload = {
         contents: [{ parts: [{ text: promptText }] }],
         systemInstruction: { parts: [{ text: systemInstruction }] }
@@ -698,7 +724,6 @@
             success = true;
             break;
           } else {
-            // APIからのエラーレスポンスの詳細を取得して詳細なトーストを作成
             try {
               const errJson = await response.json();
               if (errJson.error) {
@@ -739,7 +764,6 @@
         }
       } else {
         aiPlaceholder.classList.remove('hidden');
-        // 詳細なエラー理由を表示する
         showNotification(`Gemini API接続失敗。理由: ${lastErrorDetail}`, true);
       }
     }
