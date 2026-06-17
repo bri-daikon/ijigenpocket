@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion × Gemini クトゥルフ神話TRPGシナリオ狂気執筆室</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* スクロールバーのカスタマイズ（毒々しい緑のアクセント） */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #10b981;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans overflow-hidden">
+
+  <!-- HEADER -->
+  <header class="border-b border-emerald-900/60 bg-slate-950 px-6 py-4 flex items-center justify-between shadow-md z-10">
+    <div class="flex items-center space-x-3">
+      <div class="bg-gradient-to-tr from-emerald-600 to-teal-800 p-2 rounded-lg text-white font-bold text-xl tracking-wider">
+        🐙
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-white tracking-wide flex items-center">
+          Notion × Gemini クトゥルフ神話TRPGシナリオ狂気執筆室
+          <span class="ml-2 px-2 py-0.5 text-xs bg-slate-800 border border-slate-700 rounded-full text-emerald-400 font-normal">
+            CoC Scenario Ed.
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400">Notionのアイデアから、探索者の正気度を削る恐るべき神話のシナリオを創造するワークスペース</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <!-- API KEY SETTING BUTTON -->
+      <button 
+        id="btn-apikey"
+        class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg transition border border-slate-700 flex items-center"
+      >
+        <i data-lucide="key" class="w-4 h-4 mr-1.5 text-amber-400"></i>
+        APIキー設定
+      </button>
+      <button 
+        id="btn-new"
+        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg transition border border-slate-700 flex items-center"
+      >
+        <i data-lucide="plus" class="w-4 h-4 mr-1.5"></i>
+        新規作成
+      </button>
+      <button 
+        id="btn-save"
+        class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold rounded-lg transition shadow-lg shadow-teal-900/30 flex items-center"
+      >
+        <i data-lucide="save" class="w-4 h-4 mr-1.5"></i>
+        保存する
+      </button>
+    </div>
+  </header>
+
+  <!-- NOTIFICATION TOAST AREA -->
+  <div id="toast-success" class="hidden bg-emerald-500/25 border-b border-emerald-500 text-emerald-200 px-6 py-2.5 text-center text-sm font-medium transition duration-350">
+    🎉 <span id="toast-success-text">アクションに成功しました！</span>
+  </div>
+  <div id="toast-error" class="hidden bg-rose-500/25 border-b border-rose-500 text-rose-200 px-6 py-2.5 text-center text-sm font-medium transition duration-350">
+    🚨 <span id="toast-error-text">エラーが発生しました。</span>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- SIDEBAR: STOCKS -->
+    <aside class="w-72 bg-slate-950/80 border-r border-slate-800 p-4 flex flex-col justify-between hidden lg:flex">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">邪神のアーカイブ（下書き）</h2>
+          <span id="drafts-count" class="text-xs text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+            0件
+          </span>
+        </div>
+
+        <div id="drafts-list" class="space-y-2 overflow-y-auto max-h-[calc(100vh-220px)] pr-1">
+          <!-- Dynamically filled with JS -->
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800/60 pt-4 mt-4">
+        <div class="bg-slate-900 p-3 rounded-lg border border-emerald-950 text-xs text-slate-400 space-y-2">
+          <div class="font-semibold text-slate-300">👁️ 冒涜的な執筆ステップ</div>
+          <ol class="list-decimal list-inside space-y-1.5">
+            <li>Notionのネタや脳内の妄想をエディタにコピペ</li>
+            <li>推奨人数や舞台などのレギュレーションを設定</li>
+            <li>「狂気描写」「手がかり配置」で肉付け</li>
+            <li>Notion用にコピーしてデータベースに即格納！</li>
+          </ol>
+        </div>
+      </div>
+    </aside>
+
+    <!-- WORKSPACE: TWO COLUMNS (EDITOR vs AI) -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+      
+      <!-- LEFT: WRITING EDITOR -->
+      <section class="flex-1 flex flex-col p-6 overflow-y-auto border-r border-slate-800/80 bg-slate-900/20">
+        <!-- Title Block -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center">
+              <i data-lucide="skull" class="w-4 h-4 mr-1"></i> シナリオ執筆エディタ (Notion連動用)
+            </span>
+            <div class="flex space-x-2">
+              <button 
+                id="btn-copy-notion"
+                class="px-3 py-1 text-xs bg-emerald-950 text-emerald-300 hover:bg-emerald-900 rounded-lg border border-emerald-800 transition font-bold flex items-center"
+              >
+                <i data-lucide="share" class="w-3.5 h-3.5 mr-1"></i> Notion用にコピー
+              </button>
+              <button 
+                id="btn-download-md"
+                class="px-2.5 py-1 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg border border-slate-700 transition flex items-center"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5 mr-1"></i> MD形式でDL
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">シナリオタイトル（作品名）</label>
+            <input
+              type="text"
+              id="input-title"
+              placeholder="例：毒入りスープ、豪華客船の怪、など..."
+              class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-lg px-4 py-2.5 text-white placeholder-slate-600 focus:outline-none transition text-base font-bold"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">執筆ステータス</label>
+              <select
+                id="select-status"
+                class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none transition"
+              >
+                <option value="💡 アイデア">💡 アイデア</option>
+                <option value="🗺️ プロット・構成">🗺️ プロット・構成</option>
+                <option value="✍️ 本文執筆中">✍️ 本文執筆中</option>
+                <option value="👹 KP向け調整中">👹 KP向け調整中</option>
+                <option value="🔥 テストプレイ完了">🔥 テストプレイ完了</option>
+                <option value="✅ Notion登録済">✅ Notion登録済</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">タグ（傾向・舞台）</label>
+              <input
+                type="text"
+                id="input-tags"
+                placeholder="クローズド, シティ, 現代日本, 大正, ロスト率高..."
+                class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none transition"
+              />
+            </div>
+            <div class="flex items-end justify-end space-x-4 pb-2.5 text-right">
+              <span class="text-xs text-slate-500">
+                原稿量: <strong id="char-count" class="text-slate-300 font-mono">0</strong> 字
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Note Body Textarea -->
+        <div class="flex-1 mt-4 flex flex-col min-h-[350px]">
+          <label class="block text-xs text-slate-400 mb-1">シナリオ構成・本文 (Markdown)</label>
+          <div class="flex-1 relative flex flex-col">
+            <textarea
+              id="textarea-body"
+              placeholder="ここにNotionのシナリオ案やアイデアを貼り付けてください。&#10;ト書きや探索ルートを整理し、Geminiにクトゥルフらしい邪悪で魅力的なリライトをさせることができます。"
+              class="flex-1 w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-xl p-5 text-slate-200 placeholder-slate-700 focus:outline-none transition resize-none font-mono leading-relaxed text-sm overflow-y-auto"
+            ></textarea>
+            <button
+              id="btn-copy-body"
+              class="absolute bottom-4 right-4 bg-slate-900/90 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 p-2.5 rounded-lg shadow-md transition flex items-center text-xs space-x-1"
+              title="本文をコピー"
+            >
+              <i data-lucide="clipboard" class="w-4 h-4"></i>
+              <span>本文をコピー</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: AI ASSISTANT PANEL -->
+      <section class="w-full md:w-[480px] flex flex-col p-6 bg-slate-950 border-t md:border-t-0 border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="flex h-2.5 w-2.5 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Mythos AI Partner</span>
+          </div>
+          <span class="text-xs text-slate-500">モデル: gemini-2.5-flash</span>
+        </div>
+
+        <!-- PRESET ACTIONS BLOCK -->
+        <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4 mb-4">
+          <h3 class="text-xs font-semibold text-slate-400 mb-3 flex items-center">
+            <span>🪄 神話シナリオ召喚・肉付け</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              onclick="triggerPreset('plot')"
+              class="px-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-slate-200 rounded-lg text-xs text-left transition flex items-center space-x-2"
+            >
+              <span class="text-sm">📖</span>
+              <div class="truncate">
+                <span class="font-bold block">あらすじ・トレーラー</span>
+                <span class="text-[10px] text-slate-500 block">PLを引き込む不穏な導入</span>
+              </div>
+            </button>
+            
+            <button
+              onclick="triggerPreset('dialogue')"
+              class="px-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-slate-200 rounded-lg text-xs text-left transition flex items-center space-x-2"
+            >
+              <span class="text-sm">👁️‍🗨️</span>
+              <div class="truncate">
+                <span class="font-bold block">狂気描写・NPC会話</span>
+                <span class="text-[10px] text-slate-500 block">SAN値喪失時・発狂描写</span>
+              </div>
+            </button>
+
+            <button
+              onclick="triggerPreset('structure')"
+              class="px-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-slate-200 rounded-lg text-xs text-left transition flex items-center space-x-2"
+            >
+              <span class="text-sm">🧭</span>
+              <div class="truncate">
+                <span class="font-bold block">手がかり・調査スポット</span>
+                <span class="text-[10px] text-slate-500 block">技能ごとの情報開示構造化</span>
+              </div>
+            </button>
+
+            <button
+              onclick="triggerPreset('format')"
+              class="px-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-slate-200 rounded-lg text-xs text-left transition flex items-center space-x-2"
+            >
+              <span class="text-sm">🐙</span>
+              <div class="truncate">
+                <span class="font-bold block">神話生物・呪文設計</span>
+                <span class="text-[10px] text-slate-500 block">STR等のステータス作成</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="mt-2 text-center">
+            <button
+              onclick="triggerPreset('character')"
+              class="w-full py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-[11px] font-medium transition flex items-center justify-center space-x-1"
+            >
+              <span>👤 狂信者・NPCのステータス・秘密・隠された狂気分析</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI OUTPUT VIEW -->
+        <div class="flex-1 flex flex-col bg-slate-900 border border-slate-800/80 rounded-xl overflow-hidden mb-4 min-h-[250px]">
+          <div class="bg-slate-950 px-4 py-2 flex items-center justify-between border-b border-slate-800/60">
+            <span class="text-xs font-semibold text-slate-400">Geminiの提案結果</span>
+            <div id="ai-actions" class="hidden flex space-x-1.5">
+              <button
+                id="btn-copy-ai"
+                class="px-2 py-0.5 text-[10px] bg-slate-800 text-slate-300 rounded border border-slate-700 hover:bg-slate-700 transition"
+              >
+                コピー
+              </button>
+              <button
+                id="btn-append-ai"
+                class="px-2 py-0.5 text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 rounded hover:bg-emerald-900 transition font-medium"
+              >
+                末尾に追記
+              </button>
+              <button
+                id="btn-replace-ai"
+                class="px-2 py-0.5 text-[10px] bg-teal-950 text-teal-300 border border-teal-800 rounded hover:bg-teal-900 transition font-medium"
+              >
+                上書き
+              </button>
+            </div>
+          </div>
+
+          <div id="ai-response-container" class="flex-1 p-4 overflow-y-auto leading-relaxed text-sm font-mono text-slate-200">
+            <div id="ai-placeholder" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <i data-lucide="skull" class="w-12 h-12 mb-3 text-slate-700 animate-pulse"></i>
+              <p class="text-xs">
+                左のエディタにNotionのアイデアを入力し、右側のブラッシュアップボタンを押すか、下のメッセージエリアからAIに詳しく指示を出してください。
+              </p>
+            </div>
+            <div id="ai-loading" class="hidden h-full flex flex-col items-center justify-center space-y-3">
+              <div class="w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
+              <p class="text-xs text-slate-400">Geminiが神話シナリオに冒涜的なエネルギーを吹き込んでいます...</p>
+            </div>
+            <div id="ai-text-content" class="hidden whitespace-pre-wrap prose prose-invert prose-sm max-w-none">
+              <!-- Result text generated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- CUSTOM AI CHAT PROMPT -->
+        <form id="ai-chat-form" class="space-y-2">
+          <div class="relative">
+            <textarea
+              id="textarea-prompt"
+              placeholder="例：ここでPLに『アイデア』か『医学』に成功したときの手がかりを提案して / SAN値喪失 1D3/1D10のショッキングな狂気描写を作って"
+              class="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500/60 rounded-xl pl-4 pr-12 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition resize-none h-18 overflow-y-auto"
+            ></textarea>
+            <button
+              type="submit"
+              id="btn-submit-prompt"
+              class="absolute right-3.5 bottom-3.5 p-1.5 rounded-lg transition bg-slate-800 text-slate-600 cursor-not-allowed"
+              disabled
+            >
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <span>Enter で送信</span>
+            <button type="button" id="btn-system-setting" class="hover:text-emerald-400 cursor-pointer transition flex items-center">
+              <i data-lucide="settings" class="w-3 h-3 mr-1"></i> キーパーとしての執筆方針
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // --- API Setup & Global variables ---
+    const apiKey = ""; // Runtime automatically injected by preview environment or overriden by local storage
+    let systemInstruction = "あなたはクトゥルフ神話TRPG（CoC 6版・7版）において数々の伝説的な狂気シナリオを手がけてきた名キーパーであり、名シナリオデザイナーです。プレイヤーを惹き込むぞっとするあらすじ、正気度を削る生々しく美しい狂気描写、探索者が謎を解き明かすための手がかり配置（「目星」「図書館」「聞き耳」などの各種技能対応）、そして邪神や神話生物（STR, CON, SIZ, INT, POW, DEX, APP, SAN等のステータス、戦闘行動、特殊能力）、カルトや狂信者の不穏なNPC設計まで、非常に高いクオリティでブレインストーミングや推敲を行います。出力はNotionにコピペしやすい美しいマークダウン（トグル、テーブル、箇条書き、H2、H3見出し等）を用いてください。";
+    
+    let savedNotes = [];
+    let selectedNoteId = null;
+    let currentAiResponse = "";
+
+    // DOM Elements
+    const inputTitle = document.getElementById('input-title');
+    const inputTags = document.getElementById('input-tags');
+    const selectStatus = document.getElementById('select-status');
+    const textareaBody = document.getElementById('textarea-body');
+    const charCountEl = document.getElementById('char-count');
+    
+    const draftsList = document.getElementById('drafts-list');
+    const draftsCount = document.getElementById('drafts-count');
+    
+    const aiPlaceholder = document.getElementById('ai-placeholder');
+    const aiLoading = document.getElementById('ai-loading');
+    const aiTextContent = document.getElementById('ai-text-content');
+    const aiActions = document.getElementById('ai-actions');
+    
+    const textareaPrompt = document.getElementById('textarea-prompt');
+    const btnSubmitPrompt = document.getElementById('btn-submit-prompt');
+    const aiChatForm = document.getElementById('ai-chat-form');
+
+    // --- Launch Initializations ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Load items from local storage
+      const local = localStorage.getItem('weby_notion_drafts');
+      if (local) {
+        try {
+          savedNotes = JSON.parse(local);
+          renderNotesList();
+          if (savedNotes.length > 0) {
+            loadNote(savedNotes[0]);
+          }
+        } catch (e) {
+          // ignore
+        }
+      } else {
+        handleNewNote();
+      }
+
+      // Event listeners
+      document.getElementById('btn-new').addEventListener('click', handleNewNote);
+      document.getElementById('btn-save').addEventListener('click', handleSaveNote);
+      document.getElementById('btn-copy-notion').addEventListener('click', copyAsNotionFormat);
+      document.getElementById('btn-download-md').addEventListener('click', downloadMarkdown);
+      document.getElementById('btn-copy-body').addEventListener('click', () => copyToClipboard(textareaBody.value, '本文のみ'));
+      
+      document.getElementById('btn-copy-ai').addEventListener('click', () => copyToClipboard(currentAiResponse, '提案結果'));
+      document.getElementById('btn-append-ai').addEventListener('click', handleAppendToEditor);
+      document.getElementById('btn-replace-ai').addEventListener('click', handleReplaceEditor);
+      
+      // API Key Config Event
+      document.getElementById('btn-apikey').addEventListener('click', handleApiKeySetting);
+
+      document.getElementById('btn-system-setting').addEventListener('click', () => {
+        const val = prompt("AIのキーパー能力・シナリオ設計基本方針を変更できます:", systemInstruction);
+        if (val !== null && val.trim() !== "") {
+          systemInstruction = val;
+          showNotification("キーパー方針を変更しました");
+        }
+      });
+
+      textareaBody.addEventListener('input', () => {
+        charCountEl.textContent = textareaBody.value.length;
+      });
+
+      textareaPrompt.addEventListener('input', () => {
+        const value = textareaPrompt.value.trim();
+        if (value) {
+          btnSubmitPrompt.removeAttribute('disabled');
+          btnSubmitPrompt.classList.remove('bg-slate-800', 'text-slate-600', 'cursor-not-allowed');
+          btnSubmitPrompt.classList.add('bg-emerald-600', 'text-white', 'hover:bg-emerald-500');
+        } else {
+          btnSubmitPrompt.setAttribute('disabled', 'true');
+          btnSubmitPrompt.classList.add('bg-slate-800', 'text-slate-600', 'cursor-not-allowed');
+          btnSubmitPrompt.classList.remove('bg-emerald-600', 'text-white', 'hover:bg-emerald-500');
+        }
+      });
+
+      aiChatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const customPrompt = textareaPrompt.value.trim();
+        if (!customPrompt) return;
+
+        const fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容】:\n${textareaBody.value}\n\nユーザーからの追加執筆指示：\n${customPrompt}`;
+        callGeminiAPI(fullPrompt);
+      });
+    });
+
+    // --- API Key Management ---
+    function handleApiKeySetting() {
+      const storedKey = localStorage.getItem('weby_gemini_api_key') || "";
+      const input = prompt(
+        "Google AI Studioで取得した Gemini API キーを入力してください。\n(キーはブラウザのlocalStorageに安全にローカル保存されます)", 
+        storedKey
+      );
+      
+      if (input !== null) {
+        const trimmedKey = input.trim();
+        if (trimmedKey === "") {
+          localStorage.removeItem('weby_gemini_api_key');
+          showNotification("APIキーをクリアしました。キーがない場合、AI機能は動作しません。", true);
+        } else {
+          localStorage.setItem('weby_gemini_api_key', trimmedKey);
+          showNotification("APIキーを保存しました！AI機能を使用できます。");
+        }
+      }
+    }
+
+    function getActiveApiKey() {
+      const localKey = localStorage.getItem('weby_gemini_api_key');
+      if (localKey && localKey.trim() !== "") {
+        return localKey.trim();
+      }
+      return apiKey;
+    }
+
+    // --- Note Logic & LocalStorage ---
+    function renderNotesList() {
+      draftsList.innerHTML = '';
+      draftsCount.textContent = `${savedNotes.length}件`;
+
+      savedNotes.forEach(note => {
+        const noteEl = document.createElement('div');
+        const isSelected = selectedNoteId === note.id;
+        
+        noteEl.className = `p-3 rounded-lg border transition cursor-pointer text-left relative group ${
+          isSelected
+            ? 'bg-slate-800 border-emerald-500/50 shadow-md shadow-emerald-950/20'
+            : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-800/60 hover:border-slate-700'
+        }`;
+
+        noteEl.innerHTML = `
+          <div class="font-medium text-slate-200 text-sm line-clamp-1 pr-6">
+            ${note.title || '無題の神話シナリオ'}
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-emerald-400 border border-emerald-800">
+              ${note.status || '💡 アイデア'}
+            </span>
+            <span class="text-slate-500">${note.updatedAt ? note.updatedAt.split(' ')[0] : ''}</span>
+          </div>
+          <button
+            class="absolute top-2.5 right-2.5 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition duration-150 delete-btn"
+            title="下書きを削除"
+          >
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        `;
+
+        // Click to load
+        noteEl.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-btn')) {
+            e.stopPropagation();
+            handleDeleteNote(note.id);
+          } else {
+            loadNote(note);
+          }
+        });
+
+        draftsList.appendChild(noteEl);
+      });
+      
+      lucide.createIcons();
+    }
+
+    function handleNewNote() {
+      selectedNoteId = null;
+      inputTitle.value = '未整理の邪神アイデア';
+      inputTags.value = 'クローズド, 現代日本, 推奨技能：目星, 難易度：中';
+      selectStatus.value = '💡 アイデア';
+      textareaBody.value = `# 🐙 シナリオ名：[タイトル]
+
+## 📝 レギュレーション（PL向け概要）
+- **推奨人数**：○人
+- **想定プレイ時間**：○時間 (ボイセ/テキセ)
+- **推奨技能**：[目星、図書館、聞き耳、精神分析など]
+- **ロスト率**：低 / 中 / 高
+- **舞台**：[現代日本、1920年代アーカムなど]
+
+## 👁️ シナリオ背景（KP専用情報・真相）
+- [なぜこの事件が起きているのか、神話生物やカルト団体の陰謀を記述]
+
+## 👥 ノンプレイヤーキャラクター (NPC)
+- **NPC名：[NPCの名前]**
+  - 【目的】：
+  - 【秘密】：
+
+## 🧭 探索ルート・手がかり
+- **【導入】**：探索者が巻き込まれる最初の異変。
+- **【調査スポットA：○○】**：
+  - 「目星」成功：
+  - 「図書館」成功：
+- **【クライマックス】**：神話生物との邂逅、または儀式の阻止。
+
+## 💀 SAN値喪失 & 神話生物
+- [神話的事象に出会った探索者のSAN喪失や、怪物のステータスを記述]
+`;
+      charCountEl.textContent = textareaBody.value.length;
+      
+      document.querySelectorAll('#drafts-list > div').forEach(el => {
+        el.className = el.className.replace('bg-slate-800 border-emerald-500/50 shadow-md shadow-emerald-950/20', 'bg-slate-900/40 border-slate-800/80');
+      });
+      
+      showNotification('新規シナリオキャンバスを作成しました。');
+    }
+
+    function handleSaveNote() {
+      const titleText = inputTitle.value.trim();
+      if (!titleText) {
+        showNotification('作品タイトルを入力してください', true);
+        return;
+      }
+
+      const currentId = selectedNoteId || Date.now().toString();
+      const newNoteObj = {
+        id: currentId,
+        title: titleText,
+        tags: inputTags.value,
+        status: selectStatus.value,
+        body: textareaBody.value,
+        updatedAt: new Date().toLocaleString('ja-JP')
+      };
+
+      if (selectedNoteId) {
+        savedNotes = savedNotes.map(n => n.id === selectedNoteId ? newNoteObj : n);
+      } else {
+        savedNotes = [newNoteObj, ...savedNotes];
+        selectedNoteId = currentId;
+      }
+
+      localStorage.setItem('weby_notion_drafts', JSON.stringify(savedNotes));
+      renderNotesList();
+      showNotification('シナリオプロットをローカルに保存しました！');
+    }
+
+    function loadNote(note) {
+      selectedNoteId = note.id;
+      inputTitle.value = note.title;
+      inputTags.value = note.tags;
+      selectStatus.value = note.status || '💡 アイデア';
+      textareaBody.value = note.body;
+      charCountEl.textContent = note.body.length;
+      renderNotesList();
+    }
+
+    function handleDeleteNote(id) {
+      savedNotes = savedNotes.filter(n => n.id !== id);
+      localStorage.setItem('weby_notion_drafts', JSON.stringify(savedNotes));
+      
+      if (selectedNoteId === id) {
+        handleNewNote();
+      } else {
+        renderNotesList();
+      }
+      showNotification('下書きを削除しました。');
+    }
+
+    // --- Copy Utilities (iFrame Safe with standard execCommand) ---
+    function copyToClipboard(text, typeLabel) {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showNotification(`${typeLabel}をコピーしました！Notionのデータベースやページにそのまま貼り付け可能です。`);
+        } else {
+          showNotification('コピーに失敗しました。直接選択してコピーしてください。', true);
+        }
+      } catch (err) {
+        showNotification('コピーに対応していないブラウザです。', true);
+      }
+      document.body.removeChild(el);
+    }
+
+    function copyAsNotionFormat() {
+      const notionMarkdown = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${textareaBody.value}`;
+      copyToClipboard(notionMarkdown, 'Notion用マークダウン形式');
+    }
+
+    function downloadMarkdown() {
+      const content = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${textareaBody.value}`;
+      const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${inputTitle.value || 'coc_scenario_draft'}.md`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- Gemini API with Exponential Backoff retry ---
+    async function callGeminiAPI(promptText) {
+      const currentKey = getActiveApiKey();
+      
+      if (!currentKey || currentKey.trim() === "") {
+        showNotification('APIキーが設定されていません。ヘッダーの「APIキー設定」ボタンから登録してください。', true);
+        return;
+      }
+
+      // Toggle Loading States
+      aiPlaceholder.classList.add('hidden');
+      aiTextContent.classList.add('hidden');
+      aiActions.classList.add('hidden');
+      aiLoading.classList.remove('hidden');
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`;
+      const payload = {
+        contents: [{ parts: [{ text: promptText }] }],
+        systemInstruction: { parts: [{ text: systemInstruction }] }
+      };
+
+      const retries = 5;
+      let delayMs = 1000;
+      let success = false;
+      let resultData = null;
+
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            resultData = await response.json();
+            success = true;
+            break;
+          }
+        } catch (err) {
+          // Silent catch to handle exponential retry per rules
+        }
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        delayMs *= 2;
+      }
+
+      aiLoading.classList.add('hidden');
+
+      if (success && resultData) {
+        const generatedText = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (generatedText) {
+          currentAiResponse = generatedText;
+          aiTextContent.textContent = generatedText;
+          
+          aiTextContent.classList.remove('hidden');
+          aiActions.classList.remove('hidden');
+          
+          // Clear prompt inputs
+          textareaPrompt.value = '';
+          btnSubmitPrompt.setAttribute('disabled', 'true');
+          btnSubmitPrompt.classList.add('bg-slate-800', 'text-slate-600', 'cursor-not-allowed');
+          btnSubmitPrompt.classList.remove('bg-emerald-600', 'text-white', 'hover:bg-emerald-500');
+        } else {
+          aiPlaceholder.classList.remove('hidden');
+          showNotification('AIの応答内容が空でした。', true);
+        }
+      } else {
+        aiPlaceholder.classList.remove('hidden');
+        showNotification('Gemini APIへの接続に失敗しました。APIキーまたはネットワーク状況をご確認ください。', true);
+      }
+    }
+
+    // --- Preset Actions Handler ---
+    function triggerPreset(type) {
+      let promptText = '';
+      const currentDraft = `【作品タイトル】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【現在のステータス】: ${selectStatus.value}\n【プロット・本文内容】:\n${textareaBody.value}`;
+
+      switch (type) {
+        case 'plot':
+          promptText = `以下のクトゥルフ神話TRPGシナリオアイデアから、プレイヤー（PL）を魅了して止まない「あらすじ・トレーラー文章」を、アプローチの異なる5つの不穏なバリエーションで提案してください。シナリオのキャッチコピー、シナリオ概要（推奨人数や推定時間、ロスト率）、そしてセッションを誘うナレーション風トレーラーをNotionにコピペしやすい形で書き出してください。\n\n---\n${currentDraft}`;
+          break;
+        case 'dialogue':
+          promptText = `以下のシナリオ情報をもとに、探索者が「恐怖体験をした際のSAN値喪失描写」や「不定の狂気に陥った時の発狂状態・五感の異常」、およびNPCが狂乱・パニック状態で発する焦燥感に満ちたセリフ回しを提案してください。クトゥルフ特有の『おぞましさ、生理的嫌悪感、宇宙的恐怖、美しい狂気』が脳裏に焼き付くような美しい文章にブラッシュアップしてください。\n\n---\n${currentDraft}`;
+          break;
+        case 'structure':
+          promptText = `以下のシナリオ案を読み込み、探索者が行くべき各種調査スポット（例：寂れた図書館、事件現場の書斎、不穏なカルトの儀式場など）における「各種技能（目星、図書館、聞き耳、オカルト、精神分析など）」を成功・失敗した際にキーパー（KP）がプレイヤーに開示すべき手がかり・情報を、NotionのH2・H3、およびトグルやリストとして完璧に構造化したシナリオブロックに肉付けして提案してください。\n\n---\n${currentDraft}`;
+          break;
+        case 'format':
+          promptText = `以下のシナリオプロットに登場する神話生物、あるいは魔導書、カルト呪文を完璧な「CoC用ゲームデータ形式」に落とし込んで作成してください。神話生物であればSTR, CON, SIZ, DEX, INT, POW等のステータス、武器/戦闘アクション（ダメージダイス）、目撃した際のSAN値喪失値、及び怪物の不気味な生態解説を提案してください。\n\n---\n${currentDraft}`;
+          break;
+        case 'character':
+          promptText = `以下のシナリオから主要NPCや暗躍するカルト団体の構成員などを抽出し、彼らの「表の顔」「裏の目的」「PC探索者に対するアプローチ」「隠された狂信や秘密」を徹底深掘りしてください。また、探索者とのロールプレイを盛り上げるための『ロールプレイの指標・口調の癖、能力ステータス（心理学技能や言いくるめなどへの抵抗値）』をNotionの表（テーブル）やリストで整理しやすい形にして提案してください。\n\n---\n${currentDraft}`;
+          break;
+        default:
+          return;
+      }
+      
+      textareaPrompt.value = `【自動実行】${type}のブラッシュアップ中...`;
+      callGeminiAPI(promptText);
+    }
+
+    // --- Editor Integration (Append & Replace) ---
+    function handleAppendToEditor() {
+      if (!currentAiResponse) return;
+      textareaBody.value = textareaBody.value + `\n\n### 🐙 Geminiのクトゥルフ神話シナリオ肉付け提案\n${currentAiResponse}`;
+      charCountEl.textContent = textareaBody.value.length;
+      showNotification('AIの神話的提案を本文の末尾に追記しました！');
+    }
+
+    function handleReplaceEditor() {
+      if (!currentAiResponse) return;
+      textareaBody.value = currentAiResponse;
+      charCountEl.textContent = textareaBody.value.length;
+      showNotification('本文をAIの神話的提案で置き換えました！');
+    }
+
+    // --- Toast Notifications ---
+    function showNotification(msg, isError = false) {
+      if (isError) {
+        const errorText = document.getElementById('toast-error-text');
+        const toastError = document.getElementById('toast-error');
+        errorText.textContent = msg;
+        toastError.classList.remove('hidden');
+        setTimeout(() => toastError.classList.add('hidden'), 5000);
+      } else {
+        const successText = document.getElementById('toast-success-text');
+        const toastSuccess = document.getElementById('toast-success');
+        successText.textContent = msg;
+        toastSuccess.classList.remove('hidden');
+        setTimeout(() => toastSuccess.classList.add('hidden'), 3000);
+      }
+    }
+  </script>
+</body>
+</html>
