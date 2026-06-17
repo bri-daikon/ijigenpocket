@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notion × Gemini クトゥルフ神話TRPGシナリオ狂気執筆室</title>
+  <title>Notion × Gemini クトゥルフ神話TRPGシナリオ狂気執室</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
@@ -447,10 +447,15 @@
     // --- API Key Management ---
     function handleApiKeySetting() {
       const storedKey = localStorage.getItem('weby_gemini_api_key') || "";
-      const input = prompt(
-        "Google AI Studioで取得した Gemini API キーを入力してください。\n(キーはブラウザのlocalStorageに安全にローカル保存されます)", 
-        storedKey
-      );
+      let displayPrompt = "Google AI Studioで取得した Gemini API キーを入力してください。\n(キーはブラウザのlocalStorageに安全にローカル保存されます)";
+      if (storedKey) {
+        const maskedKey = storedKey.length > 8 
+          ? `${storedKey.substring(0, 4)}...${storedKey.substring(storedKey.length - 4)}`
+          : "***登録済み***";
+        displayPrompt += `\n\n現在登録中のキー: ${maskedKey}\n(変更しない場合はそのままキャンセル、キーをクリアする場合は空欄にしてOKを押してください)`;
+      }
+      
+      const input = prompt(displayPrompt, storedKey);
       
       if (input !== null) {
         const trimmedKey = input.trim();
@@ -492,7 +497,7 @@
             ${note.title || '無題の神話シナリオ'}
           </div>
           <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
-            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-emerald-400 border border-emerald-800">
+            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-emerald-400 border border-slate-800">
               ${note.status || '💡 アイデア'}
             </span>
             <span class="text-slate-500">${note.updatedAt ? note.updatedAt.split(' ')[0] : ''}</span>
@@ -678,6 +683,7 @@
       let delayMs = 1000;
       let success = false;
       let resultData = null;
+      let lastErrorDetail = "接続タイムアウト、またはインターネットがオフラインです。";
 
       for (let i = 0; i < retries; i++) {
         try {
@@ -691,9 +697,21 @@
             resultData = await response.json();
             success = true;
             break;
+          } else {
+            // APIからのエラーレスポンスの詳細を取得して詳細なトーストを作成
+            try {
+              const errJson = await response.json();
+              if (errJson.error) {
+                lastErrorDetail = `${errJson.error.message} (${errJson.error.status})`;
+              } else {
+                lastErrorDetail = `HTTP ${response.status} ${response.statusText}`;
+              }
+            } catch (e) {
+              lastErrorDetail = `HTTP ${response.status} ${response.statusText}`;
+            }
           }
         } catch (err) {
-          // Silent catch to handle exponential retry per rules
+          lastErrorDetail = `${err.message || err}`;
         }
         await new Promise(resolve => setTimeout(resolve, delayMs));
         delayMs *= 2;
@@ -721,7 +739,8 @@
         }
       } else {
         aiPlaceholder.classList.remove('hidden');
-        showNotification('Gemini APIへの接続に失敗しました。APIキーまたはネットワーク状況をご確認ください。', true);
+        // 詳細なエラー理由を表示する
+        showNotification(`Gemini API接続失敗。理由: ${lastErrorDetail}`, true);
       }
     }
 
@@ -732,7 +751,7 @@
 
       switch (type) {
         case 'plot':
-          promptText = `以下のクトゥルフ神話TRPGシナリオアイデアから、プレイヤー（PL）を魅了して止まない「あらすじ・トレーラー文章」を、アプローチの異なる5つの不穏なバリエーションで提案してください。シナリオのキャッチコピー、シナリオ概要（推奨人数や推定時間、ロスト率）、そしてセッションを誘うナレーション風トレーラーをNotionにコピペしやすい形で書き出してください。\n\n---\n${currentDraft}`;
+          promptText = `以下のクトゥルフ神話TRPGシナリオアイデアから、プレイヤー（PL）を魅了して止まない「あらすじ・トレーラー文章」を、アプローチの異なる5つの不穏なバリエーションで提案してください。シナリオのキャッチコピー、シナリオ概要（推奨人数や推定時間、ロスト率）、するとセッションを誘うナレーション風トレーラーをNotionにコピペしやすい形で書き出してください。\n\n---\n${currentDraft}`;
           break;
         case 'dialogue':
           promptText = `以下のシナリオ情報をもとに、探索者が「恐怖体験をした際のSAN値喪失描写」や「不定の狂気に陥った時の発狂状態・五感の異常」、およびNPCが狂乱・パニック状態で発する焦燥感に満ちたセリフ回しを提案してください。クトゥルフ特有の『おぞましさ、生理的嫌悪感、宇宙的恐怖、美しい狂気』が脳裏に焼き付くような美しい文章にブラッシュアップしてください。\n\n---\n${currentDraft}`;
@@ -762,6 +781,7 @@
       showNotification('AIの神話的提案を本文の末尾に追記しました！');
     }
 
+    // 新たに実装した上書き処理
     function handleReplaceEditor() {
       if (!currentAiResponse) return;
       textareaBody.value = currentAiResponse;
