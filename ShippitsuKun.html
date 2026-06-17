@@ -25,19 +25,19 @@
       background: #10b981;
     }
 
-    /* テーブルがはみ出さないようにマークダウン表示用のスタイルを調整 */
-    .prose table {
+    /* テーブルがはみ出さないようにプレーン表示でも見やすく調整 */
+    .plain-table {
       width: 100%;
-      overflow-x: auto;
-      display: block;
       border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 0.85rem;
     }
-    .prose th, .prose td {
+    .plain-table th, .plain-table td {
       border: 1px solid #334155;
-      padding: 8px 12px;
+      padding: 6px 10px;
       text-align: left;
     }
-    .prose th {
+    .plain-table th {
       background-color: #0f172a;
       color: #34d399;
     }
@@ -135,26 +135,27 @@
         <div class="space-y-4 shrink-0">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center">
-              <i data-lucide="skull" class="w-4 h-4 mr-1"></i> シナリオ執筆エディタ (Notion連動用)
+              <i data-lucide="skull" class="w-4 h-4 mr-1"></i> シナリオ執筆エディタ (テキスト表示用)
             </span>
             <div class="flex space-x-1.5">
               <button 
                 id="btn-copy-notion"
-                class="px-2.5 py-1 text-xs bg-emerald-950 text-emerald-300 hover:bg-emerald-900 rounded-lg border border-emerald-800 transition font-bold flex items-center"
-                title="Notion用Markdownコピー"
+                class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition font-bold flex items-center shadow shadow-emerald-900/40"
+                title="プレーンな本文をNotion用Markdown（#, **など）に自動変換してコピー"
               >
-                <i data-lucide="share" class="w-3.5 h-3.5 mr-1"></i> Notionコピー
+                <i data-lucide="share" class="w-3.5 h-3.5 mr-1"></i> Notion用にMDコピー
               </button>
               <button 
                 id="btn-copy-plaintext"
                 class="px-2.5 py-1 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg border border-slate-700 transition font-bold flex items-center"
-                title="Markdown記号を除去したプレーンテキスト形式でコピー"
+                title="画面のプレーンテキストをそのままコピー"
               >
                 <i data-lucide="copy" class="w-3.5 h-3.5 mr-1"></i> テキストコピー
               </button>
               <button 
                 id="btn-download-md"
                 class="px-2 py-1 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg border border-slate-700 transition flex items-center"
+                title="マークダウン形式でダウンロード"
               >
                 <i data-lucide="download" class="w-3.5 h-3.5"></i>
               </button>
@@ -206,7 +207,7 @@
         <!-- Note Body Textarea -->
         <div class="flex-1 mt-4 flex flex-col min-h-0">
           <div class="flex items-center justify-between mb-1 shrink-0">
-            <label class="block text-xs text-slate-400">シナリオ構成・本文 (Markdown)</label>
+            <label class="block text-xs text-slate-400">シナリオ構成・本文 (スッキリした日本語表記)</label>
             <span class="text-[10px] text-emerald-400/80 animate-pulse bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/50">
               💡 加筆したい段落や章のテキストをドラッグ選択して、右側の「選択範囲を加筆」ボタンを押せます
             </span>
@@ -214,13 +215,13 @@
           <div class="flex-1 relative flex flex-col min-h-0">
             <textarea
               id="textarea-body"
-              placeholder="ここにNotionのシナリオ案やアイデアを貼り付けてください。&#10;ト書きや探索ルートを整理し、Geminiにクトゥルフらしい邪悪で魅力的なリライトをさせることができます。"
+              placeholder="ここにNotionのシナリオ案やアイデアを貼り付けてください。&#10;『■』や『【】』などの普通のテキストで書くだけで、コピー時に自動でNotion用Markdownに変換されます。"
               class="flex-1 w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/60 rounded-xl p-5 text-slate-200 placeholder-slate-700 focus:outline-none transition resize-none font-mono leading-relaxed text-sm overflow-y-auto min-h-0"
             ></textarea>
             <button
               id="btn-copy-body"
               class="absolute bottom-4 right-4 bg-slate-900/90 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-400 p-2.5 rounded-lg shadow-md transition flex items-center text-xs space-x-1"
-              title="本文をコピー"
+              title="プレーンテキストとしてコピー"
             >
               <i data-lucide="clipboard" class="w-4 h-4"></i>
               <span>本文をコピー</span>
@@ -332,27 +333,35 @@
         <!-- AI OUTPUT VIEW (FIXED HEIGHT FLEX CONTEXT) -->
         <div class="flex-1 h-0 flex flex-col bg-slate-900 border border-slate-800/80 rounded-xl overflow-hidden mb-4">
           <div class="bg-slate-950 px-4 py-2 flex items-center justify-between border-b border-slate-800/60 shrink-0">
-            <span class="text-xs font-semibold text-slate-400">Geminiの提案結果</span>
-            <div id="ai-actions" class="hidden flex space-x-1.5">
+            <span class="text-xs font-semibold text-slate-400">Geminiの提案（スッキリテキスト表示）</span>
+            <div id="ai-actions" class="hidden flex space-x-1">
               <button
-                id="btn-copy-ai"
-                class="px-2 py-0.5 text-[10px] bg-slate-800 text-slate-300 rounded border border-slate-700 hover:bg-slate-700 transition"
+                id="btn-copy-ai-md"
+                class="px-2 py-0.5 text-[10px] bg-emerald-600 text-white hover:bg-emerald-500 rounded border border-emerald-700 transition font-bold"
+                title="Notionにそのまま貼れる完全なMarkdown形式でコピー"
               >
-                コピー
+                MDコピー
+              </button>
+              <button
+                id="btn-copy-ai-plain"
+                class="px-2 py-0.5 text-[10px] bg-slate-800 text-slate-300 rounded border border-slate-700 hover:bg-slate-700 transition"
+                title="画面上のプレーンテキストをそのままコピー"
+              >
+                テキストコピー
               </button>
               <button
                 id="btn-replace-selection"
                 class="hidden px-2 py-0.5 text-[10px] bg-amber-950 text-amber-300 border border-amber-800 rounded hover:bg-amber-900 transition font-medium"
                 title="現在選択されているエディタ内の文章を、このAIの提案に置き換えます"
               >
-                選択部分と置換
+                選択置換
               </button>
               <button
                 id="btn-append-ai"
                 class="px-2 py-0.5 text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 rounded hover:bg-emerald-900 transition font-medium"
                 title="本文の末尾に追加します"
               >
-                末尾に追記
+                末尾追記
               </button>
               <button
                 id="btn-replace-ai"
@@ -418,7 +427,8 @@
     
     let savedNotes = [];
     let selectedNoteId = null;
-    let currentAiResponse = "";
+    let currentRawMarkdownResponse = ""; // Raw Markdown cache from Gemini
+    let currentCleanTextResponse = "";      // Cleaned text for editor display
     
     // Selection state tracking for partial editing
     let activeSelectionStart = 0;
@@ -474,14 +484,14 @@
       }
 
       // Event listeners
-      document.getElementById('btn-new').addEventListener('click', handleNewNote);
-      document.getElementById('btn-save').addEventListener('click', handleSaveNote);
-      document.getElementById('btn-copy-notion').addEventListener('click', copyAsNotionFormat);
+      document.getElementById('btn-copy-notion').addEventListener('click', copyAsNotionMarkdownFormat);
       document.getElementById('btn-copy-plaintext').addEventListener('click', copyAsPlainText);
       document.getElementById('btn-download-md').addEventListener('click', downloadMarkdown);
       document.getElementById('btn-copy-body').addEventListener('click', () => copyToClipboard(textareaBody.value, '本文のみ'));
       
-      document.getElementById('btn-copy-ai').addEventListener('click', () => copyToClipboard(currentAiResponse, '提案結果'));
+      document.getElementById('btn-copy-ai-md').addEventListener('click', () => copyToClipboard(currentRawMarkdownResponse, 'Markdown形式の提案結果'));
+      document.getElementById('btn-copy-ai-plain').addEventListener('click', () => copyToClipboard(currentCleanTextResponse, 'テキスト形式の提案結果'));
+      
       document.getElementById('btn-append-ai').addEventListener('click', handleAppendToEditor);
       document.getElementById('btn-replace-ai').addEventListener('click', handleReplaceEditor);
       btnReplaceSelection.addEventListener('click', handleReplaceSelection);
@@ -532,9 +542,12 @@
         let fullPrompt = "";
         if (hasActiveSelection) {
           const selectedText = textareaBody.value.substring(activeSelectionStart, activeSelectionEnd);
-          fullPrompt = `現在のシナリオ作品名：【${inputTitle.value}】\n\nエディタの中から「部分選択された箇所」：\n====================\n${selectedText}\n====================\n\n上記の【選択部分】に対して、ユーザーからの追加の加筆・リライト指示：\n${customPrompt}`;
+          // convert selected text to md context so AI understands structure
+          const selectedTextMd = convertPlainTextToMarkdown(selectedText);
+          fullPrompt = `現在のシナリオ作品名：【${inputTitle.value}】\n\nエディタの中から「部分選択された箇所」：\n====================\n${selectedTextMd}\n====================\n\n上記の【選択部分】に対して、ユーザーからの追加の加筆・リライト指示：\n${customPrompt}`;
         } else {
-          fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容】:\n${textareaBody.value}\n\nユーザーからの追加執筆指示：\n${customPrompt}`;
+          const currentBodyMd = convertPlainTextToMarkdown(textareaBody.value);
+          fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容】:\n${currentBodyMd}\n\nユーザーからの追加執筆指示：\n${customPrompt}`;
         }
         callGeminiAPI(fullPrompt);
       });
@@ -548,9 +561,6 @@
         activeSelectionStart = start;
         activeSelectionEnd = end;
         hasActiveSelection = true;
-      } else {
-        // We do not immediately clear selection state on mouseup to avoid losing it 
-        // when clicking buttons, but we update based on text length focus
       }
     }
 
@@ -584,7 +594,84 @@
       if (localKey && localKey.trim() !== "") {
         return localKey.trim();
       }
-      return ""; // Default to empty, ensuring the user inputs their key
+      return ""; 
+    }
+
+    // --- Convert Plain text with TRPG marks into clean Notion Markdown (IMPORTANT) ---
+    function convertPlainTextToMarkdown(text) {
+      if (!text) return "";
+      let lines = text.split('\n');
+      let resultLines = lines.map(line => {
+        let trimmed = line.trim();
+        // ■ -> ##
+        if (trimmed.startsWith('■')) {
+          return '## ' + trimmed.substring(1).trim();
+        }
+        // 【項目】 -> ### 【項目】
+        if (trimmed.startsWith('【') && trimmed.includes('】')) {
+          return '### ' + trimmed;
+        }
+        // ・ -> - 
+        if (trimmed.startsWith('・')) {
+          return '- ' + trimmed.substring(1).trim();
+        }
+        return line;
+      });
+      return resultLines.join('\n');
+    }
+
+    // --- Clean Markdown symbols from Gemini output to display beautifully in text-only UI ---
+    function cleanMarkdownToPlainText(markdownText) {
+      if (!markdownText) return "";
+      
+      let lines = markdownText.split('\n');
+      let insideTable = false;
+      let tableRows = [];
+
+      let cleanLines = lines.map(line => {
+        let trimmed = line.trim();
+
+        // Handle Tables (convert Markdown pipe tables to beautiful readable spaced text lines)
+        if (trimmed.startsWith('|')) {
+          insideTable = true;
+          // Skip the separator row (e.g. |---|---|)
+          if (trimmed.includes('---') || trimmed.includes('===')) {
+            return null; 
+          }
+          let cells = trimmed.split('|').map(c => c.trim()).filter(Boolean);
+          // Format as "Cell  |  Cell  |  Cell" or tabbed
+          return ' ' + cells.join('   |   ');
+        } else {
+          if (insideTable) {
+            insideTable = false; // exit table block
+          }
+        }
+
+        // H1 ~ H3 conversion
+        if (trimmed.startsWith('###')) {
+          return '【' + trimmed.replace(/^###+\s*/, '') + '】';
+        }
+        if (trimmed.startsWith('##') || trimmed.startsWith('#')) {
+          return '■ ' + trimmed.replace(/^#+\s*/, '');
+        }
+
+        // Bullets
+        if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+          return '・ ' + trimmed.replace(/^[-*]\s*/, '');
+        }
+
+        // Bold removal **text** -> text
+        let cleanLine = line.replace(/\*\*([^*]+)\*\*/g, '$1');
+        cleanLine = cleanLine.replace(/__([^_]+)__/g, '$1');
+        
+        // Code quotes removal
+        cleanLine = cleanLine.replace(/`([^`]+)`/g, '$1');
+
+        return cleanLine;
+      });
+
+      // Filter out null rows (like separators) and reconstruct
+      return cleanLines.filter(line => line !== null).join('\n');
     }
 
     // --- Note Logic & LocalStorage ---
@@ -641,32 +728,36 @@
       inputTitle.value = '未整理の邪神アイデア';
       inputTags.value = 'クローズド, 現代日本, 推奨技能：目星, 難易度：中';
       selectStatus.value = '💡 アイデア';
-      textareaBody.value = `# 🐙 シナリオ名：[タイトル]
+      textareaBody.value = `■ シナリオ名：[タイトル]
 
-## 📝 レギュレーション（PL向け概要）
-- **推奨人数**：○人
-- **想定プレイ時間**：○時間 (ボイセ/テキセ)
-- **推奨技能**：[目星、図書館、聞き耳、精神分析など]
-- **ロスト率**：低 / 中 / 高
-- **舞台**：[現代日本、1920年代アーカムなど]
+【レギュレーション（PL向け概要）】
+・推奨人数：○人
+・想定プレイ時間：○時間 (ボイセ/テキセ)
+・推奨技能：目星、図書館、聞き耳、精神分析など
+・ロスト率：低 / 中 / 高
+・舞台：現代日本
 
-## 👁️ シナリオ背景（KP専用情報・真相）
-- [なぜこの事件が起きているのか、神話生物やカルト団体の陰謀を記述]
+■ シナリオ背景（KP専用情報・真相）
+・なぜこの事件が起きているのか、神話生物やカルト団体の陰謀を記述
 
-## 👥 ノンプレイヤーキャラクター (NPC)
-- **NPC名：[NPCの名前]**
-  - 【目的】：
-  - 【秘密】：
+【ノンプレイヤーキャラクター (NPC)】
+・NPC名：[NPCの名前]
+　目的：
+　秘密：
 
-## 🧭 探索ルート・手がかり
-- **【導入】**：探索者が巻き込まれる最初の異変。
-- **【調査スポットA：○○】**：
-  - 「目星」成功：
-  - 「図書館」成功：
-- **【クライマックス】**：神話生物との邂逅、または儀式の阻止。
+■ 探索ルート・手がかり
+【導入】
+・探索者が巻き込まれる最初の異変。
 
-## 💀 SAN値喪失 & 神話生物
-- [神話的事象に出会った探索者のSAN喪失や、怪物のステータスを記述]
+【調査スポットA：○○】
+・「目星」成功：
+・「図書館」成功：
+
+【クライマックス】
+・神話生物との邂逅、または儀式の阻止。
+
+■ SAN値喪失 & 神話生物
+・神話的事象に出会った探索者のSAN喪失や、怪物のステータスを記述
 `;
       charCountEl.textContent = textareaBody.value.length;
       hasActiveSelection = false;
@@ -718,7 +809,6 @@
       renderNotesList();
     }
 
-    // --- Delete Note ---
     function handleDeleteNote(id) {
       savedNotes = savedNotes.filter(n => n.id !== id);
       localStorage.setItem('weby_notion_drafts', JSON.stringify(savedNotes));
@@ -754,29 +844,22 @@
       document.body.removeChild(el);
     }
 
-    // --- Export as Notion Format ---
-    function copyAsNotionFormat() {
-      const notionMarkdown = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${textareaBody.value}`;
+    // --- Export as Notion Format (Converts plain format on the fly!) ---
+    function copyAsNotionMarkdownFormat() {
+      const mdConvertedBody = convertPlainTextToMarkdown(textareaBody.value);
+      const notionMarkdown = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${mdConvertedBody}`;
       copyToClipboard(notionMarkdown, 'Notion用マークダウン形式');
     }
 
     // --- Export as Pure Plain Text Format ---
     function copyAsPlainText() {
-      const rawBody = textareaBody.value;
-      
-      // Remove basic markdown formats like # headers, ** bolding, lists for clean viewing
-      const cleanBody = rawBody
-        .replace(/#+\s+/g, '')        // Headers
-        .replace(/\*\*|__/g, '')      // Bold
-        .replace(/-\s+/g, '・ ')      // Lists -> japanese bullet
-        .replace(/`([^`]+)`/g, '$1'); // Code block backticks
-
-      const plainTextFormat = `■ シナリオ名：${inputTitle.value}\n■ 状態：${selectStatus.value}\n■ タグ：${inputTags.value}\n\n====================\n\n${cleanBody}`;
+      const plainTextFormat = `■ シナリオ名：${inputTitle.value}\n■ 状態：${selectStatus.value}\n■ タグ：${inputTags.value}\n\n====================\n\n${textareaBody.value}`;
       copyToClipboard(plainTextFormat, 'プレーンテキスト形式');
     }
 
     function downloadMarkdown() {
-      const content = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${textareaBody.value}`;
+      const mdConvertedBody = convertPlainTextToMarkdown(textareaBody.value);
+      const content = `# ${inputTitle.value}\n\n**執筆ステータス**: ${selectStatus.value}\n**タグ・傾向**: ${inputTags.value}\n\n---\n\n${mdConvertedBody}`;
       const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -851,8 +934,11 @@
       if (success && resultData) {
         const generatedText = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
         if (generatedText) {
-          currentAiResponse = generatedText;
-          aiTextContent.textContent = generatedText;
+          // Process output
+          currentRawMarkdownResponse = generatedText;
+          currentCleanTextResponse = cleanMarkdownToPlainText(generatedText);
+          
+          aiTextContent.textContent = currentCleanTextResponse;
           
           aiTextContent.classList.remove('hidden');
           aiActions.classList.remove('hidden');
@@ -898,7 +984,9 @@
         hasActiveSelection = false;
       }
 
-      const currentDraft = `【作品タイトル】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【現在のステータス】: ${selectStatus.value}\n【プロット・本文内容】:\n${textareaBody.value}`;
+      // Pre-convert inputs into beautiful Markdown so Gemini has 100% structured knowledge
+      const mdConvertedDraft = convertPlainTextToMarkdown(textareaBody.value);
+      const currentDraft = `【作品タイトル】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【現在のステータス】: ${selectStatus.value}\n【プロット・本文内容（構造）】:\n${mdConvertedDraft}`;
 
       // 1. Check if the user wants partial selection expansion
       if (type === 'expand_selection') {
@@ -907,7 +995,8 @@
           return;
         }
         
-        promptText = `現在のクトゥルフ神話TRPGシナリオ名：【${inputTitle.value}】\n\nエディタ内のドラッグ選択した【指定箇所】:\n====================\n${selectedText}\n====================\n\n上記の部分を対象に、TRPGシナリオとして魅力的なディテールや臨場感、探索技能チェックを交えて肉付け（ディテール加筆）・詳細化して展開してください。神話的な恐怖がにじむ表現を心がけ、Notionにすぐペースト可能な見出し構成で提案してください。`;
+        const selectedTextMd = convertPlainTextToMarkdown(selectedText);
+        promptText = `現在のクトゥルフ神話TRPGシナリオ名：【${inputTitle.value}】\n\nエディタ内のドラッグ選択した【指定箇所】:\n====================\n${selectedTextMd}\n====================\n\n上記の部分を対象に、TRPGシナリオとして魅力的なディテールや臨場感、探索技能チェックを交えて肉付け（ディテール加筆）・詳細化して展開してください。神話的な恐怖がにじむ表現を心がけ、Notionにすぐペースト可能な見出し構成で提案してください。`;
         
         textareaPrompt.value = `【自動実行】選択箇所の神話加筆中...`;
         callGeminiAPI(promptText);
@@ -916,7 +1005,7 @@
 
       // 2. Normal presets (can optionally respect selection)
       const contextSnippet = isTextSelected 
-        ? `（エディタ内の選択中箇所を特に重視して推敲してください：\n"${selectedText}"\n）`
+        ? `（エディタ内の選択中箇所を特に重視して推敲してください：\n"${convertPlainTextToMarkdown(selectedText)}"\n）`
         : "";
 
       switch (type) {
@@ -939,28 +1028,28 @@
           return;
       }
       
-      textareaPrompt.value = `【自動実行】${type}のブラッシュアップ中...`;
+      textareaPrompt.value = `【自動実行】${type} of the scenario is processing...`;
       callGeminiAPI(promptText);
     }
 
     // --- Editor Integration (Append & Replace & Selection Insertion) ---
     function handleAppendToEditor() {
-      if (!currentAiResponse) return;
-      textareaBody.value = textareaBody.value + `\n\n### 🐙 Geminiのクトゥルフ神話シナリオ肉付け提案\n${currentAiResponse}`;
+      if (!currentCleanTextResponse) return;
+      textareaBody.value = textareaBody.value + `\n\n■ Geminiの神話加筆提案\n${currentCleanTextResponse}`;
       charCountEl.textContent = textareaBody.value.length;
       showNotification('AIの神話的提案を本文の末尾に追記しました！');
     }
 
     function handleReplaceEditor() {
-      if (!currentAiResponse) return;
-      textareaBody.value = currentAiResponse;
+      if (!currentCleanTextResponse) return;
+      textareaBody.value = currentCleanTextResponse;
       charCountEl.textContent = textareaBody.value.length;
       showNotification('本文全体をAIの神話的提案で置き換えました！');
     }
 
     // Replace the currently selected area in the editor
     function handleReplaceSelection() {
-      if (!currentAiResponse) return;
+      if (!currentCleanTextResponse) return;
       if (!hasActiveSelection) {
         showNotification("置換対象の選択部分が見つかりませんでした。全体への上書きまたは追記を行ってください。", true);
         return;
@@ -971,7 +1060,7 @@
       const after = rawVal.substring(activeSelectionEnd);
       
       // Update text with replacement
-      textareaBody.value = before + currentAiResponse + after;
+      textareaBody.value = before + currentCleanTextResponse + after;
       charCountEl.textContent = textareaBody.value.length;
       
       // Reset selection state
