@@ -232,11 +232,11 @@
                                 <input type="radio" name="loop" value="once" class="peer sr-only">
                                 <div class="px-4 py-2.5 rounded-lg border border-teal-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
                                     ⏱️ 1回だけ再生して停止
+                                </div>
+                            </label>
                         </div>
-                    </label>
+                    </div>
                 </div>
-            </div>
-        </div>
 
                 <!-- 5. 作成ボタン -->
                 <div class="pt-4">
@@ -308,7 +308,10 @@
         const loopRadios = document.getElementsByName('loop');
         const placeholderArea = document.getElementById('placeholderArea');
         const resultArea = document.getElementById('resultArea');
-        const previewImg = document.getElementById('previewImg');
+        
+        // 再レンダリング（リセット再生）を行うため、constからletに変更
+        let previewImg = document.getElementById('previewImg');
+        
         const downloadLink = document.getElementById('downloadLink');
         const loadingMsg = document.getElementById('loadingMsg');
         const canvas = document.getElementById('canvas');
@@ -391,11 +394,21 @@
                 ctx.globalAlpha = 1.0;
                 ctx.filter = 'none';
 
-                // 背景色の設定（白指定または黒指定によって背景を敷き詰める）
-                if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
-                    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
-                } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
-                    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+                // 背景色の設定（透過トラブル・残像バグ・点滅バグを防ぐため、GIFでは常に背景を敷く）
+                if (format === 'gif') {
+                    if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
+                        ctx.fillStyle = '#000000';
+                    } else {
+                        ctx.fillStyle = '#ffffff'; // デフォルトはクリーンな白背景
+                    }
+                    ctx.fillRect(0, 0, width, height);
+                } else {
+                    // APNG形式の場合は、透過APNGの特性を維持しつつ、指定の背景エフェクトの時のみ背景を敷く
+                    if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+                    } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
+                        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+                    }
                 }
 
                 if (effect === 'shake') {
@@ -534,24 +547,23 @@
                 }
             }
 
-            // ループ設定（1回再生か無限か）をパラメータに変換
-            const numLoops = (loopSetting === 'once') ? 1 : 0;
+            // ループ設定パラメータの決定（GIFはonce時にnullを渡すのが仕様、APNGは1を渡す）
+            const numLoopsAPNG = (loopSetting === 'once') ? 1 : 0;
+            const numLoopsGIF = (loopSetting === 'once') ? null : 0;
 
             if (format === 'apng') {
-                // UPNG.encodeの第6引数にループカウント（0は無限、1は1回再生）を指定します
-                const apngArrayBuffer = UPNG.encode(framesAPNG, width, height, 0, delays, numLoops);
+                const apngArrayBuffer = UPNG.encode(framesAPNG, width, height, 0, delays, numLoopsAPNG);
                 const blob = new Blob([apngArrayBuffer], { type: 'image/png' });
                 const url = URL.createObjectURL(blob);
                 finishGeneration(url, 'animated.png');
             } else {
-                // gifshot.createGIFのloopパラメータに値（0は無限、1は1回再生）を指定します
                 gifshot.createGIF({
                     images: framesGIF,
                     interval: 0.15,
                     gifWidth: width,
                     gifHeight: height,
                     numWorkers: 2,
-                    loop: numLoops 
+                    loop: numLoopsGIF 
                 }, function(obj) {
                     if (!obj.error) {
                         finishGeneration(obj.image, 'animated.gif');
@@ -564,7 +576,25 @@
         }
 
         function finishGeneration(url, filename) {
-            previewImg.src = url;
+            // 前のオブジェクトURLを解放してメモリリークを防ぐ
+            if (previewImg.src && previewImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL(previewImg.src);
+            }
+
+            // 新しいimg要素を作成することで、アニメーション（特に1回再生）を確実に最初から再生させる
+            const newImg = document.createElement('img');
+            newImg.id = 'previewImg';
+            newImg.alt = 'プレビュー';
+            newImg.className = 'max-w-full max-h-[320px] rounded-lg shadow-md';
+            newImg.src = url;
+
+            // 古いプレビュー画像を置き換える
+            const parent = previewImg.parentNode;
+            parent.replaceChild(newImg, previewImg);
+            
+            // JavaScriptのグローバル変数の参照を新しい要素に更新
+            previewImg = newImg;
+
             downloadLink.href = url;
             downloadLink.download = filename;
             resetButton();
