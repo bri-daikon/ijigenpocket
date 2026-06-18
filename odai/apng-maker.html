@@ -246,25 +246,33 @@
                     </div>
                 </div>
 
-                <!-- 5. 作成ボタン -->
-                <div class="pt-4">
-                    <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-4 px-10 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-xl w-full shadow-lg text-lg flex items-center justify-center mx-auto">
-                        <svg class="w-6 h-6 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span id="btnText">魔法をかける！ (作成開始)</span>
-                    </button>
-                    <p id="loadingMsg" class="text-blue-600 mt-4 text-center hidden animate-pulse font-bold">🪄 一生懸命作っています... 少しお待ちください！</p>
-                </div>
-
             </div>
 
             <!-- 【右カラム】完成プレビュー画面 (全体の5/12幅 & スクロール追従) -->
             <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-8 space-y-6">
                 
-                <div class="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50">
-                    <h2 class="text-xl font-extrabold text-gray-800 mb-4 flex items-center">
+                <!-- 操作とプレビューを統合したスタイリッシュな右パネル -->
+                <div class="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50 space-y-6">
+                    
+                    <!-- 5. 魔法をかけるボタン（右カラムの最上部に移動！） -->
+                    <div class="bg-gradient-to-r from-blue-50/50 to-purple-50/50 p-4 rounded-xl border border-blue-100/50">
+                        <label class="flex items-center text-xs font-bold text-blue-700 mb-2.5 uppercase tracking-wider">
+                            <span class="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center mr-2 text-[10px]">GO</span>
+                            アニメーションの生成
+                        </label>
+                        <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-0.5 hover:shadow-xl w-full shadow-lg text-base flex items-center justify-center mx-auto">
+                            <svg class="w-5 h-5 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="btnText">魔法をかける！</span>
+                        </button>
+                        <p id="loadingMsg" class="text-blue-600 mt-3 text-center hidden text-xs animate-pulse font-bold">🪄 一生懸命作成しています...</p>
+                    </div>
+
+                    <div class="border-t border-gray-200/60 my-2"></div>
+
+                    <h2 class="text-xl font-extrabold text-gray-800 mb-2 flex items-center">
                         <span class="mr-2">🎉</span>
                         プレビュー＆ダウンロード
                     </h2>
@@ -468,7 +476,7 @@
                     }
                     ctx.fillRect(0, 0, width, height);
                 } else {
-                    // APNG形式の場合は、透過APNGの特性を維持しつつ、指定の背景エフェクトの時のみ背景を敷く
+                    // APNG形式の場合は、透過APNGの特性を維持しつつ、指定 of 背景エフェクトの時のみ背景を敷く
                     if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
                         ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
                     } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
@@ -689,7 +697,7 @@
             generateBtn.disabled = false;
             generateBtn.classList.remove('opacity-75', 'cursor-not-allowed');
             spinner.classList.add('hidden');
-            btnText.textContent = "魔法をかける！ (作成開始)";
+            btnText.textContent = "魔法をかける！";
         }
     </script>
 </body>
