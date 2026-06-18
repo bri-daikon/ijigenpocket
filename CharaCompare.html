@@ -165,6 +165,21 @@
                                 placeholder='{"kind":"character","data":{ ... }}'></textarea>
                         </div>
 
+                        <!-- 版の選択 -->
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-600 mb-1.5 font-header">クトゥルフ神話TRPG 版</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label id="editionLabel6" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-amber-600 bg-amber-900/30 text-amber-300">
+                                    <input type="radio" name="editionSelect" value="6" class="sr-only" checked onchange="updateEditionLabelStyle()">
+                                    <i data-lucide="book" class="w-3.5 h-3.5"></i> 6版
+                                </label>
+                                <label id="editionLabel7" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-stone-700 bg-transparent text-stone-500 hover:text-stone-300 hover:border-stone-500">
+                                    <input type="radio" name="editionSelect" value="7" class="sr-only" onchange="updateEditionLabelStyle()">
+                                    <i data-lucide="book-open" class="w-3.5 h-3.5"></i> 7版
+                                </label>
+                            </div>
+                        </div>
+
                         <button onclick="addCharacter()"
                             class="w-full py-3 px-4 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-amber-100 font-semibold text-sm rounded-xl transition-all shadow-lg border border-amber-700/50 hover:shadow-amber-500/10 flex items-center justify-center gap-2 tracking-widest font-header">
                             <i data-lucide="shield-plus" class="w-4 h-4"></i> 召喚を執り行う
@@ -209,6 +224,23 @@
                             <button onclick="selectAll(false)"
                                 class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
                         </div>
+                    </div>
+
+                    <!-- 版フィルタータブ -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-stone-600 font-header mr-0.5">版：</span>
+                        <button onclick="setEditionFilter('all')" id="editionTab_all"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400">
+                            全て
+                        </button>
+                        <button onclick="setEditionFilter('6')" id="editionTab_6"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600">
+                            6版
+                        </button>
+                        <button onclick="setEditionFilter('7')" id="editionTab_7"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600">
+                            7版
+                        </button>
                     </div>
 
                     <!-- 検索機能 ＆ 召喚カードソート機能 -->
@@ -450,6 +482,9 @@
         let skillTableSortKey = 'label';     // 技能一覧表のソートキー ('label' またはキャラクターの id)
         let skillTableSortDesc = false;      // 技能一覧表のソート降順フラグ
 
+        // --- 版フィルター状態 ('all' | '6' | '7') ---
+        let editionFilter = 'all';
+
         // --- アプリケーション起動時の初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -534,6 +569,26 @@
             };
         }
 
+        // --- 技能「芸術」の表記揺れを正規化する ---
+        // 例: "芸術：（写真）" "芸術(絵画)" "芸術【彫刻】" → "芸術　写真" "芸術　絵画" "芸術　彫刻"
+        function normalizeSkillLabel(label) {
+            const artPrefix = /^芸術/;
+            if (!artPrefix.test(label)) return label;
+
+            // 芸術の後の区切り記号と括弧類を除去して中身を取得
+            const inner = label
+                .replace(/^芸術/, '')
+                .replace(/^[：:\u30fb\s\u3000]+/, '')
+                .replace(/^[（(【\[「『]/, '')
+                .replace(/[）)】\]」』]$/, '')
+                .trim();
+
+            if (inner) {
+                return `芸術\u3000${inner}`;
+            }
+            return '芸術';
+        }
+
         // --- 技能のコマンド自動抽出ロジック ---
         function parseSkillsFromCommands(commandsText) {
             const skills = [];
@@ -546,7 +601,8 @@
                 const match = line.match(regex);
                 if (match) {
                     const value = parseInt(match[1], 10);
-                    const label = match[2].trim();
+                    const rawLabel = match[2].trim();
+                    const label = normalizeSkillLabel(rawLabel);
 
                     const excludes = ['アイデア', '幸運', '知識', '正気度', 'SAN', 'ダメージ', 'STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'HP', 'MP'];
                     const isExclude = excludes.some(ex => label.toUpperCase().includes(ex.toUpperCase()));
@@ -578,6 +634,32 @@
             return param ? param.value : 0;
         }
 
+        // --- 版フィルター切り替え ---
+        function setEditionFilter(edition) {
+            editionFilter = edition;
+            ['all', '6', '7'].forEach(e => {
+                const tab = document.getElementById(`editionTab_${e}`);
+                if (!tab) return;
+                if (e === edition) {
+                    tab.className = 'px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400';
+                } else {
+                    tab.className = 'px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600';
+                }
+            });
+            renderCharacters();
+        }
+
+        // --- 版選択ラジオボタンのスタイル更新 ---
+        function updateEditionLabelStyle() {
+            const selected = document.querySelector('input[name="editionSelect"]:checked');
+            if (!selected) return;
+            const val = selected.value;
+            const activeClass = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-amber-600 bg-amber-900/30 text-amber-300';
+            const inactiveClass = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-stone-700 bg-transparent text-stone-500 hover:text-stone-300 hover:border-stone-500';
+            document.getElementById('editionLabel6').className = val === '6' ? activeClass : inactiveClass;
+            document.getElementById('editionLabel7').className = val === '7' ? activeClass : inactiveClass;
+        }
+
         // --- いあきゃらデータ追加（超・召喚の術式） ---
         function addCharacter() {
             let jsonText = document.getElementById('jsonInput').value.trim();
@@ -586,8 +668,12 @@
                 return;
             }
 
+            // 選択された版を取得
+            const editionRadio = document.querySelector('input[name="editionSelect"]:checked');
+            const selectedEdition = editionRadio ? editionRadio.value : '6';
+
             // --- コピペの不要なゴミや全角記号を自動クレンジングする魔術 ---
-            jsonText = jsonText.replace(/[“”]/g, '"'); // 全角ダブルクォーテーションを半角に変換
+            jsonText = jsonText.replace(/[""]/g, '"'); // 全角ダブルクォーテーションを半角に変換
             jsonText = jsonText.replace(/：/g, ':'); // 全角コロンを半角に変換
             
             // コピペされた文字列の中で { から } までの部分を自動で抜き出してパースする
@@ -619,6 +705,7 @@
                 const newChar = {
                     id: 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     name: charData.name || "名無しの彷徨い人",
+                    edition: selectedEdition,
                     initiative: charData.initiative !== undefined ? charData.initiative : 0,
                     externalUrl: charData.externalUrl || "",
                     iconUrl: charData.iconUrl || "",
@@ -637,7 +724,7 @@
                 // もしSkillsが空で、かつparamsの中に技能が混じっているような特殊仕様データの場合に備えての補完
                 if (newChar.skills.length === 0 && charData.skills) {
                     newChar.skills = (charData.skills || []).map(s => ({
-                        label: s.label,
+                        label: normalizeSkillLabel(s.label),
                         value: Number(s.value) || 0
                     }));
                 }
@@ -650,7 +737,7 @@
                 updateComparison();
 
                 document.getElementById('jsonInput').value = "";
-                showToast(`探索者「${newChar.name}」を召喚しました！`, "success");
+                showToast(`探索者「${newChar.name}」を召喚しました！(${selectedEdition}版)`, "success");
             } catch (error) {
                 showToast("召喚失敗: データの形式が正しくパースできません。" + error.message, "error");
             }
@@ -726,8 +813,15 @@
                 return;
             }
 
-            // 1. 探索者の名前検索フィルターを適用
+            // 1. 版フィルターを適用（'all' の場合は全て表示）
             let filteredChars = characters.filter(char => {
+                if (editionFilter === 'all') return true;
+                // editionが未設定（旧データ）は6版として扱う
+                return (char.edition || '6') === editionFilter;
+            });
+
+            // 2. 探索者の名前検索フィルターを適用
+            filteredChars = filteredChars.filter(char => {
                 return char.name.toLowerCase().includes(searchQuery);
             });
 
@@ -778,6 +872,13 @@
                 };
 
                 const skillCount = char.skills ? char.skills.length : 0;
+                const editionBadge = char.edition
+                    ? `<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold font-header rounded border ${
+                        char.edition === '7'
+                            ? 'border-sky-700/60 bg-sky-950/40 text-sky-400'
+                            : 'border-amber-800/60 bg-amber-950/40 text-amber-500'
+                    }">${char.edition}版</span>`
+                    : '';
 
                 return `
                     <div class="relative group flex items-start gap-3 bg-[#110d0a]/60 hover:bg-[#15100c] border ${isSelected ? 'border-amber-600 ring-1 ring-amber-600/20' : 'border-amber-950/40'} rounded-xl p-4 transition-all magic-border">
@@ -796,7 +897,10 @@
 
                         <!-- 情報 -->
                         <div class="flex-grow min-w-0 pr-6">
-                            <h3 class="font-bold text-sm text-stone-100 truncate font-header" title="${char.name}">${char.name}</h3>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <h3 class="font-bold text-sm text-stone-100 truncate font-header" title="${char.name}">${char.name}</h3>
+                                ${editionBadge}
+                            </div>
                             <div class="text-[10px] text-amber-700 font-semibold mt-0.5 flex items-center gap-2">
                                 <span>行動順: <strong class="text-amber-500 font-mono">${char.initiative}</strong></span>
                                 <span>|</span>
