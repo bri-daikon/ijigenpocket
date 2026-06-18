@@ -38,6 +38,93 @@
                     <input type="radio" name="effect" value="scatter" class="text-blue-600">
                     <span>散らばる</span>
                 </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomIn" class="text-blue-600">
+                    <span>ズームイン</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomOut" class="text-blue-600">
+                    <span>ズームアウト</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomInWhite" class="text-blue-600">
+                    <span>ズームイン(白)</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomOutWhite" class="text-blue-600">
+                    <span>ズームアウト(白)</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomInBlack" class="text-blue-600">
+                    <span>ズームイン(黒)</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border">
+                    <input type="radio" name="effect" value="zoomOutBlack" class="text-blue-600">
+                    <span>ズームアウト(黒)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 新しいエフェクト選択部分 -->
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <label class="block text-sm font-bold text-blue-800 mb-2">🆕 新しいエフェクト</label>
+            
+            <div class="mb-4">
+                <span class="block text-xs font-semibold text-gray-600 mb-1">🌀 回転</span>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="rotateRight" class="text-blue-600">
+                        <span>右回転</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="rotateLeft" class="text-blue-600">
+                        <span>左回転</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <span class="block text-xs font-semibold text-gray-600 mb-1">⬆️⬇️ 直線移動</span>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveDown" class="text-blue-600">
+                        <span>上から下へ</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveUp" class="text-blue-600">
+                        <span>下から上へ</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveLeft" class="text-blue-600">
+                        <span>右から左へ</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveRight" class="text-blue-600">
+                        <span>左から右へ</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <span class="block text-xs font-semibold text-gray-600 mb-1">↗️↘️ 斜め移動</span>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveDownLeft" class="text-blue-600">
+                        <span>斜め右上→左下</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveDownRight" class="text-blue-600">
+                        <span>斜め左上→右下</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveUpLeft" class="text-blue-600">
+                        <span>斜め右下→左上</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-1 rounded-lg border">
+                        <input type="radio" name="effect" value="moveUpRight" class="text-blue-600">
+                        <span>斜め左下→右上</span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -95,6 +182,8 @@
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
         let loadedImage = new Image();
+        // クロスオリジンエラーを防ぐためのおまじない
+        loadedImage.crossOrigin = "anonymous";
 
         // 画像アップロード時の処理
         imageInput.addEventListener('change', function(e) {
@@ -160,7 +249,22 @@
 
             // 1コマずつ描画
             for (let i = 0; i < frameCount; i++) {
+                // 進行度を計算 (0.0 から 1.0)
+                const progress = i / (frameCount - 1);
+
                 ctx.clearRect(0, 0, width, height);
+                // 描画設定をリセット（回転などの影響を次のコマに残さないため）
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.globalAlpha = 1.0;
+
+                // 背景色が必要なエフェクト用
+                if (effect === 'zoomInWhite' || effect === 'zoomOutWhite') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, width, height);
+                } else if (effect === 'zoomInBlack' || effect === 'zoomOutBlack') {
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, width, height);
+                }
 
                 if (effect === 'shake') {
                     const offsetX = (Math.random() - 0.5) * (width * 0.05); // サイズに合わせて揺れ幅を調整
@@ -179,6 +283,81 @@
                         const y = Math.random() * (height - size);
                         ctx.drawImage(loadedImage, x, y, size, size);
                     }
+                }
+                else if (effect.startsWith('zoom')) {
+                    // 進行度を計算 (0.0 から 1.0)
+                    // const progress = i / (frameCount - 1); // 上で計算済みなのでコメントアウト
+                    let scale;
+                    
+                    if (effect.includes('In')) {
+                        // ズームイン: 1.0倍から1.5倍に拡大
+                        scale = 1.0 + progress * 0.5;
+                    } else {
+                        // ズームアウト
+                        if (effect.includes('White') || effect.includes('Black')) {
+                            // 白・黒背景付きの場合は最後まで縮小して消える (1.0 -> 0.0)
+                            scale = Math.max(0, 1.0 - progress); 
+                        } else {
+                            // 通常は0.5倍まで (1.0 -> 0.5)
+                            scale = 1.0 - progress * 0.5;
+                        }
+                    }
+                    
+                    const dw = width * scale;
+                    const dh = height * scale;
+                    const dx = (width - dw) / 2;
+                    const dy = (height - dh) / 2;
+
+                    // 白・黒背景付きの場合は、徐々に透明にして背景色に溶け込ませる
+                    if (effect.includes('White') || effect.includes('Black')) {
+                        // progressが1.0に近づくにつれて透明(0.0)になる
+                        ctx.globalAlpha = Math.max(0, 1.0 - progress);
+                    }
+
+                    // 画像のサイズが0より大きい時だけ描画する（エラー防止）
+                    if (dw > 0 && dh > 0) {
+                        ctx.drawImage(loadedImage, dx, dy, dw, dh);
+                    }
+                    
+                    ctx.globalAlpha = 1.0; // 次の処理のために透明度を元に戻す
+                }
+                // --- 新しいエフェクトの実装 ---
+                else if (effect.startsWith('rotate')) {
+                    // 1回転（360度 = 2πラジアン）
+                    const maxAngle = 2 * Math.PI; 
+                    let angle = progress * maxAngle;
+                    
+                    if (effect === 'rotateLeft') {
+                        angle = -angle; // 左回転は逆方向
+                    }
+
+                    // キャンバスの中心を基準に回転させる
+                    ctx.translate(width / 2, height / 2); // 中心に移動
+                    ctx.rotate(angle);                    // 回転
+                    ctx.translate(-width / 2, -height / 2); // 元の位置に戻す
+                    
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('move')) {
+                    let dx = 0;
+                    let dy = 0;
+                    
+                    // 進行度に基づいて位置を計算
+                    // 垂直方向 (Down: 上から下, Up: 下から上)
+                    if (effect.includes('Down')) {
+                        dy = (progress - 1.0) * height; // -height から 0 へ
+                    } else if (effect.includes('Up')) {
+                        dy = (1.0 - progress) * height; // height から 0 へ
+                    }
+                    
+                    // 水平方向 (Left: 右から左, Right: 左から右)
+                    if (effect.includes('Left')) {
+                        dx = (1.0 - progress) * width; // width から 0 へ
+                    } else if (effect.includes('Right')) {
+                        dx = (progress - 1.0) * width; // -width から 0 へ
+                    }
+
+                    ctx.drawImage(loadedImage, dx, dy, width, height);
                 }
 
                 // フォーマットに応じてデータを保存
