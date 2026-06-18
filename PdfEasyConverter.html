@@ -205,6 +205,12 @@
             <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-remove-half-spaces"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">半角スペースを削除</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="chk-exclude-header-footer" checked
               class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
               onchange="processAndDisplay()">
@@ -278,11 +284,12 @@
       </div>
 
       <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
-      <div class="flex flex-col flex-grow overflow-hidden">
-        <!-- ▲ 上スクロール -->
+      <div class="flex flex-col flex-grow overflow-hidden gap-1">
+        <!-- ▲ 上スクロール（1カード戻る） -->
         <button onclick="scrollTextList(-1)"
-          class="flex-shrink-0 w-full flex items-center justify-center py-0.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-t transition-all border border-slate-100 border-b-0">
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
           <i data-lucide="chevron-up" class="w-4 h-4"></i>
+          <span>前のカードへ</span>
         </button>
         <!-- カードリスト本体 -->
         <div id="text-list" class="flex-grow space-y-2.5 overflow-y-auto px-0.5 py-1">
@@ -291,10 +298,11 @@
             <p class="text-xs">左側のパネルからPDFファイルを読み込んでください</p>
           </div>
         </div>
-        <!-- ▼ 下スクロール -->
+        <!-- ▼ 下スクロール（1カード進む） -->
         <button onclick="scrollTextList(1)"
-          class="flex-shrink-0 w-full flex items-center justify-center py-0.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-b transition-all border border-slate-100 border-t-0">
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
           <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          <span>次のカードへ</span>
         </button>
       </div>
     </div>
@@ -394,6 +402,8 @@
     let pdfOutline = []; // PDFのしおりツリー
     let isOutlineOpen = false; // 目次パネルが開いているかどうか
     let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
+    let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
+    let currentScrollCardIndex = -1; // ▲▼ボタンで追跡中のカードインデックス
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -825,6 +835,7 @@
     // テキストデータの加工と画面表示への出力
     function processAndDisplay(isNewFileLoad = false) {
       if (rawTextBlocks.length === 0) return;
+      currentScrollCardIndex = -1; // スクロール追跡リセット
 
       const cleanNewlines = document.getElementById('chk-clean-newlines').checked;
       const excludeHeaderFooter = document.getElementById('chk-exclude-header-footer').checked;
@@ -907,6 +918,11 @@
             cleanedText = removeLeadingSpaces(cleanedText);
           }
 
+          // 半角スペース削除
+          if (document.getElementById('chk-remove-half-spaces').checked) {
+            cleanedText = cleanedText.replace(/ /g, '');
+          }
+
           if (!cleanedText.trim()) return;
 
           let existingItem = processedItems.find(item => item.original === text);
@@ -933,6 +949,7 @@
             isEditing: false
           });
         });
+        // globalIdはグローバルスコープで宣言済み
       });
 
       processedItems = tempItems;
@@ -1365,14 +1382,42 @@
       showToast('{} 消去完了', `${count}カードの {} を取り除きました。`, 'info');
     }
 
-    // テキストリストを一定量スクロールする（▲ = -1 / ▼ = +1）
+    // テキストリストを1カードずつスクロールする（▲ = -1 / ▼ = +1）
     function scrollTextList(direction) {
       const list = document.getElementById('text-list');
       if (!list) return;
-      // 1カード分のスクロール高さを3で割った値を目安に使用（およそ1カード分）
-      const firstCard = list.querySelector('[data-id]');
-      const scrollAmount = firstCard ? firstCard.getBoundingClientRect().height + 10 : 100;
-      list.scrollBy({ top: direction * scrollAmount, behavior: 'smooth' });
+
+      const cards = Array.from(list.querySelectorAll('[data-id]'));
+      if (cards.length === 0) return;
+
+      // currentScrollCardIndex が未設定（-1）の場合、
+      // スクロールコンテナの表示領域に入っているカードを自動検出して起点にする
+      if (currentScrollCardIndex < 0) {
+        const listRect = list.getBoundingClientRect();
+        let foundIdx = 0;
+        for (let i = 0; i < cards.length; i++) {
+          const cardRect = cards[i].getBoundingClientRect();
+          // カードの上端がリストの表示領域内にあるものを起点にする
+          if (cardRect.top >= listRect.top - 10) {
+            foundIdx = i;
+            break;
+          }
+        }
+        currentScrollCardIndex = foundIdx;
+      }
+
+      // 前後に1カード移動
+      currentScrollCardIndex = Math.max(0, Math.min(cards.length - 1, currentScrollCardIndex + direction));
+
+      const targetCard = cards[currentScrollCardIndex];
+      if (!targetCard) return;
+
+      // カードをスクロールコンテナの先頭に合わせて表示
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // 一瞬ハイライト
+      targetCard.style.outline = '2px solid #0d9488';
+      setTimeout(() => { targetCard.style.outline = ''; }, 600);
     }
 
     // --- カード編集機能 ---
@@ -1442,7 +1487,7 @@
 
       const idx = processedItems.findIndex(i => i.id === id);
       const newItem = {
-        id: ++globalId,
+        id: globalId++,
         original: after,
         text: after,
         bookmarked: false,
@@ -1538,7 +1583,13 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         try {
-          const decoded = decodeURIComponent(escape(atob(e.target.result)));
+          // ArrayBufferからUint8Array経由でバイナリ文字列を安全に生成する
+          const bytes = new Uint8Array(e.target.result);
+          let binaryStr = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binaryStr += String.fromCharCode(bytes[i]);
+          }
+          const decoded = decodeURIComponent(escape(atob(binaryStr)));
           const data = JSON.parse(decoded);
           if (!data.version || !data.items) {
             showToast('読込エラー', '有効な .pec ファイルではありません。', 'error');
@@ -1554,18 +1605,20 @@
             isEditing: false
           }));
           // globalIdを更新してID重複を防ぐ
-          globalId = Math.max(...processedItems.map(i => i.id), globalId) + 1;
+          const maxId = processedItems.length > 0 ? Math.max(...processedItems.map(i => i.id)) : 0;
+          globalId = Math.max(maxId, globalId) + 1;
+          currentScrollCardIndex = -1;
           currentFileName = data.fileName || '';
           renderList();
           showToast('読込完了', `${file.name} を読み込みました。${processedItems.length}件の項目を復元。`, 'success');
         } catch (err) {
-          console.error(err);
-          showToast('読込エラー', 'ファイルの解析に失敗しました。', 'error');
+          console.error('PEC読込エラー:', err);
+          showToast('読込エラー', 'ファイルの解析に失敗しました。保存と同じブラウザで開いているか確認してください。', 'error');
         } finally {
           event.target.value = ''; // 同じファイルを再度選択できるようにリセット
         }
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file); // バイナリ安全読み込みに変更
     }
 
     // 全クリア
