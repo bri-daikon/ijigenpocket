@@ -158,8 +158,13 @@
             class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-400 rounded-md hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1">
             <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> 前へ
           </button>
-          <span class="text-xs font-bold text-slate-600">
-            P. <span id="preview-current-page">0</span> / <span id="preview-total-pages">0</span>
+          <!-- ページ番号直接入力 -->
+          <span class="flex items-center gap-1 text-xs font-bold text-slate-600">
+            P.
+            <input type="number" id="preview-page-input" value="0" min="1"
+              class="w-10 text-center text-xs font-bold text-slate-800 border border-slate-200 rounded px-1 py-0.5 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none"
+              onchange="jumpToPageInput()" onkeydown="if(event.key==='Enter') jumpToPageInput()">
+            / <span id="preview-total-pages">0</span>
           </span>
           <button id="btn-next-page" onclick="changePreviewPage(1)" disabled
             class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-400 rounded-md hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1">
@@ -242,8 +247,18 @@
           <h2 class="font-bold text-slate-800 text-sm sm:text-base">抽出されたテキスト一覧</h2>
         </div>
         <div class="flex items-center gap-2">
-          <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件 of
-            項目</span>
+          <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件の項目</span>
+          <!-- 保存・読み込みボタン -->
+          <button onclick="downloadProjectFile()" title="編集データを .pec ファイルとして保存"
+            class="text-xs text-teal-600 hover:text-teal-800 font-bold flex items-center gap-1 transition-all">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            保存
+          </button>
+          <label title=".pec ファイルから編集データを読み込む" class="text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 cursor-pointer transition-all">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            読込
+            <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
+          </label>
           <button onclick="clearText()"
             class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -257,18 +272,30 @@
         class="bg-teal-50 text-teal-800 text-xs p-2.5 rounded-lg mb-3 flex items-start gap-1.5 border border-teal-100 flex-shrink-0">
         <i data-lucide="info" class="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5"></i>
         <p class="leading-tight">
-          <span class="font-bold">💡 双方向連携機能:</span>
-          各カードの左上にあるページ番号（例: <span class="bg-slate-200 px-1 py-0.2 rounded text-[10px]">P.
-            3</span>）をクリックすると、左側のPDFプレビューもそのページに自動で切り替わります！
+          <span class="font-bold">💡 双方向連携 ＆ 編集機能:</span>
+          ページ番号クリックでPDFプレビューを切り替え。✏️ アイコンでカード内テキストを編集・分割・結合できます！
         </p>
       </div>
 
-      <!-- テキストカードリスト -->
-      <div id="text-list" class="flex-grow space-y-2.5 overflow-y-auto pr-1">
-        <div class="text-center py-20 text-slate-400 flex flex-col items-center justify-center gap-2">
-          <i data-lucide="file-question" class="w-10 h-10 text-slate-300"></i>
-          <p class="text-xs">左側のパネルからPDFファイルを読み込んでください</p>
+      <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
+      <div class="flex flex-col flex-grow overflow-hidden">
+        <!-- ▲ 上スクロール -->
+        <button onclick="scrollTextList(-1)"
+          class="flex-shrink-0 w-full flex items-center justify-center py-0.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-t transition-all border border-slate-100 border-b-0">
+          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+        </button>
+        <!-- カードリスト本体 -->
+        <div id="text-list" class="flex-grow space-y-2.5 overflow-y-auto px-0.5 py-1">
+          <div class="text-center py-20 text-slate-400 flex flex-col items-center justify-center gap-2">
+            <i data-lucide="file-question" class="w-10 h-10 text-slate-300"></i>
+            <p class="text-xs">左側のパネルからPDFファイルを読み込んでください</p>
+          </div>
         </div>
+        <!-- ▼ 下スクロール -->
+        <button onclick="scrollTextList(1)"
+          class="flex-shrink-0 w-full flex items-center justify-center py-0.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-b transition-all border border-slate-100 border-t-0">
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>
 
@@ -289,11 +316,18 @@
             class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
         </div>
 
-        <button onclick="applyKeywordWrapping()"
-          class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-          キーワードを中括弧 {} で囲む
-        </button>
+        <div class="flex gap-2">
+          <button onclick="applyKeywordWrapping()"
+            class="flex-grow bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            {} で囲む
+          </button>
+          <button onclick="removeAllBraces()"
+            class="flex-shrink-0 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5" title="全ての {} を消去する">
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+            {} 消去
+          </button>
+        </div>
       </div>
 
       <!-- しおり（ブックマーク）リスト -->
@@ -429,7 +463,7 @@
 
             // プレビューコントローラのアクティブ化
             document.getElementById('preview-total-pages').innerText = maxPages;
-            document.getElementById('preview-current-page').innerText = 1;
+            document.getElementById('preview-page-input').value = 1;
             document.getElementById('btn-prev-page').disabled = false;
             document.getElementById('btn-next-page').disabled = false;
 
@@ -515,9 +549,10 @@
           container.scrollLeft = 0;
         }
 
-        // ページ番号表示 of 更新
+        // ページ番号表示の更新
         currentPreviewPage = pageNum;
-        document.getElementById('preview-current-page').innerText = pageNum;
+        const pageInput = document.getElementById('preview-page-input');
+        if (pageInput) pageInput.value = pageNum;
 
         // ボタン制御
         document.getElementById('btn-prev-page').disabled = (pageNum <= 1);
@@ -544,6 +579,19 @@
       const targetPage = currentPreviewPage + direction;
       if (targetPage >= 1 && targetPage <= pdfDoc.numPages) {
         renderPreviewPage(targetPage);
+      }
+    }
+
+    // ページ番号入力欄から直接ジャンプ
+    function jumpToPageInput() {
+      if (!pdfDoc) return;
+      const input = document.getElementById('preview-page-input');
+      const page = parseInt(input.value, 10);
+      if (!isNaN(page) && page >= 1 && page <= pdfDoc.numPages) {
+        renderPreviewPage(page);
+      } else {
+        // 範囲外の場合は元の値に戻す
+        input.value = currentPreviewPage;
       }
     }
 
@@ -881,7 +929,8 @@
             text: cleanedText, // 画面表示側で動的に話者名除外をするため、ここには原本を保持
             bookmarked: isBookmarked,
             note: noteText,
-            page: block.page
+            page: block.page,
+            isEditing: false
           });
         });
       });
@@ -1001,7 +1050,7 @@
 
       processedItems.forEach(item => {
         const card = document.createElement('div');
-        card.className = "group relative bg-slate-50 hover:bg-teal-50/20 border border-slate-200 hover:border-teal-300 rounded-xl p-3.5 transition-all duration-150 cursor-pointer flex flex-col justify-between gap-2 shadow-sm";
+        card.className = `group relative ${item.isEditing ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 hover:bg-teal-50/20 border-slate-200 hover:border-teal-300'} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm`;
         card.setAttribute('data-id', item.id);
         card.setAttribute('data-page', item.page);
 
@@ -1011,22 +1060,52 @@
         card.innerHTML = `
           <div class="flex justify-between items-start gap-4">
             <!-- ページバッジ（クリックで左側のPDFプレビューをジャンプさせる！） -->
-            <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all" title="本紙プレビューをP. ${item.page}に切り替える">
+            <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
               P. ${item.page}
             </button>
             <!-- アクションボタン群 -->
-            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
-              <button onclick="toggleNoteInput(${item.id})" class="text-slate-400 hover:text-emerald-600 p-0.5 rounded hover:bg-slate-150 transition-all" title="付箋（メモ）を貼る">
-                <i data-lucide="sticky-note" class="w-4 h-4 ${item.note ? 'text-emerald-500 fill-emerald-100' : ''}"></i>
-              </button>
-              <button onclick="toggleBookmark(${item.id})" class="text-slate-400 hover:text-amber-500 p-0.5 rounded hover:bg-slate-150 transition-all" title="しおりを挟む">
-                <i data-lucide="bookmark" class="w-4 h-4 ${item.bookmarked ? 'text-amber-500 fill-amber-500' : ''}"></i>
-              </button>
+            <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+              ${item.isEditing ? `
+                <!-- 編集モード中ボタン -->
+                <button onclick="splitCardAtCursor(${item.id})" class="text-slate-400 hover:text-violet-600 p-0.5 rounded transition-all" title="カーソル位置で分割">
+                  <i data-lucide="split" class="w-4 h-4"></i>
+                </button>
+                <button onclick="mergeCardWithNext(${item.id})" class="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-all" title="次のカードと結合">
+                  <i data-lucide="merge" class="w-4 h-4"></i>
+                </button>
+                <button onclick="saveEditCard(${item.id})" class="text-white bg-teal-600 hover:bg-teal-700 px-2 py-0.5 rounded text-[10px] font-bold transition-all" title="変更を保存">
+                  保存
+                </button>
+                <button onclick="cancelEditCard(${item.id})" class="text-slate-500 hover:text-slate-800 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all" title="キャンセル">
+                  戻す
+                </button>
+              ` : `
+                <!-- 通常モードボタン -->
+                <button onclick="startEditCard(${item.id})" class="text-slate-400 hover:text-amber-600 p-0.5 rounded transition-all" title="テキストを編集">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleNoteInput(${item.id})" class="text-slate-400 hover:text-emerald-600 p-0.5 rounded transition-all" title="付箋（メモ）を貼る">
+                  <i data-lucide="sticky-note" class="w-4 h-4 ${item.note ? 'text-emerald-500 fill-emerald-100' : ''}"></i>
+                </button>
+                <button onclick="toggleBookmark(${item.id})" class="text-slate-400 hover:text-amber-500 p-0.5 rounded transition-all" title="しおりを挟む">
+                  <i data-lucide="bookmark" class="w-4 h-4 ${item.bookmarked ? 'text-amber-500 fill-amber-500' : ''}"></i>
+                </button>
+                <button onclick="deleteCard(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-all" title="このカードを削除">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              `}
             </div>
           </div>
 
-          <!-- テキスト中身（クリックでコピー） -->
-          <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all" onclick="copyItemText(${item.id})">${escapeHtml(displayText)}</div>
+          <!-- テキスト中身（通常表示: クリックでコピー / 編集モード: textarea） -->
+          ${item.isEditing ? `
+            <textarea id="edit-textarea-${item.id}"
+              class="w-full text-sm text-slate-800 leading-relaxed border border-amber-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-amber-400 outline-none bg-white min-h-[80px]"
+              rows="${Math.max(3, (displayText.match(/\n/g) || []).length + 2)}"
+            >${escapeHtml(displayText)}</textarea>
+          ` : `
+            <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${escapeHtml(displayText)}</div>
+          `}
 
           <!-- メモ入力エリア / 表示エリア -->
           <div class="mt-1.5 text-xs border-t border-dashed border-slate-200/60 pt-2 ${item.note || item.isEditingNote ? '' : 'hidden'}" id="note-wrapper-${item.id}" onclick="event.stopPropagation()">
@@ -1267,7 +1346,229 @@
       showToast('一括変換完了！', `${replaceCount}箇所のワードを {} で囲みました。`, 'success');
     }
 
-    // テキストデータの全クリア
+    // {} を全てのカードから消去する
+    function removeAllBraces() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', 'PDFテキストが読み込まれていません。', 'info');
+        return;
+      }
+      let count = 0;
+      processedItems.forEach(item => {
+        const newText = item.text.replace(/\{([^}]+)\}/g, '$1');
+        if (newText !== item.text) {
+          item.text = newText;
+          count++;
+        }
+      });
+      renderList();
+      saveToLocalStorage();
+      showToast('{} 消去完了', `${count}カードの {} を取り除きました。`, 'info');
+    }
+
+    // テキストリストを一定量スクロールする（▲ = -1 / ▼ = +1）
+    function scrollTextList(direction) {
+      const list = document.getElementById('text-list');
+      if (!list) return;
+      // 1カード分のスクロール高さを3で割った値を目安に使用（およそ1カード分）
+      const firstCard = list.querySelector('[data-id]');
+      const scrollAmount = firstCard ? firstCard.getBoundingClientRect().height + 10 : 100;
+      list.scrollBy({ top: direction * scrollAmount, behavior: 'smooth' });
+    }
+
+    // --- カード編集機能 ---
+
+    // 編集モードを開始する
+    function startEditCard(id) {
+      // 他のカードの編集モードを閉じてから開く
+      processedItems.forEach(item => { item.isEditing = false; });
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        item._editOriginal = item.text; // キャンセル用に元テキストを保存
+        item.isEditing = true;
+        renderList();
+        // textareaにフォーカス
+        const ta = document.getElementById(`edit-textarea-${id}`);
+        if (ta) ta.focus();
+      }
+    }
+
+    // 編集内容を保存して編集モードを終了
+    function saveEditCard(id) {
+      const item = processedItems.find(i => i.id === id);
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      if (item && ta) {
+        item.text = ta.value;
+        item.isEditing = false;
+        delete item._editOriginal;
+        renderList();
+        saveToLocalStorage();
+        showToast('保存完了', 'テキストを更新しました。', 'success');
+      }
+    }
+
+    // 編集をキャンセルして元テキストに戻す
+    function cancelEditCard(id) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        if (item._editOriginal !== undefined) {
+          item.text = item._editOriginal;
+        }
+        item.isEditing = false;
+        delete item._editOriginal;
+        renderList();
+      }
+    }
+
+    // カーソル位置でカードを分割する
+    function splitCardAtCursor(id) {
+      const item = processedItems.find(i => i.id === id);
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      if (!item || !ta) return;
+
+      const cursorPos = ta.selectionStart;
+      const fullText = ta.value;
+
+      const before = fullText.substring(0, cursorPos).trimEnd();
+      const after = fullText.substring(cursorPos).trimStart();
+
+      if (!before && !after) {
+        showToast('分割不可', 'テキストが空です。', 'error');
+        return;
+      }
+      if (!before || !after) {
+        showToast('分割不可', '分割後に空のカードが生まれます。カーソルをテキストの中間に置いてください。', 'error');
+        return;
+      }
+
+      const idx = processedItems.findIndex(i => i.id === id);
+      const newItem = {
+        id: ++globalId,
+        original: after,
+        text: after,
+        bookmarked: false,
+        note: '',
+        page: item.page,
+        isEditing: false
+      };
+
+      item.text = before;
+      item.isEditing = false;
+      delete item._editOriginal;
+
+      processedItems.splice(idx + 1, 0, newItem);
+      renderList();
+      saveToLocalStorage();
+      showToast('分割完了', 'カードを分割しました。', 'success');
+    }
+
+    // 次のカードと結合する
+    function mergeCardWithNext(id) {
+      const idx = processedItems.findIndex(i => i.id === id);
+      if (idx < 0 || idx >= processedItems.length - 1) {
+        showToast('結合不可', '次のカードがありません。', 'error');
+        return;
+      }
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      const item = processedItems[idx];
+      const nextItem = processedItems[idx + 1];
+
+      // テキストエリアの現在の内容を使用（未保存の編集内容も反映）
+      const currentText = ta ? ta.value : item.text;
+      item.text = currentText + '\n' + nextItem.text;
+      item.isEditing = true;
+      item._editOriginal = item._editOriginal || currentText;
+
+      processedItems.splice(idx + 1, 1);
+      renderList();
+      const newTa = document.getElementById(`edit-textarea-${id}`);
+      if (newTa) newTa.focus();
+      showToast('結合完了', '次のカードと結合しました。', 'success');
+    }
+
+    // カードを削除する
+    function deleteCard(id) {
+      const idx = processedItems.findIndex(i => i.id === id);
+      if (idx >= 0) {
+        processedItems.splice(idx, 1);
+        renderList();
+        saveToLocalStorage();
+      }
+    }
+
+    // --- プロジェクトファイル保存・読み込み ---
+
+    // 編集データを .pec ファイルとしてダウンロード（Base64エンコードした JSON）
+    function downloadProjectFile() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', '保存するデータがありません。', 'info');
+        return;
+      }
+      const saveObj = {
+        version: '1.0',
+        fileName: currentFileName,
+        savedAt: new Date().toISOString(),
+        items: processedItems.map(item => ({
+          id: item.id,
+          original: item.original,
+          text: item.text,
+          bookmarked: item.bookmarked,
+          note: item.note,
+          page: item.page
+        }))
+      };
+      // Base64エンコードして人が読みにくいファイルに
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveObj))));
+      const blob = new Blob([encoded], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const baseName = currentFileName.replace(/\.pdf$/i, '');
+      a.href = url;
+      a.download = `${baseName}.pec`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('保存完了', `${a.download} で保存しました。`, 'success');
+    }
+
+    // .pec ファイルを読み込んで processedItems を復元する
+    function loadProjectFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const decoded = decodeURIComponent(escape(atob(e.target.result)));
+          const data = JSON.parse(decoded);
+          if (!data.version || !data.items) {
+            showToast('読込エラー', '有効な .pec ファイルではありません。', 'error');
+            return;
+          }
+          processedItems = data.items.map(item => ({
+            id: item.id,
+            original: item.original || item.text,
+            text: item.text,
+            bookmarked: !!item.bookmarked,
+            note: item.note || '',
+            page: item.page || 1,
+            isEditing: false
+          }));
+          // globalIdを更新してID重複を防ぐ
+          globalId = Math.max(...processedItems.map(i => i.id), globalId) + 1;
+          currentFileName = data.fileName || '';
+          renderList();
+          showToast('読込完了', `${file.name} を読み込みました。${processedItems.length}件の項目を復元。`, 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('読込エラー', 'ファイルの解析に失敗しました。', 'error');
+        } finally {
+          event.target.value = ''; // 同じファイルを再度選択できるようにリセット
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // 全クリア
     function clearText() {
       rawTextBlocks = [];
       processedItems = [];
@@ -1285,7 +1586,7 @@
       document.getElementById('preview-canvas').classList.add('hidden');
       document.getElementById('preview-placeholder').classList.remove('hidden');
       document.getElementById('preview-total-pages').innerText = "0";
-      document.getElementById('preview-current-page').innerText = "0";
+      document.getElementById('preview-page-input').value = 0;
 
       // 目次のクリーンアップ
       const outlineContainer = document.getElementById('preview-outline-container');
