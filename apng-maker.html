@@ -116,12 +116,20 @@
                             <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌈 虹色変化</div>
                         </label>
                         <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeIn" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👻 フェードイン</div>
+                            <input type="radio" name="effect" value="fadeInWhite" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👻 フェードイン(白)</div>
                         </label>
                         <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeOut" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ フェードアウト</div>
+                            <input type="radio" name="effect" value="fadeInBlack" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードイン(黒)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeOutWhite" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ フェードアウト(白)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeOutBlack" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードアウト(黒)</div>
                         </label>
                         <label class="cursor-pointer relative">
                             <input type="radio" name="effect" value="blur" class="peer sr-only">
@@ -314,9 +322,10 @@
                 ctx.globalAlpha = 1.0;
                 ctx.filter = 'none';
 
-                if (effect.includes('White')) {
+                // 背景色の設定（白指定または黒指定によって背景を敷き詰める）
+                if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
                     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
-                } else if (effect.includes('Black')) {
+                } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
                     ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
                 }
 
@@ -367,11 +376,11 @@
                     ctx.filter = `hue-rotate(${progress * 360}deg)`;
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                 }
-                else if (effect === 'fadeIn') {
+                else if (effect.startsWith('fadeIn')) {
                     ctx.globalAlpha = progress;
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                 }
-                else if (effect === 'fadeOut') {
+                else if (effect.startsWith('fadeOut')) {
                     ctx.globalAlpha = 1.0 - progress;
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                 }
