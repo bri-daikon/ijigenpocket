@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡単アニメ画像メーカー</title>
+    <!-- 見た目を整えるTailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- APNGを生成するためのライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
+    <!-- GIFを生成するためのライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen p-4 sm:p-8 text-gray-800 font-sans">
+    <div class="max-w-4xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-10 rounded-2xl shadow-2xl border border-white/50">
+        
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+                ✨ 簡単アニメ画像メーカー
+            </h1>
+            <p class="text-gray-500 font-medium">画像をアップロードして、魔法のエフェクトをかけよう！</p>
+        </div>
+
+        <!-- 1. 画像アップロード部分 -->
+        <div class="mb-8">
+            <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">1</span>
+                画像を選ぶ
+            </label>
+            <div class="relative">
+                <input type="file" id="imageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:text-blue-700 hover:file:bg-indigo-100 transition-colors cursor-pointer border-2 border-dashed border-blue-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-blue-400 focus:outline-none">
+            </div>
+        </div>
+
+        <!-- 2. エフェクト選択部分 -->
+        <div class="mb-8">
+            <label class="flex items-center text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
+                <span class="bg-purple-100 text-purple-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">2</span>
+                エフェクトを選ぶ
+            </label>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- 🌟 基本のエフェクト -->
+                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <span class="flex items-center text-sm font-bold text-gray-800 mb-3"><span class="text-lg mr-2">🌟</span> 基本エフェクト</span>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="shake" class="peer sr-only" checked>
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">揺らす</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="blink" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">点滅する</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="scatter" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">散らばる</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="zoomIn" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="zoomOut" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="zoomInWhite" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン(白)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="zoomOutBlack" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト(黒)</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 🌀 回転・移動 -->
+                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <span class="flex items-center text-sm font-bold text-blue-800 mb-3"><span class="text-lg mr-2">🌀</span> 回転・移動</span>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="rotateRight" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右回転</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="rotateLeft" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左回転</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="moveDown" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">上から下へ</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="moveUp" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">下から上へ</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="moveLeft" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右から左</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="moveDownRight" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">斜め移動</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 🎨 魔法・色 -->
+                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <span class="flex items-center text-sm font-bold text-purple-800 mb-3"><span class="text-lg mr-2">🎨</span> 魔法・色</span>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="rainbow" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌈 虹色変化</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeInWhite" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👻 フェードイン(白)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeInBlack" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードイン(黒)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeOutWhite" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ フェードアウト(白)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="fadeOutBlack" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードアウト(黒)</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="blur" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">💧 徐々にぼやける</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="mosaic" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👾 モザイク化</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 👻 ユニーク・かっこいい演出 -->
+                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <span class="flex items-center text-sm font-bold text-orange-800 mb-3"><span class="text-lg mr-2">🎬</span> ユニーク・演出</span>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="slime" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🍮 ぷるぷる</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="wave" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌊 波打ち</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="heartbeat" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">❤️ 鼓動</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="bounce" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🏀 バウンド</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="pendulum" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🕰️ 振り子</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="tornado" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌪️ トルネード</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="effect" value="glitch" class="peer sr-only">
+                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">📺 ノイズ</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 保存形式の選択 -->
+        <div class="mb-10">
+            <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                <span class="bg-yellow-100 text-yellow-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">3</span>
+                保存形式を選ぶ
+            </label>
+            <div class="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                <div class="flex flex-wrap gap-4">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="format" value="gif" checked class="peer sr-only">
+                        <div class="px-5 py-3 rounded-lg border border-yellow-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                            <span class="text-xl mr-2">🐦</span> X (Twitter)用 (GIF)
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="format" value="apng" class="peer sr-only">
+                        <div class="px-5 py-3 rounded-lg border border-yellow-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                            <span class="text-xl mr-2">✨</span> 高画質用 (APNG)
+                        </div>
+                    </label>
+                </div>
+                <p class="text-xs text-yellow-800 mt-3 font-medium flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                    X(旧Twitter)に投稿する場合は必ず「X用 (GIF形式)」を選んでください。
+                </p>
+            </div>
+        </div>
+
+        <!-- 4. 作成ボタン -->
+        <div class="text-center mb-8">
+            <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-4 px-10 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-xl w-full sm:w-auto shadow-lg text-lg flex items-center justify-center mx-auto">
+                <svg class="w-6 h-6 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="btnText">魔法をかける！ (作成開始)</span>
+            </button>
+            <p id="loadingMsg" class="text-blue-600 mt-4 hidden animate-pulse font-bold">🪄 一生懸命作っています... 少しお待ちください！</p>
+        </div>
+
+        <!-- 5. プレビューとダウンロード部分 -->
+        <div id="resultArea" class="hidden border-t border-gray-200 pt-8 mt-4">
+            <h2 class="text-2xl font-extrabold text-center mb-6 text-gray-800">🎉 完成しました！</h2>
+            <div class="flex justify-center mb-6 bg-gray-50 rounded-2xl p-6 min-h-[200px] items-center border-2 border-dashed border-gray-300 shadow-inner">
+                <img id="previewImg" src="" alt="プレビュー" class="max-w-full max-h-[350px] rounded-lg shadow-lg">
+            </div>
+            <div class="text-center">
+                <a id="downloadLink" href="#" download="animated.gif" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    画像をダウンロード
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像を処理するための見えないキャンバス -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const effectRadios = document.getElementsByName('effect');
+        const formatRadios = document.getElementsByName('format');
+        const resultArea = document.getElementById('resultArea');
+        const previewImg = document.getElementById('previewImg');
+        const downloadLink = document.getElementById('downloadLink');
+        const loadingMsg = document.getElementById('loadingMsg');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let loadedImage = new Image();
+        loadedImage.crossOrigin = "anonymous";
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadedImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        generateBtn.addEventListener('click', function() {
+            if (!loadedImage.src) {
+                alert('まずは画像を選択してくださいね！');
+                return;
+            }
+
+            // UIを処理中状態にする
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            spinner.classList.remove('hidden');
+            btnText.textContent = "作成中...";
+            loadingMsg.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+
+            let selectedEffect = 'shake';
+            effectRadios.forEach(radio => { if (radio.checked) selectedEffect = radio.value; });
+            
+            let selectedFormat = 'gif';
+            formatRadios.forEach(radio => { if (radio.checked) selectedFormat = radio.value; });
+
+            setTimeout(() => {
+                createAnimation(selectedEffect, selectedFormat);
+            }, 50);
+        });
+
+        function createAnimation(effect, format) {
+            const maxSize = 500;
+            let width = loadedImage.width;
+            let height = loadedImage.height;
+            
+            if (width > maxSize || height > maxSize) {
+                if (width > height) {
+                    height = Math.floor(height * (maxSize / width));
+                    width = maxSize;
+                } else {
+                    width = Math.floor(width * (maxSize / height));
+                    height = maxSize;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const framesAPNG = []; 
+            const framesGIF = [];  
+            const delays = [];     
+            const frameCount = 10; 
+
+            // 1コマずつ描画
+            for (let i = 0; i < frameCount; i++) {
+                const progress = i / (frameCount - 1);
+
+                ctx.clearRect(0, 0, width, height);
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.globalAlpha = 1.0;
+                ctx.filter = 'none';
+
+                // 背景色の設定（白指定または黒指定によって背景を敷き詰める）
+                if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+                } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
+                    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+                }
+
+                if (effect === 'shake') {
+                    const offsetX = (Math.random() - 0.5) * (width * 0.05);
+                    const offsetY = (Math.random() - 0.5) * (height * 0.05);
+                    ctx.drawImage(loadedImage, offsetX, offsetY, width, height);
+                } 
+                else if (effect === 'blink') {
+                    ctx.globalAlpha = (i % 2 === 0) ? 1.0 : 0.0;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                } 
+                else if (effect === 'scatter') {
+                    for (let j = 0; j < 5; j++) {
+                        const size = width * (0.3 + Math.random() * 0.4);
+                        const x = Math.random() * (width - size);
+                        const y = Math.random() * (height - size);
+                        ctx.drawImage(loadedImage, x, y, size, size);
+                    }
+                }
+                else if (effect.startsWith('zoom')) {
+                    let scale = 1.0;
+                    if (effect.includes('In')) scale = 1.0 + progress * 0.5;
+                    else scale = effect.includes('White') || effect.includes('Black') ? Math.max(0, 1.0 - progress) : 1.0 - progress * 0.5;
+                    
+                    const dw = width * scale; const dh = height * scale;
+                    const dx = (width - dw) / 2; const dy = (height - dh) / 2;
+                    if (effect.includes('White') || effect.includes('Black')) ctx.globalAlpha = Math.max(0, 1.0 - progress);
+                    if (dw > 0 && dh > 0) ctx.drawImage(loadedImage, dx, dy, dw, dh);
+                }
+                else if (effect.startsWith('rotate')) {
+                    let angle = progress * (2 * Math.PI);
+                    if (effect === 'rotateLeft') angle = -angle; 
+                    ctx.translate(width / 2, height / 2);
+                    ctx.rotate(angle);                    
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('move')) {
+                    let dx = 0; let dy = 0;
+                    if (effect.includes('Down')) dy = (progress - 1.0) * height;
+                    else if (effect.includes('Up')) dy = (1.0 - progress) * height;
+                    if (effect.includes('Left')) dx = (1.0 - progress) * width;
+                    else if (effect.includes('Right')) dx = (progress - 1.0) * width;
+                    ctx.drawImage(loadedImage, dx, dy, width, height);
+                }
+                else if (effect === 'rainbow') {
+                    ctx.filter = `hue-rotate(${progress * 360}deg)`;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('fadeIn')) {
+                    ctx.globalAlpha = progress;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('fadeOut')) {
+                    ctx.globalAlpha = 1.0 - progress;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'blur') {
+                    ctx.filter = `blur(${progress * 15}px)`;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'mosaic') {
+                    const ratio = Math.max(0.01, 1.0 - progress * 0.95); 
+                    const tWidth = Math.max(1, width * ratio);
+                    const tHeight = Math.max(1, height * ratio);
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = tWidth; tempCanvas.height = tHeight;
+                    tempCanvas.getContext('2d').drawImage(loadedImage, 0, 0, tWidth, tHeight);
+                    
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(tempCanvas, 0, 0, width, height);
+                    ctx.imageSmoothingEnabled = true;
+                }
+                else if (effect === 'slime') {
+                    const scaleX = 1.0 + Math.sin(progress * Math.PI * 4) * 0.15;
+                    const scaleY = 1.0 - Math.sin(progress * Math.PI * 4) * 0.15;
+                    ctx.translate(width / 2, height / 2);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'wave') {
+                    for (let y = 0; y < height; y += 4) {
+                        const offsetX = Math.sin((y * 0.05) + (progress * Math.PI * 4)) * (width * 0.05);
+                        ctx.drawImage(loadedImage, 0, y, width, 4, offsetX, y, width, 4);
+                    }
+                }
+                else if (effect === 'heartbeat') {
+                    let scale = 1.0;
+                    if (i === 2 || i === 5) scale = 1.15;
+                    ctx.translate(width / 2, height / 2);
+                    ctx.scale(scale, scale);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'bounce') {
+                    const bounceY = -Math.abs(Math.sin(progress * Math.PI * 2)) * (height * 0.2);
+                    ctx.translate(0, bounceY);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'pendulum') {
+                    ctx.translate(width / 2, 0);
+                    ctx.rotate(Math.sin(progress * Math.PI * 2) * 0.2);
+                    ctx.translate(-width / 2, 0);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'tornado') {
+                    ctx.translate(width / 2, height / 2);
+                    ctx.rotate(progress * Math.PI * 4);
+                    ctx.scale(progress, progress);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'glitch') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    if (Math.random() > 0.3) {
+                        ctx.globalAlpha = 0.5;
+                        ctx.drawImage(loadedImage, (Math.random() - 0.5) * 20, 0, width, height);
+                        ctx.globalAlpha = 1.0;
+                        for (let k = 0; k < 4; k++) {
+                            const sliceY = Math.random() * height;
+                            const sliceH = Math.random() * (height * 0.15);
+                            const sliceX = (Math.random() - 0.5) * (width * 0.15);
+                            ctx.drawImage(canvas, 0, sliceY, width, sliceH, sliceX, sliceY, width, sliceH);
+                        }
+                    }
+                }
+
+                if (format === 'apng') {
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    framesAPNG.push(imageData.data.buffer);
+                    delays.push(150);
+                } else {
+                    framesGIF.push(canvas.toDataURL('image/png'));
+                }
+            }
+
+            if (format === 'apng') {
+                const apngArrayBuffer = UPNG.encode(framesAPNG, width, height, 0, delays);
+                const blob = new Blob([apngArrayBuffer], { type: 'image/png' });
+                const url = URL.createObjectURL(blob);
+                finishGeneration(url, 'animated.png');
+            } else {
+                gifshot.createGIF({
+                    images: framesGIF,
+                    interval: 0.15,
+                    gifWidth: width,
+                    gifHeight: height,
+                    numWorkers: 2 
+                }, function(obj) {
+                    if (!obj.error) {
+                        finishGeneration(obj.image, 'animated.gif');
+                    } else {
+                        alert('GIFの作成に失敗しました。別の画像で試してみてください。');
+                        resetButton();
+                    }
+                });
+            }
+        }
+
+        function finishGeneration(url, filename) {
+            previewImg.src = url;
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            resetButton();
+            resultArea.classList.remove('hidden');
+        }
+
+        function resetButton() {
+            loadingMsg.classList.add('hidden');
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            spinner.classList.add('hidden');
+            btnText.textContent = "魔法をかける！ (作成開始)";
+        }
+    </script>
+</body>
+</html>
