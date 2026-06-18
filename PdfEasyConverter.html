@@ -888,7 +888,7 @@
       const excludeToc = document.getElementById('chk-exclude-toc').checked;
 
       let tempItems = [];
-      let globalId = 0;
+      globalId = 0; // グローバル変数をリセット（ローカル宣言しないことでID衝突を防ぐ）
 
       // ローカルストレージから保存されているデータを取得
       let savedData = [];
@@ -1570,16 +1570,26 @@
       }
     }
 
-    // 編集をキャンセルして元テキストに戻す
+    // 編集をキャンセルして元テキストに戻す。結合した場合は次のカードも復元する
     function cancelEditCard(id) {
       const item = processedItems.find(i => i.id === id);
       if (item) {
+        // テキストを元に戻す
         if (item._editOriginal !== undefined) {
           item.text = item._editOriginal;
+        }
+        // 結合の戻し: 削除した次のカードを復元する
+        if (item._mergedNextItem !== undefined) {
+          const idx = processedItems.findIndex(i => i.id === id);
+          const insertAt = item._mergedNextInsertIdx !== undefined ? item._mergedNextInsertIdx : idx + 1;
+          processedItems.splice(insertAt, 0, item._mergedNextItem);
+          delete item._mergedNextItem;
+          delete item._mergedNextInsertIdx;
         }
         item.isEditing = false;
         delete item._editOriginal;
         renderList();
+        showToast('戻しました', '編集をキャンセルしました。', 'info');
       }
     }
 
@@ -1638,15 +1648,20 @@
 
       // テキストエリアの現在の内容を使用（未保存の編集内容も反映）
       const currentText = ta ? ta.value : item.text;
+
+      // キャンセル用に元情報を保存（次のカードも丸ごと保存）
+      if (item._editOriginal === undefined) item._editOriginal = currentText;
+      item._mergedNextItem = { ...nextItem }; // 削除する次のカードを保存
+      item._mergedNextInsertIdx = idx + 1;    // 復元時の挿入位置
+
       item.text = currentText + '\n' + nextItem.text;
       item.isEditing = true;
-      item._editOriginal = item._editOriginal || currentText;
 
       processedItems.splice(idx + 1, 1);
       renderList();
       const newTa = document.getElementById(`edit-textarea-${id}`);
       if (newTa) newTa.focus();
-      showToast('結合完了', '次のカードと結合しました。', 'success');
+      showToast('結合完了', '次のカードと結合しました。「戻す」で天克復元できます。', 'success');
     }
 
     // カードを削除する
