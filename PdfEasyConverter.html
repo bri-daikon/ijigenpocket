@@ -13,6 +13,9 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <!-- Kuroshiro (日本語ふりがな変換) -->
+  <script src="https://cdn.jsdelivr.net/npm/kuroshiro@1.1.2/dist/kuroshiro.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js"></script>
   <style>
     body {
       font-family: 'Noto Sans JP', sans-serif;
@@ -40,6 +43,37 @@
 
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
+    }
+
+    /* ふりがなツールチップ */
+    .furigana-word {
+      position: relative;
+      border-bottom: 1px dotted #94a3b8;
+      cursor: help;
+      display: inline;
+    }
+    .furigana-word::after {
+      content: attr(data-reading);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 0.72em;
+      padding: 2px 6px;
+      border-radius: 5px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 200;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+    }
+    .furigana-word:hover::after {
+      opacity: 1;
     }
   </style>
 </head>
@@ -239,6 +273,15 @@
             <p class="text-[10px] text-slate-400 mt-0.5 ml-6">チェックを入れると、コピー時に「山田「こんにちは」」のような単独セリフから「山田」をカットしてコピーします（画面上には話者名が表示されたままになります）。
             </p>
           </div>
+          <!-- ふりがな表示 -->
+          <div class="border-t border-slate-100 pt-2 mt-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="chk-furigana"
+                class="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500" onchange="toggleFurigana()">
+              <span class="text-xs font-bold text-violet-700">ふりがな（ホバーで表示）</span>
+            </label>
+            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">漢字にカーソルを乗せると読み仮名がポップアップします。初回のみ辞書データのダウンロードが発生します。</p>
+          </div>
         </div>
       </div>
 
@@ -404,6 +447,9 @@
     let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
     let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
     let currentScrollCardIndex = -1; // ▲▼ボタンで追跡中のカードインデックス
+    let kuroshiroEnabled = false; // ふりがな表示ON/OFF
+    let kuroshiroReady = false;   // Kuroshiro初期化済みフラグ
+    let kuroshiroInstance = null; // Kuroshiroインスタンス
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -1121,7 +1167,7 @@
               rows="${Math.max(3, (displayText.match(/\n/g) || []).length + 2)}"
             >${escapeHtml(displayText)}</textarea>
           ` : `
-            <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${escapeHtml(displayText)}</div>
+            <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
           `}
 
           <!-- メモ入力エリア / 表示エリア -->
@@ -1418,6 +1464,79 @@
       // 一瞬ハイライト
       targetCard.style.outline = '2px solid #0d9488';
       setTimeout(() => { targetCard.style.outline = ''; }, 600);
+    }
+
+    // --- ふりがな機能 (Kuroshiro.js) ---
+
+    // ふりがなチェックボックスのON/OFF
+    async function toggleFurigana() {
+      const chk = document.getElementById('chk-furigana');
+      kuroshiroEnabled = chk.checked;
+
+      if (!kuroshiroEnabled) {
+        renderList();
+        return;
+      }
+
+      // 辞書の初期化（初回のみ）
+      const ok = await initKuroshiro();
+      if (!ok) {
+        chk.checked = false;
+        kuroshiroEnabled = false;
+        return;
+      }
+
+      // まだ変換していないカードのみ処理する
+      const toProcess = processedItems.filter(item => !item.furiganaHtml);
+      if (toProcess.length > 0) {
+        showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
+        for (const item of toProcess) {
+          try {
+            const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
+            item.furiganaHtml = rubyToFuriganaSpan(raw);
+          } catch (e) {
+            item.furiganaHtml = escapeHtml(item.text);
+          }
+        }
+      }
+
+      renderList();
+      showToast('ふりがな表示ON', '漢字にカーソルを乗せると読み仮名が表示されます。', 'success');
+    }
+
+    // Kuroshiro辞書の初期化（初回のみネットワークからダウンロード）
+    async function initKuroshiro() {
+      if (kuroshiroReady) return true;
+      try {
+        showToast('辞書を読み込み中...', 'ふりがな辞書データをダウンロードしています（初回のみ）', 'info');
+        kuroshiroInstance = new Kuroshiro();
+        await kuroshiroInstance.init(new KuromojiAnalyzer({
+          dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
+        }));
+        kuroshiroReady = true;
+        return true;
+      } catch (e) {
+        console.error('Kuroshiro init failed:', e);
+        showToast('エラー', 'ふりがな辞書の読み込みに失敗しました。ネットワーク接続を確認してください。', 'error');
+        return false;
+      }
+    }
+
+    // Kuroshiroの<ruby>出力をカスタムtooltipスパンに変換する
+    function rubyToFuriganaSpan(rubyHtml) {
+      // 改行を保持するためプレースホルダーに退避
+      const NL = '\uE000'; // PUA文字を改行の仮置き
+      let html = rubyHtml.replace(/\n/g, NL);
+
+      // <ruby>漢字<rt>かんじ</rt></ruby> → <span class="furigana-word" data-reading="かんじ">漢字</span>
+      html = html.replace(/<ruby>([^<]*)<rt>([^<]*)<\/rt><\/ruby>/g, (match, base, reading) => {
+        const safeBase = base.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeReading = reading.replace(/"/g, '&quot;').replace(/&/g, '&amp;');
+        return `<span class="furigana-word" data-reading="${safeReading}">${safeBase}</span>`;
+      });
+
+      // 改行を復元
+      return html.replace(new RegExp(NL, 'g'), '\n');
     }
 
     // --- カード編集機能 ---
