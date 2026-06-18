@@ -13,249 +13,286 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen p-4 sm:p-8 text-gray-800 font-sans">
-    <div class="max-w-4xl mx-auto bg-white/80 backdrop-blur-md p-6 sm:p-10 rounded-2xl shadow-2xl border border-white/50">
+    <div class="max-w-7xl mx-auto">
         
-        <div class="text-center mb-10">
+        <!-- ヘッダー部分 -->
+        <div class="text-center mb-8">
             <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
                 ✨ 簡単アニメ画像メーカー
             </h1>
             <p class="text-gray-500 font-medium">画像をアップロードして、魔法のエフェクトをかけよう！</p>
         </div>
 
-        <!-- 1. 画像アップロード部分 -->
-        <div class="mb-8">
-            <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
-                <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">1</span>
-                画像を選ぶ
-            </label>
-            <div class="relative">
-                <input type="file" id="imageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:text-blue-700 hover:file:bg-indigo-100 transition-colors cursor-pointer border-2 border-dashed border-blue-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-blue-400 focus:outline-none">
-            </div>
-        </div>
-
-        <!-- 2. エフェクト選択部分 -->
-        <div class="mb-8">
-            <label class="flex items-center text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
-                <span class="bg-purple-100 text-purple-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">2</span>
-                エフェクトを選ぶ
-            </label>
+        <!-- 左右2カラムのコンテナ -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- 🌟 基本のエフェクト -->
-                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <span class="flex items-center text-sm font-bold text-gray-800 mb-3"><span class="text-lg mr-2">🌟</span> 基本エフェクト</span>
-                    <div class="flex flex-wrap gap-2">
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="shake" class="peer sr-only" checked>
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">揺らす</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="blink" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">点滅する</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="scatter" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">散らばる</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="zoomIn" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="zoomOut" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="zoomInWhite" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン(白)</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="zoomOutBlack" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト(黒)</div>
-                        </label>
+            <!-- 【左カラム】設定・操作メニュー (全体の7/12幅) -->
+            <div class="lg:col-span-7 xl:col-span-8 bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50 space-y-6">
+                
+                <!-- 1. 画像アップロード部分 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">1</span>
+                        画像を選ぶ
+                    </label>
+                    <div class="relative">
+                        <input type="file" id="imageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:text-blue-700 hover:file:bg-indigo-100 transition-colors cursor-pointer border-2 border-dashed border-blue-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-blue-400 focus:outline-none">
                     </div>
                 </div>
 
-                <!-- 🌀 回転・移動 -->
-                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <span class="flex items-center text-sm font-bold text-blue-800 mb-3"><span class="text-lg mr-2">🌀</span> 回転・移動</span>
-                    <div class="flex flex-wrap gap-2">
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="rotateRight" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右回転</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="rotateLeft" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左回転</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="moveDown" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">上から下へ</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="moveUp" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">下から上へ</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="moveLeft" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右から左</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="moveDownRight" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">斜め移動</div>
-                        </label>
+                <!-- 2. エフェクト選択部分 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-purple-100 text-purple-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">2</span>
+                        エフェクトを選ぶ
+                    </label>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- 🌟 基本のエフェクト -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-gray-800 mb-3"><span class="text-base mr-2">🌟</span> 基本エフェクト</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="shake" class="peer sr-only" checked>
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">揺らす</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blink" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">点滅する</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="scatter" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">散らばる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomInWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズーム(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomOutBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズーム(黒)</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🌀 回転・移動 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-blue-800 mb-3"><span class="text-base mr-2">🌀</span> 回転・移動</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rotateRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右回転</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rotateLeft" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左回転</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveDown" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">上から下</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveUp" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">下から上</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveLeft" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右から左</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveDownRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">斜め移動</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🎨 魔法・色 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-purple-800 mb-3"><span class="text-base mr-2">🎨</span> 魔法・色</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rainbow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌈 虹色変化</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeInWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👻 Fイン(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeInBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 Fイン(黒)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeOutWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ Fアウト(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeOutBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 Fアウト(黒)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blur" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">💧 ぼかす</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="mosaic" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👾 モザイク</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 👻 ユニーク・かっこいい演出 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-orange-800 mb-3"><span class="text-base mr-2">🎬</span> ユニーク・演出</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="slime" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🍮 ぷるぷる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="wave" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌊 波打ち</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="heartbeat" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">❤️ 鼓動</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="bounce" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🏀 バウンド</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="pendulum" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🕰️ 振り子</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="tornado" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌪️ 竜巻</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="glitch" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">📺 ノイズ</div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 🎨 魔法・色 -->
-                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <span class="flex items-center text-sm font-bold text-purple-800 mb-3"><span class="text-lg mr-2">🎨</span> 魔法・色</span>
-                    <div class="flex flex-wrap gap-2">
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="rainbow" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌈 虹色変化</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeInWhite" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👻 フェードイン(白)</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeInBlack" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードイン(黒)</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeOutWhite" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ フェードアウト(白)</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="fadeOutBlack" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 フェードアウト(黒)</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="blur" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">💧 徐々にぼやける</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="mosaic" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-purple-100 bg-purple-50/50 text-sm font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👾 モザイク化</div>
-                        </label>
+                <!-- 3. 保存形式の選択 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-yellow-100 text-yellow-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">3</span>
+                        保存形式を選ぶ
+                    </label>
+                    <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="gif" checked class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-yellow-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                                    <span class="text-base mr-1.5">🐦</span> X (Twitter)用 (GIF)
+                                </div>
+                            </label>
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="apng" class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-yellow-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                                    <span class="text-base mr-1.5">✨</span> 高画質用 (APNG)
+                                </div>
+                            </label>
+                        </div>
+                        <p class="text-[11px] text-yellow-800 mt-2 font-medium flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                            Xに投稿する場合は必ず「X用 (GIF形式)」を選んでください。
+                        </p>
                     </div>
                 </div>
 
-                <!-- 👻 ユニーク・かっこいい演出 -->
-                <div class="p-5 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <span class="flex items-center text-sm font-bold text-orange-800 mb-3"><span class="text-lg mr-2">🎬</span> ユニーク・演出</span>
-                    <div class="flex flex-wrap gap-2">
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="slime" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🍮 ぷるぷる</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="wave" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌊 波打ち</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="heartbeat" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">❤️ 鼓動</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="bounce" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🏀 バウンド</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="pendulum" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🕰️ 振り子</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="tornado" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌪️ トルネード</div>
-                        </label>
-                        <label class="cursor-pointer relative">
-                            <input type="radio" name="effect" value="glitch" class="peer sr-only">
-                            <div class="px-3 py-2 rounded-lg border border-orange-100 bg-orange-50/50 text-sm font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">📺 ノイズ</div>
-                        </label>
+                <!-- 4. ループ（繰り返し）設定 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-teal-100 text-teal-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">4</span>
+                        繰り返し（ループ）設定
+                    </label>
+                    <div class="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-200">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="loop" value="infinite" checked class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-teal-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
+                                    🔄 無限ループ
+                                </div>
+                            </label>
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="loop" value="once" class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-teal-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
+                                    ⏱️ 1回だけ再生して停止
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+                <!-- 5. 作成ボタン -->
+                <div class="pt-4">
+                    <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-4 px-10 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-xl w-full shadow-lg text-lg flex items-center justify-center mx-auto">
+                        <svg class="w-6 h-6 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="btnText">魔法をかける！ (作成開始)</span>
+                    </button>
+                    <p id="loadingMsg" class="text-blue-600 mt-4 text-center hidden animate-pulse font-bold">🪄 一生懸命作っています... 少しお待ちください！</p>
+                </div>
+
+            </div>
+
+            <!-- 【右カラム】完成プレビュー画面 (全体の5/12幅 & スクロール追従) -->
+            <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-8 space-y-6">
+                
+                <div class="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50">
+                    <h2 class="text-xl font-extrabold text-gray-800 mb-4 flex items-center">
+                        <span class="mr-2">🎉</span>
+                        プレビュー＆ダウンロード
+                    </h2>
+
+                    <!-- デフォルト時のプレースホルダー -->
+                    <div id="placeholderArea" class="flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl p-6 min-h-[300px] border-2 border-dashed border-gray-200 text-center">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">まだアニメが作成されていません</p>
+                        <p class="text-gray-400 text-xs max-w-[200px]">上の設定を終えたら「魔法をかける！」ボタンを押してくださいね。</p>
                     </div>
+
+                    <!-- 完成後の表示部分（最初は非表示） -->
+                    <div id="resultArea" class="hidden space-y-6">
+                        <div class="flex justify-center bg-gray-50 rounded-2xl p-4 min-h-[250px] items-center border border-gray-100 shadow-inner">
+                            <img id="previewImg" src="" alt="プレビュー" class="max-w-full max-h-[320px] rounded-lg shadow-md">
+                        </div>
+                        <div class="text-center">
+                            <a id="downloadLink" href="#" download="animated.gif" class="w-full inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-base">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                画像をダウンロード
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
+
             </div>
+
         </div>
 
-        <!-- 3. 保存形式の選択 -->
-        <div class="mb-8">
-            <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
-                <span class="bg-yellow-100 text-yellow-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">3</span>
-                保存形式を選ぶ
-            </label>
-            <div class="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                <div class="flex flex-wrap gap-4">
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="format" value="gif" checked class="peer sr-only">
-                        <div class="px-5 py-3 rounded-lg border border-yellow-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
-                            <span class="text-xl mr-2">🐦</span> X (Twitter)用 (GIF)
-                        </div>
-                    </label>
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="format" value="apng" class="peer sr-only">
-                        <div class="px-5 py-3 rounded-lg border border-yellow-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
-                            <span class="text-xl mr-2">✨</span> 高画質用 (APNG)
-                        </div>
-                    </label>
-                </div>
-                <p class="text-xs text-yellow-800 mt-3 font-medium flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-                    X(旧Twitter)に投稿する場合は必ず「X用 (GIF形式)」を選んでください。
-                </p>
-            </div>
-        </div>
-
-        <!-- 4. ループ（繰り返し）設定の追加 -->
-        <div class="mb-10">
-            <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
-                <span class="bg-teal-100 text-teal-700 rounded-full w-6 h-6 flex items-center justify-center mr-2">4</span>
-                繰り返し（ループ）設定
-            </label>
-            <div class="p-5 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-200">
-                <div class="flex flex-wrap gap-4">
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="loop" value="infinite" checked class="peer sr-only">
-                        <div class="px-5 py-3 rounded-lg border border-teal-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
-                            🔄 無限に繰り返す (ループ)
-                        </div>
-                    </label>
-                    <label class="cursor-pointer relative">
-                        <input type="radio" name="loop" value="once" class="peer sr-only">
-                        <div class="px-5 py-3 rounded-lg border border-teal-200 bg-white text-sm font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
-                            ⏱️ 1回だけ再生して止める
-                        </div>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- 5. 作成ボタン -->
-        <div class="text-center mb-8">
-            <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-4 px-10 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-xl w-full sm:w-auto shadow-lg text-lg flex items-center justify-center mx-auto">
-                <svg class="w-6 h-6 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span id="btnText">魔法をかける！ (作成開始)</span>
-            </button>
-            <p id="loadingMsg" class="text-blue-600 mt-4 hidden animate-pulse font-bold">🪄 一生懸命作っています... 少しお待ちください！</p>
-        </div>
-
-        <!-- 6. プレビューとダウンロード部分 -->
-        <div id="resultArea" class="hidden border-t border-gray-200 pt-8 mt-4">
-            <h2 class="text-2xl font-extrabold text-center mb-6 text-gray-800">🎉 完成しました！</h2>
-            <div class="flex justify-center mb-6 bg-gray-50 rounded-2xl p-6 min-h-[200px] items-center border-2 border-dashed border-gray-300 shadow-inner">
-                <img id="previewImg" src="" alt="プレビュー" class="max-w-full max-h-[350px] rounded-lg shadow-lg">
-            </div>
-            <div class="text-center">
-                <a id="downloadLink" href="#" download="animated.gif" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-lg">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    画像をダウンロード
-                </a>
-            </div>
-        </div>
     </div>
 
     <!-- 画像を処理するための見えないキャンバス -->
@@ -269,6 +306,7 @@
         const effectRadios = document.getElementsByName('effect');
         const formatRadios = document.getElementsByName('format');
         const loopRadios = document.getElementsByName('loop');
+        const placeholderArea = document.getElementById('placeholderArea');
         const resultArea = document.getElementById('resultArea');
         const previewImg = document.getElementById('previewImg');
         const downloadLink = document.getElementById('downloadLink');
@@ -302,7 +340,10 @@
             spinner.classList.remove('hidden');
             btnText.textContent = "作成中...";
             loadingMsg.classList.remove('hidden');
+            
+            // プレースホルダーを再表示させ、前回の結果エリアを一旦隠す
             resultArea.classList.add('hidden');
+            placeholderArea.classList.remove('hidden');
 
             let selectedEffect = 'shake';
             effectRadios.forEach(radio => { if (radio.checked) selectedEffect = radio.value; });
@@ -527,7 +568,8 @@
             downloadLink.href = url;
             downloadLink.download = filename;
             resetButton();
-            resultArea.classList.remove('hidden');
+            placeholderArea.classList.add('hidden'); // プレースホルダーを隠す
+            resultArea.classList.remove('hidden');    // 結果プレビューを表示する
         }
 
         function resetButton() {
