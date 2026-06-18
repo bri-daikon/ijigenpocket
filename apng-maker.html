@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡単APNGメーカー</title>
+    <!-- 見た目を整えるTailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- APNGを生成するためのライブラリを読み込み -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
+</head>
+<body class="bg-blue-50 min-h-screen p-8 text-gray-800 font-sans">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">✨ 簡単APNGメーカー ✨</h1>
+
+        <!-- 1. 画像アップロード部分 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">1. 画像を選んでください</label>
+            <input type="file" id="imageInput" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+
+        <!-- 2. エフェクト選択部分 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">2. エフェクトを選んでください</label>
+            <div class="flex gap-4">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="effect" value="shake" checked class="text-blue-600">
+                    <span>揺らす</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="effect" value="blink" class="text-blue-600">
+                    <span>点滅する</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="effect" value="scatter" class="text-blue-600">
+                    <span>散らばる</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 3. 作成ボタン -->
+        <div class="text-center mb-8">
+            <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors w-full sm:w-auto shadow-md">
+                APNGを作成する！
+            </button>
+            <p id="loadingMsg" class="text-blue-500 mt-2 hidden animate-pulse">作成中... 少しお待ちください。</p>
+        </div>
+
+        <!-- 4. プレビューとダウンロード部分 -->
+        <div id="resultArea" class="hidden border-t pt-6">
+            <h2 class="text-xl font-bold text-center mb-4">完成したプレビュー</h2>
+            <div class="flex justify-center mb-4 bg-gray-100 rounded-lg p-4 min-h-[200px] items-center">
+                <img id="previewImg" src="" alt="APNGプレビュー" class="max-w-full max-h-[300px]">
+            </div>
+            <div class="text-center">
+                <a id="downloadLink" href="#" download="animated.png" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-colors shadow-md">
+                    画像をダウンロード
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像を処理するための見えないキャンバス -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // HTMLの要素を取得します
+        const imageInput = document.getElementById('imageInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const effectRadios = document.getElementsByName('effect');
+        const resultArea = document.getElementById('resultArea');
+        const previewImg = document.getElementById('previewImg');
+        const downloadLink = document.getElementById('downloadLink');
+        const loadingMsg = document.getElementById('loadingMsg');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // アップロードされた画像を保存する変数
+        let loadedImage = new Image();
+
+        // 1. 画像がアップロードされたときの処理
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadedImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 2. 「APNGを作成する」ボタンが押されたときの処理
+        generateBtn.addEventListener('click', async function() {
+            if (!loadedImage.src) {
+                alert('まずは画像を選択してくださいね！');
+                return;
+            }
+
+            // 処理中メッセージを表示
+            generateBtn.disabled = true;
+            loadingMsg.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+
+            // 選択されたエフェクトを取得
+            let selectedEffect = 'shake';
+            effectRadios.forEach(radio => {
+                if (radio.checked) selectedEffect = radio.value;
+            });
+
+            // 少し時間を空けてから処理を開始（画面表示を更新するため）
+            setTimeout(() => {
+                createAPNG(selectedEffect);
+            }, 50);
+        });
+
+        // 3. APNGを生成するメイン関数
+        function createAPNG(effect) {
+            // キャンバスのサイズを画像に合わせる
+            const width = loadedImage.width;
+            const height = loadedImage.height;
+            canvas.width = width;
+            canvas.height = height;
+
+            const frames = []; // 画像データを保存する配列
+            const delays = []; // 各コマの表示時間（ミリ秒）
+            const frameCount = 10; // アニメーションのコマ数（10コマ）
+
+            // 1コマずつ画像を描画して保存するループ
+            for (let i = 0; i < frameCount; i++) {
+                // 一度キャンバスを透明にする
+                ctx.clearRect(0, 0, width, height);
+
+                // エフェクトごとの描画処理
+                if (effect === 'shake') {
+                    // 揺れる：位置をランダムに少しずらす
+                    const offsetX = (Math.random() - 0.5) * 20; // -10 ~ 10px
+                    const offsetY = (Math.random() - 0.5) * 20;
+                    ctx.drawImage(loadedImage, offsetX, offsetY, width, height);
+                } 
+                else if (effect === 'blink') {
+                    // 点滅：偶数コマは表示、奇数コマは非表示（または薄く）
+                    if (i % 2 === 0) {
+                        ctx.globalAlpha = 1.0;
+                    } else {
+                        ctx.globalAlpha = 0.0; // 透明
+                    }
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.globalAlpha = 1.0; // 元に戻す
+                } 
+                else if (effect === 'scatter') {
+                    // 散らばる：画像を小さくしてランダムな位置に複数描画
+                    for (let j = 0; j < 5; j++) { // 5個散らばらせる
+                        const size = width * (0.3 + Math.random() * 0.4); // 元の30%~70%のサイズ
+                        const x = Math.random() * (width - size);
+                        const y = Math.random() * (height - size);
+                        ctx.drawImage(loadedImage, x, y, size, size);
+                    }
+                }
+
+                // 描画したキャンバスのデータを配列に追加
+                const imageData = ctx.getImageData(0, 0, width, height);
+                frames.push(imageData.data.buffer);
+                delays.push(150); // 1コマの時間は150ミリ秒
+            }
+
+            // UPNG.jsを使って集めたコマをAPNGに変換
+            // UPNG.encode(データの配列, 幅, 高さ, 色数(0は無制限), 表示時間の配列)
+            const apngArrayBuffer = UPNG.encode(frames, width, height, 0, delays);
+
+            // 変換したデータをブラウザで扱える「Blob」にする
+            const blob = new Blob([apngArrayBuffer], { type: 'image/png' });
+            const url = URL.createObjectURL(blob);
+
+            // 4. プレビューとダウンロードリンクに設定
+            previewImg.src = url;
+            downloadLink.href = url;
+
+            // 画面の表示を切り替え
+            loadingMsg.classList.add('hidden');
+            generateBtn.disabled = false;
+            resultArea.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
