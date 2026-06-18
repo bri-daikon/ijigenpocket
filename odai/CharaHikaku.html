@@ -12,7 +12,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 視視性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
+        /* 視認性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
 
         body {
@@ -97,7 +97,7 @@
                 </button>
 
                 <button onclick="clearAllDataPrompt()"
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-950 hover:bg-rose-950/40 text-rose-400 rounded-lg transition-all border border-rose-950/60 hover:border-rose-800 shadow-md">
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-955 hover:bg-rose-950/40 text-rose-400 rounded-lg transition-all border border-rose-950/60 hover:border-rose-800 shadow-md">
                     <i data-lucide="flame" class="w-3.5 h-3.5 text-rose-500"></i> 全てを浄化
                 </button>
             </div>
@@ -165,6 +165,21 @@
                                 placeholder='{"kind":"character","data":{ ... }}'></textarea>
                         </div>
 
+                        <!-- 版の選択 -->
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-600 mb-1.5 font-header">クトゥルフ神話TRPG 版</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label id="editionLabel6" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-amber-600 bg-amber-900/30 text-amber-300">
+                                    <input type="radio" name="editionSelect" value="6" class="sr-only" checked onchange="updateEditionLabelStyle()">
+                                    <i data-lucide="book" class="w-3.5 h-3.5"></i> 6版
+                                </label>
+                                <label id="editionLabel7" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-stone-700 bg-transparent text-stone-500 hover:text-stone-300 hover:border-stone-500">
+                                    <input type="radio" name="editionSelect" value="7" class="sr-only" onchange="updateEditionLabelStyle()">
+                                    <i data-lucide="book-open" class="w-3.5 h-3.5"></i> 7版
+                                </label>
+                            </div>
+                        </div>
+
                         <button onclick="addCharacter()"
                             class="w-full py-3 px-4 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-amber-100 font-semibold text-sm rounded-xl transition-all shadow-lg border border-amber-700/50 hover:shadow-amber-500/10 flex items-center justify-center gap-2 tracking-widest font-header">
                             <i data-lucide="shield-plus" class="w-4 h-4"></i> 召喚を執り行う
@@ -191,20 +206,63 @@
             <!-- 右カラム: 探索者名簿 (8/12) -->
             <section
                 class="lg:col-span-8 bg-[#14100c] border border-amber-950/60 rounded-2xl p-6 shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col min-h-[400px]">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div class="flex items-center gap-2.5">
-                        <i data-lucide="users" class="text-amber-500 w-5 h-5"></i>
-                        <h2 class="text-lg font-bold font-header text-amber-400">契約を交わした探索者一覧 (<span id="characterCount"
-                                class="text-amber-500 font-header">0</span>)</h2>
+                
+                <!-- 名簿上部：タイトル・全体操作・検索と並び替え -->
+                <div class="flex flex-col gap-4 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="users" class="text-amber-500 w-5 h-5"></i>
+                            <h2 class="text-lg font-bold font-header text-amber-400">契約を交わした探索者一覧 (<span id="characterCount"
+                                    class="text-amber-500 font-header">0</span>)</h2>
+                        </div>
+
+                        <!-- 簡易フィルター -->
+                        <div class="flex items-center gap-2.5 text-xs">
+                            <button onclick="selectAll(true)"
+                                class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
+                            <span class="text-amber-950">|</span>
+                            <button onclick="selectAll(false)"
+                                class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
+                        </div>
                     </div>
 
-                    <!-- 簡易フィルター -->
-                    <div class="flex items-center gap-2.5 text-xs">
-                        <button onclick="selectAll(true)"
-                            class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
-                        <span class="text-amber-950">|</span>
-                        <button onclick="selectAll(false)"
-                            class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
+                    <!-- 版フィルタータブ -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-stone-600 font-header mr-0.5">版：</span>
+                        <button onclick="setEditionFilter('all')" id="editionTab_all"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400">
+                            全て
+                        </button>
+                        <button onclick="setEditionFilter('6')" id="editionTab_6"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600">
+                            6版
+                        </button>
+                        <button onclick="setEditionFilter('7')" id="editionTab_7"
+                            class="px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600">
+                            7版
+                        </button>
+                    </div>
+
+                    <!-- 検索機能 ＆ 召喚カードソート機能 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <!-- キャラクター名リアルタイム検索 -->
+                        <div class="relative sm:col-span-7">
+                            <i data-lucide="search" class="w-4 h-4 text-amber-700 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="charSearchInput" oninput="renderCharacters()" 
+                                class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg py-2 pl-9 pr-4 text-xs text-amber-200 placeholder-stone-750 focus:outline-none transition-all"
+                                placeholder="探索者の名前で検索...">
+                        </div>
+                        <!-- キャラクター追加順・名前・INITでの並び替え -->
+                        <div class="relative sm:col-span-5">
+                            <select id="charSortKey" onchange="renderCharacters()" 
+                                class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none transition-all cursor-pointer">
+                                <option value="id_desc">追加順（新しい順）</option>
+                                <option value="id_asc">追加順（古い順）</option>
+                                <option value="name_asc">名前順（五十音順）</option>
+                                <option value="init_desc">行動順（INIT高い順）</option>
+                                <option value="init_asc">行動順（INIT低い順）</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -220,7 +278,7 @@
             </section>
         </div>
 
-        <!-- 探索者選別の儀セクション (NEW!) -->
+        <!-- 探索者選別の儀セクション -->
         <section id="scoutSection" class="hidden space-y-6 pt-10 border-t border-amber-950/40 bg-[#120e0a]/40 p-6 rounded-2xl border border-amber-950/45 magic-border">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5">
@@ -234,21 +292,18 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-[#0a0806] p-4 rounded-xl border border-amber-950/30">
                 <div>
                     <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第一選抜技能</label>
-                    <select id="scoutSkill1" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
-                        <option value="">-- 未選択 --</option>
-                    </select>
+                    <input type="text" id="scoutSkill1" list="scoutSkillsDatalist" placeholder="技能名を入力、または選択" 
+                        class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 placeholder-stone-750 focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第二選抜技能</label>
-                    <select id="scoutSkill2" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
-                        <option value="">-- 未選択 --</option>
-                    </select>
+                    <input type="text" id="scoutSkill2" list="scoutSkillsDatalist" placeholder="技能名を入力、または選択" 
+                        class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 placeholder-stone-750 focus:outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-amber-600 mb-1 font-header">第三選抜技能</label>
-                    <select id="scoutSkill3" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none">
-                        <option value="">-- 未選択 --</option>
-                    </select>
+                    <input type="text" id="scoutSkill3" list="scoutSkillsDatalist" placeholder="技能名を入力、または選択" 
+                        class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 placeholder-stone-750 focus:outline-none transition-all">
                 </div>
                 <div>
                     <button onclick="executeScout()" class="w-full py-2 px-4 bg-amber-700 hover:bg-amber-600 text-stone-100 text-xs font-bold rounded-lg transition-colors border border-amber-600/30 flex items-center justify-center gap-1.5 font-header">
@@ -256,6 +311,9 @@
                     </button>
                 </div>
             </div>
+
+            <!-- サジェスト候補用の共有データリスト -->
+            <datalist id="scoutSkillsDatalist"></datalist>
 
             <!-- 選別結果表示エリア -->
             <div id="scoutResultsArea" class="hidden space-y-4">
@@ -318,7 +376,7 @@
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr
-                                class="bg-[#100d0a] border-b border-amber-950 text-amber-600/80 font-header select-none">
+                                class="bg-[#100d0a] border-b border-amber-950 text-amber-600/80 font-header select-none font-semibold">
                                 <th onclick="setMainTableSort('name')"
                                     class="p-4 min-w-[160px] cursor-pointer hover:text-amber-400 transition-colors">探索者
                                     <span id="sort_icon_name" class="inline-block align-middle"></span></th>
@@ -419,10 +477,13 @@
 
         // --- 並び替え（ソート）状態管理 ---
         let mainTableSortKey = 'name';       // 基本属性表のソートキー
-        let mainTableSortDesc = false;       // 基本属性表のソート降順フラグ
+        let mainTableSortDesc = false;       // 基本属性表 of ソート降順フラグ
 
         let skillTableSortKey = 'label';     // 技能一覧表のソートキー ('label' またはキャラクターの id)
         let skillTableSortDesc = false;      // 技能一覧表のソート降順フラグ
+
+        // --- 版フィルター状態 ('all' | '6' | '7') ---
+        let editionFilter = 'all';
 
         // --- アプリケーション起動時の初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
@@ -508,6 +569,26 @@
             };
         }
 
+        // --- 技能「芸術」の表記揺れを正規化する ---
+        // 例: "芸術：（写真）" "芸術(絵画)" "芸術【彫刻】" → "芸術　写真" "芸術　絵画" "芸術　彫刻"
+        function normalizeSkillLabel(label) {
+            const artPrefix = /^芸術/;
+            if (!artPrefix.test(label)) return label;
+
+            // 芸術の後の区切り記号と括弧類を除去して中身を取得
+            const inner = label
+                .replace(/^芸術/, '')
+                .replace(/^[：:\u30fb\s\u3000]+/, '')
+                .replace(/^[（(【\[「『]/, '')
+                .replace(/[）)】\]」』]$/, '')
+                .trim();
+
+            if (inner) {
+                return `芸術\u3000${inner}`;
+            }
+            return '芸術';
+        }
+
         // --- 技能のコマンド自動抽出ロジック ---
         function parseSkillsFromCommands(commandsText) {
             const skills = [];
@@ -520,7 +601,8 @@
                 const match = line.match(regex);
                 if (match) {
                     const value = parseInt(match[1], 10);
-                    const label = match[2].trim();
+                    const rawLabel = match[2].trim();
+                    const label = normalizeSkillLabel(rawLabel);
 
                     const excludes = ['アイデア', '幸運', '知識', '正気度', 'SAN', 'ダメージ', 'STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'HP', 'MP'];
                     const isExclude = excludes.some(ex => label.toUpperCase().includes(ex.toUpperCase()));
@@ -538,27 +620,92 @@
             return skills;
         }
 
-        // --- いあきゃらデータ追加 ---
+        // --- ステータス値の安全取得 ---
+        function getStatusValue(char, label) {
+            if (!char || !char.status || !Array.isArray(char.status)) return 0;
+            const stat = char.status.find(s => s.label.toUpperCase() === label.toUpperCase());
+            return stat ? stat.value : 0;
+        }
+
+        // --- 特性値の安全取得 ---
+        function getParamValue(char, label) {
+            if (!char || !char.params || !Array.isArray(char.params)) return 0;
+            const param = char.params.find(p => p.label.toUpperCase() === label.toUpperCase());
+            return param ? param.value : 0;
+        }
+
+        // --- 版フィルター切り替え ---
+        function setEditionFilter(edition) {
+            editionFilter = edition;
+            ['all', '6', '7'].forEach(e => {
+                const tab = document.getElementById(`editionTab_${e}`);
+                if (!tab) return;
+                if (e === edition) {
+                    tab.className = 'px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400';
+                } else {
+                    tab.className = 'px-3 py-1 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600';
+                }
+            });
+            renderCharacters();
+        }
+
+        // --- 版選択ラジオボタンのスタイル更新 ---
+        function updateEditionLabelStyle() {
+            const selected = document.querySelector('input[name="editionSelect"]:checked');
+            if (!selected) return;
+            const val = selected.value;
+            const activeClass = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-amber-600 bg-amber-900/30 text-amber-300';
+            const inactiveClass = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border cursor-pointer transition-all text-xs font-semibold font-header border-stone-700 bg-transparent text-stone-500 hover:text-stone-300 hover:border-stone-500';
+            document.getElementById('editionLabel6').className = val === '6' ? activeClass : inactiveClass;
+            document.getElementById('editionLabel7').className = val === '7' ? activeClass : inactiveClass;
+        }
+
+        // --- いあきゃらデータ追加（超・召喚の術式） ---
         function addCharacter() {
-            const jsonText = document.getElementById('jsonInput').value.trim();
+            let jsonText = document.getElementById('jsonInput').value.trim();
             if (!jsonText) {
                 showToast("召喚の魔力(JSON)が入力されていません", "error");
                 return;
             }
 
+            // 選択された版を取得
+            const editionRadio = document.querySelector('input[name="editionSelect"]:checked');
+            const selectedEdition = editionRadio ? editionRadio.value : '6';
+
+            // --- コピペの不要なゴミや全角記号を自動クレンジングする魔術 ---
+            jsonText = jsonText.replace(/[""]/g, '"'); // 全角ダブルクォーテーションを半角に変換
+            jsonText = jsonText.replace(/：/g, ':'); // 全角コロンを半角に変換
+            
+            // コピペされた文字列の中で { から } までの部分を自動で抜き出してパースする
+            const firstBrace = jsonText.indexOf('{');
+            const lastBrace = jsonText.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+            }
+
             try {
                 const parsed = JSON.parse(jsonText);
+                let charData = null;
 
-                if (parsed.kind !== 'character' || !parsed.data) {
-                    throw new Error("「いあきゃら」の格式に合致しません。");
+                // --- いあきゃらの出力形式（ココフォリア駒 or 直接エクスポート生JSON）を自動判別 ---
+                if (parsed.kind === 'character' && parsed.data) {
+                    // 形式A: ココフォリア駒形式
+                    charData = parsed.data;
+                } else if (parsed.name && (parsed.params || parsed.status || parsed.commands)) {
+                    // 形式B: いあきゃらの直接エクスポート形式（ルートに直接パラメータがある）
+                    charData = parsed;
+                } else {
+                    throw new Error("「ココフォリア駒データ形式」または「いあきゃらエクスポート形式」のいずれの配列構造にも合致しません。");
                 }
 
-                const charData = parsed.data;
-                const parsedSkills = parseSkillsFromCommands(charData.commands);
+                // 技能データのパース（commandsが無い、あるいは別の場所に入っている可能性に備えてフォールバックを設置）
+                const commandsContent = charData.commands || "";
+                const parsedSkills = parseSkillsFromCommands(commandsContent);
 
                 const newChar = {
                     id: 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     name: charData.name || "名無しの彷徨い人",
+                    edition: selectedEdition,
                     initiative: charData.initiative !== undefined ? charData.initiative : 0,
                     externalUrl: charData.externalUrl || "",
                     iconUrl: charData.iconUrl || "",
@@ -574,6 +721,14 @@
                     skills: parsedSkills
                 };
 
+                // もしSkillsが空で、かつparamsの中に技能が混じっているような特殊仕様データの場合に備えての補完
+                if (newChar.skills.length === 0 && charData.skills) {
+                    newChar.skills = (charData.skills || []).map(s => ({
+                        label: normalizeSkillLabel(s.label),
+                        value: Number(s.value) || 0
+                    }));
+                }
+
                 characters.push(newChar);
                 selectedIds.add(newChar.id);
 
@@ -582,9 +737,9 @@
                 updateComparison();
 
                 document.getElementById('jsonInput').value = "";
-                showToast(`探索者「${newChar.name}」を召喚しました！`);
+                showToast(`探索者「${newChar.name}」を召喚しました！(${selectedEdition}版)`, "success");
             } catch (error) {
-                showToast("召喚失敗: 刻印(JSON)に誤りがあります。" + error.message, "error");
+                showToast("召喚失敗: データの形式が正しくパースできません。" + error.message, "error");
             }
         }
 
@@ -633,10 +788,14 @@
             updateComparison();
         }
 
-        // --- キャラクター一覧表示の更新 ---
+        // --- キャラクター一覧表示の更新 (名前検索 ＆ ソート並び替え魔法の完全統合) ---
         function renderCharacters() {
             const container = document.getElementById('characterList');
             const countEl = document.getElementById('characterCount');
+            
+            // 検索ワード & 並び替えキーを安全に取得
+            const searchQuery = document.getElementById('charSearchInput') ? document.getElementById('charSearchInput').value.toLowerCase().trim() : '';
+            const sortKey = document.getElementById('charSortKey') ? document.getElementById('charSortKey').value : 'id_desc';
 
             countEl.textContent = characters.length;
 
@@ -645,7 +804,7 @@
                     <div class="col-span-full flex flex-col items-center justify-center py-20 text-stone-600 space-y-3">
                         <i data-lucide="ghost" class="w-14 h-14 stroke-[1] text-stone-700"></i>
                         <p class="text-sm font-header">まだ名簿に誰も記録されていません。</p>
-                        <p class="text-xs">左 of 儀式台から探索者を召喚してください。</p>
+                        <p class="text-xs">左の儀式台から探索者を召喚してください。</p>
                     </div>
                 `;
                 lucide.createIcons();
@@ -654,7 +813,53 @@
                 return;
             }
 
-            container.innerHTML = characters.map(char => {
+            // 1. 版フィルターを適用（'all' の場合は全て表示）
+            let filteredChars = characters.filter(char => {
+                if (editionFilter === 'all') return true;
+                // editionが未設定（旧データ）は6版として扱う
+                return (char.edition || '6') === editionFilter;
+            });
+
+            // 2. 探索者の名前検索フィルターを適用
+            filteredChars = filteredChars.filter(char => {
+                return char.name.toLowerCase().includes(searchQuery);
+            });
+
+            // 2. 探索者カード自体の並び替え (ソート) を適用
+            filteredChars.sort((a, b) => {
+                if (sortKey === 'id_desc') {
+                    // 追加順 (新しい順: IDはタイムスタンプベースなのでこれで降順ソート)
+                    return b.id.localeCompare(a.id);
+                } else if (sortKey === 'id_asc') {
+                    // 追加順 (古い順: 昇順)
+                    return a.id.localeCompare(b.id);
+                } else if (sortKey === 'name_asc') {
+                    // 五十音順
+                    return a.name.localeCompare(b.name, 'ja');
+                } else if (sortKey === 'init_desc') {
+                    // 行動順（INIT高い順：降順）
+                    return b.initiative - a.initiative;
+                } else if (sortKey === 'init_asc') {
+                    // 行動順（INIT低い順：昇順）
+                    return a.initiative - b.initiative;
+                }
+                return 0;
+            });
+
+            // 検索結果がゼロの場合の優雅な表示
+            if (filteredChars.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 text-stone-600 space-y-3">
+                        <i data-lucide="search-x" class="w-14 h-14 stroke-[1] text-stone-700"></i>
+                        <p class="text-sm font-header">該当する探索者が見つかりません</p>
+                        <p class="text-xs">呪文（検索ワード）の記述を変えてみてください。</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filteredChars.map(char => {
                 const isSelected = selectedIds.has(char.id);
 
                 const imageTag = char.iconUrl
@@ -667,6 +872,13 @@
                 };
 
                 const skillCount = char.skills ? char.skills.length : 0;
+                const editionBadge = char.edition
+                    ? `<span class="inline-block px-1.5 py-0.5 text-[9px] font-bold font-header rounded border ${
+                        char.edition === '7'
+                            ? 'border-sky-700/60 bg-sky-950/40 text-sky-400'
+                            : 'border-amber-800/60 bg-amber-950/40 text-amber-500'
+                    }">${char.edition}版</span>`
+                    : '';
 
                 return `
                     <div class="relative group flex items-start gap-3 bg-[#110d0a]/60 hover:bg-[#15100c] border ${isSelected ? 'border-amber-600 ring-1 ring-amber-600/20' : 'border-amber-950/40'} rounded-xl p-4 transition-all magic-border">
@@ -685,7 +897,10 @@
 
                         <!-- 情報 -->
                         <div class="flex-grow min-w-0 pr-6">
-                            <h3 class="font-bold text-sm text-stone-100 truncate font-header" title="${char.name}">${char.name}</h3>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <h3 class="font-bold text-sm text-stone-100 truncate font-header" title="${char.name}">${char.name}</h3>
+                                ${editionBadge}
+                            </div>
                             <div class="text-[10px] text-amber-700 font-semibold mt-0.5 flex items-center gap-2">
                                 <span>行動順: <strong class="text-amber-500 font-mono">${char.initiative}</strong></span>
                                 <span>|</span>
@@ -720,12 +935,12 @@
 
             lucide.createIcons();
 
-            // 選別セクション（スカウト用のドロップダウン選択肢など）を表示＆更新
+            // 選別セクションを表示＆サジェスト用データを更新
             document.getElementById('scoutSection').classList.remove('hidden');
             populateScoutSkills();
         }
 
-        // --- 選別技能のセレクトボックスオプションを動的生成 (NEW!) ---
+        // --- 選別技能のdatalistオプションを動的生成 ---
         function populateScoutSkills() {
             // 全キャラクターが持っているユニークな全技能名を集める
             const allSkillsSet = new Set();
@@ -735,37 +950,28 @@
             });
 
             const sortedSkills = Array.from(allSkillsSet).sort();
-            const selectors = ['scoutSkill1', 'scoutSkill2', 'scoutSkill3'];
+            const datalist = document.getElementById('scoutSkillsDatalist');
 
-            selectors.forEach(selectorId => {
-                const selectEl = document.getElementById(selectorId);
-                const currentValue = selectEl.value; // 現在の選択値をキープ
-
-                selectEl.innerHTML = '<option value="">-- 未選択 --</option>';
+            if (datalist) {
+                datalist.innerHTML = '';
                 sortedSkills.forEach(skillName => {
                     const option = document.createElement('option');
                     option.value = skillName;
-                    option.textContent = skillName;
-                    selectEl.appendChild(option);
+                    datalist.appendChild(option);
                 });
-
-                // 選択を復元
-                if (sortedSkills.includes(currentValue)) {
-                    selectEl.value = currentValue;
-                }
-            });
+            }
         }
 
-        // --- 選別（スカウト）の実行 (NEW!) ---
+        // --- 選別（スカウト）の実行 ---
         function executeScout() {
-            const skill1 = document.getElementById('scoutSkill1').value;
-            const skill2 = document.getElementById('scoutSkill2').value;
-            const skill3 = document.getElementById('scoutSkill3').value;
+            const skill1 = document.getElementById('scoutSkill1').value.trim();
+            const skill2 = document.getElementById('scoutSkill2').value.trim();
+            const skill3 = document.getElementById('scoutSkill3').value.trim();
 
             const selectedSkills = [skill1, skill2, skill3].filter(s => s !== '');
 
             if (selectedSkills.length === 0) {
-                showToast("選別するための技能を少なくとも1つ選択してください", "error");
+                showToast("選別するための技能を少なくとも1つ指定してください", "error");
                 return;
             }
 
@@ -775,8 +981,7 @@
                 const skillDetails = [];
 
                 selectedSkills.forEach(targetSkillName => {
-                    const charSkillObj = (char.skills || []).find(s => s.label === targetSkillName);
-                    // 初期値などのTRPGの仕様を踏まえ、技能がパースされていなければ0%として扱う
+                    const charSkillObj = (char.skills || []).find(s => s.label.toLowerCase() === targetSkillName.toLowerCase());
                     const value = charSkillObj ? charSkillObj.value : 0;
                     totalScore += value;
                     skillDetails.push({ label: targetSkillName, value: value });
@@ -799,7 +1004,7 @@
             renderScoutResults(topScouted, selectedSkills);
         }
 
-        // --- 選別結果のレンダリング (NEW!) ---
+        // --- 選別結果のレンダリング ---
         function renderScoutResults(scoutedList, selectedSkills) {
             const resultsArea = document.getElementById('scoutResultsArea');
             const resultsList = document.getElementById('scoutResultsList');
@@ -809,7 +1014,7 @@
 
             if (scoutedList.length === 0 || scoutedList[0].totalScore === 0) {
                 resultsList.innerHTML = `
-                    <div class="col-span-full py-8 text-center text-stone-500 text-xs">
+                    <div class="col-span-full py-8 text-center text-stone-500 text-xs font-header">
                         指定した技能を誰も習得していないか、すべて0%です。
                     </div>
                 `;
@@ -922,18 +1127,7 @@
             renderSkillCompareTable(selectedChars);
         }
 
-        // ステータス値の安全取得
-        function getStatusValue(char, label) {
-            const stat = char.status.find(s => s.label.toUpperCase() === label.toUpperCase());
-            return stat ? stat.value : 0;
-        }
-
-        function getParamValue(char, label) {
-            const param = char.params.find(p => p.label.toUpperCase() === label.toUpperCase());
-            return param ? param.value : 0;
-        }
-
-        // --- 属性値比較テーブルのレンダリング ---
+        // --- 基本属性・特性値表のレンダリング ---
         function renderCompareTable(selectedChars) {
             const tbody = document.getElementById('compareTableBody');
 
