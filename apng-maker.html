@@ -273,16 +273,19 @@
                     </div>
 
                     <!-- 完成後の表示部分（最初は非表示） -->
-                    <div id="resultArea" class="hidden space-y-6">
+                    <div id="resultArea" class="hidden space-y-4">
                         <div class="flex justify-center bg-gray-50 rounded-2xl p-4 min-h-[250px] items-center border border-gray-100 shadow-inner">
                             <img id="previewImg" src="" alt="プレビュー" class="max-w-full max-h-[320px] rounded-lg shadow-md">
                         </div>
-                        <div class="text-center">
-                            <a id="downloadLink" href="#" download="animated.gif" class="w-full inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-base">
+                        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                            <button id="replayBtn" class="inline-flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 px-5 rounded-full transition-all text-sm border border-blue-200 shadow-sm">
+                                🔁 もう一度再生
+                            </button>
+                            <a id="downloadLink" href="#" download="animated.gif" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-base flex-1">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                 </svg>
-                                画像をダウンロード
+                                ダウンロード
                             </a>
                         </div>
                     </div>
@@ -308,6 +311,7 @@
         const loopRadios = document.getElementsByName('loop');
         const placeholderArea = document.getElementById('placeholderArea');
         const resultArea = document.getElementById('resultArea');
+        const replayBtn = document.getElementById('replayBtn');
         
         // 再レンダリング（リセット再生）を行うため、constからletに変更
         let previewImg = document.getElementById('previewImg');
@@ -319,6 +323,59 @@
 
         let loadedImage = new Image();
         loadedImage.crossOrigin = "anonymous";
+
+        // CRC32計算用のハックテーブル（APNG書き換え用）
+        const crcTable = [];
+        for (let n = 0; n < 256; n++) {
+            let k = n;
+            for (let i = 0; i < 8; i++) {
+                if (k & 1) k = 0xedb88320 ^ (k >>> 1);
+                else k = k >>> 1;
+            }
+            crcTable[n] = k;
+        }
+
+        function crc32(uint8Array) {
+            let c = 0xffffffff;
+            for (let i = 0; i < uint8Array.length; i++) {
+                c = crcTable[(c ^ uint8Array[i]) & 0xff] ^ (c >>> 8);
+            }
+            return (c ^ 0xffffffff) >>> 0;
+        }
+
+        // APNGバイナリのacTLチャンク（ループパラメータ）を強制上書きしてCRCを再計算するハック
+        function setApngLoopCount(arrayBuffer, loopCount) {
+            const view = new DataView(arrayBuffer);
+            const len = arrayBuffer.byteLength;
+            let offset = 8; // PNG署名 (8バイト) をスキップ
+
+            while (offset < len) {
+                if (offset + 8 > len) break;
+                const chunkLength = view.getUint32(offset);
+                if (offset + 12 + chunkLength > len) break;
+                
+                const chunkType = String.fromCharCode(
+                    view.getUint8(offset + 4),
+                    view.getUint8(offset + 5),
+                    view.getUint8(offset + 6),
+                    view.getUint8(offset + 7)
+                );
+
+                if (chunkType === "acTL") {
+                    // acTL チャンクデータ: num_frames (4バイト) + num_plays (4バイト)
+                    // num_playsを直接書き換え (0: 無限, 1: 1回再生)
+                    view.setUint32(offset + 12, loopCount);
+                    
+                    // CRCの再計算
+                    // acTLチャンクタイプ(4バイト) + データ部分(8バイト)の合計12バイトの範囲
+                    const crcData = new Uint8Array(arrayBuffer, offset + 4, 12);
+                    const crc = crc32(crcData);
+                    view.setUint32(offset + 16, crc);
+                    break;
+                }
+                offset += 12 + chunkLength;
+            }
+        }
 
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -547,22 +604,28 @@
                 }
             }
 
-            // ループ設定パラメータの決定（GIFはonce時にnullを渡すのが仕様、APNGは1を渡す）
+            // ループ設定パラメータ（APNG: 0は無限、1は1回 / GIF: 0は無限、nullはループなし）
             const numLoopsAPNG = (loopSetting === 'once') ? 1 : 0;
             const numLoopsGIF = (loopSetting === 'once') ? null : 0;
 
             if (format === 'apng') {
                 const apngArrayBuffer = UPNG.encode(framesAPNG, width, height, 0, delays, numLoopsAPNG);
+                
+                // 【APNGループバグ修正】バイナリを直接書き換え、確実にacTLのnum_playsを上書きする
+                setApngLoopCount(apngArrayBuffer, numLoopsAPNG);
+
                 const blob = new Blob([apngArrayBuffer], { type: 'image/png' });
                 const url = URL.createObjectURL(blob);
                 finishGeneration(url, 'animated.png');
             } else {
+                // 【GIFループバグ修正】numWorkers: 0 にし、シングルスレッド化
+                // （マルチスレッド時にloopオプションが無限にリセットされてしまうgifshotライブラリのバグを完全回避）
                 gifshot.createGIF({
                     images: framesGIF,
                     interval: 0.15,
                     gifWidth: width,
                     gifHeight: height,
-                    numWorkers: 2,
+                    numWorkers: 0, 
                     loop: numLoopsGIF 
                 }, function(obj) {
                     if (!obj.error) {
@@ -601,6 +664,17 @@
             placeholderArea.classList.add('hidden'); // プレースホルダーを隠す
             resultArea.classList.remove('hidden');    // 結果プレビューを表示する
         }
+
+        // 「もう一度再生」ボタンが押されたときの処理
+        replayBtn.addEventListener('click', function() {
+            if (!previewImg || !previewImg.src) return;
+            const currentSrc = previewImg.src;
+            // プレビュー表示を一度リセットして再代入することで、ブラウザに最初から再生させる
+            previewImg.src = "";
+            setTimeout(() => {
+                previewImg.src = currentSrc;
+            }, 50);
+        });
 
         function resetButton() {
             loadingMsg.classList.add('hidden');
