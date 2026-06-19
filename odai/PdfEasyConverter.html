@@ -446,7 +446,6 @@
     let isOutlineOpen = false; // 目次パネルが開いているかどうか
     let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
     let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
-    let currentScrollCardIndex = -1; // ▲▼ボタンで追跡中のカードインデックス
     let kuroshiroEnabled = false; // ふりがな表示ON/OFF
     let kuroshiroReady = false;   // Kuroshiro初期化済みフラグ
     let kuroshiroInstance = null; // Kuroshiroインスタンス
@@ -881,7 +880,6 @@
     // テキストデータの加工と画面表示への出力
     function processAndDisplay(isNewFileLoad = false) {
       if (rawTextBlocks.length === 0) return;
-      currentScrollCardIndex = -1; // スクロール追跡リセット
 
       const cleanNewlines = document.getElementById('chk-clean-newlines').checked;
       const excludeHeaderFooter = document.getElementById('chk-exclude-header-footer').checked;
@@ -1436,26 +1434,22 @@
       const cards = Array.from(list.querySelectorAll('[data-id]'));
       if (cards.length === 0) return;
 
-      // currentScrollCardIndex が未設定（-1）の場合、
-      // スクロールコンテナの表示領域に入っているカードを自動検出して起点にする
-      if (currentScrollCardIndex < 0) {
-        const listRect = list.getBoundingClientRect();
-        let foundIdx = 0;
-        for (let i = 0; i < cards.length; i++) {
-          const cardRect = cards[i].getBoundingClientRect();
-          // カードの上端がリストの表示領域内にあるものを起点にする
-          if (cardRect.top >= listRect.top - 10) {
-            foundIdx = i;
-            break;
-          }
+      const listRect = list.getBoundingClientRect();
+      let currentIdx = 0;
+      for (let i = 0; i < cards.length; i++) {
+        const cardRect = cards[i].getBoundingClientRect();
+        // コンテナの上端に最も近い（見えている）カードを探す
+        // 少し余裕を持たせて +10 
+        if (cardRect.bottom > listRect.top + 10) {
+          currentIdx = i;
+          break;
         }
-        currentScrollCardIndex = foundIdx;
       }
 
       // 前後に1カード移動
-      currentScrollCardIndex = Math.max(0, Math.min(cards.length - 1, currentScrollCardIndex + direction));
+      let targetIdx = Math.max(0, Math.min(cards.length - 1, currentIdx + direction));
 
-      const targetCard = cards[currentScrollCardIndex];
+      const targetCard = cards[targetIdx];
       if (!targetCard) return;
 
       // カードをスクロールコンテナの先頭に合わせて表示
@@ -1490,6 +1484,9 @@
       const toProcess = processedItems.filter(item => !item.furiganaHtml);
       if (toProcess.length > 0) {
         showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
+        updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
+        
+        let count = 0;
         for (const item of toProcess) {
           try {
             const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
@@ -1497,7 +1494,15 @@
           } catch (e) {
             item.furiganaHtml = escapeHtml(item.text);
           }
+          count++;
+          
+          // フリーズを防ぐため、10件ごとにイベントループを解放して画面を更新
+          if (count % 10 === 0) {
+            updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
         }
+        updateStatus('success', 'ふりがな生成完了！');
       }
 
       renderList();
@@ -1528,8 +1533,8 @@
       const NL = '\uE000'; // PUA文字を改行の仮置き
       let html = rubyHtml.replace(/\n/g, NL);
 
-      // <ruby>漢字<rt>かんじ</rt></ruby> → <span class="furigana-word" data-reading="かんじ">漢字</span>
-      html = html.replace(/<ruby>([^<]*)<rt>([^<]*)<\/rt><\/ruby>/g, (match, base, reading) => {
+      // <ruby>漢字<rp>(</rp><rt>かんじ</rt><rp>)</rp></ruby> もしくは <ruby>漢字<rt>かんじ</rt></ruby> に対応
+      html = html.replace(/<ruby>([^<]*)(?:<rp>[^<]*<\/rp>)?<rt>([^<]*)<\/rt>(?:<rp>[^<]*<\/rp>)?<\/ruby>/g, (match, base, reading) => {
         const safeBase = base.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const safeReading = reading.replace(/"/g, '&quot;').replace(/&/g, '&amp;');
         return `<span class="furigana-word" data-reading="${safeReading}">${safeBase}</span>`;
@@ -1741,7 +1746,6 @@
           // globalIdを更新してID重複を防ぐ
           const maxId = processedItems.length > 0 ? Math.max(...processedItems.map(i => i.id)) : 0;
           globalId = Math.max(maxId, globalId) + 1;
-          currentScrollCardIndex = -1;
           currentFileName = data.fileName || '';
           renderList();
           showToast('読込完了', `${file.name} を読み込みました。${processedItems.length}件の項目を復元。`, 'success');
