@@ -48,7 +48,8 @@
     /* ふりがなツールチップ */
     .furigana-word {
       position: relative;
-      border-bottom: 1px dotted #94a3b8;
+      text-decoration: underline dotted #94a3b8;
+      text-underline-offset: 4px;
       cursor: help;
       display: inline;
     }
@@ -980,7 +981,9 @@
           if (existingItem) {
             isBookmarked = existingItem.bookmarked;
             noteText = existingItem.note;
-            savedFurigana = existingItem.furiganaHtml;
+            if (existingItem.text === cleanedText) {
+              savedFurigana = existingItem.furiganaHtml;
+            }
           } else if (savedItem) {
             isBookmarked = savedItem.bookmarked;
             noteText = savedItem.note;
@@ -1003,6 +1006,10 @@
 
       processedItems = tempItems;
       renderList();
+
+      if (kuroshiroEnabled) {
+        toggleFurigana();
+      }
 
       if (isNewFileLoad && savedData.length > 0) {
         showToast('データを復元しました', `このPDF用に保存されていた しおり: ${savedData.filter(d => d.bookmarked).length}件 / メモ: ${savedData.filter(d => d.note).length}件 を復元しました。`, 'success');
@@ -1477,8 +1484,12 @@
 
     // --- ふりがな機能 (Kuroshiro.js) ---
 
+    let isFuriganaProcessing = false;
+
     // ふりがなチェックボックスのON/OFF
     async function toggleFurigana() {
+      if (isFuriganaProcessing) return;
+      
       const chk = document.getElementById('chk-furigana');
       kuroshiroEnabled = chk.checked;
 
@@ -1487,48 +1498,64 @@
         return;
       }
 
-      // 辞書の初期化（初回のみ）
-      const ok = await initKuroshiro();
-      if (!ok) {
-        chk.checked = false;
-        kuroshiroEnabled = false;
-        return;
-      }
-
-      // まだ変換していないカードのみ処理する
-      const toProcess = processedItems.filter(item => !item.furiganaHtml);
-      if (toProcess.length > 0) {
-        showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
-        updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
-        
-        let count = 0;
-        for (const item of toProcess) {
-          try {
-            const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
-            item.furiganaHtml = rubyToFuriganaSpan(raw, item.id);
-          } catch (e) {
-            item.furiganaHtml = escapeHtml(item.text);
-          }
-          count++;
-          
-          // フリーズを防ぐため、10件ごとにイベントループを解放して画面を更新
-          if (count % 10 === 0) {
-            updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
+      isFuriganaProcessing = true;
+      try {
+        // 辞書の初期化（初回のみ）
+        const ok = await initKuroshiro();
+        if (!ok) {
+          chk.checked = false;
+          kuroshiroEnabled = false;
+          return;
         }
-        updateStatus('success', 'ふりがな生成完了！');
-      }
 
-      renderList();
-      showToast('ふりがな表示ON', '漢字にカーソルを乗せると読み仮名が表示されます。', 'success');
+        // まだ変換していないカードのみ処理する
+        const toProcess = processedItems.filter(item => !item.furiganaHtml);
+        if (toProcess.length > 0) {
+          showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
+          updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
+          
+          let count = 0;
+          for (const item of toProcess) {
+            // チェックが外されたら中断
+            if (!document.getElementById('chk-furigana').checked) {
+              break;
+            }
+            try {
+              const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
+              item.furiganaHtml = rubyToFuriganaSpan(raw, item.id);
+            } catch (e) {
+              item.furiganaHtml = escapeHtml(item.text);
+            }
+            count++;
+            
+            // フリーズを防ぐため、2件ごとにイベントループを解放して画面を更新
+            if (count % 2 === 0) {
+              updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
+              await new Promise(resolve => setTimeout(resolve, 5));
+            }
+          }
+          updateStatus('success', 'ふりがな生成完了！');
+        }
+
+        if (document.getElementById('chk-furigana').checked) {
+          renderList();
+          showToast('ふりがな表示ON', '漢字にカーソルを乗せると読み仮名が表示されます。', 'success');
+        }
+      } finally {
+        isFuriganaProcessing = false;
+      }
     }
 
     // Kuroshiro辞書の初期化（初回のみネットワークからダウンロード）
     async function initKuroshiro() {
       if (kuroshiroReady) return true;
       try {
-        showToast('辞書を読み込み中...', 'ふりがな辞書データをダウンロードしています（初回のみ）', 'info');
+        showToast('辞書を読み込み中...', '辞書データを解析しています。お使いの端末により数秒〜十数秒ブラウザが固まることがありますが、そのままお待ちください（初回のみ）。', 'info');
+        updateStatus('loading', '辞書データを解析中...（そのままお待ちください）');
+        
+        // メッセージを確実に画面に描画させるため、少し長めに待機
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         kuroshiroInstance = new Kuroshiro();
         await kuroshiroInstance.init(new KuromojiAnalyzer({
           dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
