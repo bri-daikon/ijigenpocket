@@ -14,9 +14,26 @@
 </head>
 <body>
     <div id="root" class="flex-1 overflow-hidden"></div>
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            var el = document.getElementById('root');
+            if(el) el.innerHTML = '<div style="background:red; color:white; padding:20px; position:absolute; z-index:9999; top:0; left:0; width:100%; font-size:16px;">' + msg + '<br><pre>' + (error ? error.stack : '') + '</pre></div>';
+        };
+        window.onunhandledrejection = function(e) {
+            var el = document.getElementById('root');
+            if(el) el.innerHTML = '<div style="background:red; color:white; padding:20px; position:absolute; z-index:9999; top:0; left:0; width:100%; font-size:16px;">Promise Rejection: ' + (e.reason ? e.reason.stack || e.reason : e) + '</div>';
+        };
+    </script>
+    <script>
+        Babel.registerPreset('my-react', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
 
     <script src="js/common.js"></script>
-    <script type="text/babel">
+    <script type="text/babel" data-presets="my-react,env">
         const { useState, useEffect, useRef, useCallback } = React;
 
         const FONTS = [
