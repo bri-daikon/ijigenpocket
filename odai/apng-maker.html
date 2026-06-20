@@ -220,6 +220,10 @@
                                     <input type="radio" name="effect" value="rubble" class="peer sr-only">
                                     <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">🧱 瓦礫化</div>
                                 </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="explosion" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">💣 爆発</div>
+                                </label>
                             </div>
                         </div>
 
@@ -641,7 +645,7 @@
 
             let paddingX = 0;
             let paddingY = 0;
-            const uniqueEffects = ['slime', 'wave', 'heartbeat', 'bounce', 'pendulum', 'tornado', 'glitch'];
+            const uniqueEffects = ['slime', 'wave', 'heartbeat', 'bounce', 'pendulum', 'tornado', 'glitch', 'explosion'];
             if (uniqueEffects.includes(effect)) {
                 paddingX = Math.floor(width * 0.2);
                 paddingY = Math.floor(height * 0.2);
@@ -658,7 +662,7 @@
             const delays = [];     
             
             let frameCount = 10;
-            const longEffects = ['burn', 'shatter', 'glassShatter', 'rubble'];
+            const longEffects = ['burn', 'shatter', 'glassShatter', 'rubble', 'explosion'];
             if (longEffects.includes(effect)) {
                 frameCount = 30; // 25 -> 30 
             } else if (['snow', 'leaves', 'cherryBlossoms'].includes(effect)) {
@@ -814,6 +818,17 @@
                     });
                 }
                 bullets.sort((a,b)=>a.frame-b.frame);
+            } else if (effect === 'explosion') {
+                for (let i = 0; i < 40; i++) {
+                    particles.push({
+                        x: width / 2,
+                        y: height / 2,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 40 + 10,
+                        size: Math.random() * 30 + 10,
+                        color: Math.random() > 0.6 ? '#ffaa00' : (Math.random() > 0.5 ? '#ff3300' : '#222')
+                    });
+                }
             }
 
             // 1コマずつ描画
@@ -915,8 +930,8 @@
                     ctx.imageSmoothingEnabled = true;
                 }
                 else if (effect === 'slime') {
-                    const scaleX = 1.0 + Math.sin(progress * Math.PI * 4) * 0.15;
-                    const scaleY = 1.0 - Math.sin(progress * Math.PI * 4) * 0.15;
+                    const scaleX = 1.0 + Math.sin(progress * Math.PI * 2) * 0.15;
+                    const scaleY = 1.0 - Math.sin(progress * Math.PI * 2) * 0.15;
                     ctx.translate(width / 2, height / 2);
                     ctx.scale(scaleX, scaleY);
                     ctx.translate(-width / 2, -height / 2);
@@ -925,20 +940,20 @@
                 else if (effect === 'wave') {
                     const ratioY = loadedImage.height / height;
                     for (let y = 0; y < height; y += 4) {
-                        const offsetX = Math.sin((y * 0.05) + (progress * Math.PI * 4)) * (width * 0.05);
+                        const offsetX = Math.sin((y * 0.05) + (progress * Math.PI * 2)) * (width * 0.05);
                         ctx.drawImage(loadedImage, 0, y * ratioY, loadedImage.width, 4 * ratioY, offsetX, y, width, 4);
                     }
                 }
                 else if (effect === 'heartbeat') {
                     let scale = 1.0;
-                    if (i === 2 || i === 5) scale = 1.15;
+                    if (progress > 0.1 && progress < 0.4) scale = 1.15; // 1回だけ鼓動
                     ctx.translate(width / 2, height / 2);
                     ctx.scale(scale, scale);
                     ctx.translate(-width / 2, -height / 2);
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                 }
                 else if (effect === 'bounce') {
-                    const bounceY = -Math.abs(Math.sin(progress * Math.PI * 2)) * (height * 0.2);
+                    const bounceY = -Math.abs(Math.sin(progress * Math.PI)) * (height * 0.2);
                     ctx.translate(0, bounceY);
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                 }
@@ -950,7 +965,7 @@
                 }
                 else if (effect === 'tornado') {
                     ctx.translate(width / 2, height / 2);
-                    ctx.rotate(progress * Math.PI * 4);
+                    ctx.rotate(progress * Math.PI * 2);
                     ctx.scale(progress, progress);
                     ctx.translate(-width / 2, -height / 2);
                     ctx.drawImage(loadedImage, 0, 0, width, height);
@@ -1093,6 +1108,47 @@
                         }
                     });
                 }
+                else if (effect === 'explosion') {
+                    // Shake
+                    const shakeIntensity = Math.max(0, 1.0 - progress * 1.5);
+                    const shakeX = (Math.random() - 0.5) * width * 0.1 * shakeIntensity;
+                    const shakeY = (Math.random() - 0.5) * height * 0.1 * shakeIntensity;
+                    ctx.drawImage(loadedImage, shakeX, shakeY, width, height);
+
+                    // Flash
+                    if (progress < 0.2) {
+                        ctx.fillStyle = `rgba(255, 255, 200, ${1.0 - progress * 5})`;
+                        ctx.fillRect(0, 0, width, height);
+                    }
+
+                    // Expanding Fireball
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+                    const fbRad = progress * width * 0.8;
+                    if (fbRad > 0 && progress < 0.5) {
+                        const g = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, fbRad);
+                        g.addColorStop(0, `rgba(255,255,255,${1 - progress*2})`);
+                        g.addColorStop(0.2, `rgba(255,200,50,${1 - progress*2})`);
+                        g.addColorStop(0.8, `rgba(255,50,0,${1 - progress*2})`);
+                        g.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = g;
+                        ctx.beginPath(); ctx.arc(width/2, height/2, fbRad, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.restore();
+
+                    // Smoke and Debris Particles
+                    particles.forEach(p => {
+                        let curX = p.x + Math.cos(p.angle) * p.speed * progress * 10;
+                        let curY = p.y + Math.sin(p.angle) * p.speed * progress * 10;
+                        let curSize = p.size * (1 + progress * 2);
+                        ctx.globalAlpha = Math.max(0, 1.0 - progress);
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(curX, curY, curSize, 0, Math.PI*2);
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+                }
                 else if (effect === 'burn') {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.save();
@@ -1224,22 +1280,29 @@
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.fillStyle = 'rgba(255,255,255,0.8)';
                     particles.forEach(p => {
+                        let travelDist = canvasHeight + p.size * 2;
+                        let loops = Math.max(1, Math.round(p.speedY));
+                        let currentY = (p.startY + progress * travelDist * loops) % travelDist - p.size;
+                        let currentX = p.startX + Math.sin(p.angle + progress * Math.PI * 2 * loops) * 15;
+                        
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                        ctx.arc(currentX, currentY, p.size, 0, Math.PI*2);
                         ctx.fill();
-                        p.x += p.speedX + Math.sin(p.angle)*0.5;
-                        p.y += p.speedY;
-                        p.angle += 0.1;
-                        if (p.y > canvasHeight) { p.y = -p.size; p.x = Math.random() * canvasWidth; }
                     });
                 }
                 else if (effect === 'leaves' || effect === 'cherryBlossoms') {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.fillStyle = effect === 'leaves' ? 'rgba(210, 100, 30, 0.85)' : 'rgba(255, 180, 200, 0.85)';
                     particles.forEach(p => {
+                        let travelDist = canvasHeight + p.size * 2;
+                        let loops = Math.max(1, Math.round(p.speedY / 2));
+                        let currentY = (p.startY + progress * travelDist * loops) % travelDist - p.size;
+                        let currentX = p.startX + Math.sin(p.rot + progress * Math.PI * 2 * loops) * 30 + progress * p.speedX * frameCount; // Seamless X drift
+                        let currentRot = p.rot + progress * Math.PI * 2 * loops * Math.sign(p.rotSpeed || 1);
+
                         ctx.save();
-                        ctx.translate(p.x, p.y);
-                        ctx.rotate(p.rot);
+                        ctx.translate(currentX % (canvasWidth + 100) - 50, currentY); // Seamless X wrap
+                        ctx.rotate(currentRot);
                         ctx.beginPath();
                         if (effect === 'leaves') {
                             ctx.ellipse(0, 0, p.size, p.size*0.5, 0, 0, Math.PI*2);
@@ -1250,10 +1313,6 @@
                         }
                         ctx.fill();
                         ctx.restore();
-                        p.x += p.speedX + Math.sin(p.rot)*1.5;
-                        p.y += p.speedY;
-                        p.rot += p.rotSpeed;
-                        if (p.y > canvasHeight) { p.y = -p.size; p.x = Math.random() * canvasWidth; }
                     });
                 }
                 else if (['sparkles', 'sparklesYellow', 'sparklesPastel', 'stars', 'hearts'].includes(effect)) {
@@ -1334,11 +1393,24 @@
                                 }
                             }
                             ctx.fill();
-                            // 細かい飛沫
-                            for(let a=0; a<8; a++){
-                                const d = s.size * (1.2 + Math.random());
+                            
+                            // 細かい飛沫と鋭いスプラッシュライン
+                            ctx.strokeStyle = ctx.fillStyle;
+                            for(let a=0; a<12; a++){
+                                const angle = a * (Math.PI*2/12) + Math.random()*0.2;
+                                const d = s.size * (1.2 + Math.random()*1.5) * splashP;
+                                
+                                // しぶき（線）
                                 ctx.beginPath();
-                                ctx.arc(Math.cos(a)*d, Math.sin(a)*d, s.size*0.1 + Math.random()*s.size*0.1, 0, Math.PI*2);
+                                ctx.moveTo(Math.cos(angle)*s.size*0.5, Math.sin(angle)*s.size*0.5);
+                                ctx.lineTo(Math.cos(angle)*d, Math.sin(angle)*d);
+                                ctx.lineWidth = s.size * 0.05 + Math.random() * s.size * 0.1;
+                                ctx.lineCap = 'round';
+                                ctx.stroke();
+
+                                // 水滴（丸）
+                                ctx.beginPath();
+                                ctx.arc(Math.cos(angle)*(d+s.size*0.2), Math.sin(angle)*(d+s.size*0.2), s.size*0.1 + Math.random()*s.size*0.15, 0, Math.PI*2);
                                 ctx.fill();
                             }
                             ctx.restore();
