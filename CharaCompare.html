@@ -634,6 +634,17 @@
             return param ? param.value : 0;
         }
 
+        // --- 名前からふりがな（カッコ内）を抽出してソート用文字列を取得 ---
+        function getSortKana(char) {
+            if (char.kana) return char.kana;
+            // 「名前（よみがな）」や「名前(よみがな)」の末尾カッコの中身を抽出
+            const match = char.name.match(/[（(]([^）)]+)[）)]\s*$/);
+            if (match) {
+                return match[1].trim();
+            }
+            return char.name;
+        }
+
         // --- 版フィルター切り替え ---
         function setEditionFilter(edition) {
             editionFilter = edition;
@@ -846,8 +857,8 @@
                     return a.id.localeCompare(b.id);
                 } else if (sortKey === 'name_asc') {
                     // 五十音順（ふりがな優先）
-                    const kanaA = a.kana || a.name;
-                    const kanaB = b.kana || b.name;
+                    const kanaA = getSortKana(a);
+                    const kanaB = getSortKana(b);
                     return kanaA.localeCompare(kanaB, 'ja');
                 } else if (sortKey === 'init_desc') {
                     // 行動順（INIT高い順：降順）
@@ -1149,8 +1160,8 @@
                 let valA, valB;
 
                 if (mainTableSortKey === 'name') {
-                    valA = a.kana || a.name;
-                    valB = b.kana || b.name;
+                    valA = getSortKana(a);
+                    valB = getSortKana(b);
                     return mainTableSortDesc
                         ? valB.localeCompare(valA, 'ja')
                         : valA.localeCompare(valB, 'ja');
