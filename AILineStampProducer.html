@@ -201,10 +201,13 @@
             <!-- Settings Section -->
             <div class="flex gap-6 mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700 flex-wrap">
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold text-slate-300">切り抜きグリッド数:</label>
-                    <div class="flex gap-2">
-                        <button id="grid-layout-5x4" onclick="setGridLayout('5x4')" class="toggle-btn active">縦5 × 横4列 (計40枚)</button>
-                        <button id="grid-layout-5x5" onclick="setGridLayout('5x5')" class="toggle-btn">縦5 × 横5列 (計50枚)</button>
+                    <label class="block text-sm font-bold text-slate-300">切り抜きグリッド数 (最大6):</label>
+                    <div class="flex gap-2" style="align-items: center;">
+                        <span class="text-slate-300">縦 (行):</span>
+                        <input type="number" id="grid-rows" min="1" max="6" value="5" class="toggle-btn" style="width: 70px; padding: 4px 8px;" onchange="updateCustomGrid()">
+                        <span class="text-slate-300">× 横 (列):</span>
+                        <input type="number" id="grid-cols" min="1" max="6" value="4" class="toggle-btn" style="width: 70px; padding: 4px 8px;" onchange="updateCustomGrid()">
+                        <span id="grid-total-count" class="text-slate-300 ml-2">(計40枚)</span>
                     </div>
                 </div>
                 <div class="space-y-2">
@@ -291,16 +294,42 @@
     </div>
 
     <script>
-        let gridLayout = '5x4';
+        let gridRows = 5;
+        let gridCols = 4;
         let outputType = 'stamp';
         let stampPlan = [];
+
+        function updateCustomGrid() {
+            let r = parseInt(document.getElementById('grid-rows').value) || 5;
+            let c = parseInt(document.getElementById('grid-cols').value) || 4;
+            if (r < 1) r = 1; if (r > 6) r = 6;
+            if (c < 1) c = 1; if (c > 6) c = 6;
+            document.getElementById('grid-rows').value = r;
+            document.getElementById('grid-cols').value = c;
+            
+            gridRows = r;
+            gridCols = c;
+            
+            document.getElementById('grid-total-count').innerText = `(計${r * c * 2}枚)`;
+            
+            [1, 2].forEach(idx => {
+                const state = gridStates[idx];
+                if (state.img && state.initLines && state.draw) {
+                    state.initLines(state.img.width, state.img.height);
+                    state.draw();
+                }
+            });
+            
+            initStampResults();
+        }
+        window.updateCustomGrid = updateCustomGrid;
 
         function initStampResults() {
             const resultsContainer = document.getElementById('stamp-results');
             resultsContainer.innerHTML = '';
             
-            const cols = (gridLayout === '5x5') ? 5 : 4;
-            const rows = 5;
+            const cols = gridCols;
+            const rows = gridRows;
             const totalStamps = cols * rows * 2;
             
             // アップロードラベルの動的更新
@@ -341,31 +370,6 @@
                 }
             });
         }
-
-        function setGridLayout(layout) {
-            gridLayout = layout;
-            
-            const btn5x4 = document.getElementById('grid-layout-5x4');
-            const btn5x5 = document.getElementById('grid-layout-5x5');
-            if (layout === '5x4') {
-                btn5x4.classList.add('active');
-                btn5x5.classList.remove('active');
-            } else {
-                btn5x4.classList.remove('active');
-                btn5x5.classList.add('active');
-            }
-            
-            [1, 2].forEach(idx => {
-                const state = gridStates[idx];
-                if (state.img && state.initLines && state.draw) {
-                    state.initLines(state.img.width, state.img.height);
-                    state.draw();
-                }
-            });
-            
-            initStampResults();
-        }
-        window.setGridLayout = setGridLayout;
 
         function setOutputType(type) {
             outputType = type;
@@ -419,8 +423,8 @@
             function initLines(w, h) {
                 state.vLines = [];
                 state.hLines = [];
-                const cols = (gridLayout === '5x5') ? 5 : 4;
-                const rows = 5;
+                const cols = gridCols;
+                const rows = gridRows;
                 for (let i = 0; i <= cols; i++) state.vLines.push((w / cols) * i);
                 for (let i = 0; i <= rows; i++) state.hLines.push((h / rows) * i);
             }
@@ -538,8 +542,8 @@
         }
 
         document.getElementById('process-grid-btn').onclick = async () => {
-            const cols = (gridLayout === '5x5') ? 5 : 4;
-            const rows = 5;
+            const cols = gridCols;
+            const rows = gridRows;
             if (gridStates[1].img) await processGridFile(1, 1);
             if (gridStates[2].img) await processGridFile(2, cols * rows + 1);
             alert('Processing complete!');
@@ -548,8 +552,8 @@
         async function processGridFile(gridIdx, startId) {
             const state = gridStates[gridIdx];
             const img = state.img;
-            const cols = (gridLayout === '5x5') ? 5 : 4;
-            const rows = 5;
+            const cols = gridCols;
+            const rows = gridRows;
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
                     const id = startId + (row * cols) + col;
@@ -802,8 +806,8 @@
         document.getElementById('download-all-btn').onclick = async () => {
             const canvas1 = document.getElementById('canvas-1');
             const isEmoji = (outputType === 'emoji');
-            const cols = (gridLayout === '5x5') ? 5 : 4;
-            const rows = 5;
+            const cols = gridCols;
+            const rows = gridRows;
             const totalStamps = cols * rows * 2;
 
             if (canvas1 && document.getElementById('status-1').classList.contains('status-ready')) {
