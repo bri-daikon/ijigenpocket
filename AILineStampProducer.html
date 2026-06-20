@@ -421,29 +421,66 @@
             const state = gridStates[gridIdx];
 
             function initLines(w, h) {
-                state.vLines = [];
-                state.hLines = [];
+                state.cells = [];
                 const cols = gridCols;
                 const rows = gridRows;
-                for (let i = 0; i <= cols; i++) state.vLines.push((w / cols) * i);
-                for (let i = 0; i <= rows; i++) state.hLines.push((h / rows) * i);
+                const cellW = w / cols;
+                const cellH = h / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        state.cells.push({
+                            left: c * cellW,
+                            right: (c + 1) * cellW,
+                            top: r * cellH,
+                            bottom: (r + 1) * cellH
+                        });
+                    }
+                }
             }
             state.initLines = initLines;
+
+            let hoverState = null;
 
             function draw() {
                 if (!state.img) return;
                 canvas.width = state.img.width;
                 canvas.height = state.img.height;
                 ctx.drawImage(state.img, 0, 0);
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                state.vLines.forEach((x, i) => {
-                    ctx.strokeStyle = (state.dragging && state.dragging.type === 'v' && state.dragging.idx === i) ? '#00ff00' : '#ff0000';
-                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-                });
-                state.hLines.forEach((y, i) => {
-                    ctx.strokeStyle = (state.dragging && state.dragging.type === 'h' && state.dragging.idx === i) ? '#00ff00' : '#ff0000';
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+
+                state.cells.forEach((cell, i) => {
+                    const isHoveringCell = hoverState && hoverState.idx === i;
+                    const isDraggingCell = state.dragging && state.dragging.idx === i;
+                    const activeEdge = state.dragging ? state.dragging.edge : (hoverState ? hoverState.edge : null);
+                    
+                    const drawEdge = (edgeName, x1, y1, x2, y2) => {
+                        ctx.beginPath();
+                        ctx.lineWidth = ((isDraggingCell || isHoveringCell) && activeEdge === edgeName) ? 4 : 2;
+                        ctx.strokeStyle = ((isDraggingCell || isHoveringCell) && activeEdge === edgeName) ? '#00ff00' : '#ff0000';
+                        if (!isDraggingCell && !isHoveringCell) {
+                            ctx.setLineDash([5, 5]);
+                        } else {
+                            ctx.setLineDash([]);
+                        }
+                        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                    };
+
+                    drawEdge('left', cell.left, cell.top, cell.left, cell.bottom);
+                    drawEdge('right', cell.right, cell.top, cell.right, cell.bottom);
+                    drawEdge('top', cell.left, cell.top, cell.right, cell.top);
+                    drawEdge('bottom', cell.left, cell.bottom, cell.right, cell.bottom);
+
+                    if ((isDraggingCell || isHoveringCell) && activeEdge === 'center') {
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                        ctx.fillRect(cell.left, cell.top, cell.right - cell.left, cell.bottom - cell.top);
+                    }
+                    
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+                    const text = String(i + 1 + (gridIdx === 1 ? 0 : gridCols * gridRows));
+                    ctx.strokeText(text, cell.left + 5, cell.top + 20);
+                    ctx.fillText(text, cell.left + 5, cell.top + 20);
                 });
             }
             state.draw = draw;
@@ -476,47 +513,77 @@
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = rect.width / canvas.width;
                 const scaleY = rect.height / canvas.height;
+
                 if (state.dragging) {
-                    if (state.dragging.type === 'v') state.vLines[state.dragging.idx] = pos.x;
-                    else state.hLines[state.dragging.idx] = pos.y;
+                    const cell = state.cells[state.dragging.idx];
+                    if (state.dragging.edge === 'left') cell.left = pos.x;
+                    else if (state.dragging.edge === 'right') cell.right = pos.x;
+                    else if (state.dragging.edge === 'top') cell.top = pos.y;
+                    else if (state.dragging.edge === 'bottom') cell.bottom = pos.y;
+                    else if (state.dragging.edge === 'center') {
+                        const dx = pos.x - state.dragging.startX;
+                        const dy = pos.y - state.dragging.startY;
+                        cell.left += dx; cell.right += dx;
+                        cell.top += dy; cell.bottom += dy;
+                        state.dragging.startX = pos.x;
+                        state.dragging.startY = pos.y;
+                    }
                     draw();
                     return;
                 }
+                
                 let closest = null;
                 let minDist = 15;
-                state.vLines.forEach((x, i) => {
-                    const screenX = x * scaleX;
-                    const mouseScreenX = pos.x * scaleX;
-                    const d = Math.abs(mouseScreenX - screenX);
-                    if (d < minDist) { minDist = d; closest = { type: 'v', idx: i }; }
-                });
-                state.hLines.forEach((y, i) => {
-                    const screenY = y * scaleY;
-                    const mouseScreenY = pos.y * scaleY;
-                    const d = Math.abs(mouseScreenY - screenY);
-                    if (d < minDist) { minDist = d; closest = { type: 'h', idx: i }; }
-                });
-                canvas.style.cursor = closest ? (closest.type === 'v' ? 'ew-resize' : 'ns-resize') : 'crosshair';
+                
+                for(let i = state.cells.length - 1; i >= 0; i--) {
+                    const cell = state.cells[i];
+                    const inY = pos.y * scaleY >= cell.top * scaleY - 15 && pos.y * scaleY <= cell.bottom * scaleY + 15;
+                    const inX = pos.x * scaleX >= cell.left * scaleX - 15 && pos.x * scaleX <= cell.right * scaleX + 15;
+                    
+                    if (inY) {
+                        let dLeft = Math.abs(pos.x * scaleX - cell.left * scaleX);
+                        if (dLeft < minDist) { minDist = dLeft; closest = { idx: i, edge: 'left' }; }
+                        let dRight = Math.abs(pos.x * scaleX - cell.right * scaleX);
+                        if (dRight < minDist) { minDist = dRight; closest = { idx: i, edge: 'right' }; }
+                    }
+                    if (inX) {
+                        let dTop = Math.abs(pos.y * scaleY - cell.top * scaleY);
+                        if (dTop < minDist) { minDist = dTop; closest = { idx: i, edge: 'top' }; }
+                        let dBottom = Math.abs(pos.y * scaleY - cell.bottom * scaleY);
+                        if (dBottom < minDist) { minDist = dBottom; closest = { idx: i, edge: 'bottom' }; }
+                    }
+                    
+                    if (!closest && inX && inY) {
+                        if (pos.x * scaleX > cell.left * scaleX + 15 && pos.x * scaleX < cell.right * scaleX - 15 &&
+                            pos.y * scaleY > cell.top * scaleY + 15 && pos.y * scaleY < cell.bottom * scaleY - 15) {
+                            closest = { idx: i, edge: 'center' };
+                            break;
+                        }
+                    }
+                }
+                
+                hoverState = closest;
+
+                if (closest) {
+                    if (closest.edge === 'left' || closest.edge === 'right') canvas.style.cursor = 'ew-resize';
+                    else if (closest.edge === 'top' || closest.edge === 'bottom') canvas.style.cursor = 'ns-resize';
+                    else if (closest.edge === 'center') canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+                draw();
             };
 
             canvas.onmousedown = e => {
-                const pos = getMousePos(e);
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = rect.width / canvas.width;
-                const scaleY = rect.height / canvas.height;
-                let closest = null;
-                let minDist = 15;
-                state.vLines.forEach((x, i) => {
-                    const d = Math.abs(pos.x * scaleX - x * scaleX);
-                    if (d < minDist) { minDist = d; closest = { type: 'v', idx: i }; }
-                });
-                state.hLines.forEach((y, i) => {
-                    const d = Math.abs(pos.y * scaleY - y * scaleY);
-                    if (d < minDist) { minDist = d; closest = { type: 'h', idx: i }; }
-                });
-                if (closest) {
-                    state.dragging = closest;
+                if (hoverState) {
+                    state.dragging = { ...hoverState };
+                    if (hoverState.edge === 'center') {
+                        const pos = getMousePos(e);
+                        state.dragging.startX = pos.x;
+                        state.dragging.startY = pos.y;
+                    }
                 } else {
+                    const pos = getMousePos(e);
                     try {
                         const pixel = ctx.getImageData(pos.x, pos.y, 1, 1).data;
                         const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
@@ -552,51 +619,49 @@
         async function processGridFile(gridIdx, startId) {
             const state = gridStates[gridIdx];
             const img = state.img;
-            const cols = gridCols;
-            const rows = gridRows;
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    const id = startId + (row * cols) + col;
-                    const canvas = document.getElementById(`canvas-${id}`);
-                    if (!canvas) continue;
-                    
-                    const sx = state.vLines[col];
-                    const sy = state.hLines[row];
-                    const sw = state.vLines[col+1] - sx;
-                    const sh = state.hLines[row+1] - sy;
+            
+            for (let i = 0; i < state.cells.length; i++) {
+                const id = startId + i;
+                const canvas = document.getElementById(`canvas-${id}`);
+                if (!canvas) continue;
+                
+                const cell = state.cells[i];
+                const sx = Math.min(cell.left, cell.right);
+                const sy = Math.min(cell.top, cell.bottom);
+                const sw = Math.max(0.1, Math.abs(cell.right - cell.left));
+                const sh = Math.max(0.1, Math.abs(cell.bottom - cell.top));
 
-                    const rawCanvas = document.createElement('canvas');
-                    rawCanvas.width = sw;
-                    rawCanvas.height = sh;
-                    rawCanvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                const rawCanvas = document.createElement('canvas');
+                rawCanvas.width = sw;
+                rawCanvas.height = sh;
+                rawCanvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
 
-                    const processedCanvas = document.createElement('canvas');
-                    processedCanvas.width = sw;
-                    processedCanvas.height = sh;
-                    const pCtx = processedCanvas.getContext('2d');
-                    pCtx.drawImage(rawCanvas, 0, 0);
-                    applyFloodFill(pCtx, bgColorHex.value, parseInt(bgToleranceInput.value));
+                const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = sw;
+                processedCanvas.height = sh;
+                const pCtx = processedCanvas.getContext('2d');
+                pCtx.drawImage(rawCanvas, 0, 0);
+                applyFloodFill(pCtx, bgColorHex.value, parseInt(bgToleranceInput.value));
 
-                    const scale = Math.min(280 / sw, 280 / sh);
-                    stampData[id] = {
-                        originalProcessed: null, 
-                        rawCanvas: processedCanvas,
-                        history: [], // Undo history
-                        scale: scale,
-                        x: (320 - sw * scale) / 2,
-                        y: (320 - sh * scale) / 2
-                    };
+                const scale = Math.min(280 / sw, 280 / sh);
+                stampData[id] = {
+                    originalProcessed: null, 
+                    rawCanvas: processedCanvas,
+                    history: [], // Undo history
+                    scale: scale,
+                    x: (320 - sw * scale) / 2,
+                    y: (320 - sh * scale) / 2
+                };
 
-                    const backup = document.createElement('canvas');
-                    backup.width = sw; backup.height = sh;
-                    backup.getContext('2d').drawImage(processedCanvas, 0, 0);
-                    stampData[id].originalProcessed = backup;
+                const backup = document.createElement('canvas');
+                backup.width = sw; backup.height = sh;
+                backup.getContext('2d').drawImage(processedCanvas, 0, 0);
+                stampData[id].originalProcessed = backup;
 
-                    updateStampCanvas(id);
-                    document.getElementById(`status-${id}`).innerText = 'READY';
-                    document.getElementById(`status-${id}`).classList.add('status-ready');
-                    document.getElementById(`canvas-${id}`).parentElement.onclick = () => openEditor(id);
-                }
+                updateStampCanvas(id);
+                document.getElementById(`status-${id}`).innerText = 'READY';
+                document.getElementById(`status-${id}`).classList.add('status-ready');
+                document.getElementById(`canvas-${id}`).parentElement.onclick = () => openEditor(id);
             }
         }
 
