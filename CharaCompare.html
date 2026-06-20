@@ -705,6 +705,7 @@
                 const newChar = {
                     id: 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     name: charData.name || "名無しの彷徨い人",
+                    kana: charData.kana || "",
                     edition: selectedEdition,
                     initiative: charData.initiative !== undefined ? charData.initiative : 0,
                     externalUrl: charData.externalUrl || "",
@@ -779,10 +780,20 @@
 
         // --- 全選択/解除 ---
         function selectAll(select) {
+            const searchQuery = document.getElementById('charSearchInput') ? document.getElementById('charSearchInput').value.toLowerCase().trim() : '';
+            
+            const filteredChars = characters.filter(char => {
+                // 1. 版フィルター
+                if (editionFilter !== 'all' && (char.edition || '6') !== editionFilter) return false;
+                // 2. 検索フィルター
+                if (searchQuery && !char.name.toLowerCase().includes(searchQuery)) return false;
+                return true;
+            });
+
             if (select) {
-                characters.forEach(c => selectedIds.add(c.id));
+                filteredChars.forEach(c => selectedIds.add(c.id));
             } else {
-                selectedIds.clear();
+                filteredChars.forEach(c => selectedIds.delete(c.id));
             }
             renderCharacters();
             updateComparison();
@@ -834,8 +845,10 @@
                     // 追加順 (古い順: 昇順)
                     return a.id.localeCompare(b.id);
                 } else if (sortKey === 'name_asc') {
-                    // 五十音順
-                    return a.name.localeCompare(b.name, 'ja');
+                    // 五十音順（ふりがな優先）
+                    const kanaA = a.kana || a.name;
+                    const kanaB = b.kana || b.name;
+                    return kanaA.localeCompare(kanaB, 'ja');
                 } else if (sortKey === 'init_desc') {
                     // 行動順（INIT高い順：降順）
                     return b.initiative - a.initiative;
@@ -1136,8 +1149,8 @@
                 let valA, valB;
 
                 if (mainTableSortKey === 'name') {
-                    valA = a.name;
-                    valB = b.name;
+                    valA = a.kana || a.name;
+                    valB = b.kana || b.name;
                     return mainTableSortDesc
                         ? valB.localeCompare(valA, 'ja')
                         : valA.localeCompare(valB, 'ja');
