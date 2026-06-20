@@ -241,11 +241,19 @@
                                 </label>
                                 <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="blindIn" class="peer sr-only">
-                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 ブラインドIn</div>
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 縦ブラインドIn</div>
                                 </label>
                                 <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="blindOut" class="peer sr-only">
-                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 ブラインドOut</div>
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 縦ブラインドOut</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="hBlindIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 横ブラインドIn</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="hBlindOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 横ブラインドOut</div>
                                 </label>
                                 <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="blinkIn" class="peer sr-only">
@@ -284,7 +292,15 @@
                                 </label>
                                 <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="sparkles" class="peer sr-only">
-                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ</div>
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="sparklesYellow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(黄)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="sparklesPastel" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(虹)</div>
                                 </label>
                                 <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="hearts" class="peer sr-only">
@@ -644,7 +660,9 @@
             let frameCount = 10;
             const longEffects = ['burn', 'shatter', 'glassShatter', 'rubble'];
             if (longEffects.includes(effect)) {
-                frameCount = 25; 
+                frameCount = 30; // 25 -> 30 
+            } else if (['snow', 'leaves', 'cherryBlossoms'].includes(effect)) {
+                frameCount = 40; // もっと長く
             }
 
             let particles = [];
@@ -686,30 +704,88 @@
                         rotSpeed: (Math.random() - 0.5) * 0.2
                     });
                 }
-            } else if (['sparkles', 'stars', 'hearts'].includes(effect)) {
+            } else if (['sparkles', 'sparklesYellow', 'sparklesPastel', 'stars', 'hearts'].includes(effect)) {
                 for (let i = 0; i < 30; i++) {
+                    let c = '#fff';
+                    if (effect === 'sparklesYellow' || effect === 'stars') c = '#FFD700';
+                    else if (effect === 'hearts') c = '#FF69B4';
+                    else if (effect === 'sparklesPastel') c = `hsl(${Math.random() * 360}, 100%, 75%)`;
                     particles.push({
                         x: Math.random() * width,
                         y: Math.random() * height,
                         baseSize: 20 + Math.random() * 30, // 星やハートを大きく
                         phase: Math.random() * Math.PI * 2,
                         speed: 0.1 + Math.random() * 0.2,
-                        color: `hsl(${Math.random() * 360}, 80%, 60%)`
+                        color: c
                     });
                 }
             } else if (['shatter', 'rubble', 'glassShatter'].includes(effect)) {
-                const cols = 6;
-                const rows = 6;
-                const w = width / cols;
-                const h = height / rows;
-                for (let y = 0; y < rows; y++) {
-                    for (let x = 0; x < cols; x++) {
-                        pieces.push({
-                            sx: x * w, sy: y * h, w: w, h: h, dx: x * w, dy: y * h,
-                            vx: (Math.random() - 0.5) * 15,
-                            vy: (Math.random() - 0.5) * 15 + (effect === 'rubble' ? -5 : 0),
-                            rot: 0, vrot: (Math.random() - 0.5) * 0.3
-                        });
+                if (effect === 'shatter') {
+                    const cols = 6; const rows = 6;
+                    const w = width / cols; const h = height / rows;
+                    for (let y = 0; y < rows; y++) {
+                        for (let x = 0; x < cols; x++) {
+                            pieces.push({
+                                type: 'rect', sx: x * w, sy: y * h, w: w, h: h, dx: x * w, dy: y * h,
+                                vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, rot: 0, vrot: (Math.random() - 0.5) * 0.3
+                            });
+                        }
+                    }
+                } else if (effect === 'rubble') {
+                    const cols = 5; const rows = 5;
+                    const pts = [];
+                    for(let y=0; y<=rows; y++){
+                        let row = [];
+                        for(let x=0; x<=cols; x++){
+                            let px = (x/cols)*width;
+                            let py = (y/rows)*height;
+                            if (x>0 && x<cols) px += (Math.random()-0.5) * (width/cols)*0.8;
+                            if (y>0 && y<rows) py += (Math.random()-0.5) * (height/rows)*0.8;
+                            row.push({x:px, y:py});
+                        }
+                        pts.push(row);
+                    }
+                    for(let y=0; y<rows; y++){
+                        for(let x=0; x<cols; x++){
+                            let p1 = pts[y][x], p2 = pts[y][x+1], p3 = pts[y+1][x], p4 = pts[y+1][x+1];
+                            let cx1 = (p1.x+p2.x+p3.x)/3, cy1 = (p1.y+p2.y+p3.y)/3;
+                            pieces.push({ type:'poly', pts:[p1, p2, p3], cx: cx1, cy: cy1, x: cx1, y: cy1,
+                                vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-5, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                            let cx2 = (p2.x+p4.x+p3.x)/3, cy2 = (p2.y+p4.y+p3.y)/3;
+                            pieces.push({ type:'poly', pts:[p2, p4, p3], cx: cx2, cy: cy2, x: cx2, y: cy2,
+                                vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-5, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        }
+                    }
+                } else if (effect === 'glassShatter') {
+                    const cx = width/2, cy = height/2;
+                    const rings = 4;
+                    const segments = 8;
+                    const pts = [];
+                    pts.push({x: cx, y: cy}); 
+                    for(let r=1; r<=rings; r++){
+                        let rRad = (r/rings)*width*0.8;
+                        let ringPts = [];
+                        for(let s=0; s<segments; s++){
+                            let angle = (s/segments)*Math.PI*2 + (Math.random()-0.5)*0.3;
+                            let rad = rRad + (Math.random()-0.5)*(width*0.1);
+                            ringPts.push({x: cx + Math.cos(angle)*rad, y: cy + Math.sin(angle)*rad});
+                        }
+                        pts.push(ringPts);
+                    }
+                    for(let s=0; s<segments; s++){
+                        let sNext = (s+1)%segments;
+                        let p1 = pts[0]; 
+                        let p2 = pts[1][s];
+                        let p3 = pts[1][sNext];
+                        let cxt = (p1.x+p2.x+p3.x)/3, cyt = (p1.y+p2.y+p3.y)/3;
+                        pieces.push({ type:'poly', pts:[p1, p2, p3], cx:cxt, cy:cyt, x:cxt, y:cyt, vx:(cxt-cx)*0.1, vy:(cyt-cy)*0.1, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        for(let r=1; r<rings; r++){
+                            let pA = pts[r][s], pB = pts[r][sNext], pC = pts[r+1][s], pD = pts[r+1][sNext];
+                            let c1x=(pA.x+pB.x+pC.x)/3, c1y=(pA.y+pB.y+pC.y)/3;
+                            pieces.push({ type:'poly', pts:[pA, pB, pC], cx:c1x, cy:c1y, x:c1x, y:c1y, vx:(c1x-cx)*0.08, vy:(c1y-cy)*0.08, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                            let c2x=(pB.x+pD.x+pC.x)/3, c2y=(pB.y+pD.y+pC.y)/3;
+                            pieces.push({ type:'poly', pts:[pB, pD, pC], cx:c2x, cy:c2y, x:c2x, y:c2y, vx:(c2x-cx)*0.08, vy:(c2y-cy)*0.08, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        }
                     }
                 }
             } else if (['liquidSplash', 'redPaint'].includes(effect)) {
@@ -897,15 +973,27 @@
                 else if (effect === 'shatter' || effect === 'rubble') {
                     pieces.forEach(p => {
                         if (i > 2) {
-                            p.dx += p.vx;
-                            p.dy += p.vy;
+                            if (p.type === 'rect') { p.dx += p.vx; p.dy += p.vy; }
+                            else { p.x += p.vx; p.y += p.vy; }
                             if (effect === 'rubble') p.vy += 3; 
                             p.rot += p.vrot;
                         }
                         ctx.save();
-                        ctx.translate(p.dx + p.w/2, p.dy + p.h/2);
-                        ctx.rotate(p.rot);
-                        ctx.drawImage(loadedImage, p.sx * (loadedImage.width/width), p.sy * (loadedImage.height/height), p.w * (loadedImage.width/width), p.h * (loadedImage.height/height), -p.w/2, -p.h/2, p.w, p.h);
+                        if (p.type === 'rect') {
+                            ctx.translate(p.dx + p.w/2, p.dy + p.h/2);
+                            ctx.rotate(p.rot);
+                            ctx.drawImage(loadedImage, p.sx * (loadedImage.width/width), p.sy * (loadedImage.height/height), p.w * (loadedImage.width/width), p.h * (loadedImage.height/height), -p.w/2, -p.h/2, p.w, p.h);
+                        } else {
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(p.rot);
+                            ctx.translate(-p.cx, -p.cy);
+                            ctx.beginPath();
+                            ctx.moveTo(p.pts[0].x, p.pts[0].y);
+                            for(let pt=1; pt<p.pts.length; pt++) ctx.lineTo(p.pts[pt].x, p.pts[pt].y);
+                            ctx.closePath();
+                            ctx.clip();
+                            ctx.drawImage(loadedImage, 0, 0, width, height);
+                        }
                         ctx.restore();
                     });
                 }
@@ -931,48 +1019,76 @@
                     ctx.restore();
                 }
                 else if (effect === 'glassShatter') {
-                    if (progress < 0.3) {
+                    if (progress < 0.2) {
                         ctx.drawImage(loadedImage, 0, 0, width, height);
                         ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                        ctx.lineWidth = 2;
+                        ctx.lineWidth = 3;
                         ctx.beginPath();
                         const cx = width / 2, cy = height / 2;
-                        for (let a = 0; a < 6; a++) {
-                            let angle = (a / 6) * Math.PI * 2 + 0.5;
+                        for (let a = 0; a < 8; a++) {
+                            let angle = (a / 8) * Math.PI * 2 + 0.5;
                             let dist = 0;
                             ctx.moveTo(cx, cy);
-                            for (let s = 0; s < progress * 15; s++) {
-                                dist += 25; angle += (Math.sin(a+s)-0.5)*0.5;
+                            for (let s = 0; s < progress * 20; s++) {
+                                dist += 30; angle += (Math.sin(a+s)-0.5)*0.5;
                                 ctx.lineTo(cx + Math.cos(angle)*dist, cy + Math.sin(angle)*dist);
                             }
                         }
                         ctx.stroke();
                     } else {
                         pieces.forEach(p => {
-                            p.dx += p.vx; p.dy += p.vy; p.vy += 2; p.rot += p.vrot;
+                            p.x += p.vx; p.y += p.vy; p.vy += 1; p.rot += p.vrot;
                             ctx.save();
-                            ctx.translate(p.dx + p.w/2, p.dy + p.h/2);
+                            ctx.translate(p.x, p.y);
                             ctx.rotate(p.rot);
-                            ctx.drawImage(loadedImage, p.sx * (loadedImage.width/width), p.sy * (loadedImage.height/height), p.w * (loadedImage.width/width), p.h * (loadedImage.height/height), -p.w/2, -p.h/2, p.w, p.h);
+                            ctx.translate(-p.cx, -p.cy);
+                            ctx.beginPath();
+                            ctx.moveTo(p.pts[0].x, p.pts[0].y);
+                            for(let pt=1; pt<p.pts.length; pt++) ctx.lineTo(p.pts[pt].x, p.pts[pt].y);
+                            ctx.closePath();
+                            ctx.clip();
+                            ctx.drawImage(loadedImage, 0, 0, width, height);
+                            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke();
                             ctx.restore();
                         });
                     }
                 }
                 else if (effect === 'bullet') {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
-                    ctx.fillStyle = '#111';
-                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                    ctx.lineWidth = 2;
+                    ctx.fillStyle = '#000';
+                    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
                     bullets.forEach(b => {
                         if (i >= b.frame) {
-                            ctx.beginPath();
-                            ctx.arc(b.x, b.y, 8, 0, Math.PI*2); // 弾痕を大きく
-                            ctx.fill();
-                            for(let a=0; a<5; a++){
-                                ctx.beginPath();
-                                ctx.moveTo(b.x, b.y);
-                                ctx.lineTo(b.x + Math.cos(a*1.2)*30, b.y + Math.sin(a*1.2)*30); // ヒビを長く
+                            // Flash
+                            if (i === b.frame) {
+                                ctx.save();
+                                ctx.globalCompositeOperation = 'screen';
+                                const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 80);
+                                g.addColorStop(0, 'rgba(255,255,200,1)'); g.addColorStop(0.5, 'rgba(255,150,0,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+                                ctx.fillStyle = g;
+                                ctx.beginPath(); ctx.arc(b.x, b.y, 80, 0, Math.PI*2); ctx.fill();
+                                ctx.restore();
+                            }
+                            // Hole
+                            ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI*2); ctx.fill();
+                            // Deep Cracks
+                            ctx.lineWidth = 2.5;
+                            for(let a=0; a<8; a++){
+                                ctx.beginPath(); ctx.moveTo(b.x, b.y);
+                                let angle = a*0.8 + Math.random()*0.4;
+                                let len = 40 + Math.random()*40;
+                                ctx.lineTo(b.x + Math.cos(angle)*len, b.y + Math.sin(angle)*len);
                                 ctx.stroke();
+                            }
+                            // Fragments
+                            const fragT = i - b.frame;
+                            if (fragT < 5) {
+                                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                                for(let f=0; f<5; f++){
+                                    let fx = b.x + Math.cos(f)*20*fragT;
+                                    let fy = b.y + Math.sin(f)*20*fragT + fragT*fragT*2;
+                                    ctx.fillRect(fx, fy, 4, 4);
+                                }
                             }
                         }
                     });
@@ -983,17 +1099,28 @@
                     const burnY = height - (progress * height * 1.5);
                     const gradient = ctx.createLinearGradient(0, burnY, 0, height);
                     gradient.addColorStop(0, 'rgba(0,0,0,0)');
-                    gradient.addColorStop(0.2, 'rgba(255,80,0,0.8)');
-                    gradient.addColorStop(0.4, 'rgba(30,30,30,0.9)');
+                    gradient.addColorStop(0.1, 'rgba(255,200,50,0.8)'); // 炎の先端
+                    gradient.addColorStop(0.3, 'rgba(255,50,0,0.9)'); // メラメラ
+                    gradient.addColorStop(0.5, 'rgba(30,30,30,1)'); // 焦げ
                     gradient.addColorStop(1, 'rgba(0,0,0,1)');
                     ctx.fillStyle = gradient;
-                    ctx.fillRect(0, 0, width, height);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, height);
+                    for(let x=0; x<=width; x+=10) {
+                        let y = burnY + Math.sin(x*0.05 + i*0.5)*15 + Math.sin(x*0.1 - i*0.3)*10;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(width, height);
+                    ctx.fill();
+
+                    // 火の粉
                     ctx.fillStyle = 'rgba(255,150,0,0.7)';
-                    for(let f=0; f<20; f++) {
-                        const fx = Math.sin(f*3 + i)*10 + (f/20)*width;
-                        const fy = burnY + Math.random()*40;
+                    for(let f=0; f<30; f++) {
+                        const fx = Math.sin(f*5 + i)*15 + (f/30)*width;
+                        const fy = burnY + Math.sin(f+i)*20 + Math.random()*50;
                         ctx.beginPath();
-                        ctx.arc(fx, fy, 8 + Math.random()*15, 0, Math.PI*2);
+                        ctx.arc(fx, fy, 4 + Math.random()*8, 0, Math.PI*2);
                         ctx.fill();
                     }
                     ctx.restore();
@@ -1038,6 +1165,26 @@
                     const bw = width / count;
                     for (let j = 0; j < count; j++) {
                         ctx.fillRect(j * bw, 0, bw * progress, height);
+                    }
+                }
+                else if (effect === 'hBlindIn') {
+                    // 横ブラインドが開いて画像が現れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bh = height / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(0, j * bh, width, bh * (1 - progress));
+                    }
+                }
+                else if (effect === 'hBlindOut') {
+                    // 横ブラインドが閉じて画像が隠れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bh = height / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(0, j * bh, width, bh * progress);
                     }
                 }
                 else if (effect === 'blinkIn') {
@@ -1109,13 +1256,13 @@
                         if (p.y > canvasHeight) { p.y = -p.size; p.x = Math.random() * canvasWidth; }
                     });
                 }
-                else if (['sparkles', 'stars', 'hearts'].includes(effect)) {
+                else if (['sparkles', 'sparklesYellow', 'sparklesPastel', 'stars', 'hearts'].includes(effect)) {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     particles.forEach(p => {
                         let size = p.baseSize * (0.5 + Math.sin(p.phase + i * p.speed) * 0.5);
                         ctx.save();
                         ctx.translate(p.x, p.y);
-                        if (effect === 'sparkles') {
+                        if (effect.startsWith('sparkles')) {
                             ctx.fillStyle = p.color;
                             ctx.beginPath();
                             ctx.moveTo(0, -size);
@@ -1168,15 +1315,33 @@
                     const splashP = Math.min(progress * 3, 1.0); 
                     splashes.forEach((s, idx) => {
                         if (progress > idx * 0.1) {
+                            ctx.save();
+                            ctx.translate(s.x, s.y);
+                            ctx.scale(splashP, splashP);
                             ctx.beginPath();
-                            ctx.arc(s.x, s.y, s.size * splashP, 0, Math.PI*2);
+                            const pts = 8;
+                            for(let a=0; a<=pts; a++){
+                                let angle = (a/pts)*Math.PI*2;
+                                let r = s.size * (0.5 + Math.sin(a * 3 + idx)*0.5 + Math.random()*0.2);
+                                let px = Math.cos(angle)*r;
+                                let py = Math.sin(angle)*r;
+                                if(a===0) ctx.moveTo(px, py);
+                                else {
+                                    let prevA = ((a-1)/pts)*Math.PI*2;
+                                    let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.5;
+                                    let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.5;
+                                    ctx.quadraticCurveTo(cpX, cpY, px, py);
+                                }
+                            }
                             ctx.fill();
+                            // 細かい飛沫
                             for(let a=0; a<8; a++){
-                                const d = s.size * 1.5 * splashP;
+                                const d = s.size * (1.2 + Math.random());
                                 ctx.beginPath();
-                                ctx.arc(s.x + Math.cos(a)*d, s.y + Math.sin(a)*d, (s.size*0.2)*splashP, 0, Math.PI*2);
+                                ctx.arc(Math.cos(a)*d, Math.sin(a)*d, s.size*0.1 + Math.random()*s.size*0.1, 0, Math.PI*2);
                                 ctx.fill();
                             }
+                            ctx.restore();
                         }
                     });
                 }
@@ -1214,8 +1379,10 @@
                 }
             }
 
-            const numLoopsAPNG = (loopSetting === 'once') ? 1 : 0;
-            const numLoopsGIF = (loopSetting === 'once') ? 1 : 0;
+            const singleLoopEffects = ['curtain', 'shutterIn', 'shutterOut', 'blindIn', 'blindOut', 'hBlindIn', 'hBlindOut', 'blinkIn', 'blinkOut', 'hearts', 'stars'];
+            const forceOnce = (loopSetting === 'once' || singleLoopEffects.includes(effect));
+            const numLoopsAPNG = forceOnce ? 1 : 0;
+            const numLoopsGIF = forceOnce ? 1 : 0;
 
             if (format === 'apng') {
                 const apngArrayBuffer = UPNG.encode(framesAPNG, canvasWidth, canvasHeight, 0, delays, numLoopsAPNG);
