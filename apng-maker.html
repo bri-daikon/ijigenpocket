@@ -1212,23 +1212,26 @@
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.save();
                     
-                    // 炎の揺らめきレイヤー
-                    ctx.globalCompositeOperation = 'screen';
                     const fireHeight = height * (0.3 + progress * 0.7);
                     const burnY = height - fireHeight;
+
+                    // 背景を少し暗く・赤っぽくして炎を目立たせる
+                    ctx.globalCompositeOperation = 'multiply';
+                    ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.5})`;
+                    ctx.fillRect(0, 0, width, height);
                     
-                    const gradient = ctx.createLinearGradient(0, burnY, 0, height);
-                    gradient.addColorStop(0, 'rgba(0,0,0,0)');
-                    gradient.addColorStop(0.1, 'rgba(255,100,0,0.8)'); // 炎の先端
-                    gradient.addColorStop(0.4, 'rgba(255,50,0,0.9)');
-                    gradient.addColorStop(0.8, 'rgba(200,20,0,1)');
-                    gradient.addColorStop(1, 'rgba(100,0,0,1)');
-                    ctx.fillStyle = gradient;
+                    // 炎のベース（濃い色で透けないようにする）
+                    ctx.globalCompositeOperation = 'source-over';
+                    const baseGrad = ctx.createLinearGradient(0, burnY, 0, height);
+                    baseGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    baseGrad.addColorStop(0.1, 'rgba(255,50,0,0.8)');
+                    baseGrad.addColorStop(0.4, 'rgba(200,0,0,1)');
+                    baseGrad.addColorStop(1, 'rgba(50,0,0,1)');
+                    ctx.fillStyle = baseGrad;
                     
                     ctx.beginPath();
                     ctx.moveTo(0, height);
                     for(let x=0; x<=width; x+=5) {
-                        // より複雑なメラメラ波形
                         let y = burnY 
                               + Math.sin(x*0.03 - progress*20)*20 
                               + Math.sin(x*0.07 + progress*15)*15
@@ -1238,9 +1241,30 @@
                     ctx.lineTo(width, height);
                     ctx.fill();
 
+                    // 炎のハイライト (ハードライトで濃く明るく)
+                    ctx.globalCompositeOperation = 'hard-light';
+                    const highGrad = ctx.createLinearGradient(0, burnY + fireHeight*0.1, 0, height);
+                    highGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    highGrad.addColorStop(0.2, 'rgba(255,200,0,0.9)');
+                    highGrad.addColorStop(0.6, 'rgba(255,100,0,1)');
+                    highGrad.addColorStop(1, 'rgba(200,0,0,1)');
+                    ctx.fillStyle = highGrad;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, height);
+                    for(let x=0; x<=width; x+=5) {
+                        let y = burnY + fireHeight*0.1
+                              + Math.sin(x*0.04 - progress*25)*15 
+                              + Math.sin(x*0.08 + progress*12)*10
+                              + Math.random()*5;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(width, height);
+                    ctx.fill();
+
                     // 火の粉
                     ctx.globalCompositeOperation = 'screen';
-                    ctx.fillStyle = 'rgba(255, 150, 50, 0.9)';
+                    ctx.fillStyle = 'rgba(255, 180, 50, 1)';
                     for(let f=0; f<40; f++) {
                         const startY = height - (f/40)*fireHeight;
                         const fx = (f*37) % width + Math.sin(progress*10 + f)*15;
@@ -1256,7 +1280,7 @@
                     ctx.globalCompositeOperation = 'multiply';
                     const smokeGrad = ctx.createLinearGradient(0, height - fireHeight*0.5, 0, height);
                     smokeGrad.addColorStop(0, 'rgba(255,255,255,1)');
-                    smokeGrad.addColorStop(1, 'rgba(50,50,50,1)');
+                    smokeGrad.addColorStop(1, 'rgba(20,20,20,1)');
                     ctx.fillStyle = smokeGrad;
                     ctx.fillRect(0, height - fireHeight*0.5, width, fireHeight*0.5);
                     
@@ -1543,7 +1567,7 @@
                 }
             }
 
-            const singleLoopEffects = ['curtain', 'shutterIn', 'shutterOut', 'blindIn', 'blindOut', 'hBlindIn', 'hBlindOut', 'blinkIn', 'blinkOut', 'hearts', 'stars'];
+            const singleLoopEffects = ['curtain', 'shutterIn', 'shutterOut', 'blindIn', 'blindOut', 'hBlindIn', 'hBlindOut', 'blinkIn', 'blinkOut'];
             const forceOnce = (loopSetting === 'once' || singleLoopEffects.includes(effect));
             const numLoopsAPNG = forceOnce ? 1 : 0;
             const numLoopsGIF = forceOnce ? 1 : 0;
