@@ -138,6 +138,18 @@
                     <p class="text-[10px] text-slate-400">数値を小さくするとなめらかな一本の線に、大きくするとスタンプのようになります。</p>
                 </div>
 
+                <!-- グリッド吸着 -->
+                <div class="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                    <div class="flex justify-between items-center text-sm font-medium text-slate-700">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="chk-snap-grid" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                            <span>グリッドに吸着する</span>
+                        </label>
+                        <span id="val-grid-size" class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">40 px</span>
+                    </div>
+                    <input type="range" id="slider-grid-size" min="10" max="200" step="10" value="40" class="w-full accent-indigo-600 cursor-pointer">
+                </div>
+
                 <!-- 背景設定 -->
                 <div class="flex flex-col gap-3 pt-2 border-t border-slate-100">
                     <span class="text-sm font-medium text-slate-700">キャンバスの背景</span>
@@ -206,6 +218,10 @@
 
                 <!-- 右側の書き出しボタン -->
                 <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg hover:bg-slate-200 transition-colors border border-slate-200">
+                        <input type="checkbox" id="chk-crop-save" class="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+                        <span>描画部分で切り抜く</span>
+                    </label>
                     <button id="btn-save" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
                         <!-- 保存・ダウンロード -->
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
@@ -253,6 +269,7 @@
         // ペイント状態の追跡
         let isDrawing = false;
         let lastPoint = null; // 最後に画像を描いた座標
+        let lastDrawnSnappedPoint = null; // 最後にグリッド吸着で描画した座標
         let currentImageIndex = 0; // 'sequence'モードで使用する画像の順番カウンタ
 
         // --- 2. サンプルデータの用意 (初期画像) ---
@@ -646,9 +663,21 @@
             
             const pos = getMousePos(e);
             lastPoint = pos;
+            lastDrawnSnappedPoint = null;
 
             // 最初の1点目をすぐに描画
-            drawBrushStamp(pos.x, pos.y, 0);
+            let stampX = pos.x;
+            let stampY = pos.y;
+            
+            const isSnapGrid = document.getElementById('chk-snap-grid') ? document.getElementById('chk-snap-grid').checked : false;
+            if (isSnapGrid) {
+                const gridSize = parseInt(document.getElementById('slider-grid-size').value);
+                stampX = Math.round(stampX / gridSize) * gridSize;
+                stampY = Math.round(stampY / gridSize) * gridSize;
+                lastDrawnSnappedPoint = {x: stampX, y: stampY};
+            }
+            
+            drawBrushStamp(stampX, stampY, 0);
         }
 
         // ペイント中 (マウスドラッグ、タッチ移動)
@@ -657,7 +686,9 @@
             e.preventDefault();
 
             const pos = getMousePos(e);
-            const spacing = parseInt(sliderSpacing.value); // スタンプ間隔(ピクセル)
+            const isSnapGrid = document.getElementById('chk-snap-grid') ? document.getElementById('chk-snap-grid').checked : false;
+            // 吸着モードの場合は細かい間隔で補間し、マス目またぎを検知する
+            const spacing = isSnapGrid ? 5 : parseInt(sliderSpacing.value);
 
             // 前回描いた座標(lastPoint)からの距離を計算
             const dx = pos.x - lastPoint.x;
@@ -674,9 +705,21 @@
                 // ドットとドットの間に隙間ができないよう、線形補間で均等に埋めながら描画
                 for (let i = 1; i <= steps; i++) {
                     const ratio = i / steps;
-                    const stampX = lastPoint.x + dx * ratio;
-                    const stampY = lastPoint.y + dy * ratio;
+                    let stampX = lastPoint.x + dx * ratio;
+                    let stampY = lastPoint.y + dy * ratio;
                     
+                    if (isSnapGrid) {
+                        const gridSize = parseInt(document.getElementById('slider-grid-size').value);
+                        stampX = Math.round(stampX / gridSize) * gridSize;
+                        stampY = Math.round(stampY / gridSize) * gridSize;
+                        
+                        // 同じマスには連続して描画しない
+                        if (lastDrawnSnappedPoint && lastDrawnSnappedPoint.x === stampX && lastDrawnSnappedPoint.y === stampY) {
+                            continue;
+                        }
+                        lastDrawnSnappedPoint = {x: stampX, y: stampY};
+                    }
+
                     drawBrushStamp(stampX, stampY, angle);
                 }
                 
@@ -716,6 +759,27 @@
             valSpacing.textContent = `${e.target.value} px`;
         });
 
+        const sliderGridSize = document.getElementById('slider-grid-size');
+        const valGridSize = document.getElementById('val-grid-size');
+        const chkSnapGrid = document.getElementById('chk-snap-grid');
+        
+        function updateCanvasGrid() {
+            if (chkSnapGrid && chkSnapGrid.checked) {
+                const size = sliderGridSize.value;
+                container.style.backgroundSize = `${size}px ${size}px`;
+            } else {
+                container.style.backgroundSize = `16px 16px`;
+            }
+        }
+
+        if(sliderGridSize) {
+            sliderGridSize.addEventListener('input', (e) => {
+                valGridSize.textContent = `${e.target.value} px`;
+                updateCanvasGrid();
+            });
+            chkSnapGrid.addEventListener('change', updateCanvasGrid);
+        }
+
         // モード切替処理
         modeSequence.addEventListener('click', () => {
             currentMode = 'sequence';
@@ -746,11 +810,62 @@
             canvas.style.backgroundColor = e.target.value;
         });
 
+        // キャンバスの描画範囲を計算する関数
+        function getBoundingBox(ctx, width, height) {
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+            let minX = width, minY = height, maxX = 0, maxY = 0;
+            let hasPixel = false;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const alpha = data[(y * width + x) * 4 + 3];
+                    if (alpha > 0) { // 透明でないピクセル
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        hasPixel = true;
+                    }
+                }
+            }
+
+            if (!hasPixel) return null;
+
+            // 少し余白(パディング)を追加
+            const padding = 10;
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(width, maxX + padding);
+            maxY = Math.min(height, maxY + padding);
+
+            return {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+        }
+
         // --- 8. 作品の保存機能 ---
         btnSave.addEventListener('click', () => {
+            const isCrop = document.getElementById('chk-crop-save') ? document.getElementById('chk-crop-save').checked : false;
+            let cropRect = null;
+            
+            if (isCrop) {
+                // 背景を描画する前の透明な状態のキャンバスから領域を判定
+                cropRect = getBoundingBox(ctx, canvas.width, canvas.height);
+                if (!cropRect) {
+                    showToast('キャンバスが空です！何か描いてください。', 'error');
+                    return;
+                }
+            } else {
+                cropRect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+            }
+
             const saveCanvas = document.createElement('canvas');
-            saveCanvas.width = canvas.width;
-            saveCanvas.height = canvas.height;
+            saveCanvas.width = cropRect.width;
+            saveCanvas.height = cropRect.height;
             const saveCtx = saveCanvas.getContext('2d');
 
             // 背景の設定を取得
@@ -762,8 +877,8 @@
                 saveCtx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
             }
 
-            // メインのペイント内容をコピーして乗せる
-            saveCtx.drawImage(canvas, 0, 0);
+            // メインのペイント内容をコピーして乗せる（クロップ範囲だけを切り出して乗せる）
+            saveCtx.drawImage(canvas, cropRect.x, cropRect.y, cropRect.width, cropRect.height, 0, 0, cropRect.width, cropRect.height);
 
             // ダウンロード用のリンクを生成して擬似クリック
             const link = document.createElement('a');
