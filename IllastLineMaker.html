@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像連結ブラシペイントツール - Weby</title>
+    <!-- Tailwind CSS (スタイリング用) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* キャンバスのチェック柄背景（透明度がわかりやすいように） */
+        .canvas-bg {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+                    <!-- ブラシのSVGアイコン -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122l9.37-9.37a2.25 2.25 0 113.182 3.182l-9.372 9.372a4.5 4.5 0 01-1.61 1.006l-2.433.811a1.125 1.125 0 01-1.414-1.413l.811-2.433a4.5 4.5 0 001.006-1.61z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 8.5L15.5 5M3 21c0-2.1 1.7-3.9 3.8-3.9h1.4V18.5c0 2.1-1.7 3.8-3.8 3.8H3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">画像連結ラインメーカー</h1>
+                    <p class="text-xs text-slate-500">画像を繰り返し並べて1つの線を描くペイントツール</p>
+                </div>
+            </div>
+            
+            <!-- 操作メッセージエリア -->
+            <div id="status-message" class="text-sm bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-2 rounded-lg font-medium transition-all duration-300">
+                キャンバス上をドラッグして描いてみましょう！
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- 左サイドバー: 設定パネル (画像アップロード ＋ ブラシ設定) -->
+        <section class="w-full lg:w-96 flex flex-col gap-6 shrink-0">
+            
+            <!-- パネル1: 画像のアップロード (最大10枠) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
+                        1. ブラシにする画像 (最大10個)
+                    </h2>
+                    <span id="image-count" class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">4 / 10 個</span>
+                </div>
+                
+                <p class="text-xs text-slate-500">クリックして画像の変更・追加ができます。お好みのイラスト(PNG推奨)を入れてみましょう！</p>
+                
+                <!-- 画像スロットグリッド (5×2列) -->
+                <div class="grid grid-cols-5 gap-2" id="slots-container">
+                    <!-- JavaScriptで10個のスロットを動的に生成します -->
+                </div>
+
+                <!-- 全リセットボタン -->
+                <button id="btn-reset-images" class="text-xs text-red-600 hover:text-red-700 font-semibold self-end flex items-center gap-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.24 9m4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                    画像をすべて初期化
+                </button>
+
+                <!-- 非表示のファイル入力フォーム -->
+                <input type="file" id="image-file-input" class="hidden" accept="image/*">
+            </div>
+
+            <!-- パネル2: ブラシの描き方設定 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-5">
+                <h2 class="font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 bg-purple-600 rounded-full"></span>
+                    2. ブラシの設定
+                </h2>
+
+                <!-- 並べ方モード選択 -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-slate-700">画像の並び順パターン</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button id="mode-sequence" class="py-2.5 px-3 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold transition-all">
+                            順番に並べる
+                        </button>
+                        <button id="mode-random" class="py-2.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all">
+                            ランダム
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 画像サイズ設定 -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-sm font-medium text-slate-700">
+                        <span>画像の大きさ</span>
+                        <span id="val-size" class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">40 px</span>
+                    </div>
+                    <input type="range" id="slider-size" min="10" max="150" value="40" class="w-full accent-indigo-600 cursor-pointer">
+                </div>
+
+                <!-- スタンプの間隔（密度） -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-sm font-medium text-slate-700">
+                        <span>重なり具合 (間隔)</span>
+                        <span id="val-spacing" class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">15 px</span>
+                    </div>
+                    <input type="range" id="slider-spacing" min="5" max="100" value="15" class="w-full accent-indigo-600 cursor-pointer">
+                    <p class="text-[10px] text-slate-400">数値を小さくするとなめらかな一本の線に、大きくするとスタンプのようになります。</p>
+                </div>
+
+                <!-- 追加効果スイッチ -->
+                <div class="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                    <span class="text-sm font-medium text-slate-700">エフェクトオプション</span>
+                    
+                    <!-- ランダムな角度回転 -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-xs text-slate-600 flex flex-col">
+                            <strong>ランダム回転</strong>
+                            <span class="text-[10px] text-slate-400">画像がバラバラな向きに回ります</span>
+                        </span>
+                        <input type="checkbox" id="chk-random-rot" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+                    </label>
+
+                    <!-- 進行方向に合わせる（リボンのような効果） -->
+                    <label class="flex items-center justify-between cursor-pointer pt-1">
+                        <span class="text-xs text-slate-600 flex flex-col">
+                            <strong>進行方向に向ける</strong>
+                            <span class="text-[10px] text-slate-400">なぞる方向に画像の向きが揃います</span>
+                        </span>
+                        <input type="checkbox" id="chk-follow-dir" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 右コンテンツ: キャンバスエリア -->
+        <section class="flex-1 flex flex-col gap-4">
+            
+            <!-- キャンバス操作用ツールバー -->
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center gap-2 flex-wrap">
+                <!-- 左側の操作ボタン -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-undo" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors disabled:opacity-50" disabled>
+                        <!-- 元に戻す矢印 -->
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                        </svg>
+                        1つ戻す
+                    </button>
+                    
+                    <button id="btn-clear" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <!-- ゴミ箱 -->
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        全消去
+                    </button>
+                </div>
+
+                <!-- 右側の書き出しボタン -->
+                <div class="flex items-center gap-2">
+                    <button id="btn-save" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+                        <!-- 保存・ダウンロード -->
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        作品を画像として保存
+                    </button>
+                </div>
+            </div>
+
+            <!-- キャンバス本体 (親要素いっぱいに広がる) -->
+            <div id="canvas-container" class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative canvas-bg flex items-center justify-center min-h-[400px]">
+                <canvas id="paint-canvas" class="block cursor-crosshair max-w-full max-h-full"></canvas>
+            </div>
+
+            <!-- 簡単な操作ガイド -->
+            <footer class="text-xs text-slate-400 text-center py-2">
+                画像をドラッグ（タッチ）して描画。進行方向機能を使うと、なぞるスピードや向きに応じて表情豊かな線が作れます！
+            </footer>
+        </section>
+
+    </main>
+
+    <!-- メッセージボックス通知用の仕組み（ブラウザのalertを回避） -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // --- 1. アプリケーションデータと初期セットアップ ---
+        const MAX_SLOTS = 10;
+        let selectedSlotIndex = null; // 現在アップロード先に指定されているスロットの番号
+        let currentMode = 'sequence'; // 'sequence' (順番に並べる) もしくは 'random' (ランダムに並べる)
+        
+        // ブラシ用の画像オブジェクト（最大10スロット）を管理する配列
+        let brushImages = Array(MAX_SLOTS).fill(null);
+        
+        // 描画履歴（Undo機能用、Canvasのイメージデータを記録します）
+        let undoHistory = [];
+        const maxUndoSteps = 15; // 戻せる限界のステップ数
+
+        // キャンバスのコンテキストと状態
+        const canvas = document.getElementById('paint-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        // ペイント状態の追跡
+        let isDrawing = false;
+        let lastPoint = null; // 最後に画像を描いた座標
+        let currentImageIndex = 0; // 'sequence'モードで使用する画像の順番カウンタ
+
+        // --- 2. サンプルデータの用意 (初期画像) ---
+        // 最初に何も画像がないと寂しいので、Webで安全に使用できるSVG/DataURI形式のサンプルをあらかじめ4つ設定しておきます。
+        const defaultSampleImages = [
+            // 1. 赤いハート
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23f43f5e" stroke="%23f43f5e"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
+            // 2. 黄色の星
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23f59e0b" stroke="%23d97706"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
+            // 3. 青い音符
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%230ea5e9" stroke="%230ea5e9"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>',
+            // 4. 緑のクローバー（キラキラ）
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%2310b981" stroke="%2310b981"><path d="M12 2a3 3 0 0 0-3 3 3 3 0 0 0 .5 1.6A5 5 0 0 0 5 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 5 5 0 0 0 4.5 2.4A3 3 0 0 0 12 22a3 3 0 0 0 3-3 5 5 0 0 0 4.5-2.4 3 3 0 0 0 3-3 3 3 0 0 0-3-3 5 5 0 0 0-4.5-2.4A3 3 0 0 0 12 2z"/></svg>'
+        ];
+
+        // --- 3. UIパーツ＆イベントリスナーの紐付け ---
+        const slotsContainer = document.getElementById('slots-container');
+        const fileInput = document.getElementById('image-file-input');
+        const imageCountBadge = document.getElementById('image-count');
+        
+        // ブラシコントロール
+        const sliderSize = document.getElementById('slider-size');
+        const valSize = document.getElementById('val-size');
+        const sliderSpacing = document.getElementById('slider-spacing');
+        const valSpacing = document.getElementById('val-spacing');
+        
+        const modeSequence = document.getElementById('mode-sequence');
+        const modeRandom = document.getElementById('mode-random');
+        const chkRandomRot = document.getElementById('chk-random-rot');
+        const chkFollowDir = document.getElementById('chk-follow-dir');
+
+        // アクションボタン
+        const btnUndo = document.getElementById('btn-undo');
+        const btnClear = document.getElementById('btn-clear');
+        const btnSave = document.getElementById('btn-save');
+        const btnResetImages = document.getElementById('btn-reset-images');
+
+        // --- 4. 関数の初期化とメイン処理 ---
+
+        // カスタム通知機能（トースト）
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white font-medium text-xs transition-all duration-300 transform translate-y-2 opacity-0`;
+            
+            if (type === 'success') toast.classList.add('bg-emerald-600');
+            else if (type === 'error') toast.classList.add('bg-rose-600');
+            else toast.classList.add('bg-indigo-600');
+            
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            // アニメーション表示
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // 3秒後に消滅
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // キャンバスサイズを親要素に合わせる（レスポンシブ）
+        function resizeCanvas() {
+            // 現在のキャンバス描画状態を一時的にバックアップ
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // コンテナのサイズを取得
+            const width = container.clientWidth - 4; // 枠線分の余裕
+            const height = Math.max(container.clientHeight - 4, 500); // 最小高さは500px
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // 透明度保持のために背景を白でクリア
+            ctx.fillStyle = 'rgba(255, 255, 255, 0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 保存していた画像を再描画
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+
+        // 初期画像スロットの作成と読み込み
+        function initImageSlots() {
+            slotsContainer.innerHTML = '';
+            let loadedCount = 0;
+
+            for (let i = 0; i < MAX_SLOTS; i++) {
+                const slot = document.createElement('div');
+                slot.className = `relative aspect-square border-2 rounded-xl flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-200 group bg-slate-50 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-slate-100`;
+                slot.dataset.index = i;
+                
+                // 削除用ボタン（ホバー時に右上に出現）
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = `absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hidden`;
+                deleteBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                `;
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // スロットクリックイベントの発生を防ぐ
+                    removeImageAt(i);
+                });
+                slot.appendChild(deleteBtn);
+
+                // 画像表示要素、またはプラスアイコン
+                const imgEl = document.createElement('img');
+                imgEl.className = 'w-[80%] h-[80%] object-contain hidden pointer-events-none';
+                slot.appendChild(imgEl);
+
+                const iconPlus = document.createElement('div');
+                iconPlus.className = 'text-slate-400 flex flex-col items-center justify-center pointer-events-none';
+                iconPlus.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span class="text-[9px] mt-0.5 font-bold">${i + 1}</span>
+                `;
+                slot.appendChild(iconPlus);
+
+                // スロットクリックイベント
+                slot.addEventListener('click', () => {
+                    selectedSlotIndex = i;
+                    fileInput.click();
+                });
+
+                slotsContainer.appendChild(slot);
+
+                // 初期サンプルを読み込む
+                if (i < defaultSampleImages.length) {
+                    const img = new Image();
+                    img.onload = () => {
+                        brushImages[i] = img;
+                        imgEl.src = defaultSampleImages[i];
+                        imgEl.classList.remove('hidden');
+                        iconPlus.classList.add('hidden');
+                        deleteBtn.classList.remove('hidden');
+                        slot.classList.remove('border-dashed', 'border-slate-300', 'bg-slate-50');
+                        slot.classList.add('border-indigo-100', 'bg-white', 'shadow-sm');
+                        updateActiveBadge();
+                    };
+                    img.src = defaultSampleImages[i];
+                }
+            }
+        }
+
+        // 特定スロットの画像を削除する処理
+        function removeImageAt(index) {
+            brushImages[index] = null;
+            const slot = slotsContainer.querySelector(`[data-index="${index}"]`);
+            const imgEl = slot.querySelector('img');
+            const iconPlus = slot.querySelector('div');
+            const deleteBtn = slot.querySelector('button');
+
+            imgEl.classList.add('hidden');
+            imgEl.src = '';
+            iconPlus.classList.remove('hidden');
+            deleteBtn.classList.add('hidden');
+            
+            slot.classList.add('border-dashed', 'border-slate-300', 'bg-slate-50');
+            slot.classList.remove('border-indigo-100', 'bg-white', 'shadow-sm');
+            
+            updateActiveBadge();
+            showToast(`スロット ${index + 1} の画像をクリアしました。`);
+        }
+
+        // 何個画像がアップロードされているかバッジを更新する
+        function updateActiveBadge() {
+            const activeCount = brushImages.filter(img => img !== null).length;
+            imageCountBadge.textContent = `${activeCount} / 10 個`;
+        }
+
+        // ファイルアップロードの処理
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || selectedSlotIndex === null) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('画像ファイルを選択してください。', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    brushImages[selectedSlotIndex] = img;
+                    
+                    const slot = slotsContainer.querySelector(`[data-index="${selectedSlotIndex}"]`);
+                    const imgEl = slot.querySelector('img');
+                    const iconPlus = slot.querySelector('div');
+                    const deleteBtn = slot.querySelector('button');
+
+                    imgEl.src = event.target.result;
+                    imgEl.classList.remove('hidden');
+                    iconPlus.classList.add('hidden');
+                    deleteBtn.classList.remove('hidden');
+                    
+                    slot.classList.remove('border-dashed', 'border-slate-300', 'bg-slate-50');
+                    slot.classList.add('border-indigo-100', 'bg-white', 'shadow-sm');
+
+                    updateActiveBadge();
+                    showToast(`スロット ${selectedSlotIndex + 1} に新しい画像をセットしました！`);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // 同じファイルを再度アップロードできるように入力をクリア
+            fileInput.value = '';
+        });
+
+        // サンプル初期化ボタン
+        btnResetImages.addEventListener('click', () => {
+            brushImages = Array(MAX_SLOTS).fill(null);
+            initImageSlots();
+            showToast('画像をサンプルセットに初期化しました。');
+        });
+
+        // --- 5. 描画（ブラシ）のロジック ---
+
+        // Undo履歴を保存する関数
+        function saveState() {
+            if (undoHistory.length >= maxUndoSteps) {
+                undoHistory.shift(); // 古い履歴を削除
+            }
+            undoHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            btnUndo.disabled = false;
+        }
+
+        // 元に戻す(Undo)の実行
+        btnUndo.addEventListener('click', () => {
+            if (undoHistory.length > 0) {
+                const previousState = undoHistory.pop();
+                ctx.putImageData(previousState, 0, 0);
+                showToast('1手戻しました。');
+                
+                if (undoHistory.length === 0) {
+                    btnUndo.disabled = true;
+                }
+            }
+        });
+
+        // 全消去
+        btnClear.addEventListener('click', () => {
+            saveState(); // 消去前の状態を履歴に保存して元に戻せるようにする
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            showToast('キャンバスをクリアしました。');
+        });
+
+        // 画像をキャンバスに1個スタンプする関数
+        function drawBrushStamp(x, y, angle) {
+            // 使用できる画像の一覧を取得
+            const availableImages = brushImages.filter(img => img !== null);
+            if (availableImages.length === 0) {
+                return; // 画像が1つもない場合は何も描画しない
+            }
+
+            let selectedImage = null;
+
+            // 設定されている並び替えモードに応じて画像を選択
+            if (currentMode === 'random') {
+                const randIndex = Math.floor(Math.random() * availableImages.length);
+                selectedImage = availableImages[randIndex];
+            } else {
+                // 'sequence' 順番に配置
+                // 1画像描くごとにカウンタを次に送る
+                selectedImage = availableImages[currentImageIndex % availableImages.length];
+                currentImageIndex = (currentImageIndex + 1) % availableImages.length;
+            }
+
+            // スライダーから現在のブラシ設定を取得
+            const targetSize = parseInt(sliderSize.value);
+            const enableRandomRot = chkRandomRot.checked;
+            const enableFollowDir = chkFollowDir.checked;
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            // 回転（角度）の計算
+            let finalAngle = 0;
+            if (enableFollowDir && angle !== undefined) {
+                finalAngle = angle; // 進行方向を向く
+            }
+            if (enableRandomRot) {
+                finalAngle += Math.random() * Math.PI * 2; // ランダム回転を上乗せ
+            }
+            ctx.rotate(finalAngle);
+
+            // なめらかに表示するために補間設定（高画質）
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // 画像の縦横比を維持して正方形内に収まるように描画
+            const imgAspect = selectedImage.width / selectedImage.height;
+            let drawW, drawH;
+            if (imgAspect > 1) {
+                drawW = targetSize;
+                drawH = targetSize / imgAspect;
+            } else {
+                drawW = targetSize * imgAspect;
+                drawH = targetSize;
+            }
+
+            // 画像の中央をx, yに合わせて描画
+            ctx.drawImage(selectedImage, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.restore();
+        }
+
+        // マウス/タッチ座標の取得補助関数
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // マルチタッチの最初の指、または通常のマウス操作の座標
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // ペイント開始
+        function startDrawing(e) {
+            e.preventDefault();
+            
+            // 使用できる画像があるかチェック
+            const activeCount = brushImages.filter(img => img !== null).length;
+            if (activeCount === 0) {
+                showToast('ブラシにする画像をアップロードするか、初期化してください。', 'error');
+                return;
+            }
+
+            isDrawing = true;
+            saveState(); // 描き始める直前の状態を保存
+            
+            const pos = getMousePos(e);
+            lastPoint = pos;
+
+            // 最初の1点目をすぐに描画
+            drawBrushStamp(pos.x, pos.y, 0);
+        }
+
+        // ペイント中 (マウスドラッグ、タッチ移動)
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const pos = getMousePos(e);
+            const spacing = parseInt(sliderSpacing.value); // スタンプ間隔(ピクセル)
+
+            // 前回描いた座標(lastPoint)からの距離を計算
+            const dx = pos.x - lastPoint.x;
+            const dy = pos.y - lastPoint.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // 進行方向の角度を計算（ラジアン）
+            const angle = Math.atan2(dy, dx);
+
+            // 指定された間隔（spacing）を越えるたびにスタンプを描画していく
+            if (distance >= spacing) {
+                const steps = Math.floor(distance / spacing);
+                
+                // ドットとドットの間に隙間ができないよう、線形補間で均等に埋めながら描画
+                for (let i = 1; i <= steps; i++) {
+                    const ratio = i / steps;
+                    const stampX = lastPoint.x + dx * ratio;
+                    const stampY = lastPoint.y + dy * ratio;
+                    
+                    drawBrushStamp(stampX, stampY, angle);
+                }
+                
+                // 最後の描画位置を記憶
+                lastPoint = {
+                    x: lastPoint.x + dx * (steps * spacing / distance),
+                    y: lastPoint.y + dy * (steps * spacing / distance)
+                };
+            }
+        }
+
+        // ペイント終了
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            lastPoint = null;
+        }
+
+        // --- 6. イベントリスナー登録 (マウス ＆ スマホタッチ) ---
+        
+        // マウス操作
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        // タッチ操作 (iOS / Android)
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        window.addEventListener('touchend', stopDrawing);
+
+        // --- 7. スライダーのインジケータ更新 ---
+        sliderSize.addEventListener('input', (e) => {
+            valSize.textContent = `${e.target.value} px`;
+        });
+
+        sliderSpacing.addEventListener('input', (e) => {
+            valSpacing.textContent = `${e.target.value} px`;
+        });
+
+        // モード切替処理
+        modeSequence.addEventListener('click', () => {
+            currentMode = 'sequence';
+            modeSequence.className = "py-2.5 px-3 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold transition-all";
+            modeRandom.className = "py-2.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all";
+        });
+
+        modeRandom.addEventListener('click', () => {
+            currentMode = 'random';
+            modeRandom.className = "py-2.5 px-3 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold transition-all";
+            modeSequence.className = "py-2.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all";
+        });
+
+        // --- 8. 作品の保存機能 ---
+        btnSave.addEventListener('click', () => {
+            // 背景がチェック柄ではなく、「白い背景」を敷いた上で保存できるように一時的なキャンバスを生成
+            const saveCanvas = document.createElement('canvas');
+            saveCanvas.width = canvas.width;
+            saveCanvas.height = canvas.height;
+            const saveCtx = saveCanvas.getContext('2d');
+
+            // 1. 白い背景を塗る
+            saveCtx.fillStyle = '#ffffff';
+            saveCtx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
+
+            // 2. メインのペイント内容をコピーして乗せる
+            saveCtx.drawImage(canvas, 0, 0);
+
+            // 3. ダウンロード用のリンクを生成して擬似クリック
+            const link = document.createElement('a');
+            link.download = `weby-image-paint-${Date.now()}.png`;
+            link.href = saveCanvas.toDataURL('image/png');
+            
+            // iOSなどのサンドボックス対策として、documentに挿入してclick後に削除
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('作品を保存しました！');
+        });
+
+        // ページロード時の初期セットアップ
+        window.addEventListener('DOMContentLoaded', () => {
+            initImageSlots();
+            resizeCanvas();
+        });
+
+        // ブラウザのサイズが変わったときに自動調整
+        window.addEventListener('resize', resizeCanvas);
+
+    </script>
+</body>
+</html>
