@@ -106,8 +106,39 @@
                     2. ブラシの設定
                 </h2>
 
-                <!-- 並べ方モード選択 -->
+                <!-- 描画ツール -->
                 <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-slate-700">描画ツール</label>
+                    <div class="grid grid-cols-4 gap-2 text-xs">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="drawTool" value="freehand" class="peer hidden" checked>
+                            <div class="py-2 text-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:font-semibold transition-all shadow-sm">
+                                自由線
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="drawTool" value="ellipse" class="peer hidden">
+                            <div class="py-2 text-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:font-semibold transition-all shadow-sm">
+                                丸
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="drawTool" value="rect" class="peer hidden">
+                            <div class="py-2 text-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:font-semibold transition-all shadow-sm">
+                                四角
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="drawTool" value="diamond" class="peer hidden">
+                            <div class="py-2 text-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:font-semibold transition-all shadow-sm">
+                                菱形
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 並べ方モード選択 -->
+                <div class="flex flex-col gap-2 pt-2 border-t border-slate-100">
                     <label class="text-sm font-medium text-slate-700">画像の並び順パターン</label>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <button id="mode-sequence" class="py-2.5 px-3 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold transition-all">
@@ -271,6 +302,9 @@
         let lastPoint = null; // 最後に画像を描いた座標
         let lastDrawnSnappedPoint = null; // 最後にグリッド吸着で描画した座標
         let currentImageIndex = 0; // 'sequence'モードで使用する画像の順番カウンタ
+        
+        let startPos = null; // 図形描画の開始点
+        let savedImageIndex = 0; // 図形描画前の画像インデックス
 
         // --- 2. サンプルデータの用意 (初期画像) ---
         // 最初に何も画像がないと寂しいので、Webで安全に使用できるSVG/DataURI形式のサンプルをあらかじめ4つ設定しておきます。
@@ -647,6 +681,29 @@
             };
         }
 
+        // 多角形（パス）に沿ってスタンプを描画するヘルパー関数
+        function drawPolygon(points, spacing) {
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist === 0) continue;
+                
+                const angle = Math.atan2(dy, dx);
+                // 距離に応じて均等なステップ数を算出
+                const steps = Math.max(1, Math.round(dist / spacing));
+                
+                for (let j = 0; j < steps; j++) {
+                    const ratio = j / steps;
+                    const x = p1.x + dx * ratio;
+                    const y = p1.y + dy * ratio;
+                    drawBrushStamp(x, y, angle);
+                }
+            }
+        }
+
         // ペイント開始
         function startDrawing(e) {
             e.preventDefault();
@@ -662,22 +719,27 @@
             saveState(); // 描き始める直前の状態を保存
             
             const pos = getMousePos(e);
+            startPos = pos;
             lastPoint = pos;
             lastDrawnSnappedPoint = null;
+            savedImageIndex = currentImageIndex;
 
-            // 最初の1点目をすぐに描画
-            let stampX = pos.x;
-            let stampY = pos.y;
-            
-            const isSnapGrid = document.getElementById('chk-snap-grid') ? document.getElementById('chk-snap-grid').checked : false;
-            if (isSnapGrid) {
-                const gridSize = parseInt(document.getElementById('slider-grid-size').value);
-                stampX = Math.round(stampX / gridSize) * gridSize;
-                stampY = Math.round(stampY / gridSize) * gridSize;
-                lastDrawnSnappedPoint = {x: stampX, y: stampY};
+            const drawTool = document.querySelector('input[name="drawTool"]:checked').value;
+            if (drawTool === 'freehand') {
+                // 最初の1点目をすぐに描画
+                let stampX = pos.x;
+                let stampY = pos.y;
+                
+                const isSnapGrid = document.getElementById('chk-snap-grid') ? document.getElementById('chk-snap-grid').checked : false;
+                if (isSnapGrid) {
+                    const gridSize = parseInt(document.getElementById('slider-grid-size').value);
+                    stampX = Math.round(stampX / gridSize) * gridSize;
+                    stampY = Math.round(stampY / gridSize) * gridSize;
+                    lastDrawnSnappedPoint = {x: stampX, y: stampY};
+                }
+                
+                drawBrushStamp(stampX, stampY, 0);
             }
-            
-            drawBrushStamp(stampX, stampY, 0);
         }
 
         // ペイント中 (マウスドラッグ、タッチ移動)
@@ -686,48 +748,109 @@
             e.preventDefault();
 
             const pos = getMousePos(e);
+            const drawTool = document.querySelector('input[name="drawTool"]:checked').value;
             const isSnapGrid = document.getElementById('chk-snap-grid') ? document.getElementById('chk-snap-grid').checked : false;
-            // 吸着モードの場合は細かい間隔で補間し、マス目またぎを検知する
-            const spacing = isSnapGrid ? 5 : parseInt(sliderSpacing.value);
 
-            // 前回描いた座標(lastPoint)からの距離を計算
-            const dx = pos.x - lastPoint.x;
-            const dy = pos.y - lastPoint.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (drawTool === 'freehand') {
+                // 吸着モードの場合は細かい間隔で補間し、マス目またぎを検知する
+                const spacing = isSnapGrid ? 5 : parseInt(sliderSpacing.value);
 
-            // 進行方向の角度を計算（ラジアン）
-            const angle = Math.atan2(dy, dx);
+                // 前回描いた座標(lastPoint)からの距離を計算
+                const dx = pos.x - lastPoint.x;
+                const dy = pos.y - lastPoint.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // 指定された間隔（spacing）を越えるたびにスタンプを描画していく
-            if (distance >= spacing) {
-                const steps = Math.floor(distance / spacing);
-                
-                // ドットとドットの間に隙間ができないよう、線形補間で均等に埋めながら描画
-                for (let i = 1; i <= steps; i++) {
-                    const ratio = i / steps;
-                    let stampX = lastPoint.x + dx * ratio;
-                    let stampY = lastPoint.y + dy * ratio;
+                // 進行方向の角度を計算（ラジアン）
+                const angle = Math.atan2(dy, dx);
+
+                // 指定された間隔（spacing）を越えるたびにスタンプを描画していく
+                if (distance >= spacing) {
+                    const steps = Math.floor(distance / spacing);
                     
-                    if (isSnapGrid) {
-                        const gridSize = parseInt(document.getElementById('slider-grid-size').value);
-                        stampX = Math.round(stampX / gridSize) * gridSize;
-                        stampY = Math.round(stampY / gridSize) * gridSize;
+                    for (let i = 1; i <= steps; i++) {
+                        const ratio = i / steps;
+                        let stampX = lastPoint.x + dx * ratio;
+                        let stampY = lastPoint.y + dy * ratio;
                         
-                        // 同じマスには連続して描画しない
-                        if (lastDrawnSnappedPoint && lastDrawnSnappedPoint.x === stampX && lastDrawnSnappedPoint.y === stampY) {
-                            continue;
+                        if (isSnapGrid) {
+                            const gridSize = parseInt(document.getElementById('slider-grid-size').value);
+                            stampX = Math.round(stampX / gridSize) * gridSize;
+                            stampY = Math.round(stampY / gridSize) * gridSize;
+                            
+                            if (lastDrawnSnappedPoint && lastDrawnSnappedPoint.x === stampX && lastDrawnSnappedPoint.y === stampY) {
+                                continue;
+                            }
+                            lastDrawnSnappedPoint = {x: stampX, y: stampY};
                         }
-                        lastDrawnSnappedPoint = {x: stampX, y: stampY};
-                    }
 
-                    drawBrushStamp(stampX, stampY, angle);
+                        drawBrushStamp(stampX, stampY, angle);
+                    }
+                    
+                    lastPoint = {
+                        x: lastPoint.x + dx * (steps * spacing / distance),
+                        y: lastPoint.y + dy * (steps * spacing / distance)
+                    };
+                }
+            } else {
+                // 図形描画モード
+                ctx.putImageData(undoHistory[undoHistory.length - 1], 0, 0);
+                currentImageIndex = savedImageIndex;
+                
+                let sx = startPos.x;
+                let sy = startPos.y;
+                let ex = pos.x;
+                let ey = pos.y;
+                
+                if (isSnapGrid) {
+                    const gridSize = parseInt(document.getElementById('slider-grid-size').value);
+                    sx = Math.round(sx / gridSize) * gridSize;
+                    sy = Math.round(sy / gridSize) * gridSize;
+                    ex = Math.round(ex / gridSize) * gridSize;
+                    ey = Math.round(ey / gridSize) * gridSize;
                 }
                 
-                // 最後の描画位置を記憶
-                lastPoint = {
-                    x: lastPoint.x + dx * (steps * spacing / distance),
-                    y: lastPoint.y + dy * (steps * spacing / distance)
-                };
+                if (sx === ex && sy === ey) return;
+                
+                const spacing = parseInt(sliderSpacing.value);
+                
+                if (drawTool === 'rect') {
+                    const points = [
+                        {x: sx, y: sy},
+                        {x: ex, y: sy},
+                        {x: ex, y: ey},
+                        {x: sx, y: ey}
+                    ];
+                    drawPolygon(points, spacing);
+                } else if (drawTool === 'diamond') {
+                    const cx = (sx + ex) / 2;
+                    const cy = (sy + ey) / 2;
+                    const points = [
+                        {x: cx, y: sy},
+                        {x: ex, y: cy},
+                        {x: cx, y: ey},
+                        {x: sx, y: cy}
+                    ];
+                    drawPolygon(points, spacing);
+                } else if (drawTool === 'ellipse') {
+                    const cx = (sx + ex) / 2;
+                    const cy = (sy + ey) / 2;
+                    const rx = Math.abs(ex - sx) / 2;
+                    const ry = Math.abs(ey - sy) / 2;
+                    // 近似円周
+                    const h = Math.pow(rx - ry, 2) / Math.pow(rx + ry, 2);
+                    const C = Math.PI * (rx + ry) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+                    
+                    if (C > 0) {
+                        const steps = Math.max(4, Math.floor(C / spacing));
+                        for (let i = 0; i < steps; i++) {
+                            const theta = (i / steps) * Math.PI * 2;
+                            const x = cx + rx * Math.cos(theta);
+                            const y = cy + ry * Math.sin(theta);
+                            const angle = Math.atan2(ry * Math.cos(theta), -rx * Math.sin(theta));
+                            drawBrushStamp(x, y, angle);
+                        }
+                    }
+                }
             }
         }
 
