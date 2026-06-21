@@ -122,6 +122,10 @@
                                     <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右から左</div>
                                 </label>
                                 <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左から右</div>
+                                </label>
+                                <label class="cursor-pointer relative">
                                     <input type="radio" name="effect" value="moveDownRight" class="peer sr-only">
                                     <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">斜め移動</div>
                                 </label>
@@ -566,6 +570,32 @@
             return bytes;
         }
 
+        // GIFのループ拡張ブロックを削除して1回再生（ループなし）にする関数
+        function removeGifLoopExtension(uint8Array) {
+            const needle = [0x21, 0xff, 0x0b, 0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30, 0x03, 0x01];
+            let foundOffset = -1;
+            for (let i = 0; i < uint8Array.length - needle.length; i++) {
+                let match = true;
+                for (let j = 0; j < needle.length; j++) {
+                    if (uint8Array[i + j] !== needle[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    foundOffset = i;
+                    break;
+                }
+            }
+            if (foundOffset !== -1) {
+                const newArray = new Uint8Array(uint8Array.length - 19);
+                newArray.set(uint8Array.subarray(0, foundOffset), 0);
+                newArray.set(uint8Array.subarray(foundOffset + 19), foundOffset);
+                return newArray;
+            }
+            return uint8Array;
+        }
+
         // GIFバイナリを直接書き換えて「ループ停止設定」を確実にファイルに刻む独自ハック
         function setGifLoopCount(uint8Array, loopCount) {
             const needle = [0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30]; // "NETSCAPE2.0"
@@ -804,11 +834,14 @@
                     }
                 }
             } else if (['liquidSplash', 'redPaint'].includes(effect)) {
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < 6; i++) {
                     splashes.push({
-                        x: width * 0.2 + Math.random() * width * 0.6,
-                        y: height * 0.2 + Math.random() * height * 0.6,
-                        size: width * 0.1 + Math.random() * width * 0.1
+                        x: width * 0.1 + Math.random() * width * 0.8,
+                        y: height * 0.1 + Math.random() * height * 0.8,
+                        size: width * 0.05 + Math.random() * width * 0.08,
+                        delay: Math.random() * 0.5,
+                        active: false,
+                        progress: 0
                     });
                 }
             } else if (effect === 'drip') {
@@ -832,12 +865,12 @@
             } else if (effect === 'explosion') {
                 for (let i = 0; i < 40; i++) {
                     particles.push({
-                        x: width / 2,
-                        y: height / 2,
+                        x: 0,
+                        y: 0,
                         angle: Math.random() * Math.PI * 2,
-                        speed: Math.random() * 40 + 10,
-                        size: Math.random() * 30 + 10,
-                        color: Math.random() > 0.6 ? '#ffaa00' : (Math.random() > 0.5 ? '#ff3300' : '#222')
+                        speed: Math.random() * 30 + 10,
+                        size: Math.random() * 20 + 5,
+                        color: Math.random() > 0.6 ? '#ffaa00' : (Math.random() > 0.5 ? '#ff3300' : '#444')
                     });
                 }
             }
@@ -1120,76 +1153,113 @@
                     });
                 }
                 else if (effect === 'explosion') {
-                    // Shake
-                    const shakeIntensity = Math.max(0, 1.0 - progress * 1.5);
-                    const shakeX = (Math.random() - 0.5) * width * 0.1 * shakeIntensity;
-                    const shakeY = (Math.random() - 0.5) * height * 0.1 * shakeIntensity;
-                    ctx.drawImage(loadedImage, shakeX, shakeY, width, height);
-
-                    // Flash
-                    if (progress < 0.2) {
-                        ctx.fillStyle = `rgba(255, 255, 200, ${1.0 - progress * 5})`;
-                        ctx.fillRect(0, 0, width, height);
+                    // 画像が膨れる
+                    let scale = 1.0;
+                    if (progress < 0.4) {
+                        scale = 1.0 + (progress / 0.4) * 0.2; // 少し膨らむ
+                    } else if (progress < 0.5) {
+                        scale = 1.2 + ((progress - 0.4) / 0.1) * 0.5; // 急激に膨らむ
                     }
-
-                    // Expanding Fireball
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'screen';
-                    const fbRad = progress * width * 0.8;
-                    if (fbRad > 0 && progress < 0.5) {
-                        const g = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, fbRad);
-                        g.addColorStop(0, `rgba(255,255,255,${1 - progress*2})`);
-                        g.addColorStop(0.2, `rgba(255,200,50,${1 - progress*2})`);
-                        g.addColorStop(0.8, `rgba(255,50,0,${1 - progress*2})`);
-                        g.addColorStop(1, 'rgba(0,0,0,0)');
-                        ctx.fillStyle = g;
-                        ctx.beginPath(); ctx.arc(width/2, height/2, fbRad, 0, Math.PI*2); ctx.fill();
+                    
+                    if (progress < 0.5) {
+                        ctx.translate(width/2, height/2);
+                        ctx.scale(scale, scale);
+                        ctx.drawImage(loadedImage, -width/2, -height/2, width, height);
+                        
+                        // 内側から光が漏れる
+                        const glowP = Math.max(0, (progress - 0.2) / 0.3);
+                        if (glowP > 0) {
+                            ctx.globalCompositeOperation = 'screen';
+                            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, width/2);
+                            g.addColorStop(0, `rgba(255, 255, 255, ${glowP})`);
+                            g.addColorStop(0.5, `rgba(255, 200, 50, ${glowP * 0.8})`);
+                            g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                            ctx.fillStyle = g;
+                            ctx.fillRect(-width/2, -height/2, width, height);
+                            ctx.globalCompositeOperation = 'source-over';
+                        }
+                        
+                        ctx.scale(1/scale, 1/scale);
+                        ctx.translate(-width/2, -height/2);
+                    } else {
+                        // ボンッと破裂
+                        const burstP = (progress - 0.5) / 0.5; // 0.0 ~ 1.0
+                        
+                        // 閃光
+                        if (burstP < 0.2) {
+                            ctx.fillStyle = `rgba(255, 255, 200, ${1.0 - burstP/0.2})`;
+                            ctx.fillRect(0, 0, width, height);
+                        }
+                        
+                        // 破片が飛び散る
+                        ctx.save();
+                        ctx.translate(width/2, height/2);
+                        particles.forEach(p => {
+                            let curX = Math.cos(p.angle) * p.speed * burstP * 10;
+                            let curY = Math.sin(p.angle) * p.speed * burstP * 10 + (burstP * burstP * 50); // 重力
+                            let curSize = p.size * (1 - burstP);
+                            if (curSize > 0) {
+                                ctx.fillStyle = p.color;
+                                ctx.beginPath();
+                                ctx.arc(curX, curY, curSize, 0, Math.PI*2);
+                                ctx.fill();
+                            }
+                        });
+                        ctx.restore();
                     }
-                    ctx.restore();
-
-                    // Smoke and Debris Particles
-                    particles.forEach(p => {
-                        let curX = p.x + Math.cos(p.angle) * p.speed * progress * 10;
-                        let curY = p.y + Math.sin(p.angle) * p.speed * progress * 10;
-                        let curSize = p.size * (1 + progress * 2);
-                        ctx.globalAlpha = Math.max(0, 1.0 - progress);
-                        ctx.fillStyle = p.color;
-                        ctx.beginPath();
-                        ctx.arc(curX, curY, curSize, 0, Math.PI*2);
-                        ctx.fill();
-                    });
-                    ctx.globalAlpha = 1.0;
                 }
                 else if (effect === 'burn') {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.save();
-                    const burnY = height - (progress * height * 1.5);
+                    
+                    // 炎の揺らめきレイヤー
+                    ctx.globalCompositeOperation = 'screen';
+                    const fireHeight = height * (0.3 + progress * 0.7);
+                    const burnY = height - fireHeight;
+                    
                     const gradient = ctx.createLinearGradient(0, burnY, 0, height);
                     gradient.addColorStop(0, 'rgba(0,0,0,0)');
-                    gradient.addColorStop(0.1, 'rgba(255,200,50,0.8)'); // 炎の先端
-                    gradient.addColorStop(0.3, 'rgba(255,50,0,0.9)'); // メラメラ
-                    gradient.addColorStop(0.5, 'rgba(30,30,30,1)'); // 焦げ
-                    gradient.addColorStop(1, 'rgba(0,0,0,1)');
+                    gradient.addColorStop(0.1, 'rgba(255,100,0,0.8)'); // 炎の先端
+                    gradient.addColorStop(0.4, 'rgba(255,50,0,0.9)');
+                    gradient.addColorStop(0.8, 'rgba(200,20,0,1)');
+                    gradient.addColorStop(1, 'rgba(100,0,0,1)');
                     ctx.fillStyle = gradient;
                     
                     ctx.beginPath();
                     ctx.moveTo(0, height);
-                    for(let x=0; x<=width; x+=10) {
-                        let y = burnY + Math.sin(x*0.05 + i*0.5)*15 + Math.sin(x*0.1 - i*0.3)*10;
+                    for(let x=0; x<=width; x+=5) {
+                        // より複雑なメラメラ波形
+                        let y = burnY 
+                              + Math.sin(x*0.03 - progress*20)*20 
+                              + Math.sin(x*0.07 + progress*15)*15
+                              + Math.random()*10;
                         ctx.lineTo(x, y);
                     }
                     ctx.lineTo(width, height);
                     ctx.fill();
 
                     // 火の粉
-                    ctx.fillStyle = 'rgba(255,150,0,0.7)';
-                    for(let f=0; f<30; f++) {
-                        const fx = Math.sin(f*5 + i)*15 + (f/30)*width;
-                        const fy = burnY + Math.sin(f+i)*20 + Math.random()*50;
-                        ctx.beginPath();
-                        ctx.arc(fx, fy, 4 + Math.random()*8, 0, Math.PI*2);
-                        ctx.fill();
+                    ctx.globalCompositeOperation = 'screen';
+                    ctx.fillStyle = 'rgba(255, 150, 50, 0.9)';
+                    for(let f=0; f<40; f++) {
+                        const startY = height - (f/40)*fireHeight;
+                        const fx = (f*37) % width + Math.sin(progress*10 + f)*15;
+                        const fy = startY - progress * height * 0.5 - Math.random()*20;
+                        if (fy > 0 && fy < height) {
+                            ctx.beginPath();
+                            ctx.arc(fx, fy, 2 + Math.random()*4, 0, Math.PI*2);
+                            ctx.fill();
+                        }
                     }
+                    
+                    // 焦げ跡 (Multiply)
+                    ctx.globalCompositeOperation = 'multiply';
+                    const smokeGrad = ctx.createLinearGradient(0, height - fireHeight*0.5, 0, height);
+                    smokeGrad.addColorStop(0, 'rgba(255,255,255,1)');
+                    smokeGrad.addColorStop(1, 'rgba(50,50,50,1)');
+                    ctx.fillStyle = smokeGrad;
+                    ctx.fillRect(0, height - fireHeight*0.5, width, fireHeight*0.5);
+                    
                     ctx.restore();
                 }
                 // --- 🎞️ トランジション系 ---
@@ -1380,51 +1450,62 @@
                 // --- 💧 液体・特殊系 ---
                 else if (effect === 'liquidSplash' || effect === 'redPaint') {
                     ctx.drawImage(loadedImage, 0, 0, width, height);
-                    ctx.fillStyle = effect === 'redPaint' ? '#E11' : '#1BF';
-                    ctx.globalAlpha = progress < 0.7 ? 1.0 : 1.0 - (progress - 0.7) * 3;
-                    const splashP = Math.min(progress * 3, 1.0); 
+                    ctx.fillStyle = effect === 'redPaint' ? '#C11' : '#1BF';
+                    
                     splashes.forEach((s, idx) => {
-                        if (progress > idx * 0.1) {
-                            ctx.save();
-                            ctx.translate(s.x, s.y);
-                            ctx.scale(splashP, splashP);
-                            ctx.beginPath();
-                            const pts = 8;
-                            for(let a=0; a<=pts; a++){
-                                let angle = (a/pts)*Math.PI*2;
-                                let r = s.size * (0.5 + Math.sin(a * 3 + idx)*0.5 + Math.random()*0.2);
-                                let px = Math.cos(angle)*r;
-                                let py = Math.sin(angle)*r;
-                                if(a===0) ctx.moveTo(px, py);
-                                else {
-                                    let prevA = ((a-1)/pts)*Math.PI*2;
-                                    let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.5;
-                                    let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.5;
-                                    ctx.quadraticCurveTo(cpX, cpY, px, py);
-                                }
-                            }
-                            ctx.fill();
+                        // 時間経過に合わせて各スプラッシュの進行度を計算
+                        if (progress > s.delay) {
+                            let sp = (progress - s.delay) / (1.0 - s.delay); // 0.0 ~ 1.0
+                            sp = Math.min(sp * 1.5, 1.0); // 少し早めに終わる
                             
-                            // 細かい飛沫と鋭いスプラッシュライン
-                            ctx.strokeStyle = ctx.fillStyle;
-                            for(let a=0; a<12; a++){
-                                const angle = a * (Math.PI*2/12) + Math.random()*0.2;
-                                const d = s.size * (1.2 + Math.random()*1.5) * splashP;
-                                
-                                // しぶき（線）
+                            if (sp < 0.3) {
+                                // 落ちてくる水滴
+                                let dropY = s.y * (sp / 0.3);
                                 ctx.beginPath();
-                                ctx.moveTo(Math.cos(angle)*s.size*0.5, Math.sin(angle)*s.size*0.5);
-                                ctx.lineTo(Math.cos(angle)*d, Math.sin(angle)*d);
-                                ctx.lineWidth = s.size * 0.05 + Math.random() * s.size * 0.1;
-                                ctx.lineCap = 'round';
-                                ctx.stroke();
-
-                                // 水滴（丸）
-                                ctx.beginPath();
-                                ctx.arc(Math.cos(angle)*(d+s.size*0.2), Math.sin(angle)*(d+s.size*0.2), s.size*0.1 + Math.random()*s.size*0.15, 0, Math.PI*2);
+                                ctx.ellipse(s.x, dropY, s.size*0.2, s.size*0.5, 0, 0, Math.PI*2);
                                 ctx.fill();
+                            } else {
+                                // ビシャっと広がる
+                                let splashP = (sp - 0.3) / 0.7; // 0.0 ~ 1.0
+                                ctx.save();
+                                ctx.translate(s.x, s.y);
+                                
+                                // 広がる本体
+                                ctx.scale(splashP + 0.2, splashP + 0.2);
+                                ctx.beginPath();
+                                const pts = 8;
+                                for(let a=0; a<=pts; a++){
+                                    let angle = (a/pts)*Math.PI*2;
+                                    let r = s.size * (0.6 + Math.sin(a * 4 + idx)*0.4);
+                                    let px = Math.cos(angle)*r;
+                                    let py = Math.sin(angle)*r;
+                                    if(a===0) ctx.moveTo(px, py);
+                                    else {
+                                        let prevA = ((a-1)/pts)*Math.PI*2;
+                                        let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.2;
+                                        let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.2;
+                                        ctx.quadraticCurveTo(cpX, cpY, px, py);
+                                    }
+                                }
+                                ctx.fill();
+                                
+                                // 飛沫
+                                ctx.strokeStyle = ctx.fillStyle;
+                                for(let a=0; a<10; a++){
+                                    const angle = a * (Math.PI*2/10) + idx*0.5;
+                                    const d = s.size * (1.0 + splashP * 1.5);
+                                    
+                                    ctx.beginPath();
+                                    ctx.arc(Math.cos(angle)*d, Math.sin(angle)*d, s.size*0.1 * (1-splashP), 0, Math.PI*2);
+                                    ctx.fill();
+                                    
+                                    // 垂れる液
+                                    if (angle > 0 && angle < Math.PI) {
+                                        ctx.fillRect(Math.cos(angle)*(s.size*0.5), Math.sin(angle)*(s.size*0.5), s.size*0.05, splashP * s.size);
+                                    }
+                                }
+                                ctx.restore();
                             }
-                            ctx.restore();
                         }
                     });
                 }
@@ -1467,6 +1548,18 @@
             const numLoopsAPNG = forceOnce ? 1 : 0;
             const numLoopsGIF = forceOnce ? 1 : 0;
 
+            if (forceOnce) {
+                // 停止時間を伸ばす（最後のフレームを延長）
+                if (format === 'apng') {
+                    delays[delays.length - 1] = 4000; // 最後で4秒止まる
+                } else {
+                    const lastFrame = framesGIF[framesGIF.length - 1];
+                    for (let f = 0; f < 25; f++) {
+                        framesGIF.push(lastFrame);
+                    }
+                }
+            }
+
             if (format === 'apng') {
                 const apngArrayBuffer = UPNG.encode(framesAPNG, canvasWidth, canvasHeight, 0, delays, numLoopsAPNG);
                 setApngLoopCount(apngArrayBuffer, numLoopsAPNG);
@@ -1484,8 +1577,12 @@
                     loop: 0 
                 }, function(obj) {
                     if (!obj.error) {
-                        const gifBytes = base64ToUint8Array(obj.image);
-                        setGifLoopCount(gifBytes, numLoopsGIF);
+                        let gifBytes = base64ToUint8Array(obj.image);
+                        if (forceOnce) {
+                            gifBytes = removeGifLoopExtension(gifBytes); // ループ拡張自体を削除
+                        } else {
+                            setGifLoopCount(gifBytes, 0); // 無限ループ
+                        }
 
                         const blob = new Blob([gifBytes], { type: 'image/gif' });
                         const url = URL.createObjectURL(blob);
