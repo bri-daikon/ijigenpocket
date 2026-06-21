@@ -62,9 +62,11 @@
     let currentFilter = 'normal'; // 現在選ばれている時間帯
     let currentWeather = 'none'; // 現在選ばれている天気プリセット
     let activeTab = 'filter'; // 現在アクティブなタブ
+    let currentInvert = 0; // 反転状態の管理
 
     const varPresets = {
         bw: { hue: 0, bright: 100, sat: 0, contrast: 100 },
+        bwInverted: { hue: 0, bright: 100, sat: 0, contrast: 100, invert: 100 },
         metallic: { hue: 0, bright: 120, sat: 50, contrast: 150 },
         cyber: { hue: 200, bright: 110, sat: 200, contrast: 120 },
         pastel: { hue: 0, bright: 130, sat: 40, contrast: 90 },
@@ -520,7 +522,7 @@
       varCanvas.height = loadedImage.height;
       const ctx = varCanvas.getContext('2d');
       ctx.clearRect(0, 0, varCanvas.width, varCanvas.height);
-      ctx.filter = `hue-rotate(${hue}deg) brightness(${bright}%) saturate(${saturate}%) contrast(${contrast}%)`;
+      ctx.filter = `hue-rotate(${hue}deg) brightness(${bright}%) saturate(${saturate}%) contrast(${contrast}%) invert(${currentInvert}%)`;
       ctx.drawImage(loadedImage, 0, 0);
     }
 
@@ -538,9 +540,12 @@
         varBrightRange.value = p.bright;
         varSaturateRange.value = p.sat;
         varContrastRange.value = p.contrast;
-        updateVarSliderLabels();
-        updateVariationFilters();
+        currentInvert = p.invert || 0;
+      } else {
+        currentInvert = 0;
       }
+      updateVarSliderLabels();
+      updateVariationFilters();
     });
 
     [varHueRange, varBrightRange, varSaturateRange, varContrastRange].forEach(el => {
@@ -557,6 +562,7 @@
       varBrightRange.value = 100;
       varSaturateRange.value = 100;
       varContrastRange.value = 100;
+      currentInvert = 0;
       
       updateVarSliderLabels();
       updateVariationFilters();
