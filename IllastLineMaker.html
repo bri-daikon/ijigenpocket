@@ -79,16 +79,24 @@
                     <!-- JavaScriptで10個のスロットを動的に生成します -->
                 </div>
 
-                <!-- 全リセットボタン -->
-                <button id="btn-reset-images" class="text-xs text-red-600 hover:text-red-700 font-semibold self-end flex items-center gap-1 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.24 9m4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                    画像をすべて初期化
-                </button>
+                <!-- まとめて追加と全リセットボタン -->
+                <div class="flex justify-between items-center mt-2">
+                    <button id="btn-add-multiple" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        画像をまとめて追加
+                    </button>
+                    <button id="btn-reset-images" class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.24 9m4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                        画像をすべて初期化
+                    </button>
+                </div>
 
                 <!-- 非表示のファイル入力フォーム -->
-                <input type="file" id="image-file-input" class="hidden" accept="image/*">
+                <input type="file" id="image-file-input" class="hidden" accept="image/*" multiple>
             </div>
 
             <!-- パネル2: ブラシの描き方設定 -->
@@ -128,6 +136,22 @@
                     </div>
                     <input type="range" id="slider-spacing" min="5" max="100" value="15" class="w-full accent-indigo-600 cursor-pointer">
                     <p class="text-[10px] text-slate-400">数値を小さくするとなめらかな一本の線に、大きくするとスタンプのようになります。</p>
+                </div>
+
+                <!-- 背景設定 -->
+                <div class="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                    <span class="text-sm font-medium text-slate-700">キャンバスの背景</span>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1 cursor-pointer text-xs text-slate-600">
+                            <input type="radio" name="bgType" value="transparent" class="text-indigo-600 focus:ring-indigo-500" checked>
+                            透明 (透過)
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-xs text-slate-600">
+                            <input type="radio" name="bgType" value="color" class="text-indigo-600 focus:ring-indigo-500">
+                            色を指定
+                        </label>
+                        <input type="color" id="bg-color-picker" value="#ffffff" class="w-6 h-6 rounded cursor-pointer border-0 p-0 hidden">
+                    </div>
                 </div>
 
                 <!-- 追加効果スイッチ -->
@@ -249,6 +273,10 @@
         const fileInput = document.getElementById('image-file-input');
         const imageCountBadge = document.getElementById('image-count');
         
+        const btnAddMultiple = document.getElementById('btn-add-multiple');
+        const bgTypeRadios = document.getElementsByName('bgType');
+        const bgColorPicker = document.getElementById('bg-color-picker');
+
         // ブラシコントロール
         const sliderSize = document.getElementById('slider-size');
         const valSize = document.getElementById('val-size');
@@ -410,23 +438,69 @@
             imageCountBadge.textContent = `${activeCount} / 10 個`;
         }
 
+        // まとめて追加ボタンの処理
+        btnAddMultiple.addEventListener('click', () => {
+            selectedSlotIndex = null; // 特定のスロットを指定しない
+            fileInput.click();
+        });
+
         // ファイルアップロードの処理
         fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file || selectedSlotIndex === null) return;
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
 
-            if (!file.type.startsWith('image/')) {
-                showToast('画像ファイルを選択してください。', 'error');
-                return;
+            let fileIndex = 0;
+            // 選択されたスロットから開始し、空いているスロットを順に埋める
+            let startIndex = selectedSlotIndex !== null ? selectedSlotIndex : 0;
+            
+            // 既存の空きスロットを探す（特定の開始インデックスから）
+            for (let i = startIndex; i < MAX_SLOTS && fileIndex < files.length; i++) {
+                // 特定のスロットが指定されている場合、最初は必ずそこに入れる
+                // それ以外は空いているスロットを探す
+                if (i === selectedSlotIndex || brushImages[i] === null) {
+                    const file = files[fileIndex];
+                    if (file && file.type.startsWith('image/')) {
+                        loadImageIntoSlot(file, i);
+                        fileIndex++;
+                    } else if (file) {
+                        fileIndex++; // 画像以外はスキップ
+                    }
+                }
+            }
+            
+            // もし指定されたスロット以降の空きスロットが足りず、最初から空きスロットを探す場合
+            if (fileIndex < files.length) {
+                for (let i = 0; i < startIndex && fileIndex < files.length; i++) {
+                    if (brushImages[i] === null) {
+                        const file = files[fileIndex];
+                        if (file && file.type.startsWith('image/')) {
+                            loadImageIntoSlot(file, i);
+                            fileIndex++;
+                        } else if (file) {
+                            fileIndex++;
+                        }
+                    }
+                }
             }
 
+            if (fileIndex > 0) {
+                showToast(`${fileIndex}枚の画像をセットしました！`);
+            } else {
+                showToast('追加できる画像がありませんでした。', 'error');
+            }
+
+            // 同じファイルを再度アップロードできるように入力をクリア
+            fileInput.value = '';
+        });
+
+        function loadImageIntoSlot(file, index) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
-                    brushImages[selectedSlotIndex] = img;
+                    brushImages[index] = img;
                     
-                    const slot = slotsContainer.querySelector(`[data-index="${selectedSlotIndex}"]`);
+                    const slot = slotsContainer.querySelector(`[data-index="${index}"]`);
                     const imgEl = slot.querySelector('img');
                     const iconPlus = slot.querySelector('div');
                     const deleteBtn = slot.querySelector('button');
@@ -440,15 +514,11 @@
                     slot.classList.add('border-indigo-100', 'bg-white', 'shadow-sm');
 
                     updateActiveBadge();
-                    showToast(`スロット ${selectedSlotIndex + 1} に新しい画像をセットしました！`);
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
-            
-            // 同じファイルを再度アップロードできるように入力をクリア
-            fileInput.value = '';
-        });
+        }
 
         // サンプル初期化ボタン
         btnResetImages.addEventListener('click', () => {
@@ -659,27 +729,47 @@
             modeSequence.className = "py-2.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all";
         });
 
+        // 背景設定のUIイベント
+        bgTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'color') {
+                    bgColorPicker.classList.remove('hidden');
+                    canvas.style.backgroundColor = bgColorPicker.value;
+                } else {
+                    bgColorPicker.classList.add('hidden');
+                    canvas.style.backgroundColor = 'transparent';
+                }
+            });
+        });
+
+        bgColorPicker.addEventListener('input', (e) => {
+            canvas.style.backgroundColor = e.target.value;
+        });
+
         // --- 8. 作品の保存機能 ---
         btnSave.addEventListener('click', () => {
-            // 背景がチェック柄ではなく、「白い背景」を敷いた上で保存できるように一時的なキャンバスを生成
             const saveCanvas = document.createElement('canvas');
             saveCanvas.width = canvas.width;
             saveCanvas.height = canvas.height;
             const saveCtx = saveCanvas.getContext('2d');
 
-            // 1. 白い背景を塗る
-            saveCtx.fillStyle = '#ffffff';
-            saveCtx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
+            // 背景の設定を取得
+            const isTransparent = document.querySelector('input[name="bgType"]:checked').value === 'transparent';
+            
+            if (!isTransparent) {
+                // 色指定の場合は背景を塗る
+                saveCtx.fillStyle = bgColorPicker.value;
+                saveCtx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
+            }
 
-            // 2. メインのペイント内容をコピーして乗せる
+            // メインのペイント内容をコピーして乗せる
             saveCtx.drawImage(canvas, 0, 0);
 
-            // 3. ダウンロード用のリンクを生成して擬似クリック
+            // ダウンロード用のリンクを生成して擬似クリック
             const link = document.createElement('a');
             link.download = `weby-image-paint-${Date.now()}.png`;
             link.href = saveCanvas.toDataURL('image/png');
             
-            // iOSなどのサンドボックス対策として、documentに挿入してclick後に削除
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
