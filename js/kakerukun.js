@@ -426,6 +426,13 @@ function exportHTML() {
                 page-break-after: always; 
                 width: 100%; 
             }
+            .box-char-sheet .char-image-placeholder {
+                display: none !important;
+            }
+            .box-char-sheet .char-image-container {
+                border: 1px solid #e2e8f0 !important;
+                background: transparent !important;
+            }
         }
         .scenario-text-block, .page-content > ul, .page-content > ol, .page-content > blockquote {
             cursor: pointer;
@@ -524,6 +531,82 @@ function exportHTML() {
         }
         .box-char-sheet .char-skill-name {
             font-weight: 500 !important;
+        }
+        .box-char-sheet .char-image-container {
+            border: 2px dashed #e2e8f0 !important;
+            background-color: #f8fafc !important;
+            transition: all 0.2s ease !important;
+        }
+        .box-char-sheet .char-image-container:hover {
+            border-color: #6366f1 !important;
+            background-color: #f1f5f9 !important;
+        }
+
+        /* 技能項目の横並び用フレックスボックス */
+        .box-char-sheet .char-skill-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 2px 6px !important;
+        }
+        .box-char-sheet .char-skill-row input {
+            background: transparent !important;
+            border: none !important;
+            padding: 2px 0 !important;
+            border-radius: 0 !important;
+        }
+        .box-char-sheet .char-skill-row input:focus {
+            background: transparent !important;
+            border-bottom: 1px solid #6366f1 !important;
+        }
+        .box-char-sheet .char-skill-name {
+            width: auto !important;
+            flex: 1 !important;
+            font-weight: 500 !important;
+        }
+        .box-char-sheet .char-skill-value {
+            width: 40px !important;
+            text-align: right !important;
+            font-weight: bold !important;
+        }
+
+        /* プロフィール行・列のレイアウト */
+        .box-char-sheet .char-profile-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        .box-char-sheet .char-profile-row-multi {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .box-char-sheet .char-profile-col {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            flex: 1 !important;
+            min-width: 80px !important;
+        }
+        .box-char-sheet .char-profile-label {
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #64748b !important;
+            white-space: nowrap !important;
+            min-width: 40px !important;
+        }
+        .box-char-sheet .char-profile-col .char-profile-label {
+            min-width: 50px !important;
+        }
+        /* 強制100%幅スタイルの上書き */
+        .box-char-sheet .char-profile-row input,
+        .box-char-sheet .char-profile-col input {
+            flex: 1 !important;
+            width: 0 !important;
+            min-width: 0 !important;
         }
     `;
     const htmlContent = `<!DOCTYPE html>
@@ -653,7 +736,7 @@ function exportHTML() {
                 if (!container) return;
                 
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
+                div.className = "char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
                 
                 const inputName = document.createElement('input');
                 inputName.type = 'text';
@@ -684,12 +767,38 @@ function exportHTML() {
                 container.appendChild(div);
             };
 
+            // キャラクター画像アップロード
+            window.triggerCharImageUpload = (container) => {
+                const fileInput = container.querySelector('input[type="file"]');
+                if (fileInput) fileInput.click();
+            };
+
+            window.handleCharImageUpload = (input) => {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        const container = input.closest('.char-image-container');
+                        const preview = container.querySelector('.char-image-preview');
+                        const placeholder = container.querySelector('.char-image-placeholder');
+                        
+                        if (preview && placeholder) {
+                            preview.src = dataUrl;
+                            preview.setAttribute('src', dataUrl);
+                            preview.classList.remove('hidden');
+                            placeholder.classList.add('hidden');
+                        }
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            };
+
             // ココフォリアコピー
             window.copyToCcfolia = (sheetId) => {
                 const sheet = document.getElementById(sheetId);
                 if (!sheet) return;
                 
-                const inputs = sheet.querySelectorAll('.char-sheet-body input');
+                const inputs = sheet.querySelectorAll('.char-sheet-body .char-input');
                 const name = inputs[0].value || '無題の探索者';
                 const job = inputs[1].value || '';
                 const age = inputs[2].value || '';
@@ -1340,7 +1449,7 @@ window.onload = () => {
     });
     // 画像クリック時に選択状態にする
     editor.addEventListener('click', (e) => {
-        if (e.target.tagName === 'IMG') {
+        if (e.target.tagName === 'IMG' && !e.target.classList.contains('char-image-preview')) {
             const sel = window.getSelection();
             const range = document.createRange();
             range.selectNode(e.target);
@@ -1615,6 +1724,67 @@ function exportPDF() {
             background: #ffffff !important;
             border: 1px solid #e2e8f0 !important;
             color: #0f172a !important;
+        }
+        .box-char-sheet .char-skill-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 2px 6px !important;
+        }
+        .box-char-sheet .char-skill-row input {
+            background: transparent !important;
+            border: none !important;
+            padding: 2px 0 !important;
+            border-radius: 0 !important;
+        }
+        .box-char-sheet .char-skill-name {
+            width: auto !important;
+            flex: 1 !important;
+            font-weight: 500 !important;
+        }
+        .box-char-sheet .char-skill-value {
+            width: 40px !important;
+            text-align: right !important;
+            font-weight: bold !important;
+        }
+        
+        /* プロフィール行・列のレイアウト */
+        .box-char-sheet .char-profile-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        .box-char-sheet .char-profile-row-multi {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+        .box-char-sheet .char-profile-col {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            flex: 1 !important;
+            min-width: 80px !important;
+        }
+        .box-char-sheet .char-profile-label {
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #64748b !important;
+            white-space: nowrap !important;
+            min-width: 40px !important;
+        }
+        .box-char-sheet .char-profile-col .char-profile-label {
+            min-width: 50px !important;
+        }
+        /* 強制100%幅スタイルの上書き */
+        .box-char-sheet .char-profile-row input,
+        .box-char-sheet .char-profile-col input {
+            flex: 1 !important;
+            width: 0 !important;
+            min-width: 0 !important;
         }
         
         @media print {
@@ -2034,22 +2204,68 @@ function insertCharacterSheet() {
                 <!-- プロフィール -->
                 <div>
                     <span class="block text-xs font-bold text-slate-400 mb-1">プロフィール</span>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <input type="text" placeholder="名前" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="職業" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="年齢" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="性別" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="身長" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="体重" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="誕生日" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        <input type="text" placeholder="髪・目の色" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <!-- 画像登録枠 -->
+                        <div class="char-image-container shrink-0 w-24 h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition relative overflow-hidden" onclick="triggerCharImageUpload(this)">
+                            <input type="file" accept="image/*" class="hidden no-print" onchange="handleCharImageUpload(this)" onclick="event.stopPropagation()">
+                            <div class="char-image-placeholder flex flex-col items-center text-slate-400 text-[10px] no-print">
+                                <span class="text-base">📷</span>
+                                <span class="mt-1">画像登録</span>
+                            </div>
+                            <img class="char-image-preview hidden absolute inset-0 w-full h-full object-cover">
+                        </div>
+                        <!-- 入力欄 -->
+                        <div class="flex-1 flex flex-col gap-2">
+                            <!-- 行1: 名前 -->
+                            <div class="char-profile-row">
+                                <span class="char-profile-label">名前</span>
+                                <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                            </div>
+                            <!-- 行2: 職業、年齢、性別 -->
+                            <div class="char-profile-row-multi">
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">職業</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">年齢</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">性別</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                            </div>
+                            <!-- 行3: 身長、体重 -->
+                            <div class="char-profile-row-multi">
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">身長</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">体重</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                            </div>
+                            <!-- 行4: 誕生日、髪・目の色 -->
+                            <div class="char-profile-row-multi">
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">誕生日</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                                <div class="char-profile-col">
+                                    <span class="char-profile-label">髪・目の色</span>
+                                    <input type="text" class="char-input text-xs border border-slate-200 rounded px-2 py-1 outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- 能力値 -->
                 <div>
                     <span class="block text-xs font-bold text-slate-400 mb-1">能力値 (STR, CON, POW, DEX, APP, SIZ, INT, EDU, SAN)</span>
-                    <div class="char-stats-grid grid grid-cols-9 gap-1.5 text-center">
+                    <div class="char-stats-grid grid grid-cols-9 gap-1.5 text-center" style="display: grid !important; grid-template-columns: repeat(9, minmax(0, 1fr)) !important;">
                         <div class="bg-slate-50 border border-slate-200 rounded p-1">
                             <div class="text-[9px] font-bold text-slate-500">STR</div>
                             <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
@@ -2096,19 +2312,19 @@ function insertCharacterSheet() {
                         <button onclick="addSkillToSheet('${sheetId}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-bold transition no-print">＋ 技能追加</button>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="${skillContainerId}">
-                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                        <div class="char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
                             <input type="text" value="目星" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <input type="number" value="25" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <span class="text-[9px] text-slate-400">%</span>
                             <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
                         </div>
-                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                        <div class="char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
                             <input type="text" value="聞き耳" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <input type="number" value="25" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <span class="text-[9px] text-slate-400">%</span>
                             <button onclick="this.parentNode.remove(); autoUpdateUI();" class="text-slate-300 hover:text-rose-500 font-bold text-xs no-print shrink-0 px-0.5">×</button>
                         </div>
-                        <div class="flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
+                        <div class="char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50">
                             <input type="text" value="図書館" placeholder="技能名" class="char-skill-name text-[10px] w-full bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <input type="number" value="20" class="char-skill-value text-right font-bold text-[10px] w-10 bg-transparent outline-none border-b border-transparent focus:border-slate-300" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
                             <span class="text-[9px] text-slate-400">%</span>
@@ -2133,7 +2349,7 @@ function addSkillToSheet(sheetId) {
     if (!container) return;
     
     const div = document.createElement('div');
-    div.className = "flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
+    div.className = "char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
     
     const inputName = document.createElement('input');
     inputName.type = 'text';
@@ -2179,7 +2395,7 @@ function copyToCcfolia(sheetId) {
     const sheet = document.getElementById(sheetId);
     if (!sheet) return;
     
-    const inputs = sheet.querySelectorAll('.char-sheet-body input');
+    const inputs = sheet.querySelectorAll('.char-sheet-body .char-input');
     const name = inputs[0].value || '無題の探索者';
     const job = inputs[1].value || '';
     const age = inputs[2].value || '';
@@ -2303,8 +2519,36 @@ function fallbackCopyTextToClipboard(text) {
     }
 }
 
+function triggerCharImageUpload(container) {
+    const fileInput = container.querySelector('input[type="file"]');
+    if (fileInput) fileInput.click();
+}
+
+function handleCharImageUpload(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            const container = input.closest('.char-image-container');
+            const preview = container.querySelector('.char-image-preview');
+            const placeholder = container.querySelector('.char-image-placeholder');
+            
+            if (preview && placeholder) {
+                preview.src = dataUrl;
+                preview.setAttribute('src', dataUrl); // HTML上に固定して保存可能にする
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                autoUpdateUI();
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 // グローバルスコープバインド
 window.insertCharacterSheet = insertCharacterSheet;
 window.addSkillToSheet = addSkillToSheet;
 window.copyToCcfolia = copyToCcfolia;
 window.copyTextToClipboard = copyTextToClipboard;
+window.triggerCharImageUpload = triggerCharImageUpload;
+window.handleCharImageUpload = handleCharImageUpload;
