@@ -7,10 +7,10 @@
     <!-- Tailwind CSS (スタイリング用) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* キャンバスのチェック柄背景（透明度がわかりやすいように） */
+        /* キャンバスのグリッド背景 */
         .canvas-bg {
             background-color: #ffffff;
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-image: linear-gradient(to right, #bae6fd 1px, transparent 1px), linear-gradient(to bottom, #bae6fd 1px, transparent 1px);
             background-size: 16px 16px;
         }
         /* スクロールバーのカスタマイズ */
@@ -69,7 +69,7 @@
                         <span class="w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
                         1. ブラシにする画像 (最大10個)
                     </h2>
-                    <span id="image-count" class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">4 / 10 個</span>
+                    <span id="image-count" class="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">0 / 10 個</span>
                 </div>
                 
                 <p class="text-xs text-slate-500">クリックして画像の変更・追加ができます。お好みのイラスト(PNG推奨)を入れてみましょう！</p>
@@ -91,7 +91,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.24 9m4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
-                        画像をすべて初期化
+                        画像をすべて消去
                     </button>
                 </div>
 
@@ -264,8 +264,8 @@
             </div>
 
             <!-- キャンバス本体 (親要素いっぱいに広がる) -->
-            <div id="canvas-container" class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative canvas-bg flex items-center justify-center min-h-[400px]">
-                <canvas id="paint-canvas" class="block cursor-crosshair max-w-full max-h-full"></canvas>
+            <div id="canvas-container" class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative canvas-bg min-h-[400px]">
+                <canvas id="paint-canvas" class="absolute top-0 left-0 w-full h-full cursor-crosshair block"></canvas>
             </div>
 
             <!-- 簡単な操作ガイド -->
@@ -308,16 +308,7 @@
 
         // --- 2. サンプルデータの用意 (初期画像) ---
         // 最初に何も画像がないと寂しいので、Webで安全に使用できるSVG/DataURI形式のサンプルをあらかじめ4つ設定しておきます。
-        const defaultSampleImages = [
-            // 1. 赤いハート
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23f43f5e" stroke="%23f43f5e"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
-            // 2. 黄色の星
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23f59e0b" stroke="%23d97706"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>',
-            // 3. 青い音符
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%230ea5e9" stroke="%230ea5e9"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>',
-            // 4. 緑のクローバー（キラキラ）
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%2310b981" stroke="%2310b981"><path d="M12 2a3 3 0 0 0-3 3 3 3 0 0 0 .5 1.6A5 5 0 0 0 5 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 5 5 0 0 0 4.5 2.4A3 3 0 0 0 12 22a3 3 0 0 0 3-3 5 5 0 0 0 4.5-2.4 3 3 0 0 0 3-3 3 3 0 0 0-3-3 5 5 0 0 0-4.5-2.4A3 3 0 0 0 12 2z"/></svg>'
-        ];
+        const defaultSampleImages = [];
 
         // --- 3. UIパーツ＆イベントリスナーの紐付け ---
         const slotsContainer = document.getElementById('slots-container');
@@ -384,15 +375,14 @@
             tempCtx.drawImage(canvas, 0, 0);
 
             // コンテナのサイズを取得
-            const width = container.clientWidth - 4; // 枠線分の余裕
-            const height = Math.max(container.clientHeight - 4, 500); // 最小高さは500px
+            const width = container.clientWidth;
+            const height = container.clientHeight;
 
             canvas.width = width;
             canvas.height = height;
 
-            // 透明度保持のために背景を白でクリア
-            ctx.fillStyle = 'rgba(255, 255, 255, 0)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 透明度保持のために背景をクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 保存していた画像を再描画
             ctx.drawImage(tempCanvas, 0, 0);
@@ -571,11 +561,11 @@
             reader.readAsDataURL(file);
         }
 
-        // サンプル初期化ボタン
+        // 画像消去ボタン
         btnResetImages.addEventListener('click', () => {
             brushImages = Array(MAX_SLOTS).fill(null);
             initImageSlots();
-            showToast('画像をサンプルセットに初期化しました。');
+            showToast('画像をすべて消去しました。');
         });
 
         // --- 5. 描画（ブラシ）のロジック ---
@@ -921,16 +911,16 @@
             radio.addEventListener('change', (e) => {
                 if (e.target.value === 'color') {
                     bgColorPicker.classList.remove('hidden');
-                    canvas.style.backgroundColor = bgColorPicker.value;
+                    container.style.backgroundColor = bgColorPicker.value;
                 } else {
                     bgColorPicker.classList.add('hidden');
-                    canvas.style.backgroundColor = 'transparent';
+                    container.style.backgroundColor = '#ffffff';
                 }
             });
         });
 
         bgColorPicker.addEventListener('input', (e) => {
-            canvas.style.backgroundColor = e.target.value;
+            container.style.backgroundColor = e.target.value;
         });
 
         // キャンバスの描画範囲を計算する関数
@@ -1021,8 +1011,11 @@
             resizeCanvas();
         });
 
-        // ブラウザのサイズが変わったときに自動調整
-        window.addEventListener('resize', resizeCanvas);
+        // コンテナのサイズが変わったときに自動調整（サイドバーの伸縮などにも対応）
+        const resizeObserver = new ResizeObserver(() => {
+            resizeCanvas();
+        });
+        resizeObserver.observe(container);
 
     </script>
 </body>
