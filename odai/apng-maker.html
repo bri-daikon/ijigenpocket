@@ -46,6 +46,21 @@
                     </div>
                 </div>
 
+                <!-- 1.5 エフェクト画像アップロード部分 (任意) -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+                        <span class="bg-red-100 text-red-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">+</span>
+                        カスタムエフェクト用画像（任意）
+                    </label>
+                    <p class="text-xs text-gray-500 mb-3 ml-8">
+                        ※ここに画像をセットすると、以下のエフェクトを選んだ際に<strong class="text-red-500">演出がアップロードした画像に変化</strong>します。<br>
+                        対象：<span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mt-1 mr-1">🔥 燃える</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">💦 液体ビシャ</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">🩸 赤ペンキ</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5">🫧 泡コポコポ</span>
+                    </p>
+                    <div class="relative">
+                        <input type="file" id="effectImageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-red-50 file:to-orange-50 file:text-red-700 hover:file:bg-orange-100 transition-colors cursor-pointer border-2 border-dashed border-red-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-red-400 focus:outline-none">
+                    </div>
+                </div>
+
                 <!-- 2. エフェクト選択部分 -->
                 <div>
                     <label class="flex items-center text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
@@ -351,6 +366,10 @@
                                     <input type="radio" name="effect" value="waterRipple" class="peer sr-only">
                                     <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">🫧 水紋</div>
                                 </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="bubbles" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">🫧 泡コポコポ</div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -510,6 +529,9 @@
 
         let loadedImage = new Image();
         loadedImage.crossOrigin = "anonymous";
+        
+        let loadedEffectImage = new Image();
+        loadedEffectImage.crossOrigin = "anonymous";
 
         // CRC32計算用のハックテーブル（APNG書き換え用）
         const crcTable = [];
@@ -630,6 +652,20 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 loadedImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const effectImageInput = document.getElementById('effectImageInput');
+        effectImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                loadedEffectImage.src = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadedEffectImage.src = event.target.result;
             };
             reader.readAsDataURL(file);
         });
@@ -851,6 +887,18 @@
                         y: 0,
                         targetLen: height * 0.3 + Math.random() * height * 0.6,
                         width: 5 + Math.random() * 8
+                    });
+                }
+            } else if (effect === 'bubbles') {
+                for (let i = 0; i < 40; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        startY: height + Math.random() * height * 0.2, // 下から発生
+                        size: width * 0.01 + Math.random() * width * 0.04,
+                        speedY: Math.random() * 1.5 + 1.0, // 上に昇る速度
+                        wobbleSpeed: Math.random() * 0.1 + 0.05,
+                        wobbleAmp: Math.random() * 15 + 5,
+                        delay: Math.random() * 0.3 // 時間差で出始める
                     });
                 }
             } else if (effect === 'bullet') {
@@ -1212,77 +1260,111 @@
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.save();
                     
-                    const fireHeight = height * (0.3 + progress * 0.7);
-                    const burnY = height - fireHeight;
+                    if (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0) {
+                        // カスタム画像を使った炎エフェクト
+                        const fireH = height * (0.6 + Math.sin(progress * Math.PI * 2) * 0.1);
+                        
+                        // 背景を少し暗く・赤っぽくして炎を目立たせる
+                        ctx.globalCompositeOperation = 'multiply';
+                        ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.6})`;
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // 端の隙間をなくすため、画面幅・高さよりも一回り大きく描画する
+                        const drawW = width * 1.5;
+                        const drawH = fireH * 1.3;
 
-                    // 背景を少し暗く・赤っぽくして炎を目立たせる
-                    ctx.globalCompositeOperation = 'multiply';
-                    ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.5})`;
-                    ctx.fillRect(0, 0, width, height);
-                    
-                    // 炎のベース（濃い色で透けないようにする）
-                    ctx.globalCompositeOperation = 'source-over';
-                    const baseGrad = ctx.createLinearGradient(0, burnY, 0, height);
-                    baseGrad.addColorStop(0, 'rgba(0,0,0,0)');
-                    baseGrad.addColorStop(0.1, 'rgba(255,50,0,0.8)');
-                    baseGrad.addColorStop(0.4, 'rgba(200,0,0,1)');
-                    baseGrad.addColorStop(1, 'rgba(50,0,0,1)');
-                    ctx.fillStyle = baseGrad;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(0, height);
-                    for(let x=0; x<=width; x+=5) {
-                        let y = burnY 
-                              + Math.sin(x*0.03 - progress*20)*20 
-                              + Math.sin(x*0.07 + progress*15)*15
-                              + Math.random()*10;
-                        ctx.lineTo(x, y);
-                    }
-                    ctx.lineTo(width, height);
-                    ctx.fill();
-
-                    // 炎のハイライト (ハードライトで濃く明るく)
-                    ctx.globalCompositeOperation = 'hard-light';
-                    const highGrad = ctx.createLinearGradient(0, burnY + fireHeight*0.1, 0, height);
-                    highGrad.addColorStop(0, 'rgba(0,0,0,0)');
-                    highGrad.addColorStop(0.2, 'rgba(255,200,0,0.9)');
-                    highGrad.addColorStop(0.6, 'rgba(255,100,0,1)');
-                    highGrad.addColorStop(1, 'rgba(200,0,0,1)');
-                    ctx.fillStyle = highGrad;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(0, height);
-                    for(let x=0; x<=width; x+=5) {
-                        let y = burnY + fireHeight*0.1
-                              + Math.sin(x*0.04 - progress*25)*15 
-                              + Math.sin(x*0.08 + progress*12)*10
-                              + Math.random()*5;
-                        ctx.lineTo(x, y);
-                    }
-                    ctx.lineTo(width, height);
-                    ctx.fill();
-
-                    // 火の粉
-                    ctx.globalCompositeOperation = 'screen';
-                    ctx.fillStyle = 'rgba(255, 180, 50, 1)';
-                    for(let f=0; f<40; f++) {
-                        const startY = height - (f/40)*fireHeight;
-                        const fx = (f*37) % width + Math.sin(progress*10 + f)*15;
-                        const fy = startY - progress * height * 0.5 - Math.random()*20;
-                        if (fy > 0 && fy < height) {
-                            ctx.beginPath();
-                            ctx.arc(fx, fy, 2 + Math.random()*4, 0, Math.PI*2);
-                            ctx.fill();
+                        for (let layer = 0; layer < 4; layer++) {
+                            const offsetProgress = (progress + layer * 0.25) % 1.0;
+                            
+                            // 左右の隙間を埋めるため、左にずらして配置。上下も隙間ができないよう調整
+                            const offsetX = -(width * 0.25) + Math.sin(offsetProgress * Math.PI * 6) * 20;
+                            const fireY = height - drawH * 0.9 + (Math.sin(offsetProgress * Math.PI * 4) * 15);
+                            
+                            if (layer === 0) {
+                                // 1層目は不透明度100%でしっかり描画
+                                ctx.globalCompositeOperation = 'source-over';
+                                ctx.globalAlpha = 1.0;
+                            } else {
+                                // 2〜4層目はスクリーンで光らせる
+                                ctx.globalCompositeOperation = 'screen';
+                                ctx.globalAlpha = 0.9;
+                            }
+                            
+                            ctx.drawImage(loadedEffectImage, offsetX, fireY, drawW, drawH);
                         }
+                    } else {
+                        const fireHeight = height * (0.3 + progress * 0.7);
+                        const burnY = height - fireHeight;
+    
+                        // 背景を少し暗く・赤っぽくして炎を目立たせる
+                        ctx.globalCompositeOperation = 'multiply';
+                        ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.5})`;
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // 炎のベース（濃い色で透けないようにする）
+                        ctx.globalCompositeOperation = 'source-over';
+                        const baseGrad = ctx.createLinearGradient(0, burnY, 0, height);
+                        baseGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                        baseGrad.addColorStop(0.1, 'rgba(255,50,0,0.8)');
+                        baseGrad.addColorStop(0.4, 'rgba(200,0,0,1)');
+                        baseGrad.addColorStop(1, 'rgba(50,0,0,1)');
+                        ctx.fillStyle = baseGrad;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
+                        for(let x=0; x<=width; x+=5) {
+                            let y = burnY 
+                                  + Math.sin(x*0.03 - progress*20)*20 
+                                  + Math.sin(x*0.07 + progress*15)*15
+                                  + Math.random()*10;
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.lineTo(width, height);
+                        ctx.fill();
+    
+                        // 炎のハイライト (ハードライトで濃く明るく)
+                        ctx.globalCompositeOperation = 'hard-light';
+                        const highGrad = ctx.createLinearGradient(0, burnY + fireHeight*0.1, 0, height);
+                        highGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                        highGrad.addColorStop(0.2, 'rgba(255,200,0,0.9)');
+                        highGrad.addColorStop(0.6, 'rgba(255,100,0,1)');
+                        highGrad.addColorStop(1, 'rgba(200,0,0,1)');
+                        ctx.fillStyle = highGrad;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
+                        for(let x=0; x<=width; x+=5) {
+                            let y = burnY + fireHeight*0.1
+                                  + Math.sin(x*0.04 - progress*25)*15 
+                                  + Math.sin(x*0.08 + progress*12)*10
+                                  + Math.random()*5;
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.lineTo(width, height);
+                        ctx.fill();
+    
+                        // 火の粉
+                        ctx.globalCompositeOperation = 'screen';
+                        ctx.fillStyle = 'rgba(255, 180, 50, 1)';
+                        for(let f=0; f<40; f++) {
+                            const startY = height - (f/40)*fireHeight;
+                            const fx = (f*37) % width + Math.sin(progress*10 + f)*15;
+                            const fy = startY - progress * height * 0.5 - Math.random()*20;
+                            if (fy > 0 && fy < height) {
+                                ctx.beginPath();
+                                ctx.arc(fx, fy, 2 + Math.random()*4, 0, Math.PI*2);
+                                ctx.fill();
+                            }
+                        }
+                        
+                        // 焦げ跡 (Multiply)
+                        ctx.globalCompositeOperation = 'multiply';
+                        const smokeGrad = ctx.createLinearGradient(0, height - fireHeight*0.5, 0, height);
+                        smokeGrad.addColorStop(0, 'rgba(255,255,255,1)');
+                        smokeGrad.addColorStop(1, 'rgba(20,20,20,1)');
+                        ctx.fillStyle = smokeGrad;
+                        ctx.fillRect(0, height - fireHeight*0.5, width, fireHeight*0.5);
                     }
-                    
-                    // 焦げ跡 (Multiply)
-                    ctx.globalCompositeOperation = 'multiply';
-                    const smokeGrad = ctx.createLinearGradient(0, height - fireHeight*0.5, 0, height);
-                    smokeGrad.addColorStop(0, 'rgba(255,255,255,1)');
-                    smokeGrad.addColorStop(1, 'rgba(20,20,20,1)');
-                    ctx.fillStyle = smokeGrad;
-                    ctx.fillRect(0, height - fireHeight*0.5, width, fireHeight*0.5);
                     
                     ctx.restore();
                 }
@@ -1476,6 +1558,8 @@
                     ctx.drawImage(loadedImage, 0, 0, width, height);
                     ctx.fillStyle = effect === 'redPaint' ? '#C11' : '#1BF';
                     
+                    const useCustomImage = (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0);
+                    
                     splashes.forEach((s, idx) => {
                         // 時間経過に合わせて各スプラッシュの進行度を計算
                         if (progress > s.delay) {
@@ -1485,50 +1569,76 @@
                             if (sp < 0.3) {
                                 // 落ちてくる水滴
                                 let dropY = s.y * (sp / 0.3);
-                                ctx.beginPath();
-                                ctx.ellipse(s.x, dropY, s.size*0.2, s.size*0.5, 0, 0, Math.PI*2);
-                                ctx.fill();
+                                if (useCustomImage) {
+                                    ctx.save();
+                                    ctx.translate(s.x, dropY);
+                                    ctx.scale(0.4, 0.8);
+                                    const dropS = s.size * 1.5;
+                                    ctx.drawImage(loadedEffectImage, -dropS, -dropS, dropS*2, dropS*2);
+                                    ctx.restore();
+                                } else {
+                                    ctx.beginPath();
+                                    ctx.ellipse(s.x, dropY, s.size*0.2, s.size*0.5, 0, 0, Math.PI*2);
+                                    ctx.fill();
+                                }
                             } else {
                                 // ビシャっと広がる
                                 let splashP = (sp - 0.3) / 0.7; // 0.0 ~ 1.0
-                                ctx.save();
-                                ctx.translate(s.x, s.y);
                                 
-                                // 広がる本体
-                                ctx.scale(splashP + 0.2, splashP + 0.2);
-                                ctx.beginPath();
-                                const pts = 8;
-                                for(let a=0; a<=pts; a++){
-                                    let angle = (a/pts)*Math.PI*2;
-                                    let r = s.size * (0.6 + Math.sin(a * 4 + idx)*0.4);
-                                    let px = Math.cos(angle)*r;
-                                    let py = Math.sin(angle)*r;
-                                    if(a===0) ctx.moveTo(px, py);
-                                    else {
-                                        let prevA = ((a-1)/pts)*Math.PI*2;
-                                        let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.2;
-                                        let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.2;
-                                        ctx.quadraticCurveTo(cpX, cpY, px, py);
-                                    }
-                                }
-                                ctx.fill();
-                                
-                                // 飛沫
-                                ctx.strokeStyle = ctx.fillStyle;
-                                for(let a=0; a<10; a++){
-                                    const angle = a * (Math.PI*2/10) + idx*0.5;
-                                    const d = s.size * (1.0 + splashP * 1.5);
+                                if (useCustomImage) {
+                                    ctx.save();
+                                    ctx.translate(s.x, s.y);
+                                    // はじける瞬間は少し大きく、その後落ち着く
+                                    let scale = splashP < 0.2 ? splashP / 0.2 * 1.2 : 1.2 - (splashP - 0.2) * 0.2;
+                                    scale *= (1.0 + (idx % 3) * 0.3); // 個別に少しサイズを変える
+                                    ctx.scale(scale, scale);
+                                    ctx.rotate(idx * Math.PI / 3); // 個別に角度を変える
+                                    ctx.globalAlpha = Math.min(splashP * 5, 1.0); // すぐに不透明になる
                                     
+                                    const drawW = s.size * 6;
+                                    const drawH = s.size * 6;
+                                    ctx.drawImage(loadedEffectImage, -drawW/2, -drawH/2, drawW, drawH);
+                                    ctx.restore();
+                                } else {
+                                    ctx.save();
+                                    ctx.translate(s.x, s.y);
+                                    
+                                    // 広がる本体
+                                    ctx.scale(splashP + 0.2, splashP + 0.2);
                                     ctx.beginPath();
-                                    ctx.arc(Math.cos(angle)*d, Math.sin(angle)*d, s.size*0.1 * (1-splashP), 0, Math.PI*2);
+                                    const pts = 8;
+                                    for(let a=0; a<=pts; a++){
+                                        let angle = (a/pts)*Math.PI*2;
+                                        let r = s.size * (0.6 + Math.sin(a * 4 + idx)*0.4);
+                                        let px = Math.cos(angle)*r;
+                                        let py = Math.sin(angle)*r;
+                                        if(a===0) ctx.moveTo(px, py);
+                                        else {
+                                            let prevA = ((a-1)/pts)*Math.PI*2;
+                                            let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.2;
+                                            let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.2;
+                                            ctx.quadraticCurveTo(cpX, cpY, px, py);
+                                        }
+                                    }
                                     ctx.fill();
                                     
-                                    // 垂れる液
-                                    if (angle > 0 && angle < Math.PI) {
-                                        ctx.fillRect(Math.cos(angle)*(s.size*0.5), Math.sin(angle)*(s.size*0.5), s.size*0.05, splashP * s.size);
+                                    // 飛沫
+                                    ctx.strokeStyle = ctx.fillStyle;
+                                    for(let a=0; a<10; a++){
+                                        const angle = a * (Math.PI*2/10) + idx*0.5;
+                                        const d = s.size * (1.0 + splashP * 1.5);
+                                        
+                                        ctx.beginPath();
+                                        ctx.arc(Math.cos(angle)*d, Math.sin(angle)*d, s.size*0.1 * (1-splashP), 0, Math.PI*2);
+                                        ctx.fill();
+                                        
+                                        // 垂れる液
+                                        if (angle > 0 && angle < Math.PI) {
+                                            ctx.fillRect(Math.cos(angle)*(s.size*0.5), Math.sin(angle)*(s.size*0.5), s.size*0.05, splashP * s.size);
+                                        }
                                     }
+                                    ctx.restore();
                                 }
-                                ctx.restore();
                             }
                         }
                     });
@@ -1556,6 +1666,54 @@
                         ctx.arc(width/2, height/2, maxRad * rp, 0, Math.PI*2);
                         ctx.stroke();
                     }
+                }
+                else if (effect === 'bubbles') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    const useCustomImage = (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0);
+                    
+                    particles.forEach(p => {
+                        if (progress > p.delay) {
+                            let sp = (progress - p.delay) / (1.0 - p.delay); // 0.0 ~ 1.0
+                            // 上に昇る。マイナスY方向
+                            let currentY = p.startY - sp * (height * 1.2) * p.speedY;
+                            // 左右にゆらゆら
+                            let currentX = p.x + Math.sin(sp * Math.PI * 20 * p.wobbleSpeed) * p.wobbleAmp;
+                            
+                            if (currentY < -p.size) return;
+
+                            if (useCustomImage) {
+                                ctx.save();
+                                ctx.translate(currentX, currentY);
+                                ctx.rotate(Math.sin(sp * Math.PI * 10) * 0.2); // 少し揺れる
+                                ctx.globalAlpha = Math.min(1.0, sp * 5); // 最初はフェードイン
+                                const drawW = p.size * 3;
+                                const drawH = p.size * 3;
+                                ctx.drawImage(loadedEffectImage, -drawW/2, -drawH/2, drawW, drawH);
+                                ctx.restore();
+                            } else {
+                                ctx.save();
+                                ctx.translate(currentX, currentY);
+                                ctx.globalAlpha = Math.min(1.0, sp * 5);
+                                ctx.beginPath();
+                                ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                                // 泡っぽいグラデーション
+                                let grad = ctx.createRadialGradient(-p.size*0.3, -p.size*0.3, p.size*0.1, 0, 0, p.size);
+                                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                                grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.3)');
+                                grad.addColorStop(0.8, 'rgba(150, 200, 255, 0.5)');
+                                grad.addColorStop(1, 'rgba(100, 150, 255, 0.8)');
+                                ctx.fillStyle = grad;
+                                ctx.fill();
+                                
+                                // キラッとしたハイライト
+                                ctx.beginPath();
+                                ctx.arc(-p.size*0.4, -p.size*0.4, p.size*0.2, 0, Math.PI*2);
+                                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                                ctx.fill();
+                                ctx.restore();
+                            }
+                        }
+                    });
                 }
 
                 if (format === 'apng') {
