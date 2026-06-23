@@ -331,9 +331,23 @@
 
         <!-- 比較の儀式セクション -->
         <section id="compareSection" class="hidden space-y-10 pt-10 border-t border-amber-950/40">
-            <div class="flex items-center gap-2.5">
-                <i data-lucide="gem" class="text-amber-500 w-6 h-6 animate-pulse"></i>
-                <h2 class="text-xl font-bold font-header text-amber-400 tracking-wider">能力 & 技能 比較の儀</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="gem" class="text-amber-500 w-6 h-6 animate-pulse"></i>
+                    <h2 class="text-xl font-bold font-header text-amber-400 tracking-wider">能力 & 技能 比較の儀</h2>
+                </div>
+                <!-- 比較用 版フィルタータブ -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-stone-600 font-header mr-0.5">比較対象：</span>
+                    <button onclick="setCompareEdition('6')" id="compareTab_6"
+                        class="px-4 py-1.5 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400">
+                        6版
+                    </button>
+                    <button onclick="setCompareEdition('7')" id="compareTab_7"
+                        class="px-4 py-1.5 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600">
+                        7版
+                    </button>
+                </div>
             </div>
 
             <!-- レーダーチャート & パラメータハイライト -->
@@ -484,6 +498,9 @@
 
         // --- 版フィルター状態 ('all' | '6' | '7') ---
         let editionFilter = 'all';
+
+        // --- 比較セクション用 版フィルター状態 ('6' | '7') ---
+        let compareEditionTab = '6';
 
         // --- アプリケーション起動時の初期化 ---
         window.addEventListener('DOMContentLoaded', () => {
@@ -1133,17 +1150,53 @@
             updateComparison();
         }
 
+        // --- 比較セクションの版切り替え ---
+        function setCompareEdition(edition) {
+            compareEditionTab = edition;
+            ['6', '7'].forEach(e => {
+                const tab = document.getElementById(`compareTab_${e}`);
+                if (!tab) return;
+                if (e === edition) {
+                    tab.className = 'px-4 py-1.5 text-[11px] font-semibold rounded-full font-header transition-all border border-amber-900/50 bg-amber-900/30 text-amber-400';
+                } else {
+                    tab.className = 'px-4 py-1.5 text-[11px] font-semibold rounded-full font-header transition-all border border-stone-800 text-stone-500 hover:text-stone-300 hover:border-stone-600';
+                }
+            });
+            updateComparison();
+        }
+
         // --- 比較セクション全体の更新 ---
         function updateComparison() {
             const compareSection = document.getElementById('compareSection');
-            const selectedChars = characters.filter(c => selectedIds.has(c.id));
+            const allSelectedChars = characters.filter(c => selectedIds.has(c.id));
 
-            if (selectedChars.length === 0) {
+            if (allSelectedChars.length === 0) {
                 compareSection.classList.add('hidden');
                 return;
             }
 
             compareSection.classList.remove('hidden');
+
+            // 現在の比較タブに合わせたキャラクターのみ抽出
+            const selectedChars = allSelectedChars.filter(char => {
+                const ed = char.edition || '6';
+                return ed === compareEditionTab;
+            });
+
+            if (selectedChars.length === 0) {
+                document.getElementById('radarChartContainer').innerHTML = '<div class="text-stone-500 text-xs font-header absolute inset-0 flex items-center justify-center">この版の探索者は選択されていません</div>';
+                document.getElementById('highlighterGrid').innerHTML = '<div class="col-span-full py-4 text-stone-500 text-xs font-header text-center">この版の探索者は選択されていません</div>';
+                document.getElementById('compareTableBody').innerHTML = '<tr><td colspan="13" class="text-center p-8 text-stone-500 text-xs font-header">この版の探索者は選択されていません</td></tr>';
+                
+                document.getElementById('skillTableHeader').innerHTML = `
+                    <th onclick="setSkillTableSort('label')" class="p-4 min-w-[200px] bg-[#100d0a] cursor-pointer hover:text-amber-400 transition-colors select-none">
+                        秘術・技能名 <span id="skill_sort_icon_label" class="inline-block align-middle ml-1"></span>
+                    </th>
+                `;
+                document.getElementById('skillCompareTableBody').innerHTML = '<tr><td class="text-center p-8 text-stone-500 text-xs font-header">この版の探索者は選択されていません</td></tr>';
+                if(radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+                return;
+            }
 
             renderCompareTable(selectedChars);
             renderHighlighters(selectedChars);
