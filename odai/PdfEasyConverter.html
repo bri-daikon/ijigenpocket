@@ -48,8 +48,7 @@
     /* ふりがなツールチップ */
     .furigana-word {
       position: relative;
-      text-decoration: underline dotted #94a3b8;
-      text-underline-offset: 4px;
+      border-bottom: 1px dotted #94a3b8;
       cursor: help;
       display: inline;
     }
@@ -740,12 +739,11 @@
       if (!currentFileName || processedItems.length === 0) return;
 
       const saveData = processedItems
-        .filter(item => item.bookmarked || item.note || item.furiganaHtml)
+        .filter(item => item.bookmarked || item.note)
         .map(item => ({
           original: item.original,
           bookmarked: item.bookmarked,
-          note: item.note,
-          furiganaHtml: item.furiganaHtml
+          note: item.note
         }));
 
       localStorage.setItem('pdf_tool_save_' + currentFileName, JSON.stringify(saveData));
@@ -976,18 +974,13 @@
 
           let isBookmarked = false;
           let noteText = "";
-          let savedFurigana = undefined;
 
           if (existingItem) {
             isBookmarked = existingItem.bookmarked;
             noteText = existingItem.note;
-            if (existingItem.text === cleanedText) {
-              savedFurigana = existingItem.furiganaHtml;
-            }
           } else if (savedItem) {
             isBookmarked = savedItem.bookmarked;
             noteText = savedItem.note;
-            savedFurigana = savedItem.furiganaHtml;
           }
 
           tempItems.push({
@@ -997,8 +990,7 @@
             bookmarked: isBookmarked,
             note: noteText,
             page: block.page,
-            isEditing: false,
-            furiganaHtml: savedFurigana
+            isEditing: false
           });
         });
         // globalIdはグローバルスコープで宣言済み
@@ -1006,10 +998,6 @@
 
       processedItems = tempItems;
       renderList();
-
-      if (kuroshiroEnabled) {
-        toggleFurigana();
-      }
 
       if (isNewFileLoad && savedData.length > 0) {
         showToast('データを復元しました', `このPDF用に保存されていた しおり: ${savedData.filter(d => d.bookmarked).length}件 / メモ: ${savedData.filter(d => d.note).length}件 を復元しました。`, 'success');
@@ -1411,16 +1399,10 @@
             replaceCount++;
           }
         });
-        if (item.text !== currentText) {
-          item.text = currentText;
-          item.furiganaHtml = undefined;
-        }
+        item.text = currentText;
       });
 
       renderList();
-      if (kuroshiroEnabled) {
-        toggleFurigana();
-      }
       saveToLocalStorage();
       showToast('一括変換完了！', `${replaceCount}箇所のワードを {} で囲みました。`, 'success');
     }
@@ -1436,14 +1418,10 @@
         const newText = item.text.replace(/\{([^}]+)\}/g, '$1');
         if (newText !== item.text) {
           item.text = newText;
-          item.furiganaHtml = undefined;
           count++;
         }
       });
       renderList();
-      if (kuroshiroEnabled) {
-        toggleFurigana();
-      }
       saveToLocalStorage();
       showToast('{} 消去完了', `${count}カードの {} を取り除きました。`, 'info');
     }
@@ -1484,12 +1462,8 @@
 
     // --- ふりがな機能 (Kuroshiro.js) ---
 
-    let isFuriganaProcessing = false;
-
     // ふりがなチェックボックスのON/OFF
     async function toggleFurigana() {
-      if (isFuriganaProcessing) return;
-      
       const chk = document.getElementById('chk-furigana');
       kuroshiroEnabled = chk.checked;
 
@@ -1498,64 +1472,48 @@
         return;
       }
 
-      isFuriganaProcessing = true;
-      try {
-        // 辞書の初期化（初回のみ）
-        const ok = await initKuroshiro();
-        if (!ok) {
-          chk.checked = false;
-          kuroshiroEnabled = false;
-          return;
-        }
-
-        // まだ変換していないカードのみ処理する
-        const toProcess = processedItems.filter(item => !item.furiganaHtml);
-        if (toProcess.length > 0) {
-          showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
-          updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
-          
-          let count = 0;
-          for (const item of toProcess) {
-            // チェックが外されたら中断
-            if (!document.getElementById('chk-furigana').checked) {
-              break;
-            }
-            try {
-              const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
-              item.furiganaHtml = rubyToFuriganaSpan(raw, item.id);
-            } catch (e) {
-              item.furiganaHtml = escapeHtml(item.text);
-            }
-            count++;
-            
-            // フリーズを防ぐため、2件ごとにイベントループを解放して画面を更新
-            if (count % 2 === 0) {
-              updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
-              await new Promise(resolve => setTimeout(resolve, 5));
-            }
-          }
-          updateStatus('success', 'ふりがな生成完了！');
-        }
-
-        if (document.getElementById('chk-furigana').checked) {
-          renderList();
-          showToast('ふりがな表示ON', '漢字にカーソルを乗せると読み仮名が表示されます。', 'success');
-        }
-      } finally {
-        isFuriganaProcessing = false;
+      // 辞書の初期化（初回のみ）
+      const ok = await initKuroshiro();
+      if (!ok) {
+        chk.checked = false;
+        kuroshiroEnabled = false;
+        return;
       }
+
+      // まだ変換していないカードのみ処理する
+      const toProcess = processedItems.filter(item => !item.furiganaHtml);
+      if (toProcess.length > 0) {
+        showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
+        updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
+        
+        let count = 0;
+        for (const item of toProcess) {
+          try {
+            const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
+            item.furiganaHtml = rubyToFuriganaSpan(raw);
+          } catch (e) {
+            item.furiganaHtml = escapeHtml(item.text);
+          }
+          count++;
+          
+          // フリーズを防ぐため、10件ごとにイベントループを解放して画面を更新
+          if (count % 10 === 0) {
+            updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+        }
+        updateStatus('success', 'ふりがな生成完了！');
+      }
+
+      renderList();
+      showToast('ふりがな表示ON', '漢字にカーソルを乗せると読み仮名が表示されます。', 'success');
     }
 
     // Kuroshiro辞書の初期化（初回のみネットワークからダウンロード）
     async function initKuroshiro() {
       if (kuroshiroReady) return true;
       try {
-        showToast('辞書を読み込み中...', '辞書データを解析しています。お使いの端末により数秒〜十数秒ブラウザが固まることがありますが、そのままお待ちください（初回のみ）。', 'info');
-        updateStatus('loading', '辞書データを解析中...（そのままお待ちください）');
-        
-        // メッセージを確実に画面に描画させるため、少し長めに待機
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        showToast('辞書を読み込み中...', 'ふりがな辞書データをダウンロードしています（初回のみ）', 'info');
         kuroshiroInstance = new Kuroshiro();
         await kuroshiroInstance.init(new KuromojiAnalyzer({
           dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
@@ -1570,7 +1528,7 @@
     }
 
     // Kuroshiroの<ruby>出力をカスタムtooltipスパンに変換する
-    function rubyToFuriganaSpan(rubyHtml, itemId) {
+    function rubyToFuriganaSpan(rubyHtml) {
       // 改行を保持するためプレースホルダーに退避
       const NL = '\uE000'; // PUA文字を改行の仮置き
       let html = rubyHtml.replace(/\n/g, NL);
@@ -1579,35 +1537,11 @@
       html = html.replace(/<ruby>([^<]*)(?:<rp>[^<]*<\/rp>)?<rt>([^<]*)<\/rt>(?:<rp>[^<]*<\/rp>)?<\/ruby>/g, (match, base, reading) => {
         const safeBase = base.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const safeReading = reading.replace(/"/g, '&quot;').replace(/&/g, '&amp;');
-        return `<span class="furigana-word" data-reading="${safeReading}" onclick="editFurigana(event, this, ${itemId})">${safeBase}</span>`;
+        return `<span class="furigana-word" data-reading="${safeReading}">${safeBase}</span>`;
       });
 
       // 改行を復元
       return html.replace(new RegExp(NL, 'g'), '\n');
-    }
-
-    // ふりがなを修正する
-    function editFurigana(event, element, itemId) {
-      event.stopPropagation(); // コピーイベントを防止
-      const currentReading = element.getAttribute('data-reading');
-      const baseText = element.innerText;
-
-      const newReading = prompt(`「${baseText}」のふりがなを修正してください:`, currentReading);
-
-      if (newReading !== null && newReading.trim() !== "") {
-        element.setAttribute('data-reading', newReading.trim());
-        
-        // 元のDOM文字列も更新しておく
-        const item = processedItems.find(i => i.id === itemId);
-        if (item) {
-          const textDiv = element.closest('div.text-sm.text-slate-700');
-          if (textDiv) {
-            item.furiganaHtml = textDiv.innerHTML;
-            saveToLocalStorage();
-          }
-        }
-        showToast('ふりがな修正', `「${baseText}」の読み方を「${newReading.trim()}」に変更しました。`, 'success');
-      }
     }
 
     // --- カード編集機能 ---
@@ -1632,16 +1566,10 @@
       const item = processedItems.find(i => i.id === id);
       const ta = document.getElementById(`edit-textarea-${id}`);
       if (item && ta) {
-        if (item.text !== ta.value) {
-          item.text = ta.value;
-          item.furiganaHtml = undefined;
-        }
+        item.text = ta.value;
         item.isEditing = false;
         delete item._editOriginal;
         renderList();
-        if (kuroshiroEnabled && !item.furiganaHtml) {
-          toggleFurigana();
-        }
         saveToLocalStorage();
         showToast('保存完了', 'テキストを更新しました。', 'success');
       }
@@ -1654,10 +1582,6 @@
         // テキストを元に戻す
         if (item._editOriginal !== undefined) {
           item.text = item._editOriginal;
-        }
-        if (item._editOriginalFurigana !== undefined) {
-          item.furiganaHtml = item._editOriginalFurigana;
-          delete item._editOriginalFurigana;
         }
         // 結合の戻し: 削除した次のカードを復元する
         if (item._mergedNextItem !== undefined) {
@@ -1707,15 +1631,11 @@
       };
 
       item.text = before;
-      item.furiganaHtml = undefined;
       item.isEditing = false;
       delete item._editOriginal;
 
       processedItems.splice(idx + 1, 0, newItem);
       renderList();
-      if (kuroshiroEnabled) {
-        toggleFurigana();
-      }
       saveToLocalStorage();
       showToast('分割完了', 'カードを分割しました。', 'success');
     }
@@ -1736,12 +1656,10 @@
 
       // キャンセル用に元情報を保存（次のカードも丸ごと保存）
       if (item._editOriginal === undefined) item._editOriginal = currentText;
-      if (item._editOriginalFurigana === undefined) item._editOriginalFurigana = item.furiganaHtml;
       item._mergedNextItem = { ...nextItem }; // 削除する次のカードを保存
       item._mergedNextInsertIdx = idx + 1;    // 復元時の挿入位置
 
       item.text = currentText + '\n' + nextItem.text;
-      item.furiganaHtml = undefined;
       item.isEditing = true;
 
       processedItems.splice(idx + 1, 1);
@@ -1779,8 +1697,7 @@
           text: item.text,
           bookmarked: item.bookmarked,
           note: item.note,
-          page: item.page,
-          furiganaHtml: item.furiganaHtml
+          page: item.page
         }))
       };
       // Base64エンコードして人が読みにくいファイルに
@@ -1824,8 +1741,7 @@
             bookmarked: !!item.bookmarked,
             note: item.note || '',
             page: item.page || 1,
-            isEditing: false,
-            furiganaHtml: item.furiganaHtml
+            isEditing: false
           }));
           // globalIdを更新してID重複を防ぐ
           const maxId = processedItems.length > 0 ? Math.max(...processedItems.map(i => i.id)) : 0;
