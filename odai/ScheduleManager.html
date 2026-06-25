@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Schedule Manager - 異次元ポケット</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/schedulemanager.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="transition-colors duration-500 min-h-screen p-4 pb-32 bg-slate-900 text-slate-100">
+
+    <div id="theme-container" class="max-w-7xl mx-auto border-b border-slate-700 p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4 bg-slate-900">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-indigo-500">📅</span> Time Schedule Manager
+            </h1>
+            <p class="text-[10px] opacity-60">Powered by 異次元ポケット</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs" id="theme-buttons"></div>
+    </div>
+
+    <!-- セットアップセクション -->
+    <div id="setup-section" class="max-w-2xl mx-auto backdrop-blur-md bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">🕒 スケジュールの設定</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">場所の数</label>
+                <input type="number" id="input-num-people" value="4" min="1" max="20" oninput="generateNameFields()" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">日数</label>
+                <input type="number" id="input-num-days" value="3" min="1" max="14" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">1日の開始時間</label>
+                <div class="flex gap-2">
+                    <select id="input-day-start-h" class="flex-1 p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                    <select id="input-day-start-m" class="w-24 p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="0">00</option>
+                        <option value="30">30</option>
+                    </select>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">1日の終了時間</label>
+                <div class="flex gap-2">
+                    <select id="input-day-end-h" class="flex-1 p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                    <select id="input-day-end-m" class="w-24 p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="0">00</option>
+                        <option value="30">30</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <label class="block text-sm font-medium opacity-80 mb-3">場所の名前</label>
+            <div id="names-input-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 pt-6 border-t border-white/10">
+            <button onclick="deployManager()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-900/20 active:scale-95">マネージャーを展開する</button>
+            
+            <div class="mt-4 p-4 rounded-2xl bg-black/10 border border-white/5">
+                <label class="block text-xs font-medium opacity-60 mb-2 uppercase tracking-wider">過去のスケジュールを読込</label>
+                <div class="flex gap-2">
+                    <select id="session-select" class="flex-1 p-2 rounded-lg bg-white/10 border border-white/20 text-sm focus:outline-none"></select>
+                    <button onclick="loadSession()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all">読込</button>
+                    <button onclick="deleteSession()" class="bg-red-900/50 hover:bg-red-800 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all">削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインマネージャー -->
+    <div id="main-manager" class="hidden max-w-full mx-auto animate-in fade-in duration-500">
+        <div class="backdrop-blur-xl bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-xl">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div class="flex flex-wrap gap-2 p-1 bg-black/20 rounded-xl">
+                    <button onclick="switchView('hourly')" id="view-btn-hourly" class="px-6 py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white">全時間 (30分刻み)</button>
+                    <button onclick="switchView('block')" id="view-btn-block" class="px-6 py-2 rounded-lg text-xs font-bold transition-all text-white/60 hover:text-white">ブロック表示</button>
+                    <button onclick="switchView('daily')" id="view-btn-daily" class="px-6 py-2 rounded-lg text-xs font-bold transition-all text-white/60 hover:text-white">日付別</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">場所</label>
+                    <select id="action-person-select" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                </div>
+                <div class="lg:col-span-1">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">日</label>
+                    <select id="action-day-select" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400"></select>
+                </div>
+                <div class="lg:col-span-4" id="action-time-hourly">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">開始</label>
+                            <div class="flex gap-1">
+                                <select id="action-start-h" onchange="syncEndTime()" class="flex-1 p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400"></select>
+                                <select id="action-start-m" onchange="syncEndTime()" class="w-16 p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                                    <option value="0">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">終了</label>
+                            <div class="flex gap-1">
+                                <select id="action-end-h" class="flex-1 p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400"></select>
+                                <select id="action-end-m" class="w-16 p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                                    <option value="0">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-4 hidden" id="action-time-block">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">時間枠</label>
+                    <select id="action-block-select" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                        <option value="early-morning">早朝 (03:00 - 09:00)</option>
+                        <option value="morning">午前 (09:00 - 12:00)</option>
+                        <option value="afternoon">午後 (12:00 - 18:00)</option>
+                        <option value="evening">夜 (18:00 - 22:00)</option>
+                        <option value="late-night">深夜 (22:00 - 翌04:00)</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-2">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">予定の内容</label>
+                    <input type="text" id="action-content" placeholder="例: 会議、移動など" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                </div>
+                <div class="lg:col-span-1">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">色</label>
+                    <input type="color" id="action-color" value="#6366f1" class="w-full h-11 bg-white/10 border border-white/20 rounded-xl cursor-pointer">
+                </div>
+                <div class="lg:col-span-2 flex gap-2">
+                    <button id="btn-apply-action" onclick="applyAction()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95">適用する</button>
+                    <button id="btn-cancel-action" onclick="cancelEdit()" class="hidden bg-slate-600 hover:bg-slate-500 text-white font-bold px-4 py-3 rounded-xl transition-all shadow-lg active:scale-95">✕</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="schedule-capture-area" class="overflow-x-auto rounded-3xl border border-white/10 shadow-2xl bg-black/10 backdrop-blur-sm h-[600px] relative">
+            <table class="schedule-table border-collapse text-left table-fixed w-full">
+                <thead class="sticky top-0 z-50">
+                    <tr id="timeline-headers" class="theme-bg-color border-b border-white/10"></tr>
+                </thead>
+                <tbody id="schedule-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 flex flex-wrap justify-between items-center gap-6 p-6 rounded-3xl bg-white/5 border border-white/10">
+            <div class="flex flex-wrap gap-3 items-center">
+                <input type="text" id="save-name" placeholder="スケジュール名を入力" class="p-3 rounded-xl bg-white/10 border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-64">
+                <button onclick="saveSession()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">保存する</button>
+                <button onclick="saveAsImage()" class="bg-sky-600 hover:bg-sky-500 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 flex items-center gap-2">📷 画像で保存</button>
+            </div>
+            <button onclick="newSession()" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all border border-white/10">最初から作り直す</button>
+        </div>
+    </div>
+
+    <!-- フッタークレジット -->
+    <footer class="fixed bottom-0 left-0 w-full p-4 text-center backdrop-blur-sm bg-black/20 border-t border-white/10 z-50">
+        <p class="text-xs opacity-70 tracking-wide">
+            Product by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" class="underline hover:text-indigo-400 transition-colors">https://ijigenpocket.booth.pm/</a>
+        </p>
+    </footer>
+
+    <div id="message-box" style="opacity:0" class="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-300 font-bold"></div>
+
+    <script src="js/common.js"></script>
+    <script src="js/schedulemanager.js"></script>
+</body>
+</html>
