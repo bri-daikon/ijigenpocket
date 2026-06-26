@@ -342,6 +342,32 @@
                 <div class="relative w-full max-w-5xl">
                     <div id="editor" contenteditable="true" class="w-full border rounded-xl shadow-xl bg-white" placeholder="本文を入力..."><p><br></p></div>
                     <div id="page-break-guides-container" class="absolute inset-0 pointer-events-none no-print overflow-hidden rounded-xl"></div>
+                    
+                    <!-- Note風「＋」ボタン -->
+                    <button id="floating-plus-btn" class="absolute hidden items-center justify-center w-7 h-7 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-full cursor-pointer transition shadow-sm z-40" onclick="toggleFloatingMenu()" title="ブロックを追加" style="transform: translateX(-50%);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                    
+                    <!-- フローティングメニュー -->
+                    <div id="floating-menu" class="absolute hidden bg-white border border-slate-200 rounded-xl shadow-2xl w-64 max-h-[350px] overflow-y-auto flex-col text-sm text-slate-700 z-50">
+                        <div class="px-3 py-2 text-[10px] font-bold text-slate-400 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">追加する項目を選択</div>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('image')">🖼️ 画像</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('divider')">— 区切り線</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('table')">📊 表</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('flowchart')">📊 フローチャート</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('character')">👤 キャラクターシート</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('snippet')">📝 スニペット...</button>
+                        <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 bg-slate-50 border-y border-slate-100 mt-1 sticky top-[33px] z-10">TRPGボックス</div>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('spot')">👀 目星</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('listen')">👂 聞き耳</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('library')">📚 図書館</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('san')">🌀 正気度</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('kp')">📝 KP</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('enemy')">💀 敵</button>
+                        <button class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 transition w-full text-left" onclick="handleFloatingAction('gimmick')">⚙️ ギミック</button>
+                    </div>
                 </div>
                 <div class="w-full max-w-5xl mt-4 flex justify-between text-xs text-slate-400 font-mono"><span>文字数: <span id="char-count">0</span></span><span id="save-status">未保存</span></div>
             </main>
