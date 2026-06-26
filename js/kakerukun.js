@@ -168,6 +168,7 @@ function executeDirectSave() {
         charLimit: document.getElementById('page-char-limit')?.value || '40',
         fontFamily: document.getElementById('font-family-select')?.value || 'sans-serif',
         lineHeight: document.getElementById('line-height-select')?.value || '1.8',
+        exportLayout: document.getElementById('export-layout-select')?.value || '1',
         snippets: getSnippets()
     };
     const jsonStr = JSON.stringify(content, null, 2);
@@ -180,6 +181,9 @@ function executeDirectSave() {
         localStorage.setItem('weby_autosave_title', titleInput.value);
         localStorage.setItem('weby_autosave_fontFamily', document.getElementById('font-family-select')?.value || 'sans-serif');
         localStorage.setItem('weby_autosave_lineHeight', document.getElementById('line-height-select')?.value || '1.8');
+        localStorage.setItem('weby_autosave_lineLimit', document.getElementById('page-line-limit')?.value || '35');
+        localStorage.setItem('weby_autosave_charLimit', document.getElementById('page-char-limit')?.value || '40');
+        localStorage.setItem('weby_autosave_exportLayout', document.getElementById('export-layout-select')?.value || '1');
     } catch (e) { console.warn("バックアップ失敗: 容量不足"); }
 
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -226,6 +230,10 @@ function loadProjectFallback(input) {
                 if (data.lineHeight) {
                     const lhSelect = document.getElementById('line-height-select');
                     if (lhSelect) lhSelect.value = data.lineHeight;
+                }
+                if (data.exportLayout) {
+                    const layoutSelect = document.getElementById('export-layout-select');
+                    if (layoutSelect) layoutSelect.value = data.exportLayout;
                 }
                 if (data.snippets) {
                     saveSnippets(data.snippets);
@@ -297,9 +305,13 @@ function exportHTML() {
 
     nodes.forEach(node => {
         // 手動改ページマークの検出
-        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+        let isManualPageBreak = false;
+        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
+            isManualPageBreak = true;
             flushPage();
-            return;
+            if (!node.textContent.trim() && !node.querySelector('img, table')) {
+                return;
+            }
         }
 
         let weight = 1; // 基本1行分
@@ -325,7 +337,7 @@ function exportHTML() {
         }
 
         // ページ溢れチェック
-        if (currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
+        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
             flushPage();
         }
 
@@ -945,9 +957,13 @@ function exportWord() {
 
     nodes.forEach(node => {
         // 手動改ページマークの検出
-        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+        let isManualPageBreak = false;
+        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
+            isManualPageBreak = true;
             flushPage();
-            return;
+            if (!node.textContent.trim() && !node.querySelector('img, table')) {
+                return;
+            }
         }
 
         let weight = 1; // 基本1行分
@@ -971,7 +987,7 @@ function exportWord() {
             else weight = textLines * sizeRatio;
         }
 
-        if (currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
+        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
             flushPage();
         }
 
@@ -1435,6 +1451,10 @@ window.onload = () => {
 
     const savedFont = localStorage.getItem('weby_autosave_fontFamily');
     const savedLH = localStorage.getItem('weby_autosave_lineHeight');
+    const savedLineLimit = localStorage.getItem('weby_autosave_lineLimit');
+    const savedCharLimit = localStorage.getItem('weby_autosave_charLimit');
+    const savedExportLayout = localStorage.getItem('weby_autosave_exportLayout');
+
     if (savedFont) {
         const fontSelect = document.getElementById('font-family-select');
         if (fontSelect) fontSelect.value = savedFont;
@@ -1442,6 +1462,18 @@ window.onload = () => {
     if (savedLH) {
         const lhSelect = document.getElementById('line-height-select');
         if (lhSelect) lhSelect.value = savedLH;
+    }
+    if (savedLineLimit) {
+        const lineInput = document.getElementById('page-line-limit');
+        if (lineInput) lineInput.value = savedLineLimit;
+    }
+    if (savedCharLimit) {
+        const charInput = document.getElementById('page-char-limit');
+        if (charInput) charInput.value = savedCharLimit;
+    }
+    if (savedExportLayout) {
+        const layoutSelect = document.getElementById('export-layout-select');
+        if (layoutSelect) layoutSelect.value = savedExportLayout;
     }
     updateEditorStyles();
     editor.addEventListener('keydown', (e) => {
@@ -1501,10 +1533,14 @@ function updatePageBreakGuides() {
 
     nodes.forEach((node) => {
         // 手動改ページマークの検出
-        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+        let isManualPageBreak = false;
+        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
+            isManualPageBreak = true;
             pageNum++;
             currentLineCount = 0;
-            return;
+            if (!node.textContent.trim() && !node.querySelector('img, table')) {
+                return;
+            }
         }
 
         let weight = 1; // 基本1行分
@@ -1529,7 +1565,7 @@ function updatePageBreakGuides() {
         }
 
         // ページ溢れチェック
-        if (currentLineCount + weight > MAX_LINES) {
+        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES) {
             if (node.nodeType === 1) {
                 const offsetTop = node.offsetTop;
                 // ガイド線を配置
@@ -1604,9 +1640,13 @@ function exportPDF() {
 
     nodes.forEach(node => {
         // 手動改ページマークの検出
-        if (node.nodeType === 1 && node.classList.contains('page-break')) {
+        let isManualPageBreak = false;
+        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
+            isManualPageBreak = true;
             flushPage();
-            return;
+            if (!node.textContent.trim() && !node.querySelector('img, table')) {
+                return;
+            }
         }
 
         let weight = 1; // 基本1行分
@@ -1630,7 +1670,7 @@ function exportPDF() {
             else weight = textLines * sizeRatio;
         }
 
-        if (currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
+        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
             flushPage();
         }
 
