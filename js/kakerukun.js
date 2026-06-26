@@ -2592,3 +2592,173 @@ window.copyToCcfolia = copyToCcfolia;
 window.copyTextToClipboard = copyTextToClipboard;
 window.triggerCharImageUpload = triggerCharImageUpload;
 window.handleCharImageUpload = handleCharImageUpload;
+
+/* --- Note風「＋」ボタンとフローティングメニュー --- */
+let currentFloatingNode = null;
+
+function updateFloatingMenuPosition() {
+    const btn = document.getElementById('floating-plus-btn');
+    const menu = document.getElementById('floating-menu');
+    if (!btn || !menu) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+        hideFloatingMenuUI(btn, menu);
+        return;
+    }
+
+    const range = selection.getRangeAt(0);
+    // エディタ外にフォーカスがある場合は非表示
+    if (!editor.contains(range.startContainer)) {
+        hideFloatingMenuUI(btn, menu);
+        return;
+    }
+
+    let targetNode = range.startContainer;
+    if (targetNode.nodeType === 3) targetNode = targetNode.parentNode;
+    while (targetNode && targetNode !== editor && targetNode.tagName !== 'P') {
+        targetNode = targetNode.parentNode;
+    }
+
+    if (targetNode && targetNode.tagName === 'P' && targetNode.parentNode === editor) {
+        const text = targetNode.textContent.trim();
+        const hasImgOrTable = targetNode.querySelector('img, table, div, iframe');
+        
+        // 空の段落の場合
+        if (text === '' && !hasImgOrTable) {
+            currentFloatingNode = targetNode;
+            
+            const editorRect = editor.getBoundingClientRect();
+            const nodeRect = targetNode.getBoundingClientRect();
+            
+            const container = btn.parentElement;
+            const containerRect = container.getBoundingClientRect();
+            
+            const topOffset = nodeRect.top - containerRect.top;
+            const leftOffset = editorRect.left - containerRect.left - 16; // エディタの左端より少し左
+            
+            btn.style.top = `${topOffset}px`;
+            btn.style.left = `${leftOffset}px`;
+            
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+            
+            if (!menu.classList.contains('hidden')) {
+                menu.style.top = `${topOffset}px`;
+                menu.style.left = `${leftOffset + 36}px`;
+            }
+            return;
+        }
+    }
+    
+    hideFloatingMenuUI(btn, menu);
+}
+
+function hideFloatingMenuUI(btn, menu) {
+    if (btn) {
+        btn.classList.add('hidden');
+        btn.classList.remove('flex');
+    }
+    if (menu) {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+    }
+    currentFloatingNode = null;
+}
+
+function toggleFloatingMenu() {
+    const btn = document.getElementById('floating-plus-btn');
+    const menu = document.getElementById('floating-menu');
+    if (!btn || !menu) return;
+
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        menu.classList.add('flex');
+        
+        const top = parseInt(btn.style.top || 0);
+        const left = parseInt(btn.style.left || 0);
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left + 36}px`;
+    } else {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+    }
+}
+
+function handleFloatingAction(action) {
+    const menu = document.getElementById('floating-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+    }
+    
+    if (currentFloatingNode) {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(currentFloatingNode);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+    
+    switch(action) {
+        case 'image':
+            saveRange();
+            document.getElementById('image-upload').click();
+            break;
+        case 'divider':
+            insertDivider();
+            break;
+        case 'table':
+            openTableModal();
+            break;
+        case 'flowchart':
+            openFlowchartModal();
+            break;
+        case 'character':
+            insertCharacterSheet();
+            break;
+        case 'snippet':
+            openSnippetManageModal();
+            break;
+        case 'spot':
+            insertTRPGBox('spot');
+            break;
+        case 'listen':
+            insertTRPGBox('listen');
+            break;
+        case 'library':
+            insertTRPGBox('library');
+            break;
+        case 'san':
+            insertTRPGBox('san');
+            break;
+        case 'kp':
+            insertKPInfo();
+            break;
+        case 'enemy':
+            insertSpecialBox('エネミー');
+            break;
+        case 'gimmick':
+            insertTRPGBox('gimmick');
+            break;
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const btn = document.getElementById('floating-plus-btn');
+    const menu = document.getElementById('floating-menu');
+    if (!btn || !menu) return;
+    
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+        if (!menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+            menu.classList.remove('flex');
+        }
+    }
+});
+
+editor.addEventListener('keyup', updateFloatingMenuPosition);
+editor.addEventListener('mouseup', updateFloatingMenuPosition);
+editor.addEventListener('focus', updateFloatingMenuPosition);
+editor.addEventListener('input', updateFloatingMenuPosition);
