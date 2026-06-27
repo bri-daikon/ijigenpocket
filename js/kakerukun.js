@@ -938,6 +938,36 @@ function exportWord() {
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
+
+    // Word出力用の調整: 入力欄をテキストに変換 (キャラクターシート等)
+    tempDiv.querySelectorAll('input, textarea').forEach(input => {
+        const span = document.createElement('span');
+        span.textContent = input.value || input.getAttribute('value') || '';
+        if (input.classList.contains('char-stat-input') || input.classList.contains('char-skill-value')) {
+            span.style.fontWeight = 'bold';
+        }
+        if (input.classList.contains('char-skill-name')) {
+            span.style.marginRight = '5px';
+        }
+        input.parentNode.replaceChild(span, input);
+    });
+
+    // Word出力用の調整: 画像サイズ
+    tempDiv.querySelectorAll('img').forEach(img => {
+        img.setAttribute('width', '450');
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+    });
+
+    // Word出力用の調整: 内部リンク (Wordはname属性のアンカーが必要)
+    tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8').forEach(h => {
+        if (h.id) {
+            const anchor = document.createElement('a');
+            anchor.setAttribute('name', h.id);
+            h.insertBefore(anchor, h.firstChild);
+        }
+    });
+
     const nodes = Array.from(tempDiv.childNodes);
 
     let pagesHtml = '', currentPageContent = '', currentLineCount = 0;
@@ -1006,9 +1036,13 @@ function exportWord() {
                 p { margin-top: 0; margin-bottom: 0; }
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
-                .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special {
+                .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
                     border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin: 10px 0;
                 }
+                .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
+                .box-secret { border-style: dashed; }
+                .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
+                .box-char-sheet { border-color: #ccd3e0; background: #ffffff; }
                 .page-section {
                     margin-bottom: 20px;
                 }
