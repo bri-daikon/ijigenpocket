@@ -1060,6 +1060,134 @@ function exportWord() {
     showToast("Wordファイルを書き出しました");
 }
 
+function exportGoogleDocs() {
+    const title = titleInput.value || '無題のシナリオ';
+    const fontFamily = document.getElementById('font-family-select').value;
+    const lineHeight = document.getElementById('line-height-select').value;
+    let fontCSS = fontFamily === 'sans-serif' ? '"Arial", "MS PGothic", sans-serif' :
+                  fontFamily === 'serif' ? '"Times New Roman", "MS PMincho", serif' :
+                  '"Arial", "MS PGothic", sans-serif';
+    
+    // ページ分割ロジック
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editor.innerHTML;
+
+    // Word/GDocs出力用の調整: 入力欄をテキストに変換 (キャラクターシート等)
+    tempDiv.querySelectorAll('input, textarea').forEach(input => {
+        const span = document.createElement('span');
+        span.textContent = input.value || input.getAttribute('value') || '';
+        if (input.classList.contains('char-stat-input') || input.classList.contains('char-skill-value')) {
+            span.style.fontWeight = 'bold';
+        }
+        if (input.classList.contains('char-skill-name')) {
+            span.style.marginRight = '5px';
+        }
+        input.parentNode.replaceChild(span, input);
+    });
+
+    // Word/GDocs出力用の調整: 画像サイズ
+    tempDiv.querySelectorAll('img').forEach(img => {
+        img.setAttribute('width', '450');
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+    });
+
+    // Word/GDocs出力用の調整: 内部リンク (Wordはname属性のアンカーが必要)
+    tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, .h7, .h8').forEach(h => {
+        if (h.id) {
+            const anchor = document.createElement('a');
+            anchor.setAttribute('name', h.id);
+            h.insertBefore(anchor, h.firstChild);
+        }
+    });
+
+    const nodes = Array.from(tempDiv.childNodes);
+
+    let pagesHtml = '', currentPageContent = '', currentLineCount = 0;
+    const limitInput = document.getElementById('page-line-limit');
+    const MAX_LINES = limitInput ? (parseInt(limitInput.value) || 35) : 35;
+    const layout = document.getElementById('export-layout-select').value;
+   
+    const flushPage = () => {
+        if (pagesHtml !== '') {
+            pagesHtml += `<br style="page-break-before:always; clear:both;">`;
+        }
+        pagesHtml += `<div class="page-section">${currentPageContent}</div>`;
+        currentPageContent = '';
+        currentLineCount = 0;
+    };
+
+    nodes.forEach(node => {
+        let isManualPageBreak = false;
+        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
+            isManualPageBreak = true;
+            flushPage();
+            if (!node.textContent.trim() && !node.querySelector('img, table')) {
+                return;
+            }
+        }
+
+        let weight = 1;
+        if (node.nodeType === 1) {
+            const tag = node.tagName;
+            const text = node.innerText || "";
+            const fontSize = parseInt(window.getComputedStyle(node).fontSize) || 16;
+            const sizeRatio = fontSize / 16;
+            const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
+            const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
+            
+            if (tag === 'H1') weight = 3;
+            else if (tag === 'H2') weight = 2;
+            else if (tag === 'H3') weight = 2;
+            else if (tag === 'IMG') weight = 10;
+            else if (node.classList.contains('divider')) weight = 1;
+            else if (node.tagName === 'TABLE') weight = 6;
+            else if (node.classList.contains('kp-info') || node.className.includes('box-')) weight = 4;
+            else weight = textLines * sizeRatio;
+        }
+
+        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
+            flushPage();
+        }
+
+        currentPageContent += node.nodeType === 1 ? node.outerHTML : node.textContent;
+        currentLineCount += weight;
+    });
+
+    if (currentPageContent !== '') flushPage();
+
+    const gdocsContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; }
+                p { margin-top: 0; margin-bottom: 0; }
+                h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
+                h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
+                .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
+                    border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin: 10px 0;
+                }
+                .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
+                .box-secret { border-style: dashed; }
+                .quote { border-left: 4px solid #94a3b8; border-radius: 0; font-style: italic; background: #f8fafc; }
+                .box-char-sheet { border-color: #ccd3e0; background: #ffffff; }
+                .page-section { margin-bottom: 20px; }
+            </style>
+        </head>
+        <body><h1>${title}</h1>${pagesHtml}</body>
+        </html>
+    `;
+    const blob = new Blob(['\ufeff', gdocsContent], { type: 'application/msword;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title}_GDocs.doc`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast("GDocs用ファイルを書き出しました。Googleドライブにアップロードしてください。");
+}
+
 /* --- 折りたたみ機能 --- */
 function insertFold() {
     editor.focus();
