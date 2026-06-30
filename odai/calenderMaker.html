@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スマホ待ち受けイラストカレンダーメーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Shippori+Mincho&family=Yomogi&family=Potta+One&family=Mochiy+Pop+P+One&family=Kiwi+Maru&family=Zen+Maru+Gothic&family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
     <style>
         .font-gothic { font-family: 'Kosugi Maru', sans-serif; }
@@ -39,7 +39,10 @@
                 </div>
                 <div>
                     <label class="block mb-1 font-semibold text-slate-600">背景画像</label>
-                    <input type="file" id="bgImageInput" accept="image/*" class="w-full text-xs">
+                    <div class="flex gap-2">
+                        <input type="file" id="bgImageInput" accept="image/*" class="w-full text-xs">
+                        <button id="clearBgBtn" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition flex-shrink-0">削除</button>
+                    </div>
                 </div>
             </div>
             
@@ -214,9 +217,15 @@
             reader.readAsDataURL(e.target.files[0]);
         };
         document.getElementById('bgImageInput').onchange = (e) => {
+            if (!e.target.files[0]) return;
             const reader = new FileReader();
             reader.onload = (ev) => { bgImage.src = ev.target.result; bgImage.style.display = 'block'; };
             reader.readAsDataURL(e.target.files[0]);
+        };
+        document.getElementById('clearBgBtn').onclick = () => {
+            document.getElementById('bgImageInput').value = '';
+            bgImage.src = '';
+            bgImage.style.display = 'none';
         };
 
         function updateLayout() {
@@ -225,18 +234,18 @@
 
             if (selection.startsWith('mobile')) {
                 targetWidth = 720; targetHeight = 1560;
-                if (selection === 'mobile-img-top') layoutClass = 'flex-col';
-                else if (selection === 'mobile-cal-top') layoutClass = 'flex-col-reverse';
+                if (selection === 'mobile-img-top') layoutClass = 'flex-col justify-end items-center';
+                else if (selection === 'mobile-cal-top') layoutClass = 'flex-col justify-start items-center';
                 else if (selection === 'mobile-bg') layoutClass = 'flex-col justify-center items-center';
             } else if (selection.startsWith('pc')) {
                 targetWidth = 1280; targetHeight = 720;
-                if (selection === 'pc-img-left') layoutClass = 'flex-row';
-                else if (selection === 'pc-cal-left') layoutClass = 'flex-row-reverse';
+                if (selection === 'pc-img-left') layoutClass = 'flex-row justify-end items-center';
+                else if (selection === 'pc-cal-left') layoutClass = 'flex-row justify-start items-center';
                 else if (selection === 'pc-bg') layoutClass = 'flex-row justify-center items-center';
             } else if (selection.startsWith('tablet')) {
                 targetWidth = 1024; targetHeight = 768;
-                if (selection === 'tablet-img-left') layoutClass = 'flex-row';
-                else if (selection === 'tablet-cal-left') layoutClass = 'flex-row-reverse';
+                if (selection === 'tablet-img-left') layoutClass = 'flex-row justify-end items-center';
+                else if (selection === 'tablet-cal-left') layoutClass = 'flex-row justify-start items-center';
                 else if (selection === 'tablet-bg') layoutClass = 'flex-row justify-center items-center';
             }
 
@@ -251,13 +260,8 @@
             previewWrapper.style.height = (targetHeight * scale) + 'px';
             
             const imgWrap = document.getElementById('imageWrapper');
-            if (selection.endsWith('-bg')) {
-                layoutContainer.className = 'flex h-full z-20 relative pointer-events-none justify-center items-center';
-                imgWrap.className = 'absolute w-full h-full overflow-hidden pointer-events-none z-10';
-            } else {
-                layoutContainer.className = `flex h-full z-20 relative pointer-events-none ${layoutClass}`;
-                imgWrap.className = 'flex-grow relative overflow-hidden pointer-events-none z-10';
-            }
+            layoutContainer.className = `flex w-full h-full z-20 relative pointer-events-none ${layoutClass}`;
+            imgWrap.className = 'absolute w-full h-full overflow-hidden pointer-events-none z-10 left-0 top-0';
             
             const font = document.getElementById('fontSelect').value;
             const isBold = document.getElementById('boldCheck').checked;
@@ -326,26 +330,23 @@
             previewWrapper.style.overflow = 'visible';
             
             try {
-                const canvas = await html2canvas(captureArea, {useCORS: true, scale: 1});
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    
-                    let resultImg = document.getElementById('resultImageNode');
-                    if (!resultImg) {
-                        resultImg = document.createElement('img');
-                        resultImg.id = 'resultImageNode';
-                        resultImg.className = 'mt-6 w-full max-w-[800px] rounded-3xl shadow-lg border-2 border-slate-200';
-                        previewWrapper.parentNode.appendChild(resultImg);
-                    }
-                    resultImg.src = url;
-                    
-                    const a = document.createElement('a');
-                    a.download = 'calendar.png';
-                    a.href = url;
-                    a.click();
-                    
-                    btn.textContent = '保存できない場合は画面下の画像を長押し保存';
-                }, 'image/png');
+                const dataUrl = await htmlToImage.toPng(captureArea, { pixelRatio: 1 });
+                
+                let resultImg = document.getElementById('resultImageNode');
+                if (!resultImg) {
+                    resultImg = document.createElement('img');
+                    resultImg.id = 'resultImageNode';
+                    resultImg.className = 'mt-6 w-full max-w-[800px] rounded-3xl shadow-lg border-2 border-slate-200';
+                    previewWrapper.parentNode.appendChild(resultImg);
+                }
+                resultImg.src = dataUrl;
+                
+                const a = document.createElement('a');
+                a.download = 'calendar.png';
+                a.href = dataUrl;
+                a.click();
+                
+                btn.textContent = '保存できない場合は画面下の画像を長押し保存';
             } catch (err) {
                 console.error(err);
                 btn.textContent = prevText;
