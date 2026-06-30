@@ -134,15 +134,18 @@
         <div class="flex justify-center mb-6 w-full overflow-hidden" id="previewWrapper">
             <div id="captureArea" class="shadow-inner" style="background-color: #ffffff;">
                 <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none"></div>
-                <div id="imageContainer" style="z-index: 5;"><img id="previewImage" src="" style="display:none"></div>
-                <div id="layoutContainer" class="p-8 flex flex-col h-full z-20 relative pointer-events-none">
-                    <div id="spacer" class="flex-grow"></div>
-                    <div id="calendarContainer" class="pointer-events-auto flex-shrink-0" style="padding: 40px; border-radius: 32px; min-width: 500px;">
-                        <h2 id="monthTitle" class="font-bold text-slate-800 text-center" style="font-size: 48px; margin-bottom: 24px;">YYYY年M月</h2>
-                        <div class="calendar-grid text-center font-bold mb-4" style="font-size: 32px;">
-                            <div class="text-red-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div>
+                <div id="layoutContainer" class="flex h-full z-20 relative pointer-events-none">
+                    <div id="imageWrapper" class="flex-grow relative overflow-hidden pointer-events-none z-10">
+                        <img id="previewImage" src="" style="display:none; pointer-events: auto;">
+                    </div>
+                    <div id="calendarWrapper" class="p-8 flex-shrink-0 flex items-center justify-center pointer-events-none z-20">
+                        <div id="calendarContainer" class="pointer-events-auto shadow-xl flex-shrink-0 w-full" style="padding: 40px; border-radius: 32px; min-width: 500px; max-width: 600px;">
+                            <h2 id="monthTitle" class="font-bold text-slate-800 text-center" style="font-size: 48px; margin-bottom: 24px;">YYYY年M月</h2>
+                            <div class="calendar-grid text-center font-bold mb-4" style="font-size: 32px;">
+                                <div class="text-red-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div>
+                            </div>
+                            <div id="calendarDays" class="calendar-grid text-center text-slate-700"></div>
                         </div>
-                        <div id="calendarDays" class="calendar-grid text-center text-slate-700"></div>
                     </div>
                 </div>
             </div>
@@ -236,8 +239,14 @@
             captureArea.style.transform = `scale(${scale})`;
             captureArea.parentElement.style.height = (targetHeight * scale) + 'px';
             
-            layoutContainer.className = `p-8 flex h-full z-20 relative pointer-events-none ${layoutClass}`;
-            document.getElementById('spacer').style.display = selection.endsWith('-bg') ? 'none' : 'block';
+            const imgWrap = document.getElementById('imageWrapper');
+            if (selection.endsWith('-bg')) {
+                layoutContainer.className = 'flex h-full z-20 relative pointer-events-none justify-center items-center';
+                imgWrap.className = 'absolute w-full h-full overflow-hidden pointer-events-none z-10';
+            } else {
+                layoutContainer.className = `flex h-full z-20 relative pointer-events-none ${layoutClass}`;
+                imgWrap.className = 'flex-grow relative overflow-hidden pointer-events-none z-10';
+            }
             
             const font = document.getElementById('fontSelect').value;
             const isBold = document.getElementById('boldCheck').checked;
