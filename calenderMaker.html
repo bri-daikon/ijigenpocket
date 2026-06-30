@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホ待ち受けイラストカレンダーメーカー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Shippori+Mincho&family=Yomogi&family=Potta+One&family=Mochiy+Pop+P+One&family=Kiwi+Maru&family=Zen+Maru+Gothic&family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
+    <style>
+        .font-gothic { font-family: 'Kosugi Maru', sans-serif; }
+        .font-mincho { font-family: 'Shippori Mincho', serif; }
+        .font-yomogi { font-family: 'Yomogi', cursive; }
+        .font-potta { font-family: 'Potta One', cursive; }
+        .font-mochiy { font-family: 'Mochiy Pop P One', sans-serif; }
+        .font-kiwi { font-family: 'Kiwi Maru', serif; }
+        .font-zenmaru { font-family: 'Zen Maru Gothic', sans-serif; }
+        .font-hachimaru { font-family: 'Hachi Maru Pop', cursive; }
+        .font-mplus { font-family: 'M PLUS Rounded 1c', sans-serif; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        #captureArea { width: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: default; }
+        #imageContainer, #bgContainer { position: absolute; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+        #previewImage, #bgImage { position: absolute; cursor: move; touch-action: none; max-width: none; left: 0; top: 0; pointer-events: auto; }
+        #calendarContainer { backdrop-filter: blur(10px); z-index: 20; pointer-events: auto; }
+    </style>
+</head>
+<body class="bg-slate-50 p-4">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-3xl shadow-xl">
+        <h1 class="text-xl font-bold mb-6 text-slate-800">✨ カレンダーメーカー</h1>
+        
+        <div class="space-y-4 mb-6 text-sm">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600">メインイラスト</label>
+                    <input type="file" id="imageInput" accept="image/*" class="w-full text-xs">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600">背景画像</label>
+                    <input type="file" id="bgImageInput" accept="image/*" class="w-full text-xs">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600">年月</label>
+                    <div class="flex gap-1">
+                        <select id="yearSelect" class="p-1 border rounded"></select>
+                        <select id="monthSelect" class="p-1 border rounded"></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600">背景色</label>
+                    <input type="color" id="bgColorInput" value="#ffffff" class="w-full h-8 p-1 rounded border">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600">フォント</label>
+                    <select id="fontSelect" class="w-full p-1 border rounded">
+                        <option value="font-gothic">丸ゴシック</option>
+                        <option value="font-mincho">明朝体</option>
+                        <option value="font-yomogi">よもぎフォント (手書き風)</option>
+                        <option value="font-potta">ぽったワン (ポップ)</option>
+                        <option value="font-mochiy">モッチーポップ (極太)</option>
+                        <option value="font-kiwi">キウイ丸 (丸み明朝)</option>
+                        <option value="font-zenmaru">Zen丸ゴシック</option>
+                        <option value="font-hachimaru">八丸ポップ (レトロ)</option>
+                        <option value="font-mplus">M PLUS Rounded</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block mb-1 font-semibold text-slate-600">レイアウト / 比率</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="layoutSelect" class="p-2 border rounded-lg">
+                        <option value="img-top">上：イラスト、下：カレンダー</option>
+                        <option value="cal-top">上：カレンダー、下：イラスト</option>
+                        <option value="cal-left">左：カレンダー、右：イラスト</option>
+                        <option value="img-left">左：イラスト、右：カレンダー</option>
+                        <option value="background">画像を背景（カレンダーを重ねる）</option>
+                    </select>
+                    <select id="aspectRatioSelect" class="p-2 border rounded-lg">
+                        <option value="9/19.5">縦: 19.5:9</option>
+                        <option value="16/9">横: 16:9</option>
+                        <option value="9/16">縦: 16:9</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <div id="captureArea" class="rounded-3xl shadow-inner" style="aspect-ratio: 9/19.5; border: 1px solid #e2e8f0; background-color: #ffffff;">
+                <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none"></div>
+                <div id="imageContainer" style="z-index: 5;"><img id="previewImage" src="" style="display:none"></div>
+                <div id="layoutContainer" class="p-4 flex flex-col h-full z-20 pointer-events-none">
+                    <div id="spacer" class="flex-grow"></div>
+                    <div id="calendarContainer" class="bg-white/80 p-5 rounded-2xl pointer-events-auto">
+                        <h2 id="monthTitle" class="text-xl font-bold mb-3 text-slate-800 text-center">YYYY年M月</h2>
+                        <div class="calendar-grid text-center font-bold text-xs mb-2">
+                            <div class="text-red-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div>
+                        </div>
+                        <div id="calendarDays" class="calendar-grid text-center text-slate-700"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="downloadBtn" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-bold hover:bg-slate-800 transition">画像として保存</button>
+    </div>
+
+    <script>
+        const previewImage = document.getElementById('previewImage'), bgImage = document.getElementById('bgImage');
+        const captureArea = document.getElementById('captureArea'), layoutContainer = document.getElementById('layoutContainer');
+        const layoutSelect = document.getElementById('layoutSelect');
+
+        function setupDrag(el) {
+            let active = false, offset = { x: 0, y: 0 };
+            el.addEventListener('mousedown', (e) => { 
+                active = true; 
+                offset = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop }; 
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (active) {
+                    el.style.left = (e.clientX - offset.x) + 'px';
+                    el.style.top = (e.clientY - offset.y) + 'px';
+                }
+            });
+            window.addEventListener('mouseup', () => active = false);
+        }
+        setupDrag(previewImage); setupDrag(bgImage);
+
+        document.getElementById('imageInput').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => { previewImage.src = ev.target.result; previewImage.style.display = 'block'; };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+        document.getElementById('bgImageInput').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => { bgImage.src = ev.target.result; bgImage.style.display = 'block'; };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        function updateLayout() {
+            captureArea.style.aspectRatio = document.getElementById('aspectRatioSelect').value;
+            
+            const layout = layoutSelect.value;
+            let layoutClass = 'flex-col';
+            if (layout === 'img-top') layoutClass = 'flex-col';
+            else if (layout === 'cal-top') layoutClass = 'flex-col-reverse';
+            else if (layout === 'img-left') layoutClass = 'flex-row';
+            else if (layout === 'cal-left') layoutClass = 'flex-row-reverse';
+
+            layoutContainer.className = `p-4 flex h-full z-20 pointer-events-none ${layoutClass}`;
+            document.getElementById('spacer').style.display = layout === 'background' ? 'none' : 'block';
+            
+            const font = document.getElementById('fontSelect').value;
+            const calendarContainer = document.getElementById('calendarContainer');
+            calendarContainer.className = `bg-white/80 p-5 rounded-2xl pointer-events-auto shadow-sm ${font}`;
+            
+            captureArea.style.backgroundColor = document.getElementById('bgColorInput').value;
+        }
+
+        [layoutSelect, document.getElementById('aspectRatioSelect'), document.getElementById('fontSelect'), document.getElementById('bgColorInput')].forEach(el => el.addEventListener('input', updateLayout));
+        [layoutSelect, document.getElementById('aspectRatioSelect'), document.getElementById('fontSelect'), document.getElementById('bgColorInput')].forEach(el => el.addEventListener('change', updateLayout));
+
+        function updateCalendar() {
+            const year = parseInt(document.getElementById('yearSelect').value), month = parseInt(document.getElementById('monthSelect').value);
+            document.getElementById('monthTitle').textContent = `${year}年 ${month + 1}月`;
+            const first = new Date(year, month, 1).getDay(), days = new Date(year, month + 1, 0).getDate();
+            const calendarDays = document.getElementById('calendarDays');
+            calendarDays.innerHTML = '';
+            for(let i=0; i<first; i++) calendarDays.appendChild(document.createElement('div'));
+            for(let i=1; i<=days; i++) {
+                const d = document.createElement('div');
+                d.textContent = i;
+                const dw = (first + i - 1) % 7;
+                if(dw === 0) d.classList.add('text-red-500');
+                if(dw === 6) d.classList.add('text-blue-500');
+                calendarDays.appendChild(d);
+            }
+        }
+
+        document.getElementById('downloadBtn').onclick = () => html2canvas(captureArea, {useCORS: true, scale: 2}).then(canvas => { const a = document.createElement('a'); a.download = 'calendar.png'; a.href = canvas.toDataURL(); a.click(); });
+        
+        const now = new Date();
+        [0, 1].forEach(i => {
+            const y = now.getFullYear() + i;
+            document.getElementById('yearSelect').innerHTML += `<option value="${y}">${y}年</option>`;
+        });
+        for(let i=1; i<=12; i++) {
+            const m = i - 1;
+            document.getElementById('monthSelect').innerHTML += `<option value="${m}" ${m === now.getMonth() ? 'selected' : ''}>${i}月</option>`;
+        }
+        
+        [document.getElementById('yearSelect'), document.getElementById('monthSelect')].forEach(el => el.onchange = updateCalendar);
+        updateCalendar();
+        updateLayout();
+    </script>
+</body>
+</html>
