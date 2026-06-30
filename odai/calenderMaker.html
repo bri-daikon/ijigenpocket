@@ -20,7 +20,7 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; font-size: 36px; }
         #captureArea { display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: default; transform-origin: top left; }
         #imageContainer, #bgContainer { position: absolute; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
-        #previewImage, #bgImage { position: absolute; cursor: move; touch-action: none; max-width: none; left: 0; top: 0; pointer-events: auto; }
+        #previewImage, #bgImage { position: absolute; cursor: move; touch-action: none; max-width: none; left: 0; top: 0; pointer-events: auto; user-select: none; -webkit-user-drag: none; }
         #calendarContainer { backdrop-filter: blur(10px); z-index: 20; pointer-events: auto; }
     </style>
 </head>
@@ -30,7 +30,7 @@
         
         <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             <!-- 左側：操作メニュー -->
-            <div class="w-full lg:w-[450px] flex-shrink-0 bg-white p-6 rounded-3xl shadow-xl">
+            <div class="w-full lg:w-[450px] flex-shrink-0 bg-white p-6 rounded-3xl shadow-xl lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
                 <div class="space-y-4 text-sm">
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -137,14 +137,14 @@
             </div>
             
             <!-- 右側：プレビュー領域 -->
-            <div class="w-full flex-grow bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center overflow-y-auto min-h-[400px] lg:min-h-[800px] lg:sticky lg:top-8">
+            <div class="w-full flex-grow bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center min-h-[400px] lg:min-h-[800px]">
                 <div class="w-full relative overflow-hidden" id="previewWrapper">
                     <div id="captureArea" class="shadow-inner" style="background-color: #ffffff; position: absolute; left: 0; top: 0;">
-                        <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none"></div>
+                        <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none" draggable="false"></div>
                         
                         <div id="layoutContainer" class="flex h-full z-20 relative pointer-events-none">
                             <div id="imageWrapper" class="flex-grow relative overflow-hidden pointer-events-none z-10">
-                                <img id="previewImage" src="" style="display:none; pointer-events: auto;">
+                                <img id="previewImage" src="" style="display:none; pointer-events: auto;" draggable="false">
                             </div>
                             <div id="calendarWrapper" class="p-8 flex-shrink-0 flex items-center justify-center pointer-events-none z-20">
                                 <div id="calendarContainer" class="pointer-events-auto shadow-xl flex-shrink-0 w-full" style="padding: 40px; border-radius: 32px; min-width: 500px; max-width: 600px;">
