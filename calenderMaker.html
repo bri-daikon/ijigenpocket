@@ -105,6 +105,25 @@
                     <input type="range" id="calOpacity" min="0" max="100" value="80" class="w-full">
                 </div>
             </div>
+            
+            <div class="mt-2 grid grid-cols-4 gap-2">
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">メイン位置 X</label>
+                    <input type="range" id="imageX" min="-100" max="100" value="0" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">メイン位置 Y</label>
+                    <input type="range" id="imageY" min="-100" max="100" value="0" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">背景位置 X</label>
+                    <input type="range" id="bgX" min="-100" max="100" value="0" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">背景位置 Y</label>
+                    <input type="range" id="bgY" min="-100" max="100" value="0" class="w-full">
+                </div>
+            </div>
         </div>
 
         <div class="flex justify-center mb-6">
@@ -181,17 +200,31 @@
             captureArea.style.backgroundColor = document.getElementById('bgColorInput').value;
         }
 
+        layoutSelect.addEventListener('change', (e) => {
+            const layout = e.target.value;
+            const aspectSelect = document.getElementById('aspectRatioSelect');
+            if (layout === 'cal-left' || layout === 'img-left') aspectSelect.value = '16/9';
+            else if (layout === 'img-top' || layout === 'cal-top') aspectSelect.value = '9/19.5';
+        });
+
         [layoutSelect, document.getElementById('aspectRatioSelect'), document.getElementById('fontSelect'), document.getElementById('boldCheck'), document.getElementById('bgColorInput')].forEach(el => el.addEventListener('input', updateLayout));
         [layoutSelect, document.getElementById('aspectRatioSelect'), document.getElementById('fontSelect'), document.getElementById('boldCheck'), document.getElementById('bgColorInput')].forEach(el => el.addEventListener('change', updateLayout));
 
         function updateSizesAndOpacity() {
             previewImage.style.width = document.getElementById('imageSize').value + '%';
             bgImage.style.width = document.getElementById('bgSize').value + '%';
+            
+            previewImage.style.left = document.getElementById('imageX').value + '%';
+            previewImage.style.top = document.getElementById('imageY').value + '%';
+            
+            bgImage.style.left = document.getElementById('bgX').value + '%';
+            bgImage.style.top = document.getElementById('bgY').value + '%';
+            
             const opacity = document.getElementById('calOpacity').value / 100;
             document.getElementById('calendarContainer').style.backgroundColor = `rgba(255, 255, 255, ${opacity})`;
         }
         
-        ['imageSize', 'bgSize', 'calOpacity'].forEach(id => {
+        ['imageSize', 'bgSize', 'calOpacity', 'imageX', 'imageY', 'bgX', 'bgY'].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener('input', updateSizesAndOpacity);
             el.addEventListener('change', updateSizesAndOpacity);
@@ -214,7 +247,42 @@
             }
         }
 
-        document.getElementById('downloadBtn').onclick = () => html2canvas(captureArea, {useCORS: true, scale: 2}).then(canvas => { const a = document.createElement('a'); a.download = 'calendar.png'; a.href = canvas.toDataURL(); a.click(); });
+        document.getElementById('downloadBtn').onclick = async () => {
+            const btn = document.getElementById('downloadBtn');
+            const prevText = btn.textContent;
+            btn.textContent = '保存中...';
+            
+            const prevBorder = captureArea.style.border;
+            captureArea.style.border = 'none';
+            
+            try {
+                const canvas = await html2canvas(captureArea, {useCORS: true, scale: 2});
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    
+                    let resultImg = document.getElementById('resultImageNode');
+                    if (!resultImg) {
+                        resultImg = document.createElement('img');
+                        resultImg.id = 'resultImageNode';
+                        resultImg.className = 'mt-6 w-full rounded-3xl shadow-lg border-2 border-slate-200';
+                        document.getElementById('captureArea').parentNode.parentNode.appendChild(resultImg);
+                    }
+                    resultImg.src = url;
+                    
+                    const a = document.createElement('a');
+                    a.download = 'calendar.png';
+                    a.href = url;
+                    a.click();
+                    
+                    btn.textContent = '保存できない場合は下の画像を長押し保存';
+                }, 'image/png');
+            } catch (err) {
+                console.error(err);
+                btn.textContent = prevText;
+            } finally {
+                captureArea.style.border = prevBorder;
+            }
+        };
         
         const now = new Date();
         [0, 1].forEach(i => {
