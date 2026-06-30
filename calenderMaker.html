@@ -17,8 +17,8 @@
         .font-zenmaru { font-family: 'Zen Maru Gothic', sans-serif; }
         .font-hachimaru { font-family: 'Hachi Maru Pop', cursive; }
         .font-mplus { font-family: 'M PLUS Rounded 1c', sans-serif; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        #captureArea { width: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: default; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; font-size: 36px; }
+        #captureArea { display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: default; transform-origin: top left; }
         #imageContainer, #bgContainer { position: absolute; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
         #previewImage, #bgImage { position: absolute; cursor: move; touch-action: none; max-width: none; left: 0; top: 0; pointer-events: auto; }
         #calendarContainer { backdrop-filter: blur(10px); z-index: 20; pointer-events: auto; }
@@ -126,15 +126,15 @@
             </div>
         </div>
 
-        <div class="flex justify-center mb-6">
-            <div id="captureArea" class="rounded-3xl shadow-inner" style="aspect-ratio: 9/19.5; border: 1px solid #e2e8f0; background-color: #ffffff;">
+        <div class="flex justify-center mb-6 w-full overflow-hidden" id="previewWrapper">
+            <div id="captureArea" class="shadow-inner" style="background-color: #ffffff;">
                 <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none"></div>
                 <div id="imageContainer" style="z-index: 5;"><img id="previewImage" src="" style="display:none"></div>
-                <div id="layoutContainer" class="p-4 flex flex-col h-full z-20 relative pointer-events-none">
+                <div id="layoutContainer" class="p-8 flex flex-col h-full z-20 relative pointer-events-none">
                     <div id="spacer" class="flex-grow"></div>
-                    <div id="calendarContainer" class="p-5 rounded-2xl pointer-events-auto">
-                        <h2 id="monthTitle" class="text-xl font-bold mb-3 text-slate-800 text-center">YYYY年M月</h2>
-                        <div class="calendar-grid text-center font-bold text-xs mb-2">
+                    <div id="calendarContainer" class="pointer-events-auto flex-shrink-0" style="padding: 40px; border-radius: 32px; min-width: 500px;">
+                        <h2 id="monthTitle" class="font-bold text-slate-800 text-center" style="font-size: 48px; margin-bottom: 24px;">YYYY年M月</h2>
+                        <div class="calendar-grid text-center font-bold mb-4" style="font-size: 32px;">
                             <div class="text-red-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div>
                         </div>
                         <div id="calendarDays" class="calendar-grid text-center text-slate-700"></div>
@@ -152,18 +152,41 @@
         const layoutSelect = document.getElementById('layoutSelect');
 
         function setupDrag(el) {
-            let active = false, offset = { x: 0, y: 0 };
-            el.addEventListener('mousedown', (e) => { 
+            let active = false, startMouse = { x: 0, y: 0 }, startPos = { x: 0, y: 0 };
+            const getPx = (val, max) => val.toString().endsWith('%') ? (parseFloat(val) / 100) * max : parseFloat(val) || 0;
+            
+            el.addEventListener('pointerdown', (e) => { 
                 active = true; 
-                offset = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop }; 
+                startMouse = { x: e.clientX, y: e.clientY };
+                startPos = { 
+                    x: getPx(el.style.left, el.parentElement.offsetWidth), 
+                    y: getPx(el.style.top, el.parentElement.offsetHeight) 
+                };
+                el.setPointerCapture(e.pointerId);
             });
-            window.addEventListener('mousemove', (e) => {
+            el.addEventListener('pointermove', (e) => {
                 if (active) {
-                    el.style.left = (e.clientX - offset.x) + 'px';
-                    el.style.top = (e.clientY - offset.y) + 'px';
+                    const scale = captureArea.getBoundingClientRect().width / captureArea.offsetWidth || 1;
+                    const newX = startPos.x + (e.clientX - startMouse.x) / scale;
+                    const newY = startPos.y + (e.clientY - startMouse.y) / scale;
+                    
+                    const pxX = (newX / el.parentElement.offsetWidth) * 100;
+                    const pxY = (newY / el.parentElement.offsetHeight) * 100;
+                    
+                    el.style.left = pxX + '%';
+                    el.style.top = pxY + '%';
+                    
+                    if(el.id === 'previewImage') {
+                        document.getElementById('imageX').value = pxX;
+                        document.getElementById('imageY').value = pxY;
+                    } else {
+                        document.getElementById('bgX').value = pxX;
+                        document.getElementById('bgY').value = pxY;
+                    }
                 }
             });
-            window.addEventListener('mouseup', () => active = false);
+            el.addEventListener('pointerup', () => active = false);
+            el.addEventListener('pointercancel', () => active = false);
         }
         setupDrag(previewImage); setupDrag(bgImage);
 
@@ -179,7 +202,20 @@
         };
 
         function updateLayout() {
-            captureArea.style.aspectRatio = document.getElementById('aspectRatioSelect').value;
+            const aspect = document.getElementById('aspectRatioSelect').value;
+            let targetWidth, targetHeight;
+            if (aspect === '16/9') { targetWidth = 1280; targetHeight = 720; }
+            else if (aspect === '9/16') { targetWidth = 720; targetHeight = 1280; }
+            else { targetWidth = 720; targetHeight = 1560; }
+
+            captureArea.style.width = targetWidth + 'px';
+            captureArea.style.height = targetHeight + 'px';
+            captureArea.style.aspectRatio = 'unset';
+
+            const wrapperWidth = captureArea.parentElement.clientWidth;
+            const scale = wrapperWidth / targetWidth;
+            captureArea.style.transform = `scale(${scale})`;
+            captureArea.parentElement.style.height = (targetHeight * scale) + 'px';
             
             const layout = layoutSelect.value;
             let layoutClass = 'flex-col';
@@ -188,17 +224,19 @@
             else if (layout === 'img-left') layoutClass = 'flex-row';
             else if (layout === 'cal-left') layoutClass = 'flex-row-reverse';
 
-            layoutContainer.className = `p-4 flex h-full z-20 relative pointer-events-none ${layoutClass}`;
+            layoutContainer.className = `p-8 flex h-full z-20 relative pointer-events-none ${layoutClass}`;
             document.getElementById('spacer').style.display = layout === 'background' ? 'none' : 'block';
             
             const font = document.getElementById('fontSelect').value;
             const isBold = document.getElementById('boldCheck').checked;
             const calendarContainer = document.getElementById('calendarContainer');
-            calendarContainer.className = `p-5 rounded-2xl pointer-events-auto shadow-sm ${font} ${isBold ? 'font-bold' : ''}`;
+            calendarContainer.className = `pointer-events-auto shadow-xl flex-shrink-0 ${font} ${isBold ? 'font-bold' : ''}`;
             updateSizesAndOpacity();
             
             captureArea.style.backgroundColor = document.getElementById('bgColorInput').value;
         }
+        
+        window.addEventListener('resize', updateLayout);
 
         layoutSelect.addEventListener('change', (e) => {
             const layout = e.target.value;
