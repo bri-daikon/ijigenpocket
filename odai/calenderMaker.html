@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スマホ待ち受けイラストカレンダーメーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Shippori+Mincho&family=Yomogi&family=Potta+One&family=Mochiy+Pop+P+One&family=Kiwi+Maru&family=Zen+Maru+Gothic&family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
     <style>
         .font-gothic { font-family: 'Kosugi Maru', sans-serif; }
@@ -149,7 +149,7 @@
                             <div id="imageWrapper" class="absolute w-full h-full overflow-hidden pointer-events-none z-10 left-0 top-0">
                                 <img id="previewImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="display:none; pointer-events: auto;" draggable="false">
                             </div>
-                            <div id="calendarWrapper" class="p-8 flex-shrink-0 flex items-center justify-center pointer-events-none z-20">
+                            <div id="calendarWrapper" class="relative p-8 flex-shrink-0 flex items-center justify-center pointer-events-none z-20">
                                 <div id="calendarContainer" class="pointer-events-auto shadow-xl flex-shrink-0 w-full" style="padding: 40px; border-radius: 32px; min-width: 500px; max-width: 600px;">
                                     <h2 id="monthTitle" class="font-bold text-slate-800 text-center" style="font-size: 48px; margin-bottom: 24px;">YYYY年M月</h2>
                                     <div class="calendar-grid text-center font-bold mb-4" style="font-size: 32px;">
@@ -163,8 +163,6 @@
                 </div>
             </div>
         </div>
-
-        <button id="downloadBtn" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-bold hover:bg-slate-800 transition">画像として保存</button>
     </div>
 
     <script>
@@ -329,24 +327,39 @@
             const prevOverflow = previewWrapper.style.overflow;
             previewWrapper.style.overflow = 'visible';
             
+            const calendarContainer = document.getElementById('calendarContainer');
+            const prevBackdrop = calendarContainer.style.backdropFilter;
+            calendarContainer.style.backdropFilter = 'none';
+            
+            const prevShadow = calendarContainer.style.boxShadow;
+            calendarContainer.style.boxShadow = 'none';
+            
             try {
-                const dataUrl = await htmlToImage.toPng(captureArea, { pixelRatio: 1 });
+                const canvas = await html2canvas(captureArea, {
+                    useCORS: true, 
+                    scale: 1,
+                    backgroundColor: null
+                });
                 
-                let resultImg = document.getElementById('resultImageNode');
-                if (!resultImg) {
-                    resultImg = document.createElement('img');
-                    resultImg.id = 'resultImageNode';
-                    resultImg.className = 'mt-6 w-full max-w-[800px] rounded-3xl shadow-lg border-2 border-slate-200';
-                    previewWrapper.parentNode.appendChild(resultImg);
-                }
-                resultImg.src = dataUrl;
-                
-                const a = document.createElement('a');
-                a.download = 'calendar.png';
-                a.href = dataUrl;
-                a.click();
-                
-                btn.textContent = '保存できない場合は画面下の画像を長押し保存';
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    
+                    let resultImg = document.getElementById('resultImageNode');
+                    if (!resultImg) {
+                        resultImg = document.createElement('img');
+                        resultImg.id = 'resultImageNode';
+                        resultImg.className = 'mt-6 w-full max-w-[800px] rounded-3xl shadow-lg border-2 border-slate-200';
+                        previewWrapper.parentNode.appendChild(resultImg);
+                    }
+                    resultImg.src = url;
+                    
+                    const a = document.createElement('a');
+                    a.download = 'calendar.png';
+                    a.href = url;
+                    a.click();
+                    
+                    btn.textContent = '保存できない場合は画面下の画像を長押し保存';
+                }, 'image/png');
             } catch (err) {
                 console.error(err);
                 btn.textContent = prevText;
@@ -354,6 +367,8 @@
                 captureArea.style.border = prevBorder;
                 captureArea.style.transform = prevTransform;
                 previewWrapper.style.overflow = prevOverflow;
+                calendarContainer.style.backdropFilter = prevBackdrop;
+                calendarContainer.style.boxShadow = prevShadow;
             }
         };
         
