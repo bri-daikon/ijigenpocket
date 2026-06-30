@@ -137,9 +137,9 @@
             </div>
             
             <!-- 右側：プレビュー領域 -->
-            <div class="w-full flex-grow bg-white p-6 rounded-3xl shadow-xl flex justify-center items-center overflow-hidden min-h-[400px] lg:min-h-[800px] lg:sticky lg:top-8">
-                <div class="flex justify-center w-full overflow-hidden" id="previewWrapper">
-                    <div id="captureArea" class="shadow-inner" style="background-color: #ffffff;">
+            <div class="w-full flex-grow bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center overflow-y-auto min-h-[400px] lg:min-h-[800px] lg:sticky lg:top-8">
+                <div class="w-full relative overflow-hidden" id="previewWrapper">
+                    <div id="captureArea" class="shadow-inner" style="background-color: #ffffff; position: absolute; left: 0; top: 0;">
                         <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="" style="display:none"></div>
                         
                         <div id="layoutContainer" class="flex h-full z-20 relative pointer-events-none">
@@ -244,10 +244,11 @@
             captureArea.style.height = targetHeight + 'px';
             captureArea.style.aspectRatio = 'unset';
 
-            const wrapperWidth = captureArea.parentElement.clientWidth;
+            const previewWrapper = document.getElementById('previewWrapper');
+            const wrapperWidth = previewWrapper.clientWidth;
             const scale = wrapperWidth / targetWidth;
             captureArea.style.transform = `scale(${scale})`;
-            captureArea.parentElement.style.height = (targetHeight * scale) + 'px';
+            previewWrapper.style.height = (targetHeight * scale) + 'px';
             
             const imgWrap = document.getElementById('imageWrapper');
             if (selection.endsWith('-bg')) {
@@ -317,8 +318,15 @@
             const prevBorder = captureArea.style.border;
             captureArea.style.border = 'none';
             
+            const prevTransform = captureArea.style.transform;
+            captureArea.style.transform = 'none';
+            
+            const previewWrapper = document.getElementById('previewWrapper');
+            const prevOverflow = previewWrapper.style.overflow;
+            previewWrapper.style.overflow = 'visible';
+            
             try {
-                const canvas = await html2canvas(captureArea, {useCORS: true, scale: 2});
+                const canvas = await html2canvas(captureArea, {useCORS: true, scale: 1});
                 canvas.toBlob(blob => {
                     const url = URL.createObjectURL(blob);
                     
@@ -326,8 +334,8 @@
                     if (!resultImg) {
                         resultImg = document.createElement('img');
                         resultImg.id = 'resultImageNode';
-                        resultImg.className = 'mt-6 w-full rounded-3xl shadow-lg border-2 border-slate-200';
-                        document.getElementById('captureArea').parentNode.parentNode.appendChild(resultImg);
+                        resultImg.className = 'mt-6 w-full max-w-[800px] rounded-3xl shadow-lg border-2 border-slate-200';
+                        previewWrapper.parentNode.appendChild(resultImg);
                     }
                     resultImg.src = url;
                     
@@ -336,13 +344,15 @@
                     a.href = url;
                     a.click();
                     
-                    btn.textContent = '保存できない場合は下の画像を長押し保存';
+                    btn.textContent = '保存できない場合は画面下の画像を長押し保存';
                 }, 'image/png');
             } catch (err) {
                 console.error(err);
                 btn.textContent = prevText;
             } finally {
                 captureArea.style.border = prevBorder;
+                captureArea.style.transform = prevTransform;
+                previewWrapper.style.overflow = prevOverflow;
             }
         };
         
