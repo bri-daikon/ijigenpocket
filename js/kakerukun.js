@@ -2591,44 +2591,48 @@ function insertCharacterSheet() {
                 <!-- 能力値 -->
                 <div>
                     <span class="block text-xs font-bold text-slate-400 mb-1">能力値 (STR, CON, POW, DEX, APP, SIZ, INT, EDU, SAN)</span>
-                    <div class="char-stats-grid grid grid-cols-9 gap-1.5 text-center" style="display: grid !important; grid-template-columns: repeat(9, minmax(0, 1fr)) !important;">
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">STR</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">CON</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">POW</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">DEX</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">APP</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">SIZ</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">INT</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">EDU</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                        <div class="bg-slate-50 border border-slate-200 rounded p-1">
-                            <div class="text-[9px] font-bold text-slate-500">SAN</div>
-                            <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                        </div>
-                    </div>
+                    <table class="char-stats-grid w-full text-center" style="width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed;">
+                        <tbody>
+                            <tr>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">STR</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">CON</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">POW</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">DEX</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">APP</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">SIZ</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">INT</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">EDU</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
+                                    <div class="text-[9px] font-bold text-slate-500">SAN</div>
+                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 
                 <!-- 技能リスト -->
