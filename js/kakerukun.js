@@ -169,6 +169,14 @@ function executeDirectSave() {
         fontFamily: document.getElementById('font-family-select')?.value || 'sans-serif',
         lineHeight: document.getElementById('line-height-select')?.value || '1.8',
         exportLayout: document.getElementById('export-layout-select')?.value || '1',
+        exportSettings: {
+            paperSize: document.getElementById('export-paper-size')?.value || 'A4',
+            marginTop: document.getElementById('export-margin-top')?.value || '20',
+            marginBottom: document.getElementById('export-margin-bottom')?.value || '20',
+            marginLeft: document.getElementById('export-margin-left')?.value || '20',
+            marginRight: document.getElementById('export-margin-right')?.value || '20',
+            indentParagraph: document.getElementById('export-indent-paragraph')?.checked || false
+        },
         snippets: getSnippets()
     };
     const jsonStr = JSON.stringify(content, null, 2);
@@ -234,6 +242,14 @@ function loadProjectFallback(input) {
                 if (data.exportLayout) {
                     const layoutSelect = document.getElementById('export-layout-select');
                     if (layoutSelect) layoutSelect.value = data.exportLayout;
+                }
+                if (data.exportSettings) {
+                    if (document.getElementById('export-paper-size')) document.getElementById('export-paper-size').value = data.exportSettings.paperSize || 'A4';
+                    if (document.getElementById('export-margin-top')) document.getElementById('export-margin-top').value = data.exportSettings.marginTop || '20';
+                    if (document.getElementById('export-margin-bottom')) document.getElementById('export-margin-bottom').value = data.exportSettings.marginBottom || '20';
+                    if (document.getElementById('export-margin-left')) document.getElementById('export-margin-left').value = data.exportSettings.marginLeft || '20';
+                    if (document.getElementById('export-margin-right')) document.getElementById('export-margin-right').value = data.exportSettings.marginRight || '20';
+                    if (document.getElementById('export-indent-paragraph')) document.getElementById('export-indent-paragraph').checked = data.exportSettings.indentParagraph || false;
                 }
                 if (data.snippets) {
                     saveSnippets(data.snippets);
@@ -405,7 +421,7 @@ function exportHTML() {
         h4, h5, h6 { font-weight: 700; margin-top: 1.25rem; }
         .h7 { font-size: 0.95rem; font-weight: 700; color: #64748b; margin-top: 0.5rem; border-left: 2px solid #64748b; padding-left: 0.5rem; display: block; }
         .h8 { font-size: 0.9rem; font-weight: 700; color: #64748b; font-style: italic; margin-top: 0.5rem; opacity: 0.8; display: block; }
-        p { margin-bottom: 0.8rem; }
+        p { margin: 0; }
         img { max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0; break-inside: avoid; }
         .img-left { float: left; margin: 0 1.5rem 1rem 0; max-width: 45%; }
         .img-right { float: right; margin: 0 0 1rem 1.5rem; max-width: 45%; }
@@ -621,6 +637,41 @@ function exportHTML() {
             min-width: 0 !important;
         }
     `;
+    // Pタグをまとめてコピーしやすくする（空行を段落区切りとする）
+    {
+        const outDiv = document.createElement('div');
+        outDiv.innerHTML = pagesHtml;
+        const pTags = Array.from(outDiv.querySelectorAll('p, div:not([class])'));
+        for (let i = 0; i < pTags.length; i++) {
+            let p = pTags[i];
+            if (!p.parentNode) continue;
+            
+            const isPEmpty = p.innerHTML.trim() === '' || p.innerHTML === '<br>' || p.querySelector('img, table, div');
+            if (isPEmpty) {
+                if (p.innerHTML.trim() === '') p.innerHTML = '<br>';
+                continue;
+            }
+            
+            p.style.margin = '0';
+            
+            let next = p.nextElementSibling;
+            
+            while (next && (next.tagName === 'P' || (next.tagName === 'DIV' && !next.className))) {
+                const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
+                if (isNextEmpty) {
+                    if (next.innerHTML.trim() === '') next.innerHTML = '<br>';
+                    break;
+                }
+                p.innerHTML += '<br>' + next.innerHTML;
+                let toRemove = next;
+                
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        }
+        pagesHtml = outDiv.innerHTML;
+    }
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -1027,13 +1078,33 @@ function exportWord() {
 
     if (currentPageContent !== '') flushPage();
 
+    const marginTop = document.getElementById('export-margin-top')?.value || '20';
+    const marginBottom = document.getElementById('export-margin-bottom')?.value || '20';
+    const marginLeft = document.getElementById('export-margin-left')?.value || '20';
+    const marginRight = document.getElementById('export-margin-right')?.value || '20';
+    const paperSize = document.getElementById('export-paper-size')?.value || 'A4';
+    const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;
+    const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;
+    const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';
+    
+    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';
+    const gridStyle = snapToGrid ? 'mso-layout-grid-align: auto;' : 'mso-layout-grid-align: none;';
+    let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm; ${gridStyle}`;
+    if (isIndent) pStyles += ' text-indent: 1em; mso-char-indent-count: 1.0;';
+    const paragraphStyle = `p { ${pStyles} }`;
+
     const wordContent = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
             <meta charset="UTF-8">
             <style>
-                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; mso-line-height-rule: exactly; }
-                p { margin-top: 0; margin-bottom: 0; }
+                @page {
+                    size: ${paperSizeStr};
+                    margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+                    mso-page-orientation: portrait;
+                }
+                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight}; }
+                ${paragraphStyle}
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
                 .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
@@ -1156,14 +1227,32 @@ function exportGoogleDocs() {
 
     if (currentPageContent !== '') flushPage();
 
+    const marginTop = document.getElementById('export-margin-top')?.value || '20';
+    const marginBottom = document.getElementById('export-margin-bottom')?.value || '20';
+    const marginLeft = document.getElementById('export-margin-left')?.value || '20';
+    const marginRight = document.getElementById('export-margin-right')?.value || '20';
+    const paperSize = document.getElementById('export-paper-size')?.value || 'A4';
+    const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;
+    const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;
+    const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';
+    
+    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';
+    let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm;`;
+    if (isIndent) pStyles += ' text-indent: 1em;';
+    const paragraphStyle = `p { ${pStyles} }`;
+
     const gdocsContent = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
             <style>
-                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; }
-                p { margin-top: 0; margin-bottom: 0; }
+                @page {
+                    size: ${paperSizeStr};
+                    margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+                }
+                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight}; }
+                ${paragraphStyle}
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
                 .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
@@ -1879,7 +1968,7 @@ function exportPDF() {
         h4, h5, h6 { font-weight: bold; margin-top: 15px; }
         .h7 { font-size: 11pt; font-weight: bold; color: #64748b; margin-top: 5px; border-left: 2px solid #64748b; padding-left: 5px; display: block; }
         .h8 { font-size: 10pt; font-weight: bold; color: #64748b; font-style: italic; margin-top: 5px; opacity: 0.8; display: block; }
-        p { margin-bottom: 10px; }
+        p { margin: 0; }
         img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; break-inside: avoid; }
         
         table { border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 10pt; break-inside: avoid; }
@@ -2000,6 +2089,41 @@ function exportPDF() {
             }
         }
     `;
+
+    // Pタグをまとめてコピーしやすくする（空行を段落区切りとする）
+    {
+        const outDiv = document.createElement('div');
+        outDiv.innerHTML = pagesHtml;
+        const pTags = Array.from(outDiv.querySelectorAll('p, div:not([class])'));
+        for (let i = 0; i < pTags.length; i++) {
+            let p = pTags[i];
+            if (!p.parentNode) continue;
+            
+            const isPEmpty = p.innerHTML.trim() === '' || p.innerHTML === '<br>' || p.querySelector('img, table, div');
+            if (isPEmpty) {
+                if (p.innerHTML.trim() === '') p.innerHTML = '<br>';
+                continue;
+            }
+            
+            p.style.margin = '0';
+            
+            let next = p.nextElementSibling;
+            
+            while (next && (next.tagName === 'P' || (next.tagName === 'DIV' && !next.className))) {
+                const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
+                if (isNextEmpty) {
+                    if (next.innerHTML.trim() === '') next.innerHTML = '<br>';
+                    break;
+                }
+                p.innerHTML += '<br>' + next.innerHTML;
+                let toRemove = next;
+                
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+        }
+        pagesHtml = outDiv.innerHTML;
+    }
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -2924,3 +3048,39 @@ editor.addEventListener('keyup', updateFloatingMenuPosition);
 editor.addEventListener('mouseup', updateFloatingMenuPosition);
 editor.addEventListener('focus', updateFloatingMenuPosition);
 editor.addEventListener('input', updateFloatingMenuPosition);
+
+/* --- カラーパレットの保存・復元 --- */
+function loadColorPalette() {
+    const paletteStr = localStorage.getItem('weby_recent_colors');
+    const colors = paletteStr ? JSON.parse(paletteStr) : ['#ff0000', '#0000ff', '#008000', '#ffff00', '#ffa500', '#800080', '#000000', '#ffffff'];
+    updateColorPaletteUI(colors);
+}
+
+function saveColorToPalette(color) {
+    if (!color) return;
+    const paletteStr = localStorage.getItem('weby_recent_colors');
+    let colors = paletteStr ? JSON.parse(paletteStr) : [];
+    
+    colors = colors.filter(c => c.toLowerCase() !== color.toLowerCase());
+    colors.unshift(color);
+    
+    if (colors.length > 20) {
+        colors = colors.slice(0, 20);
+    }
+    
+    localStorage.setItem('weby_recent_colors', JSON.stringify(colors));
+    updateColorPaletteUI(colors);
+}
+
+function updateColorPaletteUI(colors) {
+    const datalist = document.getElementById('color-palette');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    colors.forEach(color => {
+        const option = document.createElement('option');
+        option.value = color;
+        datalist.appendChild(option);
+    });
+}
+
+window.addEventListener('load', loadColorPalette);
