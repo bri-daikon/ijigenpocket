@@ -649,10 +649,34 @@ function downloadSingle(dataUrl, filename) {
   link.click();
 }
 
-function downloadAll() {
-  appState.pieces.forEach((piece, index) => {
-    downloadSingle(piece.processedDataUrl, `transparent_${String(index + 1).padStart(2, '0')}.png`);
-  });
+async function downloadAll() {
+  if (window.JSZip) {
+    const zip = new JSZip();
+    const folder = zip.folder("images");
+    
+    appState.pieces.forEach((piece, index) => {
+      const base64Data = piece.processedDataUrl.split(',')[1];
+      folder.file(`transparent_${String(index + 1).padStart(2, '0')}.png`, base64Data, {base64: true});
+    });
+    
+    try {
+      const content = await zip.generateAsync({type: "blob"});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = "images.zip";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (e) {
+      console.error(e);
+      alert("ZIPファイルの生成に失敗しました。");
+    }
+  } else {
+    appState.pieces.forEach((piece, index) => {
+      setTimeout(() => {
+        downloadSingle(piece.processedDataUrl, `transparent_${String(index + 1).padStart(2, '0')}.png`);
+      }, index * 200);
+    });
+  }
 }
 
 // 初期化処理
