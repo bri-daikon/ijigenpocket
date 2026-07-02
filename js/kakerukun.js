@@ -299,6 +299,35 @@ function exportHTML() {
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
+
+    // HTML出力用の調整: 古い能力値グリッドを横一列のテキストに変換 (旧バージョンのキャラシ救済)
+    tempDiv.querySelectorAll('.char-stats-grid').forEach(grid => {
+        if (grid.tagName === 'DIV' || grid.tagName === 'TABLE') {
+            const newContainer = document.createElement('div');
+            newContainer.className = 'char-stats-container';
+            newContainer.style.lineHeight = '2';
+            
+            const labels = ['STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'SAN'];
+            const inputs = grid.querySelectorAll('.char-stat-input');
+            
+            for (let i = 0; i < Math.min(labels.length, inputs.length); i++) {
+                const input = inputs[i];
+                let val = '0';
+                if (input.tagName === 'INPUT') {
+                    val = input.value || input.getAttribute('value') || '0';
+                } else {
+                    val = input.innerText || input.textContent || '0';
+                }
+                const span = document.createElement('span');
+                span.style.whiteSpace = 'nowrap';
+                span.style.marginRight = '12px';
+                span.innerHTML = '<strong style="color:gray; font-size:10px;">' + labels[i] + ':</strong> <span style="font-weight:bold;">' + val + '</span>';
+                newContainer.appendChild(span);
+            }
+            grid.parentNode.replaceChild(newContainer, grid);
+        }
+    });
+
     const nodes = Array.from(tempDiv.childNodes);
 
     let pagesHtml = '', currentPageContent = '', currentLineCount = 0, pageNum = 1;
@@ -878,15 +907,15 @@ function exportHTML() {
                              '髪/目の色: ' + color;
                 
                 const stats = sheet.querySelectorAll('.char-stat-input');
-                const str = stats[0].value || '0';
-                const con = stats[1].value || '0';
-                const pow = stats[2].value || '0';
-                const dex = stats[3].value || '0';
-                const app = stats[4].value || '0';
-                const siz = stats[5].value || '0';
-                const int = stats[6].value || '0';
-                const edu = stats[7].value || '0';
-                const san = stats[8].value || '0';
+                const str = (stats[0].value || stats[0].innerText || '0').trim();
+                const con = (stats[1].value || stats[1].innerText || '0').trim();
+                const pow = (stats[2].value || stats[2].innerText || '0').trim();
+                const dex = (stats[3].value || stats[3].innerText || '0').trim();
+                const app = (stats[4].value || stats[4].innerText || '0').trim();
+                const siz = (stats[5].value || stats[5].innerText || '0').trim();
+                const int = (stats[6].value || stats[6].innerText || '0').trim();
+                const edu = (stats[7].value || stats[7].innerText || '0').trim();
+                const san = (stats[8].value || stats[8].innerText || '0').trim();
                 
                 const hp = Math.ceil((parseInt(con) + parseInt(siz)) / 2) || 0;
                 const mp = parseInt(pow) || 0;
@@ -971,7 +1000,7 @@ function exportHTML() {
     showToast("サイドバー付きHTMLを書き出しました");
 }
 
-function exportWord() {
+async function exportWord() {
     const title = titleInput.value || '無題のシナリオ';
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
@@ -989,6 +1018,102 @@ function exportWord() {
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
+
+    // Word出力用の調整: フローチャート(SVG)をPNG画像に変換
+    const svgs = Array.from(tempDiv.querySelectorAll('svg'));
+    if (svgs.length > 0) {
+        const btn = document.querySelector('button[onclick="exportWord()"]');
+        const origText = btn ? btn.textContent : '';
+        if (btn) btn.textContent = '画像変換中...';
+        
+        await Promise.all(svgs.map(svg => {
+            return new Promise((resolve) => {
+                try {
+                    const box = svg.closest('.box-flowchart');
+                    if (box) {
+                        const actions = box.querySelector('.flowchart-actions');
+                        if (actions) actions.remove();
+                    }
+                    
+                    if (!svg.getAttribute('xmlns')) {
+                        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                    }
+                    
+                    svg.style.backgroundColor = '#ffffff';
+                    
+                    let width = svg.getAttribute('width') || svg.getBoundingClientRect().width || 600;
+                    let height = svg.getAttribute('height') || svg.getBoundingClientRect().height || 400;
+                    width = parseInt(width) || 600;
+                    height = parseInt(height) || 400;
+                    
+                    const xml = new XMLSerializer().serializeToString(svg);
+                    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+                    const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const scale = 2;
+                        canvas.width = (img.width || width) * scale;
+                        canvas.height = (img.height || height) * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        const newImg = document.createElement('img');
+                        newImg.src = canvas.toDataURL('image/png');
+                        newImg.style.width = (img.width || width) + 'px';
+                        newImg.style.maxWidth = '100%';
+                        newImg.style.height = 'auto';
+                        
+                        const parentPre = svg.closest('pre.mermaid');
+                        if (parentPre) {
+                            parentPre.innerHTML = '';
+                            parentPre.appendChild(newImg);
+                        } else {
+                            svg.parentNode.replaceChild(newImg, svg);
+                        }
+                        resolve();
+                    };
+                    img.onerror = () => resolve();
+                    img.src = image64;
+                } catch(e) {
+                    console.error('SVG conversion error:', e);
+                    resolve();
+                }
+            });
+        }));
+        if (btn) btn.textContent = origText;
+    }
+
+    // Word出力用の調整: 古い能力値グリッドを横一列のテキストに変換 (旧バージョンのキャラシ救済)
+    tempDiv.querySelectorAll('.char-stats-grid').forEach(grid => {
+        if (grid.tagName === 'DIV' || grid.tagName === 'TABLE') {
+            const newContainer = document.createElement('div');
+            newContainer.className = 'char-stats-container';
+            newContainer.style.lineHeight = '2';
+            
+            const labels = ['STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'SAN'];
+            const inputs = grid.querySelectorAll('.char-stat-input');
+            
+            for (let i = 0; i < Math.min(labels.length, inputs.length); i++) {
+                const input = inputs[i];
+                let val = '0';
+                if (input.tagName === 'INPUT') {
+                    val = input.value || input.getAttribute('value') || '0';
+                } else {
+                    val = input.innerText || input.textContent || '0';
+                }
+                const span = document.createElement('span');
+                span.style.whiteSpace = 'nowrap';
+                span.style.marginRight = '12px';
+                span.innerHTML = '<strong style="color:gray; font-size:10px;">' + labels[i] + ':</strong> <span style="font-weight:bold;">' + val + '</span>';
+                newContainer.appendChild(span);
+            }
+            grid.parentNode.replaceChild(newContainer, grid);
+        }
+    });
 
     // Word出力用の調整: 入力欄をテキストに変換 (キャラクターシート等)
     tempDiv.querySelectorAll('input, textarea').forEach(input => {
@@ -1068,9 +1193,10 @@ function exportWord() {
             else weight = textLines * sizeRatio;
         }
 
-        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
-            flushPage();
-        }
+        // Word出力時は自然な改ページに任せるため、行数による自動改ページを無効化
+        // if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
+        //     flushPage();
+        // }
 
         currentPageContent += node.nodeType === 1 ? node.outerHTML : node.textContent;
         currentLineCount += weight;
@@ -2590,49 +2716,18 @@ function insertCharacterSheet() {
                 
                 <!-- 能力値 -->
                 <div>
-                    <span class="block text-xs font-bold text-slate-400 mb-1">能力値 (STR, CON, POW, DEX, APP, SIZ, INT, EDU, SAN)</span>
-                    <table class="char-stats-grid w-full text-center" style="width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed;">
-                        <tbody>
-                            <tr>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">STR</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">CON</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">POW</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">DEX</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">APP</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">SIZ</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">INT</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">EDU</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                                <td class="bg-slate-50 border border-slate-200 rounded p-1">
-                                    <div class="text-[9px] font-bold text-slate-500">SAN</div>
-                                    <input type="number" value="50" class="char-stat-input text-center font-bold text-xs w-full bg-transparent outline-none" oninput="this.setAttribute('value', this.value); autoUpdateUI();">
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <span class="block text-xs font-bold text-slate-400 mb-2">能力値</span>
+                    <div class="char-stats-container" style="line-height: 2;">
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">STR:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">CON:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">POW:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">DEX:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">APP:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">SIZ:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">INT:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap; margin-right: 12px;"><strong class="text-[10px] text-slate-500">EDU:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                        <span style="white-space: nowrap;"><strong class="text-[10px] text-slate-500">SAN:</strong> <span class="char-stat-input inline-block text-center font-bold text-xs bg-slate-50 border border-slate-200 rounded px-1 outline-none" style="min-width: 30px;" contenteditable="true" oninput="autoUpdateUI();">50</span></span>
+                    </div>
                 </div>
                 
                 <!-- 技能リスト -->
@@ -2738,15 +2833,15 @@ function copyToCcfolia(sheetId) {
     const memo = `職業: ${job}\n年齢: ${age} / 性別: ${gender}\n身長: ${height} / 体重: ${weight}\n誕生日: ${birthday}\n髪/目の色: ${color}`;
     
     const stats = sheet.querySelectorAll('.char-stat-input');
-    const str = stats[0].value || '0';
-    const con = stats[1].value || '0';
-    const pow = stats[2].value || '0';
-    const dex = stats[3].value || '0';
-    const app = stats[4].value || '0';
-    const siz = stats[5].value || '0';
-    const int = stats[6].value || '0';
-    const edu = stats[7].value || '0';
-    const san = stats[8].value || '0';
+    const str = (stats[0].value || stats[0].innerText || '0').trim();
+    const con = (stats[1].value || stats[1].innerText || '0').trim();
+    const pow = (stats[2].value || stats[2].innerText || '0').trim();
+    const dex = (stats[3].value || stats[3].innerText || '0').trim();
+    const app = (stats[4].value || stats[4].innerText || '0').trim();
+    const siz = (stats[5].value || stats[5].innerText || '0').trim();
+    const int = (stats[6].value || stats[6].innerText || '0').trim();
+    const edu = (stats[7].value || stats[7].innerText || '0').trim();
+    const san = (stats[8].value || stats[8].innerText || '0').trim();
     
     // HP, MP の自動算出 (HP: (CON+SIZ)/2 切り上げ, MP: POW)
     const hp = Math.ceil((parseInt(con) + parseInt(siz)) / 2) || 0;
