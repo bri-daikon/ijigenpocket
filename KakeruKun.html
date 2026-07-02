@@ -91,7 +91,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">枠・ハイライトの色</label>
                         <div class="flex items-center gap-3">
-                            <input type="color" id="snippet-color-input" value="#3b82f6" class="w-8 h-8 border-none cursor-pointer bg-transparent">
+                            <input type="color" id="snippet-color-input" value="#3b82f6" list="color-palette" onchange="saveColorToPalette(this.value)" class="w-8 h-8 border-none cursor-pointer bg-transparent">
                             <span class="text-xs text-slate-500 font-mono">カラーピッカーで選択してください</span>
                         </div>
                     </div>
@@ -148,6 +148,68 @@
                     <button onclick="closeModal('flowchart-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">キャンセル</button>
                     <button id="flowchart-save-btn" onclick="saveFlowchart()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition">エディタに挿入</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-settings-modal" class="modal-overlay no-print text-slate-900" style="display: none;">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold mb-4">出力設定 (Word / GDocs)</h3>
+            
+            <div class="space-y-4">
+                <!-- 用紙サイズ -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">用紙サイズ</label>
+                    <select id="export-paper-size" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm outline-none focus:border-indigo-400">
+                        <option value="A4">A4</option>
+                        <option value="B5">B5</option>
+                        <option value="A5">A5</option>
+                    </select>
+                </div>
+
+                <!-- 余白設定 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">余白 (mm)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 w-4 text-center">上</span>
+                            <input type="number" id="export-margin-top" value="20" class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 w-4 text-center">下</span>
+                            <input type="number" id="export-margin-bottom" value="20" class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 w-4 text-center">左</span>
+                            <input type="number" id="export-margin-left" value="20" class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 w-4 text-center">右</span>
+                            <input type="number" id="export-margin-right" value="20" class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 段落設定 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">段落</label>
+                    <div class="flex items-center gap-2 mb-2 mt-1">
+                        <span class="text-xs text-slate-500">左インデント (mm):</span>
+                        <input type="number" id="export-paragraph-indent-left" value="8.5" step="0.1" class="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400">
+                    </div>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+                        <input type="checkbox" id="export-indent-paragraph" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                        <span>段落の最初の行を1文字分字下げする</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" id="export-snap-to-grid" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                        <span class="text-xs">文字を行グリッド線に合わせる</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('export-settings-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm transition font-bold">閉じる</button>
             </div>
         </div>
     </div>
@@ -219,6 +281,8 @@
                         <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 mr-2 border border-slate-200 text-slate-900">
                             <span class="text-[9px] font-bold text-slate-500 px-1">行間</span>
                             <select id="line-height-select" onchange="updateEditorStyles()" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-xs font-bold text-slate-600 outline-none">
+                                <option value="1.0">1.0</option>
+                                <option value="1.2">1.2</option>
                                 <option value="1.4">1.4</option>
                                 <option value="1.6">1.6</option>
                                 <option value="1.8" selected>1.8</option>
@@ -236,6 +300,7 @@
                             <button onclick="exportHTML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-3 rounded shadow transition">HTML</button>
                         </div>
                         <div class="flex gap-1">
+                            <button onclick="openModal('export-settings-modal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 px-3 rounded shadow transition" title="出力設定">⚙️ 設定</button>
                             <button onclick="exportWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">Word</button>
                             <button onclick="exportGoogleDocs()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow transition">GDocs</button>
                             <button onclick="exportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">PDF</button>
@@ -269,8 +334,8 @@
                         </div>
 
                         <div class="flex items-center gap-1 bg-white border border-slate-200 rounded px-1">
-                            <input type="color" id="text-color-picker" oninput="execCommandWithParam('foreColor', this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="文字色">
-                            <input type="color" id="bg-color-picker" value="#f1f5f9" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="枠・背景の色">
+                            <input type="color" id="text-color-picker" list="color-palette" oninput="execCommandWithParam('foreColor', this.value)" onchange="saveColorToPalette(this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="文字色">
+                            <input type="color" id="bg-color-picker" list="color-palette" value="#f1f5f9" onchange="saveColorToPalette(this.value)" class="w-6 h-6 border-none cursor-pointer bg-transparent" title="枠・背景の色">
                         </div>
 
                         <div class="flex bg-white border border-slate-200 rounded p-0.5 gap-0.5">
@@ -383,6 +448,10 @@
 
     <!-- ファイル読込用ダミー -->
     <input type="file" id="project-load-fallback" class="opacity-0 pointer-events-none absolute" accept=".weby" onchange="loadProjectFallback(this)">
+
+    <datalist id="color-palette">
+        <!-- JSで動的に追加されます -->
+    </datalist>
 
     <script src="js/kakerukun.js"></script>
 </body>
