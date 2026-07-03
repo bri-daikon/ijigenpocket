@@ -81,7 +81,12 @@
                                 <option value="quad">四方(上下左右)</option>
                             </select>
                         </div>
-                        <button id="clearBtn" class="ml-auto bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">消去(クリア)</button>
+                        <div class="ml-2 border-l pl-4">
+                            <label class="text-sm font-bold text-gray-700" title="数値を大きくすると線が滑らかになります">手振れ補正:</label>
+                            <input type="range" id="smoothing" min="0" max="95" value="50" class="cursor-pointer w-20">
+                        </div>
+                        <button id="undoBtn" class="ml-auto bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm transition font-bold disabled:opacity-50 disabled:cursor-not-allowed" disabled>↩️ 元に戻す</button>
+                        <button id="clearBtn" class="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">消去</button>
                     </div>
                 </div>
 
@@ -170,6 +175,8 @@
         const outWidthInput = document.getElementById('outWidth');
         const outHeightInput = document.getElementById('outHeight');
         const symmetrySelect = document.getElementById('symmetrySelect');
+        const smoothingSlider = document.getElementById('smoothing');
+        const undoBtn = document.getElementById('undoBtn');
         const guideH = document.getElementById('guideH');
         const guideV = document.getElementById('guideV');
         
@@ -183,6 +190,11 @@
         let lastX, lastY;        // ペン描画時の直前の座標
         let snapshot;            // 図形描画中のプレビュー用スナップショット
         let symmetryMode = 'none'; // none, horizontal, vertical, quad
+        let points = [];         // 手振れ補正用の座標履歴
+
+        // UNDO機能用
+        let undoLayerId = null;
+        let undoImageData = null;
 
         // レイヤー管理
         let layers = [];
@@ -212,6 +224,8 @@
             canvas.id = id;
             
             const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             if (isBase) {
                 ctx.fillStyle = "#ffffff";
                 ctx.fillRect(0, 0, 300, 300);
@@ -381,6 +395,25 @@
             }
         });
 
+        // UNDO状態の保存
+        function saveUndoState(layer) {
+            if (!layer) return;
+            undoLayerId = layer.id;
+            undoImageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+            undoBtn.disabled = false;
+        }
+
+        undoBtn.addEventListener('click', () => {
+            if (undoLayerId && undoImageData) {
+                const layer = layers.find(l => l.id === undoLayerId);
+                if (layer) {
+                    const currentImageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+                    layer.ctx.putImageData(undoImageData, 0, 0);
+                    undoImageData = currentImageData; // 再度クリックでやり直し(Redo)できるようにする
+                }
+            }
+        });
+
         // 座標取得用関数
         function getCoords(e) {
             const rect = canvasContainer.getBoundingClientRect();
@@ -400,11 +433,14 @@
             const layer = getCurrentLayer();
             if (!layer || !layer.visible) return; // 非表示レイヤーには描画しない
 
+            saveUndoState(layer);
+
             const coords = getCoords(e);
             startX = coords.x;
             startY = coords.y;
             lastX = coords.x;
             lastY = coords.y;
+            points = [{x: coords.x, y: coords.y}];
 
             if (currentMode === 'fill') {
                 const W = layer.canvas.width;
@@ -455,27 +491,56 @@
             ctx.strokeStyle = color;
 
             if (currentMode === 'pen' || currentMode === 'eraser') {
-                function drawLine(x1, y1, x2, y2) {
+                const smoothVal = parseInt(smoothingSlider.value, 10);
+                const factor = 1.0 - (smoothVal / 100);
+
+                const currentX = lastX + (coords.x - lastX) * factor;
+                const currentY = lastY + (coords.y - lastY) * factor;
+                points.push({x: currentX, y: currentY});
+
+                function drawSmoothLine(pts, isSymX, isSymY) {
+                    if (pts.length < 3) {
+                        const p1 = pts[0];
+                        const p2 = pts[1] || p1;
+                        ctx.beginPath();
+                        ctx.moveTo(isSymX ? W - p1.x : p1.x, isSymY ? H - p1.y : p1.y);
+                        ctx.lineTo(isSymX ? W - p2.x : p2.x, isSymY ? H - p2.y : p2.y);
+                        ctx.stroke();
+                        return;
+                    }
+                    const p1 = pts[pts.length - 3];
+                    const p2 = pts[pts.length - 2];
+                    const p3 = pts[pts.length - 1];
+                    
+                    const mid1x = (p1.x + p2.x) / 2;
+                    const mid1y = (p1.y + p2.y) / 2;
+                    const mid2x = (p2.x + p3.x) / 2;
+                    const mid2y = (p2.y + p3.y) / 2;
+
                     ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
+                    ctx.moveTo(isSymX ? W - mid1x : mid1x, isSymY ? H - mid1y : mid1y);
+                    ctx.quadraticCurveTo(
+                        isSymX ? W - p2.x : p2.x, 
+                        isSymY ? H - p2.y : p2.y, 
+                        isSymX ? W - mid2x : mid2x, 
+                        isSymY ? H - mid2y : mid2y
+                    );
                     ctx.stroke();
                 }
 
-                drawLine(lastX, lastY, coords.x, coords.y);
-
+                drawSmoothLine(points, false, false);
                 if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
-                    drawLine(W - lastX, lastY, W - coords.x, coords.y);
+                    drawSmoothLine(points, true, false);
                 }
                 if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
-                    drawLine(lastX, H - lastY, coords.x, H - coords.y);
+                    drawSmoothLine(points, false, true);
                 }
                 if (symmetryMode === 'quad') {
-                    drawLine(W - lastX, H - lastY, W - coords.x, H - coords.y);
+                    drawSmoothLine(points, true, true);
                 }
 
-                lastX = coords.x;
-                lastY = coords.y;
+                lastX = currentX;
+                lastY = currentY;
                 
             } else if (['rect', 'circle', 'triangle'].includes(currentMode)) {
                 ctx.putImageData(snapshot, 0, 0);
@@ -518,7 +583,44 @@
             if (!isDrawing) return;
             isDrawing = false;
             const layer = getCurrentLayer();
-            if (layer) layer.ctx.beginPath();
+            if (layer) {
+                if ((currentMode === 'pen' || currentMode === 'eraser') && points.length >= 2) {
+                    const ctx = layer.ctx;
+                    const W = layer.canvas.width;
+                    const H = layer.canvas.height;
+                    const isEraser = currentMode === 'eraser';
+                    ctx.globalCompositeOperation = isEraser && !layer.isBase ? 'destination-out' : 'source-over';
+                    ctx.lineWidth = brushSize.value;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = isEraser && layer.isBase ? '#ffffff' : colorPicker.value;
+
+                    function drawFinalSegment(pts, isSymX, isSymY) {
+                        const pLast = pts[pts.length - 1];
+                        const pPrev = pts[pts.length - 2];
+                        const midX = (pPrev.x + pLast.x) / 2;
+                        const midY = (pPrev.y + pLast.y) / 2;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(isSymX ? W - midX : midX, isSymY ? H - midY : midY);
+                        ctx.lineTo(isSymX ? W - pLast.x : pLast.x, isSymY ? H - pLast.y : pLast.y);
+                        ctx.stroke();
+                    }
+
+                    drawFinalSegment(points, false, false);
+                    if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                        drawFinalSegment(points, true, false);
+                    }
+                    if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                        drawFinalSegment(points, false, true);
+                    }
+                    if (symmetryMode === 'quad') {
+                        drawFinalSegment(points, true, true);
+                    }
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                layer.ctx.beginPath();
+            }
         }
 
         // イベントリスナーはコンテナに登録する
@@ -626,6 +728,8 @@
             const layer = getCurrentLayer();
             if (!layer) return;
             
+            saveUndoState(layer);
+
             layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
             if (layer.isBase) {
                 layer.ctx.fillStyle = "#ffffff";
@@ -644,6 +748,7 @@
                 img.onload = function() {
                     const layer = getCurrentLayer();
                     if(layer) {
+                        saveUndoState(layer);
                         layer.ctx.drawImage(img, 0, 0, layer.canvas.width, layer.canvas.height);
                     }
                 }
@@ -667,6 +772,10 @@
             tempCanvas.width = 300;
             tempCanvas.height = 300;
             const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = true;
+            tempCtx.imageSmoothingQuality = 'high';
+            ctxPattern.imageSmoothingEnabled = true;
+            ctxPattern.imageSmoothingQuality = 'high';
 
             // 背景から順番に描画
             layers.forEach(layer => {
