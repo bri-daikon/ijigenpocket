@@ -268,15 +268,40 @@
                 item.appendChild(leftDiv);
                 
                 if (!layer.isBase) {
+                    const controlsDiv = document.createElement('div');
+                    controlsDiv.className = 'flex items-center gap-1';
+
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.innerHTML = '▲';
+                    moveUpBtn.className = 'text-xs w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center';
+                    moveUpBtn.title = '前面へ移動';
+                    moveUpBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveLayer(layer.id, 1);
+                    });
+
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.innerHTML = '▼';
+                    moveDownBtn.className = 'text-xs w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center';
+                    moveDownBtn.title = '背面へ移動';
+                    moveDownBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveLayer(layer.id, -1);
+                    });
+
                     const delBtn = document.createElement('button');
                     delBtn.innerHTML = '🗑️';
-                    delBtn.className = 'text-sm opacity-50 hover:opacity-100 hover:scale-110 transition';
+                    delBtn.className = 'text-sm ml-1 opacity-50 hover:opacity-100 hover:scale-110 transition';
                     delBtn.title = '削除';
                     delBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         deleteLayer(layer.id);
                     });
-                    item.appendChild(delBtn);
+                    
+                    controlsDiv.appendChild(moveUpBtn);
+                    controlsDiv.appendChild(moveDownBtn);
+                    controlsDiv.appendChild(delBtn);
+                    item.appendChild(controlsDiv);
                 } else {
                     const baseSpan = document.createElement('span');
                     baseSpan.textContent = '固定';
@@ -286,6 +311,26 @@
                 
                 layerListEl.appendChild(item);
             });
+        }
+
+        function moveLayer(id, direction) {
+            const index = layers.findIndex(l => l.id === id);
+            if (index <= 0) return; // 背景(0)は見つからなかった場合は移動不可
+            
+            const newIndex = index + direction;
+            if (newIndex <= 0 || newIndex >= layers.length) return; // 背景(0)より下、または一番上より上には移動できない
+            
+            // 配列内の順序を入れ替え
+            const temp = layers[index];
+            layers[index] = layers[newIndex];
+            layers[newIndex] = temp;
+            
+            // キャンバスのDOM順序を更新 (配列の順に guideH の前に挿入し直すことで正しい重なり順になる)
+            layers.forEach(layer => {
+                canvasContainer.insertBefore(layer.canvas, document.getElementById('guideH'));
+            });
+            
+            renderLayerList();
         }
 
         function deleteLayer(id) {
