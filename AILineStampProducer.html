@@ -253,7 +253,7 @@
                         <div class="control-group">
                             <label>Size (Scale):</label>
                             <input type="range" id="editor-scale" min="0.1" max="3.0" step="0.01" value="1.0">
-                            <span id="scale-val">100%</span>
+                            <input type="number" id="scale-val" value="100" min="10" max="300" style="width: 50px; padding: 2px; text-align: right; background: #333; color: #fff; border: 1px solid #666; border-radius: 4px;"> <span style="color: #fff; margin-left: -5px;">%</span>
                         </div>
                         <div class="control-group">
                             <label>Editor BG:</label>
@@ -677,7 +677,7 @@
             currentEditId = id;
             const data = stampData[id];
             editorScale.value = data.scale;
-            scaleVal.innerText = Math.round(data.scale * 100) + '%';
+            scaleVal.value = Math.round(data.scale * 100);
             editorModal.style.display = 'flex';
             document.body.classList.add('modal-open');
             drawEditor();
@@ -767,7 +767,19 @@
             if (currentEditId === null) return;
             const data = stampData[currentEditId];
             data.scale = parseFloat(editorScale.value);
-            scaleVal.innerText = Math.round(data.scale * 100) + '%';
+            scaleVal.value = Math.round(data.scale * 100);
+            data.x = (320 - data.rawCanvas.width * data.scale) / 2;
+            data.y = (320 - data.rawCanvas.height * data.scale) / 2;
+            drawEditor();
+        };
+
+        scaleVal.oninput = () => {
+            if (currentEditId === null) return;
+            let percent = parseFloat(scaleVal.value);
+            if (isNaN(percent) || percent <= 0) return;
+            const data = stampData[currentEditId];
+            data.scale = percent / 100;
+            editorScale.value = data.scale;
             data.x = (320 - data.rawCanvas.width * data.scale) / 2;
             data.y = (320 - data.rawCanvas.height * data.scale) / 2;
             drawEditor();
