@@ -26,6 +26,14 @@
             max-width: 500px;
             height: auto;
         }
+        /* レイヤーリストのスクロールバーを少し細くする */
+        #layerList::-webkit-scrollbar {
+            width: 6px;
+        }
+        #layerList::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen p-4 md:p-8 font-sans text-gray-800">
@@ -85,16 +93,27 @@
 
                 <!-- 300x300のキャンバス -->
                 <div class="flex justify-center mb-4">
-                    <div class="relative" id="canvasContainer">
-                        <canvas id="baseCanvas" width="300" height="300" class="absolute inset-0"></canvas>
+                    <div class="relative" id="canvasContainer" style="touch-action: none;">
+                        <!-- キャンバスはJavaScriptで動的に追加されます -->
                         <!-- 対称定規のガイド線 -->
-                        <div id="guideH" class="absolute inset-0 pointer-events-none hidden" style="border-right: 1px dashed #ef4444; width: 50%; height: 100%;"></div>
-                        <div id="guideV" class="absolute inset-0 pointer-events-none hidden" style="border-bottom: 1px dashed #ef4444; width: 100%; height: 50%;"></div>
+                        <div id="guideH" class="absolute inset-0 pointer-events-none hidden z-50" style="border-right: 1px dashed #ef4444; width: 50%; height: 100%;"></div>
+                        <div id="guideV" class="absolute inset-0 pointer-events-none hidden z-50" style="border-bottom: 1px dashed #ef4444; width: 100%; height: 50%;"></div>
+                    </div>
+                </div>
+
+                <!-- レイヤー管理 -->
+                <div class="mb-4 bg-gray-100 p-3 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700">レイヤー管理:</label>
+                        <button id="addLayerBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-xs transition">＋ 新規レイヤー</button>
+                    </div>
+                    <div id="layerList" class="flex flex-col gap-1 max-h-48 overflow-y-auto bg-white p-1 rounded border border-gray-200">
+                        <!-- レイヤー項目がここに追加されます -->
                     </div>
                 </div>
 
                 <div class="text-center">
-                    <button id="generateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition transform hover:scale-105">
+                    <button id="generateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition transform hover:scale-105 mt-2">
                         ✨ パターンを展開する ✨
                     </button>
                 </div>
@@ -136,8 +155,7 @@
     <!-- JavaScript：動作のプログラム -->
     <script>
         // --- HTMLの要素を取得 ---
-        const baseCanvas = document.getElementById('baseCanvas');
-        const ctxBase = baseCanvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
         const patternCanvas = document.getElementById('patternCanvas');
         const ctxPattern = patternCanvas.getContext('2d');
         
@@ -154,6 +172,9 @@
         const symmetrySelect = document.getElementById('symmetrySelect');
         const guideH = document.getElementById('guideH');
         const guideV = document.getElementById('guideV');
+        
+        const addLayerBtn = document.getElementById('addLayerBtn');
+        const layerListEl = document.getElementById('layerList');
 
         // --- 状態管理変数 ---
         let isDrawing = false;
@@ -163,26 +184,140 @@
         let snapshot;            // 図形描画中のプレビュー用スナップショット
         let symmetryMode = 'none'; // none, horizontal, vertical, quad
 
+        // レイヤー管理
+        let layers = [];
+        let layerCounter = 0;
+        let currentLayerId = null;
+
         // --- 初期設定 ---
-        function initializeCanvas(ctx, width, height) {
-            ctx.fillStyle = "#ffffff"; // 背景を白で塗りつぶす
-            ctx.fillRect(0, 0, width, height);
+        function init() {
+            // 背景レイヤーを作成
+            createLayer('背景', true);
+            // 描画用レイヤーを作成
+            createLayer('レイヤー 1');
+            
+            // パターン用キャンバス初期化
+            ctxPattern.fillStyle = "#ffffff";
+            ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
         }
-        initializeCanvas(ctxBase, baseCanvas.width, baseCanvas.height);
-        initializeCanvas(ctxPattern, patternCanvas.width, patternCanvas.height);
+
+        function createLayer(name, isBase = false) {
+            layerCounter++;
+            const id = 'layer_' + layerCounter;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            canvas.className = 'absolute inset-0 pointer-events-none';
+            canvas.id = id;
+            
+            const ctx = canvas.getContext('2d');
+            if (isBase) {
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, 300, 300);
+            }
+            
+            canvasContainer.insertBefore(canvas, document.getElementById('guideH'));
+            
+            const layerObj = { id, name, canvas, ctx, visible: true, isBase };
+            layers.push(layerObj);
+            currentLayerId = id;
+            renderLayerList();
+            return layerObj;
+        }
+
+        function getCurrentLayer() {
+            return layers.find(l => l.id === currentLayerId);
+        }
+
+        function renderLayerList() {
+            layerListEl.innerHTML = '';
+            // UI上は新しい（上にある）レイヤーを上に表示したいので逆順でループ
+            [...layers].reverse().forEach(layer => {
+                const item = document.createElement('div');
+                const isActive = layer.id === currentLayerId;
+                item.className = `flex items-center justify-between p-2 rounded cursor-pointer border transition ${isActive ? 'bg-indigo-100 border-indigo-400' : 'bg-white border-gray-300 hover:bg-gray-50'}`;
+                
+                // レイヤークリックでアクティブ切り替え
+                item.addEventListener('click', () => {
+                    currentLayerId = layer.id;
+                    renderLayerList();
+                });
+                
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'flex items-center gap-2';
+                
+                // 表示/非表示ボタン
+                const visBtn = document.createElement('button');
+                visBtn.innerHTML = layer.visible ? '👁️' : '🔒';
+                visBtn.className = `text-sm ${layer.visible ? '' : 'opacity-50 grayscale'}`;
+                visBtn.title = layer.visible ? '表示中' : '非表示';
+                visBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    layer.visible = !layer.visible;
+                    layer.canvas.style.display = layer.visible ? 'block' : 'none';
+                    renderLayerList();
+                });
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = layer.name;
+                nameSpan.className = `text-sm font-bold ${isActive ? 'text-indigo-800' : 'text-gray-700'}`;
+                
+                leftDiv.appendChild(visBtn);
+                leftDiv.appendChild(nameSpan);
+                item.appendChild(leftDiv);
+                
+                if (!layer.isBase) {
+                    const delBtn = document.createElement('button');
+                    delBtn.innerHTML = '🗑️';
+                    delBtn.className = 'text-sm opacity-50 hover:opacity-100 hover:scale-110 transition';
+                    delBtn.title = '削除';
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteLayer(layer.id);
+                    });
+                    item.appendChild(delBtn);
+                } else {
+                    const baseSpan = document.createElement('span');
+                    baseSpan.textContent = '固定';
+                    baseSpan.className = 'text-xs text-gray-400 bg-gray-100 px-1 rounded';
+                    item.appendChild(baseSpan);
+                }
+                
+                layerListEl.appendChild(item);
+            });
+        }
+
+        function deleteLayer(id) {
+            if (layers.length <= 1) return;
+            const index = layers.findIndex(l => l.id === id);
+            if (index > -1) {
+                const layer = layers[index];
+                layer.canvas.remove();
+                layers.splice(index, 1);
+                
+                // 削除したレイヤーがアクティブだった場合、一番上のレイヤーをアクティブにする
+                if (currentLayerId === id) {
+                    currentLayerId = layers[layers.length - 1].id;
+                }
+                renderLayerList();
+            }
+        }
+
+        addLayerBtn.addEventListener('click', () => {
+            const num = layers.length;
+            createLayer('レイヤー ' + num);
+        });
 
         // --- ツール切り替え処理 ---
         toolBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // すべてのボタンの見た目をリセット
                 toolBtns.forEach(b => {
                     b.classList.remove('bg-indigo-600', 'text-white');
                     b.classList.add('bg-white', 'text-gray-700');
                 });
-                // クリックされたボタンを強調表示
                 btn.classList.remove('bg-white', 'text-gray-700');
                 btn.classList.add('bg-indigo-600', 'text-white');
-                // モードを更新
                 currentMode = btn.dataset.mode;
             });
         });
@@ -201,9 +336,9 @@
             }
         });
 
-        // 座標取得用関数（マウスとタッチ対応）
+        // 座標取得用関数
         function getCoords(e) {
-            const rect = baseCanvas.getBoundingClientRect();
+            const rect = canvasContainer.getBoundingClientRect();
             let x, y;
             if (e.type.includes('touch')) {
                 x = e.touches[0].clientX - rect.left;
@@ -217,64 +352,69 @@
 
         // --- お絵かきの処理 ---
         function startDrawing(e) {
+            const layer = getCurrentLayer();
+            if (!layer || !layer.visible) return; // 非表示レイヤーには描画しない
+
             const coords = getCoords(e);
             startX = coords.x;
             startY = coords.y;
             lastX = coords.x;
             lastY = coords.y;
 
-            // 塗りつぶしツールの場合は、クリックした時点で塗りつぶして終了
             if (currentMode === 'fill') {
-                const W = baseCanvas.width;
-                const H = baseCanvas.height;
+                const W = layer.canvas.width;
+                const H = layer.canvas.height;
                 
-                floodFill(startX, startY, colorPicker.value);
+                floodFill(layer.ctx, layer.canvas, startX, startY, colorPicker.value);
                 
-                // 対称塗りつぶし
                 if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
-                    floodFill(W - startX, startY, colorPicker.value);
+                    floodFill(layer.ctx, layer.canvas, W - startX, startY, colorPicker.value);
                 }
                 if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
-                    floodFill(startX, H - startY, colorPicker.value);
+                    floodFill(layer.ctx, layer.canvas, startX, H - startY, colorPicker.value);
                 }
                 if (symmetryMode === 'quad') {
-                    floodFill(W - startX, H - startY, colorPicker.value);
+                    floodFill(layer.ctx, layer.canvas, W - startX, H - startY, colorPicker.value);
                 }
                 return;
             }
 
             isDrawing = true;
             
-            // 図形を描くモードの場合は、現在のキャンバスの状態をスナップショットとして保存
             if (['rect', 'circle', 'triangle'].includes(currentMode)) {
-                snapshot = ctxBase.getImageData(0, 0, baseCanvas.width, baseCanvas.height);
+                snapshot = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
             }
         }
 
         function draw(e) {
             if (!isDrawing) return;
-            e.preventDefault(); // タッチ操作時のスクロール防止
+            e.preventDefault(); 
+
+            const layer = getCurrentLayer();
+            if (!layer) return;
 
             const coords = getCoords(e);
+            const ctx = layer.ctx;
+            const W = layer.canvas.width;
+            const H = layer.canvas.height;
             
-            // 消しゴムは「白色」のペンとして扱う
-            const color = currentMode === 'eraser' ? '#ffffff' : colorPicker.value;
+            // 消しゴムは「描画内容をクリアする」操作に変更（透明にするため globalCompositeOperation を使用）
+            const isEraser = currentMode === 'eraser';
+            ctx.globalCompositeOperation = isEraser && !layer.isBase ? 'destination-out' : 'source-over';
+            
+            const color = isEraser && layer.isBase ? '#ffffff' : colorPicker.value;
 
-            ctxBase.lineWidth = brushSize.value;
-            ctxBase.lineCap = 'round';
-            ctxBase.lineJoin = 'round';
-            ctxBase.strokeStyle = color;
-
-            const W = baseCanvas.width;
-            const H = baseCanvas.height;
+            ctx.lineWidth = brushSize.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = color;
 
             if (currentMode === 'pen' || currentMode === 'eraser') {
-                // 自由線の描画 (対象定規対応のため、少しずつ線を引いていく)
                 function drawLine(x1, y1, x2, y2) {
-                    ctxBase.beginPath();
-                    ctxBase.moveTo(x1, y1);
-                    ctxBase.lineTo(x2, y2);
-                    ctxBase.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
                 }
 
                 drawLine(lastX, lastY, coords.x, coords.y);
@@ -293,33 +433,27 @@
                 lastY = coords.y;
                 
             } else if (['rect', 'circle', 'triangle'].includes(currentMode)) {
-                // 図形のプレビュー描画：スナップショットを元に戻してから新しい図形を描く
-                ctxBase.putImageData(snapshot, 0, 0);
+                ctx.putImageData(snapshot, 0, 0);
 
                 function drawShape(sx, sy, cx, cy) {
-                    ctxBase.beginPath();
+                    ctx.beginPath();
                     if (currentMode === 'rect') {
-                        // 四角
-                        ctxBase.strokeRect(sx, sy, cx - sx, cy - sy);
+                        ctx.strokeRect(sx, sy, cx - sx, cy - sy);
                     } else if (currentMode === 'circle') {
-                        // 丸（円）
                         const radius = Math.sqrt(Math.pow(cx - sx, 2) + Math.pow(cy - sy, 2));
-                        ctxBase.arc(sx, sy, radius, 0, 2 * Math.PI);
-                        ctxBase.stroke();
+                        ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
+                        ctx.stroke();
                     } else if (currentMode === 'triangle') {
-                        // 三角（二等辺三角形）
-                        ctxBase.moveTo(sx + (cx - sx) / 2, sy); // 頂点
-                        ctxBase.lineTo(cx, cy); // 右下
-                        ctxBase.lineTo(sx, cy); // 左下
-                        ctxBase.closePath();
-                        ctxBase.stroke();
+                        ctx.moveTo(sx + (cx - sx) / 2, sy);
+                        ctx.lineTo(cx, cy);
+                        ctx.lineTo(sx, cy);
+                        ctx.closePath();
+                        ctx.stroke();
                     }
                 }
 
-                // メインの図形
                 drawShape(startX, startY, coords.x, coords.y);
 
-                // 対称の図形
                 if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
                     drawShape(W - startX, startY, W - coords.x, coords.y);
                 }
@@ -330,54 +464,61 @@
                     drawShape(W - startX, H - startY, W - coords.x, H - coords.y);
                 }
             }
+            
+            // 描画モードを元に戻す
+            ctx.globalCompositeOperation = 'source-over';
         }
 
         function stopDrawing() {
             if (!isDrawing) return;
             isDrawing = false;
-            ctxBase.beginPath(); // 次の線と繋がらないようにリセット
+            const layer = getCurrentLayer();
+            if (layer) layer.ctx.beginPath();
         }
 
-        // イベントリスナーの登録
-        baseCanvas.addEventListener('mousedown', startDrawing);
-        baseCanvas.addEventListener('mousemove', draw);
-        baseCanvas.addEventListener('mouseup', stopDrawing);
-        baseCanvas.addEventListener('mouseout', stopDrawing);
+        // イベントリスナーはコンテナに登録する
+        canvasContainer.addEventListener('mousedown', startDrawing);
+        canvasContainer.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing); // 枠外で離しても停止するようにwindowに
 
-        baseCanvas.addEventListener('touchstart', startDrawing, {passive: false});
-        baseCanvas.addEventListener('touchmove', draw, {passive: false});
-        baseCanvas.addEventListener('touchend', stopDrawing);
+        canvasContainer.addEventListener('touchstart', startDrawing, {passive: false});
+        canvasContainer.addEventListener('touchmove', draw, {passive: false});
+        window.addEventListener('touchend', stopDrawing);
 
-        // --- 塗りつぶし（Flood Fill）のプログラム ---
-        function floodFill(x, y, fillColorHex) {
+        // --- 塗りつぶし（Flood Fill） ---
+        function floodFill(ctx, canvas, x, y, fillColorHex) {
             x = Math.floor(x);
             y = Math.floor(y);
-            const imageData = ctxBase.getImageData(0, 0, baseCanvas.width, baseCanvas.height);
+            const width = canvas.width;
+            const height = canvas.height;
+            const imageData = ctx.getImageData(0, 0, width, height);
             const data = imageData.data;
-            const width = baseCanvas.width;
-            const height = baseCanvas.height;
             const tolerance = parseInt(fillTolerance.value, 10);
             
-            // クリックした位置の元の色を取得
             const startPos = (y * width + x) * 4;
             const startR = data[startPos];
             const startG = data[startPos + 1];
             const startB = data[startPos + 2];
             const startA = data[startPos + 3];
             
-            // 塗りつぶす色をRGBに変換
             const fillRgb = hexToRgb(fillColorHex);
             
-            // 元の色と塗る色が同じなら何もしない
-            if (startR === fillRgb.r && startG === fillRgb.g && startB === fillRgb.b && startA === 255) return;
+            // ★無限ループ・フリーズ回避策：
+            // 「クリックした位置の元の色」と「塗りつぶそうとしている色」が
+            // 指定された許容値（隙間調整）の範囲内で同一と見なされる場合は、
+            // 塗っても意味がない（かつ判定が無限に続く）ため処理を中止します。
+            if (Math.abs(fillRgb.r - startR) <= tolerance &&
+                Math.abs(fillRgb.g - startG) <= tolerance &&
+                Math.abs(fillRgb.b - startB) <= tolerance &&
+                Math.abs(255 - startA) <= tolerance) {
+                return;
+            }
             
-            // アンチエイリアス（線の滑らかさ）を考慮した色の許容範囲チェック
             function matchStartColor(pos) {
                 const r = data[pos];
                 const g = data[pos + 1];
                 const b = data[pos + 2];
                 const a = data[pos + 3];
-                // スライダーで設定した許容値を使って判定（隙間をなくすため）
                 return Math.abs(r - startR) <= tolerance &&
                        Math.abs(g - startG) <= tolerance &&
                        Math.abs(b - startB) <= tolerance &&
@@ -391,7 +532,6 @@
                 data[pos + 3] = 255;
             }
             
-            // 塗りつぶし処理（スタック方式）
             const stack = [[x, y]];
             
             while(stack.length) {
@@ -424,11 +564,9 @@
                     }
                 }
             }
-            // 塗りつぶした結果をキャンバスに反映
-            ctxBase.putImageData(imageData, 0, 0);
+            ctx.putImageData(imageData, 0, 0);
         }
 
-        // HEXカラー(#RRGGBB)をRGBオブジェクトに変換する補助関数
         function hexToRgb(hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
@@ -440,7 +578,14 @@
 
         // --- クリアボタンの処理 ---
         clearBtn.addEventListener('click', () => {
-            initializeCanvas(ctxBase, baseCanvas.width, baseCanvas.height);
+            const layer = getCurrentLayer();
+            if (!layer) return;
+            
+            layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+            if (layer.isBase) {
+                layer.ctx.fillStyle = "#ffffff";
+                layer.ctx.fillRect(0, 0, layer.canvas.width, layer.canvas.height);
+            }
         });
 
         // --- 画像アップロードの処理 ---
@@ -452,7 +597,10 @@
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    ctxBase.drawImage(img, 0, 0, baseCanvas.width, baseCanvas.height);
+                    const layer = getCurrentLayer();
+                    if(layer) {
+                        layer.ctx.drawImage(img, 0, 0, layer.canvas.width, layer.canvas.height);
+                    }
                 }
                 img.src = event.target.result;
             }
@@ -461,20 +609,29 @@
 
         // --- パターン展開の処理 ---
         generateBtn.addEventListener('click', () => {
-            // 入力されたサイズを取得してキャンバスのサイズを更新
             const newWidth = parseInt(outWidthInput.value, 10);
             const newHeight = parseInt(outHeightInput.value, 10);
             patternCanvas.width = newWidth || 2100;
             patternCanvas.height = newHeight || 2100;
 
-            // 背景を白で塗りつぶす
             ctxPattern.fillStyle = "#ffffff";
             ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
 
-            // 300x300のキャンバスをパターンとして作成
-            const pattern = ctxPattern.createPattern(baseCanvas, 'repeat');
-            
-            // パターンを敷き詰める
+            // すべての表示されているレイヤーを合成するための一時キャンバス
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 300;
+            tempCanvas.height = 300;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // 背景から順番に描画
+            layers.forEach(layer => {
+                if (layer.visible) {
+                    tempCtx.drawImage(layer.canvas, 0, 0);
+                }
+            });
+
+            // 合成した結果をパターンとして使用
+            const pattern = ctxPattern.createPattern(tempCanvas, 'repeat');
             ctxPattern.fillStyle = pattern;
             ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
         });
@@ -487,6 +644,9 @@
             link.href = dataURL;
             link.click();
         });
+
+        // 初期化実行
+        init();
 
     </script>
 </body>
