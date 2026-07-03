@@ -229,12 +229,21 @@
         function updateLayout() {
             const selection = document.getElementById('layoutSelect').value;
             let targetWidth, targetHeight, layoutClass = 'flex-col';
+            let wrapperClass = 'relative p-8 flex-shrink-0 flex items-center justify-center pointer-events-none z-20';
 
             if (selection.startsWith('mobile')) {
                 targetWidth = 720; targetHeight = 1560;
-                if (selection === 'mobile-img-top') layoutClass = 'flex-col justify-end items-center';
-                else if (selection === 'mobile-cal-top') layoutClass = 'flex-col justify-start items-center';
-                else if (selection === 'mobile-bg') layoutClass = 'flex-col justify-center items-center';
+                if (selection === 'mobile-img-top') {
+                    layoutClass = 'flex-col justify-end items-center';
+                    wrapperClass += ' pb-64'; // 下部のアイコンやドックに隠れないように余白を追加
+                }
+                else if (selection === 'mobile-cal-top') {
+                    layoutClass = 'flex-col justify-start items-center';
+                    wrapperClass += ' pt-48'; // 上部の時計やノッチに隠れないように余白を追加
+                }
+                else if (selection === 'mobile-bg') {
+                    layoutClass = 'flex-col justify-center items-center';
+                }
             } else if (selection.startsWith('pc')) {
                 targetWidth = 1280; targetHeight = 720;
                 if (selection === 'pc-img-left') layoutClass = 'flex-row justify-end items-center';
@@ -258,8 +267,10 @@
             previewWrapper.style.height = (targetHeight * scale) + 'px';
             
             const imgWrap = document.getElementById('imageWrapper');
+            const calWrap = document.getElementById('calendarWrapper');
             layoutContainer.className = `flex w-full h-full z-20 relative pointer-events-none ${layoutClass}`;
             imgWrap.className = 'absolute w-full h-full overflow-hidden pointer-events-none z-10 left-0 top-0';
+            calWrap.className = wrapperClass;
             
             const font = document.getElementById('fontSelect').value;
             const isBold = document.getElementById('boldCheck').checked;
