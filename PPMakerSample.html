@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>壁紙パターンメーカー（サンプル版）</title>
+    <!-- Tailwind CSSを使って、見た目をきれいに整えます -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* キャンバスに枠線をつけて見やすくします */
+        #canvasContainer {
+            border: 2px dashed #a0aec0;
+            background-color: white;
+            cursor: crosshair;
+            width: 300px;
+            height: 300px;
+            box-sizing: content-box; /* 追加：キャンバスが枠線を覆い隠さないように調整 */
+        }
+        #baseCanvas {
+            touch-action: none; /* スマホで描画中に画面がスクロールするのを防ぎます */
+        }
+        #patternCanvas {
+            border: 2px solid #e2e8f0;
+            background-color: white;
+            width: 100%; /* 画面上では大きすぎるため、枠に収まるように縮小表示します */
+            max-width: 500px;
+            height: auto;
+        }
+        /* レイヤーリストのスクロールバーを少し細くする */
+        #layerList::-webkit-scrollbar {
+            width: 6px;
+        }
+        #layerList::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8 font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-indigo-600 mb-8">🎨 壁紙パターンメーカー（サンプル版）</h1>
+
+        <div class="flex flex-col md:flex-row gap-8">
+            
+            <!-- 左側：お絵かき・編集エリア -->
+            <div class="flex-1 bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">1. 元のデザインを作る (300×300)</h2>
+                
+                <!-- ツールボックス（各種ツール選択） -->
+                <div class="mb-4 bg-gray-100 p-3 rounded-lg">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">ツール選択:</label>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button class="tool-btn bg-indigo-600 text-white px-3 py-1 rounded text-sm transition" data-mode="pen">🖊️ ペン</button>
+                        <button class="tool-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded text-sm transition" data-mode="eraser">🧽 消しゴム</button>
+                        <button class="tool-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded text-sm transition" data-mode="fill">🪣 塗りつぶし</button>
+                        <button class="tool-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded text-sm transition" data-mode="rect">⬜ 四角(線)</button>
+                        <button class="tool-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded text-sm transition" data-mode="circle">◯ 丸(線)</button>
+                        <button class="tool-btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded text-sm transition" data-mode="triangle">△ 三角(線)</button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div>
+                            <label class="text-sm font-bold text-gray-700">ペンの色:</label>
+                            <input type="color" id="colorPicker" value="#000000" class="cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="text-sm font-bold text-gray-700">ペンの太さ:</label>
+                            <input type="range" id="brushSize" min="1" max="50" value="5" class="cursor-pointer">
+                        </div>
+                        <div class="ml-2 border-l pl-4">
+                            <label class="text-sm font-bold text-gray-700" title="数値を大きくすると、少し違う色も一緒に塗りつぶします（隙間対策）">塗り許容値(隙間調整):</label>
+                            <input type="range" id="fillTolerance" min="0" max="255" value="30" class="cursor-pointer w-24">
+                        </div>
+                        <div class="ml-2 border-l pl-4">
+                            <label class="text-sm font-bold text-gray-700">対称定規:</label>
+                            <select id="symmetrySelect" class="border border-gray-300 p-1 rounded text-sm cursor-pointer ml-1">
+                                <option value="none">なし</option>
+                                <option value="horizontal">左右対称</option>
+                                <option value="vertical">上下対称</option>
+                                <option value="quad">四方(上下左右)</option>
+                            </select>
+                        </div>
+                        <div class="ml-2 border-l pl-4">
+                            <label class="text-sm font-bold text-gray-700" title="数値を大きくすると線が滑らかになります">手振れ補正:</label>
+                            <input type="range" id="smoothing" min="0" max="95" value="50" class="cursor-pointer w-20">
+                        </div>
+                        <button id="undoBtn" class="ml-auto bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm transition font-bold disabled:opacity-50 disabled:cursor-not-allowed" disabled>↩️ 元に戻す</button>
+                        <button id="clearBtn" class="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition">消去</button>
+                    </div>
+                </div>
+
+                <!-- 画像アップロード -->
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">画像をアップロードする:</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="text-sm">
+                </div>
+
+                <!-- 300x300のキャンバス -->
+                <div class="flex justify-center mb-4">
+                    <div class="relative" id="canvasContainer" style="touch-action: none;">
+                        <!-- キャンバスはJavaScriptで動的に追加されます -->
+                        <!-- 対称定規のガイド線 -->
+                        <div id="guideH" class="absolute inset-0 pointer-events-none hidden z-50" style="border-right: 1px dashed #ef4444; width: 50%; height: 100%;"></div>
+                        <div id="guideV" class="absolute inset-0 pointer-events-none hidden z-50" style="border-bottom: 1px dashed #ef4444; width: 100%; height: 50%;"></div>
+                    </div>
+                </div>
+
+                <!-- レイヤー管理 -->
+                <div class="mb-4 bg-gray-100 p-3 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700">レイヤー管理:</label>
+                        <button id="addLayerBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-xs transition">＋ 新規レイヤー</button>
+                    </div>
+                    <div id="layerList" class="flex flex-col gap-1 max-h-48 overflow-y-auto bg-white p-1 rounded border border-gray-200">
+                        <!-- レイヤー項目がここに追加されます -->
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button id="generateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition transform hover:scale-105 mt-2">
+                        ✨ パターンを展開する ✨
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右側：プレビュー・保存エリア -->
+            <div class="flex-1 bg-white p-6 rounded-xl shadow-md flex flex-col items-center">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2 w-full text-left">2. パターンプレビュー</h2>
+                
+                <!-- サイズ変更機能はサンプル版では無効化されています -->
+                
+                <p class="text-sm text-gray-500 mb-4">※画面上は縮小されて表示されていますが、指定したサイズで保存されます。</p>
+                
+                <!-- パターン表示用のキャンバス（初期サイズ2100x2100） -->
+                <canvas id="patternCanvas" width="2100" height="2100" class="mb-6 shadow-inner"></canvas>
+
+                <button id="saveBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded shadow transition">
+                    💾 画像を保存する（機能制限中）
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript：動作のプログラム -->
+    <script>
+        // --- HTMLの要素を取得 ---
+        const canvasContainer = document.getElementById('canvasContainer');
+        const patternCanvas = document.getElementById('patternCanvas');
+        const ctxPattern = patternCanvas.getContext('2d');
+        
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const fillTolerance = document.getElementById('fillTolerance');
+        const clearBtn = document.getElementById('clearBtn');
+        const imageUpload = document.getElementById('imageUpload');
+        const generateBtn = document.getElementById('generateBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const toolBtns = document.querySelectorAll('.tool-btn');
+
+        const symmetrySelect = document.getElementById('symmetrySelect');
+        const smoothingSlider = document.getElementById('smoothing');
+        const undoBtn = document.getElementById('undoBtn');
+        const guideH = document.getElementById('guideH');
+        const guideV = document.getElementById('guideV');
+        
+        const addLayerBtn = document.getElementById('addLayerBtn');
+        const layerListEl = document.getElementById('layerList');
+
+        // --- 状態管理変数 ---
+        let isDrawing = false;
+        let currentMode = 'pen'; // pen, eraser, fill, rect, circle, triangle
+        let startX, startY;      // 図形描画時の始点
+        let lastX, lastY;        // ペン描画時の直前の座標
+        let snapshot;            // 図形描画中のプレビュー用スナップショット
+        let symmetryMode = 'none'; // none, horizontal, vertical, quad
+        let points = [];         // 手振れ補正用の座標履歴
+
+        // UNDO機能用
+        let undoLayerId = null;
+        let undoImageData = null;
+
+        // レイヤー管理
+        let layers = [];
+        let layerCounter = 0;
+        let currentLayerId = null;
+
+        // --- 初期設定 ---
+        function init() {
+            // 背景レイヤーを作成
+            createLayer('背景', true);
+            // 描画用レイヤーを作成
+            createLayer('レイヤー 1');
+            
+            // パターン用キャンバス初期化
+            ctxPattern.fillStyle = "#ffffff";
+            ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+        }
+
+        function createLayer(name, isBase = false) {
+            layerCounter++;
+            const id = 'layer_' + layerCounter;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            canvas.className = 'absolute inset-0 pointer-events-none';
+            canvas.id = id;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            if (isBase) {
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, 300, 300);
+            }
+            
+            canvasContainer.insertBefore(canvas, document.getElementById('guideH'));
+            
+            const layerObj = { id, name, canvas, ctx, visible: true, isBase };
+            layers.push(layerObj);
+            currentLayerId = id;
+            renderLayerList();
+            return layerObj;
+        }
+
+        function getCurrentLayer() {
+            return layers.find(l => l.id === currentLayerId);
+        }
+
+        function renderLayerList() {
+            layerListEl.innerHTML = '';
+            // UI上は新しい（上にある）レイヤーを上に表示したいので逆順でループ
+            [...layers].reverse().forEach(layer => {
+                const item = document.createElement('div');
+                const isActive = layer.id === currentLayerId;
+                item.className = `flex items-center justify-between p-2 rounded cursor-pointer border transition ${isActive ? 'bg-indigo-100 border-indigo-400' : 'bg-white border-gray-300 hover:bg-gray-50'}`;
+                
+                // レイヤークリックでアクティブ切り替え
+                item.addEventListener('click', () => {
+                    currentLayerId = layer.id;
+                    renderLayerList();
+                });
+                
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'flex items-center gap-2';
+                
+                // 表示/非表示ボタン
+                const visBtn = document.createElement('button');
+                visBtn.innerHTML = layer.visible ? '👁️' : '🔒';
+                visBtn.className = `text-sm ${layer.visible ? '' : 'opacity-50 grayscale'}`;
+                visBtn.title = layer.visible ? '表示中' : '非表示';
+                visBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    layer.visible = !layer.visible;
+                    layer.canvas.style.display = layer.visible ? 'block' : 'none';
+                    renderLayerList();
+                });
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = layer.name;
+                nameSpan.className = `text-sm font-bold ${isActive ? 'text-indigo-800' : 'text-gray-700'}`;
+                
+                leftDiv.appendChild(visBtn);
+                leftDiv.appendChild(nameSpan);
+                item.appendChild(leftDiv);
+                
+                if (!layer.isBase) {
+                    const controlsDiv = document.createElement('div');
+                    controlsDiv.className = 'flex items-center gap-1';
+
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.innerHTML = '▲';
+                    moveUpBtn.className = 'text-xs w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center';
+                    moveUpBtn.title = '前面へ移動';
+                    moveUpBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveLayer(layer.id, 1);
+                    });
+
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.innerHTML = '▼';
+                    moveDownBtn.className = 'text-xs w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center';
+                    moveDownBtn.title = '背面へ移動';
+                    moveDownBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveLayer(layer.id, -1);
+                    });
+
+                    const delBtn = document.createElement('button');
+                    delBtn.innerHTML = '🗑️';
+                    delBtn.className = 'text-sm ml-1 opacity-50 hover:opacity-100 hover:scale-110 transition';
+                    delBtn.title = '削除';
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteLayer(layer.id);
+                    });
+                    
+                    controlsDiv.appendChild(moveUpBtn);
+                    controlsDiv.appendChild(moveDownBtn);
+                    controlsDiv.appendChild(delBtn);
+                    item.appendChild(controlsDiv);
+                } else {
+                    const baseSpan = document.createElement('span');
+                    baseSpan.textContent = '固定';
+                    baseSpan.className = 'text-xs text-gray-400 bg-gray-100 px-1 rounded';
+                    item.appendChild(baseSpan);
+                }
+                
+                layerListEl.appendChild(item);
+            });
+        }
+
+        function moveLayer(id, direction) {
+            const index = layers.findIndex(l => l.id === id);
+            if (index <= 0) return; // 背景(0)は見つからなかった場合は移動不可
+            
+            const newIndex = index + direction;
+            if (newIndex <= 0 || newIndex >= layers.length) return; // 背景(0)より下、または一番上より上には移動できない
+            
+            // 配列内の順序を入れ替え
+            const temp = layers[index];
+            layers[index] = layers[newIndex];
+            layers[newIndex] = temp;
+            
+            // キャンバスのDOM順序を更新 (配列の順に guideH の前に挿入し直すことで正しい重なり順になる)
+            layers.forEach(layer => {
+                canvasContainer.insertBefore(layer.canvas, document.getElementById('guideH'));
+            });
+            
+            renderLayerList();
+        }
+
+        function deleteLayer(id) {
+            if (layers.length <= 1) return;
+            const index = layers.findIndex(l => l.id === id);
+            if (index > -1) {
+                const layer = layers[index];
+                layer.canvas.remove();
+                layers.splice(index, 1);
+                
+                // 削除したレイヤーがアクティブだった場合、一番上のレイヤーをアクティブにする
+                if (currentLayerId === id) {
+                    currentLayerId = layers[layers.length - 1].id;
+                }
+                renderLayerList();
+            }
+        }
+
+        addLayerBtn.addEventListener('click', () => {
+            const num = layers.length;
+            createLayer('レイヤー ' + num);
+        });
+
+        // --- ツール切り替え処理 ---
+        toolBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                toolBtns.forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white');
+                    b.classList.add('bg-white', 'text-gray-700');
+                });
+                btn.classList.remove('bg-white', 'text-gray-700');
+                btn.classList.add('bg-indigo-600', 'text-white');
+                currentMode = btn.dataset.mode;
+            });
+        });
+
+        // 対称定規切り替え処理
+        symmetrySelect.addEventListener('change', (e) => {
+            symmetryMode = e.target.value;
+            guideH.classList.add('hidden');
+            guideV.classList.add('hidden');
+            
+            if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                guideH.classList.remove('hidden');
+            }
+            if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                guideV.classList.remove('hidden');
+            }
+        });
+
+        // UNDO状態の保存
+        function saveUndoState(layer) {
+            if (!layer) return;
+            undoLayerId = layer.id;
+            undoImageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+            undoBtn.disabled = false;
+        }
+
+        undoBtn.addEventListener('click', () => {
+            if (undoLayerId && undoImageData) {
+                const layer = layers.find(l => l.id === undoLayerId);
+                if (layer) {
+                    const currentImageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+                    layer.ctx.putImageData(undoImageData, 0, 0);
+                    undoImageData = currentImageData; // 再度クリックでやり直し(Redo)できるようにする
+                }
+            }
+        });
+
+        // 座標取得用関数
+        function getCoords(e) {
+            const rect = canvasContainer.getBoundingClientRect();
+            let x, y;
+            if (e.type.includes('touch')) {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            return { x, y };
+        }
+
+        // --- お絵かきの処理 ---
+        function startDrawing(e) {
+            const layer = getCurrentLayer();
+            if (!layer || !layer.visible) return; // 非表示レイヤーには描画しない
+
+            saveUndoState(layer);
+
+            const coords = getCoords(e);
+            startX = coords.x;
+            startY = coords.y;
+            lastX = coords.x;
+            lastY = coords.y;
+            points = [{x: coords.x, y: coords.y}];
+
+            if (currentMode === 'fill') {
+                const W = layer.canvas.width;
+                const H = layer.canvas.height;
+                
+                floodFill(layer.ctx, layer.canvas, startX, startY, colorPicker.value);
+                
+                if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                    floodFill(layer.ctx, layer.canvas, W - startX, startY, colorPicker.value);
+                }
+                if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                    floodFill(layer.ctx, layer.canvas, startX, H - startY, colorPicker.value);
+                }
+                if (symmetryMode === 'quad') {
+                    floodFill(layer.ctx, layer.canvas, W - startX, H - startY, colorPicker.value);
+                }
+                return;
+            }
+
+            isDrawing = true;
+            
+            if (['rect', 'circle', 'triangle'].includes(currentMode)) {
+                snapshot = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+
+            const layer = getCurrentLayer();
+            if (!layer) return;
+
+            const coords = getCoords(e);
+            const ctx = layer.ctx;
+            const W = layer.canvas.width;
+            const H = layer.canvas.height;
+            
+            // 消しゴムは「描画内容をクリアする」操作に変更（透明にするため globalCompositeOperation を使用）
+            const isEraser = currentMode === 'eraser';
+            ctx.globalCompositeOperation = isEraser && !layer.isBase ? 'destination-out' : 'source-over';
+            
+            const color = isEraser && layer.isBase ? '#ffffff' : colorPicker.value;
+
+            ctx.lineWidth = brushSize.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = color;
+
+            if (currentMode === 'pen' || currentMode === 'eraser') {
+                const smoothVal = parseInt(smoothingSlider.value, 10);
+                const factor = 1.0 - (smoothVal / 100);
+
+                const currentX = lastX + (coords.x - lastX) * factor;
+                const currentY = lastY + (coords.y - lastY) * factor;
+                points.push({x: currentX, y: currentY});
+
+                function drawSmoothLine(pts, isSymX, isSymY) {
+                    if (pts.length < 3) {
+                        const p1 = pts[0];
+                        const p2 = pts[1] || p1;
+                        ctx.beginPath();
+                        ctx.moveTo(isSymX ? W - p1.x : p1.x, isSymY ? H - p1.y : p1.y);
+                        ctx.lineTo(isSymX ? W - p2.x : p2.x, isSymY ? H - p2.y : p2.y);
+                        ctx.stroke();
+                        return;
+                    }
+                    const p1 = pts[pts.length - 3];
+                    const p2 = pts[pts.length - 2];
+                    const p3 = pts[pts.length - 1];
+                    
+                    const mid1x = (p1.x + p2.x) / 2;
+                    const mid1y = (p1.y + p2.y) / 2;
+                    const mid2x = (p2.x + p3.x) / 2;
+                    const mid2y = (p2.y + p3.y) / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(isSymX ? W - mid1x : mid1x, isSymY ? H - mid1y : mid1y);
+                    ctx.quadraticCurveTo(
+                        isSymX ? W - p2.x : p2.x, 
+                        isSymY ? H - p2.y : p2.y, 
+                        isSymX ? W - mid2x : mid2x, 
+                        isSymY ? H - mid2y : mid2y
+                    );
+                    ctx.stroke();
+                }
+
+                drawSmoothLine(points, false, false);
+                if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                    drawSmoothLine(points, true, false);
+                }
+                if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                    drawSmoothLine(points, false, true);
+                }
+                if (symmetryMode === 'quad') {
+                    drawSmoothLine(points, true, true);
+                }
+
+                lastX = currentX;
+                lastY = currentY;
+                
+            } else if (['rect', 'circle', 'triangle'].includes(currentMode)) {
+                ctx.putImageData(snapshot, 0, 0);
+
+                function drawShape(sx, sy, cx, cy) {
+                    ctx.beginPath();
+                    if (currentMode === 'rect') {
+                        ctx.strokeRect(sx, sy, cx - sx, cy - sy);
+                    } else if (currentMode === 'circle') {
+                        const radius = Math.sqrt(Math.pow(cx - sx, 2) + Math.pow(cy - sy, 2));
+                        ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
+                        ctx.stroke();
+                    } else if (currentMode === 'triangle') {
+                        ctx.moveTo(sx + (cx - sx) / 2, sy);
+                        ctx.lineTo(cx, cy);
+                        ctx.lineTo(sx, cy);
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+
+                drawShape(startX, startY, coords.x, coords.y);
+
+                if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                    drawShape(W - startX, startY, W - coords.x, coords.y);
+                }
+                if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                    drawShape(startX, H - startY, coords.x, H - coords.y);
+                }
+                if (symmetryMode === 'quad') {
+                    drawShape(W - startX, H - startY, W - coords.x, H - coords.y);
+                }
+            }
+            
+            // 描画モードを元に戻す
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            const layer = getCurrentLayer();
+            if (layer) {
+                if ((currentMode === 'pen' || currentMode === 'eraser') && points.length >= 2) {
+                    const ctx = layer.ctx;
+                    const W = layer.canvas.width;
+                    const H = layer.canvas.height;
+                    const isEraser = currentMode === 'eraser';
+                    ctx.globalCompositeOperation = isEraser && !layer.isBase ? 'destination-out' : 'source-over';
+                    ctx.lineWidth = brushSize.value;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.strokeStyle = isEraser && layer.isBase ? '#ffffff' : colorPicker.value;
+
+                    function drawFinalSegment(pts, isSymX, isSymY) {
+                        const pLast = pts[pts.length - 1];
+                        const pPrev = pts[pts.length - 2];
+                        const midX = (pPrev.x + pLast.x) / 2;
+                        const midY = (pPrev.y + pLast.y) / 2;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(isSymX ? W - midX : midX, isSymY ? H - midY : midY);
+                        ctx.lineTo(isSymX ? W - pLast.x : pLast.x, isSymY ? H - pLast.y : pLast.y);
+                        ctx.stroke();
+                    }
+
+                    drawFinalSegment(points, false, false);
+                    if (symmetryMode === 'horizontal' || symmetryMode === 'quad') {
+                        drawFinalSegment(points, true, false);
+                    }
+                    if (symmetryMode === 'vertical' || symmetryMode === 'quad') {
+                        drawFinalSegment(points, false, true);
+                    }
+                    if (symmetryMode === 'quad') {
+                        drawFinalSegment(points, true, true);
+                    }
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                layer.ctx.beginPath();
+            }
+        }
+
+        // イベントリスナーはコンテナに登録する
+        canvasContainer.addEventListener('mousedown', startDrawing);
+        canvasContainer.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing); // 枠外で離しても停止するようにwindowに
+
+        canvasContainer.addEventListener('touchstart', startDrawing, {passive: false});
+        canvasContainer.addEventListener('touchmove', draw, {passive: false});
+        window.addEventListener('touchend', stopDrawing);
+
+        // --- 塗りつぶし（Flood Fill） ---
+        function floodFill(ctx, canvas, x, y, fillColorHex) {
+            x = Math.floor(x);
+            y = Math.floor(y);
+            const width = canvas.width;
+            const height = canvas.height;
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            const tolerance = parseInt(fillTolerance.value, 10);
+            
+            const startPos = (y * width + x) * 4;
+            const startR = data[startPos];
+            const startG = data[startPos + 1];
+            const startB = data[startPos + 2];
+            const startA = data[startPos + 3];
+            
+            const fillRgb = hexToRgb(fillColorHex);
+            
+            // ★無限ループ・フリーズ回避策：
+            // 「クリックした位置の元の色」と「塗りつぶそうとしている色」が
+            // 指定された許容値（隙間調整）の範囲内で同一と見なされる場合は、
+            // 塗っても意味がない（かつ判定が無限に続く）ため処理を中止します。
+            if (Math.abs(fillRgb.r - startR) <= tolerance &&
+                Math.abs(fillRgb.g - startG) <= tolerance &&
+                Math.abs(fillRgb.b - startB) <= tolerance &&
+                Math.abs(255 - startA) <= tolerance) {
+                return;
+            }
+            
+            function matchStartColor(pos) {
+                const r = data[pos];
+                const g = data[pos + 1];
+                const b = data[pos + 2];
+                const a = data[pos + 3];
+                return Math.abs(r - startR) <= tolerance &&
+                       Math.abs(g - startG) <= tolerance &&
+                       Math.abs(b - startB) <= tolerance &&
+                       Math.abs(a - startA) <= tolerance;
+            }
+            
+            function colorPixel(pos) {
+                data[pos] = fillRgb.r;
+                data[pos + 1] = fillRgb.g;
+                data[pos + 2] = fillRgb.b;
+                data[pos + 3] = 255;
+            }
+            
+            const stack = [[x, y]];
+            
+            while(stack.length) {
+                const [cx, cy] = stack.pop();
+                
+                let upY = cy;
+                while(upY >= 0 && matchStartColor((upY * width + cx) * 4)) { upY--; }
+                upY++;
+                
+                let downY = cy;
+                while(downY < height && matchStartColor((downY * width + cx) * 4)) { downY++; }
+                downY--;
+                
+                let reachLeft = false;
+                let reachRight = false;
+                
+                for (let i = upY; i <= downY; i++) {
+                    const currentPos = (i * width + cx) * 4;
+                    colorPixel(currentPos);
+                    
+                    if (cx > 0) {
+                        if (matchStartColor(currentPos - 4)) {
+                            if (!reachLeft) { stack.push([cx - 1, i]); reachLeft = true; }
+                        } else if (reachLeft) { reachLeft = false; }
+                    }
+                    if (cx < width - 1) {
+                        if (matchStartColor(currentPos + 4)) {
+                            if (!reachRight) { stack.push([cx + 1, i]); reachRight = true; }
+                        } else if (reachRight) { reachRight = false; }
+                    }
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // --- クリアボタンの処理 ---
+        clearBtn.addEventListener('click', () => {
+            const layer = getCurrentLayer();
+            if (!layer) return;
+            
+            saveUndoState(layer);
+
+            layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+            if (layer.isBase) {
+                layer.ctx.fillStyle = "#ffffff";
+                layer.ctx.fillRect(0, 0, layer.canvas.width, layer.canvas.height);
+            }
+        });
+
+        // --- 画像アップロードの処理 ---
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const layer = getCurrentLayer();
+                    if(layer) {
+                        saveUndoState(layer);
+                        layer.ctx.drawImage(img, 0, 0, layer.canvas.width, layer.canvas.height);
+                    }
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        // --- パターン展開の処理 ---
+        generateBtn.addEventListener('click', () => {
+            const newWidth = 2100;
+            const newHeight = 2100;
+            patternCanvas.width = newWidth;
+            patternCanvas.height = newHeight;
+
+            ctxPattern.fillStyle = "#ffffff";
+            ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+
+            // すべての表示されているレイヤーを合成するための一時キャンバス
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 300;
+            tempCanvas.height = 300;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = true;
+            tempCtx.imageSmoothingQuality = 'high';
+            ctxPattern.imageSmoothingEnabled = true;
+            ctxPattern.imageSmoothingQuality = 'high';
+
+            // 背景から順番に描画
+            layers.forEach(layer => {
+                if (layer.visible) {
+                    tempCtx.drawImage(layer.canvas, 0, 0);
+                }
+            });
+
+            // 合成した結果をパターンとして使用
+            const pattern = ctxPattern.createPattern(tempCanvas, 'repeat');
+            ctxPattern.fillStyle = pattern;
+            ctxPattern.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+        });
+
+        // --- 画像保存の処理 ---
+        saveBtn.addEventListener('click', () => {
+            alert('こちらはサンプル版ツールのため、画像の保存機能は利用できません。');
+        });
+
+        // 初期化実行
+        init();
+
+    </script>
+</body>
+</html>
