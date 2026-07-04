@@ -352,7 +352,19 @@
                         drawRadarLayer(ctx, el);
                     } else if (el.type === 'line') {
                         ctx.save();
-                        ctx.fillStyle = el.color;
+                        if (el.isGradient) {
+                            let grad;
+                            if (el.direction === 'vertical') {
+                                grad = ctx.createLinearGradient(el.x, el.y, el.x, el.y + el.length);
+                            } else {
+                                grad = ctx.createLinearGradient(el.x, el.y, el.x + el.length, el.y);
+                            }
+                            grad.addColorStop(0, el.color);
+                            grad.addColorStop(1, el.color2 || '#cbd5e1');
+                            ctx.fillStyle = grad;
+                        } else {
+                            ctx.fillStyle = el.color;
+                        }
                         if (el.direction === 'vertical') {
                             ctx.fillRect(el.x, el.y, el.width, el.length);
                         } else {
@@ -713,7 +725,7 @@
 
                             {activeTab === 'line' && (
                                 <div className="space-y-4">
-                                    <button onClick={() => setLayout(p => ({...p, lines: [...p.lines, { id: `line-${Date.now()}`, label: `Line ${p.lines.length + 1}`, direction: 'horizontal', x: 100, y: 100, length: 1400, width: 2, color: '#ffffff', visible: true, z: maxZ + 1 }] }))} className="w-full py-2 bg-slate-800 rounded text-[10px] hover:bg-slate-700">+ 線を追加</button>
+                                    <button onClick={() => setLayout(p => ({...p, lines: [...p.lines, { id: `line-${Date.now()}`, label: `Line ${p.lines.length + 1}`, direction: 'horizontal', x: 100, y: 100, length: 1400, width: 2, color: '#ffffff', color2: '#cbd5e1', isGradient: false, visible: true, z: maxZ + 1 }] }))} className="w-full py-2 bg-slate-800 rounded text-[10px] hover:bg-slate-700">+ 線を追加</button>
                                     {layout.lines.map((l, idx) => (
                                         <div key={l.id} onClick={() => bringToFront('line', l.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === l.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
                                             <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
@@ -735,11 +747,16 @@
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex justify-between text-[10px] text-slate-400"><span>太さ</span><span>{l.width}px</span></div>
-                                                <input type="range" min="1" max="100" value={l.width} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,width:parseInt(e.target.value)}:xl)}))} />
+                                                <input type="range" min="1" max="500" value={l.width} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,width:parseInt(e.target.value)}:xl)}))} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="color" className="w-full h-8 bg-transparent" value={l.color} title="メイン色" onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,color:e.target.value}:xl)}))} />
+                                                <input type="color" className="w-full h-8 bg-transparent" value={l.color2 || '#cbd5e1'} title="グラデ色" onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,color2:e.target.value}:xl)}))} />
                                             </div>
                                             <div className="flex items-center gap-2 text-[10px]">
-                                                <span>カラー</span>
-                                                <input type="color" className="w-full h-8 bg-transparent" value={l.color} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,color:e.target.value}:xl)}))} />
+                                                <label className="flex items-center gap-1 cursor-pointer">
+                                                    <input type="checkbox" checked={l.isGradient || false} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,isGradient:e.target.checked}:xl)}))} /> グラデ
+                                                </label>
                                             </div>
                                         </div>
                                     ))}
@@ -988,6 +1005,17 @@
                                     );
                                 }
                                 if (el.type === 'line') {
+                                    let backgroundStyle;
+                                    if (el.isGradient) {
+                                        if (el.direction === 'vertical') {
+                                            backgroundStyle = `linear-gradient(to bottom, ${el.color}, ${el.color2 || '#cbd5e1'})`;
+                                        } else {
+                                            backgroundStyle = `linear-gradient(to right, ${el.color}, ${el.color2 || '#cbd5e1'})`;
+                                        }
+                                    } else {
+                                        backgroundStyle = el.color;
+                                    }
+
                                     return (
                                         <div key={el.id} onMouseDown={e => onMouseDown(e, 'line', el.id)}
                                             className={`draggable ${selectedId === el.id ? 'active-element' : ''}`}
@@ -995,7 +1023,7 @@
                                                 left: el.x, top: el.y, zIndex: el.z, position: 'absolute',
                                                 width: el.direction === 'horizontal' ? el.length : el.width,
                                                 height: el.direction === 'vertical' ? el.length : el.width,
-                                                backgroundColor: el.color,
+                                                background: backgroundStyle,
                                                 pointerEvents: 'auto'
                                             }}
                                         />
