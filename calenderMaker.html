@@ -89,14 +89,20 @@
                             <option value="mobile-bg">画像を背景（カレンダーを重ねる）</option>
                         </optgroup>
                         <optgroup label="パソコン用 (横長 16:9)">
-                            <option value="pc-img-left">左：イラスト、右：カレンダー</option>
-                            <option value="pc-cal-left">左：カレンダー、右：イラスト</option>
-                            <option value="pc-bg">画像を背景（カレンダーを重ねる）</option>
+                            <option value="pc-bg-top-left">カレンダー：左上（背景画像）</option>
+                            <option value="pc-bg-bottom-left">カレンダー：左下（背景画像）</option>
+                            <option value="pc-bg-top-right">カレンダー：右上（背景画像）</option>
+                            <option value="pc-bg-bottom-right">カレンダー：右下（背景画像）</option>
+                            <option value="pc-img-left">左：イラスト、右：カレンダー (半分)</option>
+                            <option value="pc-cal-left">左：カレンダー、右：イラスト (半分)</option>
                         </optgroup>
                         <optgroup label="タブレット用 (横長 4:3)">
-                            <option value="tablet-img-left">左：イラスト、右：カレンダー</option>
-                            <option value="tablet-cal-left">左：カレンダー、右：イラスト</option>
-                            <option value="tablet-bg">画像を背景（カレンダーを重ねる）</option>
+                            <option value="tablet-bg-top-left">カレンダー：左上（背景画像）</option>
+                            <option value="tablet-bg-bottom-left">カレンダー：左下（背景画像）</option>
+                            <option value="tablet-bg-top-right">カレンダー：右上（背景画像）</option>
+                            <option value="tablet-bg-bottom-right">カレンダー：右下（背景画像）</option>
+                            <option value="tablet-img-left">左：イラスト、右：カレンダー (半分)</option>
+                            <option value="tablet-cal-left">左：カレンダー、右：イラスト (半分)</option>
                         </optgroup>
                     </select>
                 </div>
@@ -244,16 +250,31 @@
                 else if (selection === 'mobile-bg') {
                     layoutClass = 'flex-col justify-center items-center';
                 }
-            } else if (selection.startsWith('pc')) {
-                targetWidth = 1280; targetHeight = 720;
-                if (selection === 'pc-img-left') layoutClass = 'flex-row justify-end items-center';
-                else if (selection === 'pc-cal-left') layoutClass = 'flex-row justify-start items-center';
-                else if (selection === 'pc-bg') layoutClass = 'flex-row justify-center items-center';
-            } else if (selection.startsWith('tablet')) {
-                targetWidth = 1024; targetHeight = 768;
-                if (selection === 'tablet-img-left') layoutClass = 'flex-row justify-end items-center';
-                else if (selection === 'tablet-cal-left') layoutClass = 'flex-row justify-start items-center';
-                else if (selection === 'tablet-bg') layoutClass = 'flex-row justify-center items-center';
+            } else if (selection.startsWith('pc') || selection.startsWith('tablet')) {
+                if (selection.startsWith('pc')) {
+                    targetWidth = 1280; targetHeight = 720;
+                } else {
+                    targetWidth = 1024; targetHeight = 768;
+                }
+
+                if (selection.includes('-img-left')) layoutClass = 'flex-row justify-end items-center';
+                else if (selection.includes('-cal-left')) layoutClass = 'flex-row justify-start items-center';
+                else if (selection.includes('-bg-top-left')) {
+                    layoutClass = '';
+                    wrapperClass = 'absolute top-12 left-12 pointer-events-none z-20';
+                }
+                else if (selection.includes('-bg-bottom-left')) {
+                    layoutClass = '';
+                    wrapperClass = 'absolute bottom-32 left-12 pointer-events-none z-20'; // 下はドック用に間をあける
+                }
+                else if (selection.includes('-bg-top-right')) {
+                    layoutClass = '';
+                    wrapperClass = 'absolute top-12 right-12 pointer-events-none z-20';
+                }
+                else if (selection.includes('-bg-bottom-right')) {
+                    layoutClass = '';
+                    wrapperClass = 'absolute bottom-32 right-12 pointer-events-none z-20'; // 下はドック用に間をあける
+                }
             }
 
             captureArea.style.width = targetWidth + 'px';
