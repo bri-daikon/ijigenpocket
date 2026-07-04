@@ -108,17 +108,21 @@
                 </div>
             </div>
 
-            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-4 gap-2">
                 <div>
-                    <label class="block mb-1 font-semibold text-slate-600 text-xs">メイン画像サイズ</label>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">画像サイズ</label>
                     <input type="range" id="imageSize" min="10" max="300" value="100" class="w-full">
                 </div>
                 <div>
-                    <label class="block mb-1 font-semibold text-slate-600 text-xs">背景サイズ</label>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">背景サイズ</label>
                     <input type="range" id="bgSize" min="10" max="300" value="100" class="w-full">
                 </div>
                 <div>
-                    <label class="block mb-1 font-semibold text-slate-600 text-xs">カレンダー背景</label>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">カレンダー</label>
+                    <input type="range" id="calSize" min="50" max="200" value="100" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-1 font-semibold text-slate-600 text-[10px]">カレンダー背景</label>
                     <input type="range" id="calOpacity" min="0" max="100" value="80" class="w-full">
                 </div>
             </div>
@@ -239,6 +243,7 @@
 
             if (selection.startsWith('mobile')) {
                 targetWidth = 720; targetHeight = 1560;
+                document.getElementById('calendarContainer').style.transformOrigin = 'center';
                 if (selection === 'mobile-img-top') {
                     layoutClass = 'flex-col justify-end items-center';
                     wrapperClass += ' pb-64'; // 下部のアイコンやドックに隠れないように余白を追加
@@ -257,23 +262,27 @@
                     targetWidth = 1024; targetHeight = 768;
                 }
 
-                if (selection.includes('-img-left')) layoutClass = 'flex-row justify-end items-center';
-                else if (selection.includes('-cal-left')) layoutClass = 'flex-row justify-start items-center';
+                if (selection.includes('-img-left')) { layoutClass = 'flex-row justify-end items-center'; document.getElementById('calendarContainer').style.transformOrigin = 'center'; }
+                else if (selection.includes('-cal-left')) { layoutClass = 'flex-row justify-start items-center'; document.getElementById('calendarContainer').style.transformOrigin = 'center'; }
                 else if (selection.includes('-bg-top-left')) {
                     layoutClass = '';
                     wrapperClass = 'absolute top-12 left-12 pointer-events-none z-20';
+                    document.getElementById('calendarContainer').style.transformOrigin = 'top left';
                 }
                 else if (selection.includes('-bg-bottom-left')) {
                     layoutClass = '';
                     wrapperClass = 'absolute bottom-32 left-12 pointer-events-none z-20'; // 下はドック用に間をあける
+                    document.getElementById('calendarContainer').style.transformOrigin = 'bottom left';
                 }
                 else if (selection.includes('-bg-top-right')) {
                     layoutClass = '';
                     wrapperClass = 'absolute top-12 right-12 pointer-events-none z-20';
+                    document.getElementById('calendarContainer').style.transformOrigin = 'top right';
                 }
                 else if (selection.includes('-bg-bottom-right')) {
                     layoutClass = '';
                     wrapperClass = 'absolute bottom-32 right-12 pointer-events-none z-20'; // 下はドック用に間をあける
+                    document.getElementById('calendarContainer').style.transformOrigin = 'bottom right';
                 }
             }
 
