@@ -152,7 +152,7 @@
             <!-- 右側：プレビュー領域 -->
             <div class="w-full flex-grow bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center min-h-[400px] lg:min-h-[800px]">
                 <div class="w-full relative overflow-hidden" id="previewWrapper">
-                    <div id="captureArea" class="shadow-inner" style="background-color: #ffffff; position: absolute; left: 0; top: 0;">
+                    <div id="captureArea" style="background-color: #ffffff; position: absolute; left: 0; top: 0;">
                         <div id="bgContainer" style="z-index: 1;"><img id="bgImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" style="display:none" draggable="false"></div>
                         
                         <div id="layoutContainer" class="flex w-full h-full z-20 relative pointer-events-none flex-col justify-end items-center">
@@ -326,14 +326,19 @@
             bgImage.style.left = document.getElementById('bgX').value + '%';
             bgImage.style.top = document.getElementById('bgY').value + '%';
             
+            const calSize = document.getElementById('calSize').value / 100;
+            document.getElementById('calendarContainer').style.transform = `scale(${calSize})`;
+            
             const opacity = document.getElementById('calOpacity').value / 100;
             document.getElementById('calendarContainer').style.backgroundColor = `rgba(255, 255, 255, ${opacity})`;
         }
         
-        ['imageSize', 'bgSize', 'calOpacity', 'imageX', 'imageY', 'bgX', 'bgY'].forEach(id => {
+        ['imageSize', 'bgSize', 'calSize', 'calOpacity', 'imageX', 'imageY', 'bgX', 'bgY'].forEach(id => {
             const el = document.getElementById(id);
-            el.addEventListener('input', updateSizesAndOpacity);
-            el.addEventListener('change', updateSizesAndOpacity);
+            if(el) {
+                el.addEventListener('input', updateSizesAndOpacity);
+                el.addEventListener('change', updateSizesAndOpacity);
+            }
         });
 
         function updateCalendar() {
@@ -366,7 +371,12 @@
             
             const previewWrapper = document.getElementById('previewWrapper');
             const prevOverflow = previewWrapper.style.overflow;
+            const prevHeight = previewWrapper.style.height;
+            const prevWidth = previewWrapper.style.width;
+            
             previewWrapper.style.overflow = 'visible';
+            previewWrapper.style.height = captureArea.style.height;
+            previewWrapper.style.width = captureArea.style.width;
             
             const calendarContainer = document.getElementById('calendarContainer');
             const prevBackdrop = calendarContainer.style.backdropFilter;
@@ -408,6 +418,8 @@
                 captureArea.style.border = prevBorder;
                 captureArea.style.transform = prevTransform;
                 previewWrapper.style.overflow = prevOverflow;
+                previewWrapper.style.height = prevHeight;
+                previewWrapper.style.width = prevWidth;
                 calendarContainer.style.backdropFilter = prevBackdrop;
                 calendarContainer.style.boxShadow = prevShadow;
             }
