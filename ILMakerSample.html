@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像連結ラインメーカー (Sample)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .canvas-bg {
+            background-color: #ffffff;
+            background-image: linear-gradient(to right, #bae6fd 1px, transparent 1px), linear-gradient(to bottom, #bae6fd 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
+        <h1 class="text-xl font-bold text-indigo-600">画像連結ラインメーカー (Sample)</h1>
+        <p class="text-xs text-slate-500">画像を1つだけ選んで線を引くシンプル版</p>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col md:flex-row gap-6">
+        <!-- 左: 設定 -->
+        <section class="w-full md:w-80 flex flex-col gap-6 shrink-0">
+            <!-- 画像アップロード -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-4">
+                <h2 class="font-bold text-sm text-slate-900">1. ブラシにする画像 (1つのみ)</h2>
+                <div id="image-slot" class="relative aspect-square border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                    <img id="preview-img" class="w-[80%] h-[80%] object-contain hidden pointer-events-none">
+                    <div id="upload-icon" class="text-slate-400 flex flex-col items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        <span class="text-xs mt-1 font-semibold">画像を選択</span>
+                    </div>
+                </div>
+                <input type="file" id="file-input" class="hidden" accept="image/*">
+            </div>
+
+            <!-- ブラシ設定 -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-5">
+                <h2 class="font-bold text-sm text-slate-900">2. ブラシの設定</h2>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium flex justify-between text-slate-700">画像の大きさ <span id="val-size" class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">40 px</span></label>
+                    <input type="range" id="slider-size" min="10" max="150" value="40" class="w-full accent-indigo-600 cursor-pointer">
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium flex justify-between text-slate-700">重なり具合 (間隔) <span id="val-spacing" class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">15 px</span></label>
+                    <input type="range" id="slider-spacing" min="5" max="100" value="15" class="w-full accent-indigo-600 cursor-pointer">
+                </div>
+
+                <div class="flex flex-col gap-3 pt-4 border-t border-slate-100">
+                    <span class="text-sm font-medium text-slate-700">エフェクトオプション</span>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-xs text-slate-600">ランダム回転</span>
+                        <input type="checkbox" id="chk-random-rot" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-xs text-slate-600">進行方向に向ける</span>
+                        <input type="checkbox" id="chk-follow-dir" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右: キャンバス -->
+        <section class="flex-1 flex flex-col gap-4">
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center gap-2 flex-wrap">
+                <div class="flex gap-2">
+                    <button id="btn-undo" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors disabled:opacity-50" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                        1つ戻す
+                    </button>
+                    <button id="btn-clear" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        全消去
+                    </button>
+                </div>
+                <button id="btn-save" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    作品を画像として保存
+                </button>
+            </div>
+
+            <div id="canvas-container" class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative canvas-bg min-h-[400px]">
+                <canvas id="canvas" class="absolute top-0 left-0 w-full h-full cursor-crosshair"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        
+        let brushImage = null;
+        let isDrawing = false;
+        let lastPoint = null;
+        let undoHistory = [];
+        
+        // UI要素
+        const slot = document.getElementById('image-slot');
+        const fileInput = document.getElementById('file-input');
+        const previewImg = document.getElementById('preview-img');
+        const uploadIcon = document.getElementById('upload-icon');
+        
+        const sliderSize = document.getElementById('slider-size');
+        const valSize = document.getElementById('val-size');
+        const sliderSpacing = document.getElementById('slider-spacing');
+        const valSpacing = document.getElementById('val-spacing');
+        const chkRandomRot = document.getElementById('chk-random-rot');
+        const chkFollowDir = document.getElementById('chk-follow-dir');
+        
+        const btnUndo = document.getElementById('btn-undo');
+        const btnClear = document.getElementById('btn-clear');
+        const btnSave = document.getElementById('btn-save');
+
+        // 画像アップロード処理
+        slot.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = event => {
+                const img = new Image();
+                img.onload = () => {
+                    brushImage = img;
+                    previewImg.src = event.target.result;
+                    previewImg.classList.remove('hidden');
+                    uploadIcon.classList.add('hidden');
+                    slot.classList.remove('border-dashed', 'bg-slate-50');
+                    slot.classList.add('border-indigo-100', 'bg-white', 'shadow-sm');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = ''; // 同じファイルを選択できるようにリセット
+        });
+
+        // スライダー連動
+        sliderSize.addEventListener('input', e => valSize.textContent = `${e.target.value} px`);
+        sliderSpacing.addEventListener('input', e => valSpacing.textContent = `${e.target.value} px`);
+
+        // リサイズ時のキャンバス調整
+        function resizeCanvas() {
+            const temp = document.createElement('canvas');
+            temp.width = canvas.width; temp.height = canvas.height;
+            temp.getContext('2d').drawImage(canvas, 0, 0);
+            
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(temp, 0, 0);
+        }
+        new ResizeObserver(resizeCanvas).observe(container);
+
+        // Undo履歴の保存と復元
+        function saveState() {
+            if(undoHistory.length > 15) undoHistory.shift();
+            undoHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            btnUndo.disabled = false;
+        }
+
+        btnUndo.addEventListener('click', () => {
+            if(undoHistory.length > 0) {
+                ctx.putImageData(undoHistory.pop(), 0, 0);
+                if(undoHistory.length === 0) btnUndo.disabled = true;
+            }
+        });
+
+        btnClear.addEventListener('click', () => {
+            saveState();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // 保存（描画部分を切り抜き）
+        function getBoundingBox() {
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0, hasPix = false;
+            for(let y=0; y<canvas.height; y++){
+                for(let x=0; x<canvas.width; x++){
+                    if(data[(y*canvas.width+x)*4+3] > 0){
+                        if(x < minX) minX = x;
+                        if(x > maxX) maxX = x;
+                        if(y < minY) minY = y;
+                        if(y > maxY) maxY = y;
+                        hasPix = true;
+                    }
+                }
+            }
+            if(!hasPix) return null;
+            const pad = 10;
+            return {
+                x: Math.max(0, minX - pad), 
+                y: Math.max(0, minY - pad), 
+                w: Math.min(canvas.width, maxX - minX + pad * 2), 
+                h: Math.min(canvas.height, maxY - minY + pad * 2)
+            };
+        }
+
+        btnSave.addEventListener('click', () => {
+            const box = getBoundingBox();
+            if(!box) return alert("キャンバスが空です！何か描いてください。");
+            
+            const saveCanvas = document.createElement('canvas');
+            saveCanvas.width = box.w; 
+            saveCanvas.height = box.h;
+            saveCanvas.getContext('2d').drawImage(canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+            
+            const link = document.createElement('a');
+            link.download = `weby-sample-paint-${Date.now()}.png`;
+            link.href = saveCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // 描画ロジック
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function drawStamp(x, y, angle) {
+            if(!brushImage) return;
+            const size = parseInt(sliderSize.value);
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            let rot = 0;
+            if(chkFollowDir.checked && angle !== undefined) rot = angle;
+            if(chkRandomRot.checked) rot += Math.random() * Math.PI * 2;
+            ctx.rotate(rot);
+            
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            const aspect = brushImage.width / brushImage.height;
+            const w = aspect > 1 ? size : size * aspect;
+            const h = aspect > 1 ? size / aspect : size;
+            
+            ctx.drawImage(brushImage, -w/2, -h/2, w, h);
+            ctx.restore();
+        }
+
+        function startDrawing(e) {
+            e.preventDefault();
+            if(!brushImage) {
+                alert("ブラシにする画像をアップロードしてください。");
+                return;
+            }
+            saveState();
+            isDrawing = true;
+            lastPoint = getMousePos(e);
+            drawStamp(lastPoint.x, lastPoint.y, 0);
+        }
+
+        function draw(e) {
+            if(!isDrawing) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+            const dx = pos.x - lastPoint.x;
+            const dy = pos.y - lastPoint.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const spacing = parseInt(sliderSpacing.value);
+            
+            if(dist >= spacing) {
+                const angle = Math.atan2(dy, dx);
+                const steps = Math.floor(dist / spacing);
+                
+                for(let i=1; i<=steps; i++) {
+                    const ratio = i / steps;
+                    drawStamp(lastPoint.x + dx*ratio, lastPoint.y + dy*ratio, angle);
+                }
+                
+                lastPoint = { 
+                    x: lastPoint.x + dx * (steps * spacing / dist), 
+                    y: lastPoint.y + dy * (steps * spacing / dist) 
+                };
+            }
+        }
+
+        function stopDrawing() { 
+            isDrawing = false; 
+            lastPoint = null;
+        }
+
+        // マウスイベント
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+        
+        // タッチイベント
+        canvas.addEventListener('touchstart', startDrawing, {passive:false});
+        canvas.addEventListener('touchmove', draw, {passive:false});
+        window.addEventListener('touchend', stopDrawing);
+        
+    </script>
+</body>
+</html>
