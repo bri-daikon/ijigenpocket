@@ -345,7 +345,7 @@
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-bold text-amber-500 font-header tracking-wider">🔮 選別結果：条件合致探索者</h3>
                     <button id="applyScoutSelectionBtn" class="flex items-center gap-1 px-3 py-1 text-[11px] font-semibold bg-[#261f1a] hover:bg-[#3d3028] text-amber-300 rounded-md border border-amber-800/40 transition-colors">
-                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i> 該当者を選択して比較する
+                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i> 該当者を比較表に反映する
                     </button>
                 </div>
                 <div id="scoutResultsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
@@ -512,6 +512,7 @@
         // --- データ管理 ---
         let characters = [];
         let selectedIds = new Set();
+        let activeScoutIds = null;
         let radarChartInstance = null;
 
         // --- 並び替え（ソート）状態管理 ---
@@ -805,6 +806,7 @@
             showConfirm("蓄積されたすべての契約(キャラクターデータ)を解除し、忘却しますか？", () => {
                 characters = [];
                 selectedIds.clear();
+                activeScoutIds = null;
                 saveToLocalStorage();
                 populateTagFilter();
                 renderCharacters();
@@ -1139,7 +1141,10 @@
             const targetTag = document.getElementById('scoutTag').value;
 
             if (selectedSkills.length === 0 && !targetTag) {
-                showToast("対象タグか、選別するための技能を少なくとも1つ指定してください", "error");
+                activeScoutIds = null;
+                document.getElementById('scoutResultsArea').classList.add('hidden');
+                updateComparison();
+                showToast("選抜条件を解除し、全員を比較表に表示します", "info");
                 return;
             }
 
@@ -1214,16 +1219,14 @@
             }
 
             applyBtn.classList.remove('hidden');
-            applyBtn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> この${scoutedList.length}名を選択して比較する`;
+            applyBtn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> この${scoutedList.length}名を比較表に反映する`;
 
             // 抽出された該当者全員のID一覧を一時保持
             const scoutedIds = scoutedList.map(s => s.character.id);
             applyBtn.onclick = () => {
-                selectedIds.clear();
-                scoutedIds.forEach(id => selectedIds.add(id));
-                renderCharacters();
+                activeScoutIds = new Set(scoutedIds);
                 updateComparison();
-                showToast(`選抜された該当者${scoutedList.length}名を比較対象に設定しました！`, "success");
+                showToast(`選抜された該当者${scoutedList.length}名を比較表に反映しました！`, "success");
                 // 比較の儀セクションにスクロール
                 document.getElementById('compareSection').scrollIntoView({ behavior: 'smooth' });
             };
@@ -1349,10 +1352,30 @@
                 return;
             }
 
-            renderCompareTable(selectedChars);
-            renderHighlighters(selectedChars);
-            renderRadarChart(selectedChars);
-            renderSkillCompareTable(selectedChars);
+            let scoutFilteredChars = selectedChars;
+            if (activeScoutIds) {
+                scoutFilteredChars = selectedChars.filter(c => activeScoutIds.has(c.id));
+                if (scoutFilteredChars.length === 0) {
+                    document.getElementById('radarChartContainer').innerHTML = '<div class="text-stone-500 text-xs font-header absolute inset-0 flex items-center justify-center">条件に合致する探索者はいません</div>';
+                    document.getElementById('highlighterGrid').innerHTML = '<div class="col-span-full py-4 text-stone-500 text-xs font-header text-center">条件に合致する探索者はいません</div>';
+                    document.getElementById('compareTableBody').innerHTML = '<tr><td colspan="13" class="text-center p-8 text-stone-500 text-xs font-header">条件に合致する探索者はいません</td></tr>';
+                    
+                    document.getElementById('skillTableHeader').innerHTML = `
+                        <th onclick="setSkillTableSort('label')" class="p-4 min-w-[200px] bg-[#100d0a] cursor-pointer hover:text-amber-400 transition-colors select-none">
+                            秘術・技能名 <span id="skill_sort_icon_label" class="inline-block align-middle ml-1"></span>
+                        </th>
+                    `;
+                    document.getElementById('skillCompareTableBody').innerHTML = '<tr><td class="text-center p-8 text-stone-500 text-xs font-header">条件に合致する探索者はいません</td></tr>';
+                    if(radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+                }
+            }
+
+            if (!activeScoutIds || scoutFilteredChars.length > 0) {
+                renderCompareTable(scoutFilteredChars);
+                renderHighlighters(scoutFilteredChars);
+                renderSkillCompareTable(scoutFilteredChars);
+                renderRadarChart(scoutFilteredChars);
+            }
         }
 
         // --- 基本属性・特性値表のレンダリング ---
