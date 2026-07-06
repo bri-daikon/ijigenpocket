@@ -302,9 +302,9 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5">
                     <i data-lucide="scale" class="text-amber-500 w-6 h-6"></i>
-                    <h2 class="text-xl font-bold font-header text-amber-400 tracking-wider">探索者選抜の儀（上位10名選別）</h2>
+                    <h2 class="text-xl font-bold font-header text-amber-400 tracking-wider">探索者選抜の儀（条件合致者の一括選出）</h2>
                 </div>
-                <div class="text-[11px] text-stone-500">※シナリオの推奨技能に合わせて優秀な探索者を選び出します</div>
+                <div class="text-[11px] text-stone-500">※シナリオの推奨技能やタグに合わせて対象の探索者を全員選び出します</div>
             </div>
 
             <!-- 選別設定フォーム -->
@@ -343,9 +343,9 @@
             <!-- 選別結果表示エリア -->
             <div id="scoutResultsArea" class="hidden space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-bold text-amber-500 font-header tracking-wider">🔮 選別結果：技能値適正上位10名</h3>
+                    <h3 class="text-xs font-bold text-amber-500 font-header tracking-wider">🔮 選別結果：条件合致探索者</h3>
                     <button id="applyScoutSelectionBtn" class="flex items-center gap-1 px-3 py-1 text-[11px] font-semibold bg-[#261f1a] hover:bg-[#3d3028] text-amber-300 rounded-md border border-amber-800/40 transition-colors">
-                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i> この10名を選択して比較する
+                        <i data-lucide="check-square" class="w-3.5 h-3.5"></i> 該当者を選択して比較する
                     </button>
                 </div>
                 <div id="scoutResultsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
@@ -1138,8 +1138,8 @@
             const selectedSkills = [skill1, skill2, skill3].filter(s => s !== '');
             const targetTag = document.getElementById('scoutTag').value;
 
-            if (selectedSkills.length === 0) {
-                showToast("選別するための技能を少なくとも1つ指定してください", "error");
+            if (selectedSkills.length === 0 && !targetTag) {
+                showToast("対象タグか、選別するための技能を少なくとも1つ指定してください", "error");
                 return;
             }
 
@@ -1181,16 +1181,18 @@
                     totalScore: totalScore,
                     details: skillDetails
                 };
+            }).filter(item => {
+                if (selectedSkills.length > 0) {
+                    return item.totalScore > 0;
+                }
+                return true;
             });
 
             // 合計値が高い順（降順）にソート
             scoredCharacters.sort((a, b) => b.totalScore - a.totalScore);
 
-            // 上位10名（10枠）を選出
-            const topScouted = scoredCharacters.slice(0, 10);
-
-            // 結果一覧を表示
-            renderScoutResults(topScouted, selectedSkills);
+            // 結果一覧を表示（該当者全員）
+            renderScoutResults(scoredCharacters, selectedSkills);
         }
 
         // --- 選別結果のレンダリング ---
@@ -1201,10 +1203,10 @@
 
             resultsArea.classList.remove('hidden');
 
-            if (scoutedList.length === 0 || scoutedList[0].totalScore === 0) {
+            if (scoutedList.length === 0) {
                 resultsList.innerHTML = `
                     <div class="col-span-full py-8 text-center text-stone-500 text-xs font-header">
-                        指定した技能を誰も習得していないか、すべて0%です。
+                        条件に合致する探索者が見つかりませんでした。
                     </div>
                 `;
                 applyBtn.classList.add('hidden');
@@ -1212,15 +1214,16 @@
             }
 
             applyBtn.classList.remove('hidden');
+            applyBtn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> この${scoutedList.length}名を選択して比較する`;
 
-            // 抽出された上位10人のID一覧を一時保持
+            // 抽出された該当者全員のID一覧を一時保持
             const scoutedIds = scoutedList.map(s => s.character.id);
             applyBtn.onclick = () => {
                 selectedIds.clear();
                 scoutedIds.forEach(id => selectedIds.add(id));
                 renderCharacters();
                 updateComparison();
-                showToast("選抜された適格者10名を比較対象に設定しました！", "success");
+                showToast(`選抜された該当者${scoutedList.length}名を比較対象に設定しました！`, "success");
                 // 比較の儀セクションにスクロール
                 document.getElementById('compareSection').scrollIntoView({ behavior: 'smooth' });
             };
