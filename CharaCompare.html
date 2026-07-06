@@ -152,7 +152,7 @@
                         <h2 class="text-lg font-bold font-header text-amber-400">探索者の召喚</h2>
                     </div>
                     <p class="text-xs text-stone-400 mb-4 leading-relaxed">
-                        「いあきゃら」の出力画面からコピーした「JSON形式」のデータをそのまま注ぎ込んでください。
+                        「キャラシ」の出力画面からコピーした「JSON形式」のデータをそのまま注ぎ込んでください。
                     </p>
 
                     <div class="space-y-4">
@@ -207,7 +207,7 @@
                         召喚の手引き
                     </h3>
                     <ol class="list-decimal pl-4 space-y-2 leading-relaxed text-stone-400">
-                        <li>「いあきゃら」でキャラクターを開きます。</li>
+                        <li>「キャラシ」でキャラクターを開きます。</li>
                         <li>外部出力（JSONエクスポート）から、データをコピーします。</li>
                         <li>魔導書の器（テキストエリア）にペーストし、召喚ボタンを押します。</li>
                         <li>召喚した探索者をチェックすると、自動的に比較の魔法が発動します。</li>
@@ -728,7 +728,7 @@
             document.getElementById('editionLabel7').className = val === '7' ? activeClass : inactiveClass;
         }
 
-        // --- いあきゃらデータ追加（超・召喚の術式） ---
+        // --- キャラシデータ追加（超・召喚の術式） ---
         function addCharacter() {
             let jsonText = document.getElementById('jsonInput').value.trim();
             if (!jsonText) {
@@ -755,15 +755,15 @@
                 const parsed = JSON.parse(jsonText);
                 let charData = null;
 
-                // --- いあきゃらの出力形式（ココフォリア駒 or 直接エクスポート生JSON）を自動判別 ---
+                // --- キャラシの出力形式（ココフォリア駒 or 直接エクスポート生JSON）を自動判別 ---
                 if (parsed.kind === 'character' && parsed.data) {
                     // 形式A: ココフォリア駒形式
                     charData = parsed.data;
                 } else if (parsed.name && (parsed.params || parsed.status || parsed.commands)) {
-                    // 形式B: いあきゃらの直接エクスポート形式（ルートに直接パラメータがある）
+                    // 形式B: キャラシの直接エクスポート形式（ルートに直接パラメータがある）
                     charData = parsed;
                 } else {
-                    throw new Error("「ココフォリア駒データ形式」または「いあきゃらエクスポート形式」のいずれの配列構造にも合致しません。");
+                    throw new Error("「ココフォリア駒データ形式」または「キャラシエクスポート形式」のいずれの配列構造にも合致しません。");
                 }
 
                 // 技能データのパース（commandsが無い、あるいは別の場所に入っている可能性に備えてフォールバックを設置）
@@ -1129,10 +1129,10 @@
                                 </button>
                             </div>
 
-                            <!-- いあきゃらへのリンク -->
+                            <!-- キャラシへのリンク -->
                             ${char.externalUrl ? `
                                 <a href="${char.externalUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] text-amber-500 hover:text-amber-400 mt-2 transition-colors font-semibold">
-                                    <i data-lucide="external-link" class="w-3 h-3 text-amber-600"></i> いあきゃら碑文
+                                    <i data-lucide="external-link" class="w-3 h-3 text-amber-600"></i> キャラシ碑文
                                 </a>
                             ` : ''}
                         </div>
