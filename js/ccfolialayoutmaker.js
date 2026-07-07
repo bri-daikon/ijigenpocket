@@ -14,7 +14,7 @@ const bgColors = ['white', 'gray', 'black', 'blue'];
 const canvasBgColorsList = ['trans', 'white', 'gray', 'black'];
 const canvasTargetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
 let previewBgColor = 'blue'; // 'white', 'gray', 'black', 'blue' (Undo対象外)
-let canvasBgColor = 'black'; // 'transparent', 'white', 'gray', 'black' (Undo対象)
+let canvasBgColor = 'transparent'; // 'transparent', 'white', 'gray', 'black' (Undo対象)
 
 // === フレーム画像編集モーダル用の状態変数 ===
 let editOriginalUrl = null;
@@ -523,10 +523,10 @@ function updateUI() {
     if (btn) {
       if (targetMap[c] === canvasBgColor) {
         btn.classList.add('ring-2', 'ring-blue-500');
-        if (c === 'black') btn.classList.remove('ring-1');
+        if (c === 'trans') btn.classList.remove('ring-1');
       } else {
         btn.classList.remove('ring-2', 'ring-blue-500');
-        if (c === 'black') btn.classList.add('ring-1', 'ring-blue-500');
+        if (c === 'trans') btn.classList.add('ring-1', 'ring-blue-500');
       }
     }
   });
@@ -1596,7 +1596,7 @@ canvasBgColorsList.forEach(c => {
   }
 });
 
-canvasBgColor = 'black';
+canvasBgColor = 'transparent';
 setPreviewBg('blue');
 updateUI();
 
