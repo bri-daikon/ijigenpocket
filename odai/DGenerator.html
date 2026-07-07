@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Generator</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Serif+JP:wght@400;700;900&family=Shippori+Mincho:wght@400;700&family=Reggae+One&family=RocknRoll+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/dgenerator.css">
+</head>
+<body>
+    <div id="root" class="flex-1 overflow-hidden"></div>
+
+    <script>
+        Babel.registerPreset('my-react', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
+
+    <script src="js/common.js"></script>
+    <script type="text/babel" data-presets="my-react,env">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const FONTS = [
+            { id: 'Noto Sans JP', name: 'Noto Sans (ゴシック)' },
+            { id: 'Noto Serif JP', name: 'Noto Serif (明朝)' },
+            { id: 'Shippori Mincho', name: 'しっぽり明朝' },
+            { id: 'Reggae One', name: 'レゲエ One' },
+            { id: 'RocknRoll One', name: 'ロックンロール One' }
+        ];
+
+        const DARK_PRESETS = [
+            { name: 'Midnight', c1: '#000428', c2: '#004e92' },
+            { name: 'Crimson', c1: '#1a0a0a', c2: '#8e0e00' },
+            { name: 'Emerald', c1: '#002211', c2: '#006633' },
+            { name: 'Purple', c1: '#0f0c29', c2: '#302b63' },
+            { name: 'Noir', c1: '#000000', c2: '#2c3e50' },
+            { name: 'DeepSea', c1: '#000046', c2: '#1cb5e0' },
+            { name: 'Vampire', c1: '#200122', c2: '#6f0000' },
+            { name: 'Abyss', c1: '#000000', c2: '#434343' },
+            { name: 'Forest', c1: '#0b480b', c2: '#000000' },
+            { name: 'Galaxy', c1: '#240b36', c2: '#c31432' }
+        ];
+
+        const LIGHT_PRESETS = [
+            { name: 'Sakura', c1: '#ffafbd', c2: '#ffc3a0' },
+            { name: 'Sky', c1: '#89f7fe', c2: '#66a6ff' },
+            { name: 'Lemon', c1: '#f6d365', c2: '#fda085' },
+            { name: 'Peach', c1: '#ff9a9e', c2: '#fecfef' },
+            { name: 'Candy', c1: '#ee9ca7', c2: '#ffdde1' },
+            { name: 'Marine', c1: '#2af598', c2: '#009efd' },
+            { name: 'Mint', c1: '#96e6a1', c2: '#d4fc79' },
+            { name: 'Sunset', c1: '#f83600', c2: '#f9d423' },
+            { name: 'Lavender', c1: '#e1eec3', c2: '#f05053' },
+            { name: 'Golden', c1: '#F7971E', c2: '#FFD200' }
+        ];
+
+        const getCanvasDimensions = (size) => {
+            switch (size) {
+                case 'square': return { width: 1200, height: 1200 };
+                case 'vertical': return { width: 1200, height: 1600 };
+                case 'horizontal':
+                default: return { width: 1600, height: 1200 };
+            }
+        };
+
+        const wrapText = (ctx, text, maxWidth) => {
+            const lines = [];
+            const paragraphs = text.split('\n');
+            paragraphs.forEach(p => {
+                if (p === '') {
+                    lines.push('');
+                    return;
+                }
+                let currentLine = '';
+                for (let n = 0; n < p.length; n++) {
+                    let testLine = currentLine + p[n];
+                    let metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxWidth && n > 0) {
+                        lines.push(currentLine);
+                        currentLine = p[n];
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                lines.push(currentLine);
+            });
+            return lines;
+        };
+
+        const App = () => {
+            const canvasRef = useRef(null);
+            const containerRef = useRef(null);
+            const [zoom, setZoom] = useState(1);
+            const [activeTab, setActiveTab] = useState('bg');
+            const [selectedId, setSelectedId] = useState(null);
+            const [dragging, setDragging] = useState(null);
+            const [isExporting, setIsExporting] = useState(false);
+            const [ccfoliaInput, setCcfoliaInput] = useState('');
+            const [maxZ, setMaxZ] = useState(200);
+
+            // 追加する状態
+            const [canvasSize, setCanvasSize] = useState('horizontal');
+            const [selectedVarIds, setSelectedVarIds] = useState([]);
+            const [showGrid, setShowGrid] = useState(false);
+            const [snapToGrid, setSnapToGrid] = useState(false);
+            const [gridSize, setGridSize] = useState(50);
+
+            const [layout, setLayout] = useState({
+                canvas: { 
+                    bgType: 'gradient', 
+                    color1: '#000428', 
+                    color2: '#004e92', 
+                    bgImage: '',
+                    filters: { blur: 0, brightness: 100, contrast: 100, saturate: 100, grayscale: 0, hueRotate: 0, sepia: 0 }
+                },
+                texts: [
+                    { id: 'sys', label: 'システム名', text: 'SYSTEM NAME', x: 80, y: 80, size: 28, width: 600, color: '#6366f1', color2: '#a78bfa', isGradient: false, font: 'Noto Sans JP', weight: '900', outline: 0, outlineColor: '#000000', visible: true, z: 80, lineH: 1.2 },
+                    { id: 'title', label: 'タイトル', text: 'SHINARIO TITLE', x: 80, y: 140, size: 80, width: 1000, color: '#ffffff', color2: '#6366f1', isGradient: true, font: 'Shippori Mincho', weight: '700', outline: 2, outlineColor: '#000000', visible: true, z: 81, lineH: 1.2 },
+                    { id: 'role', label: '役割', text: 'ROLE OR YOMIGANA', x: 80, y: 920, size: 26, width: 600, color: '#ffffff', color2: '#cbd5e1', isGradient: false, font: 'Noto Sans JP', weight: '700', outline: 0, outlineColor: '#000000', visible: true, z: 82, lineH: 1.2 },
+                    { id: 'name', label: 'キャラクター名', text: 'CHARACTER NAME', x: 80, y: 960, size: 100, width: 1200, color: '#ffffff', color2: '#cbd5e1', isGradient: false, font: 'Noto Serif JP', weight: '900', outline: 4, outlineColor: '#000000', visible: true, z: 83, lineH: 1.2 },
+                    { id: 'creator', label: '作者名', text: 'PRESENTED BY 作った人', x: 80, y: 1080, size: 20, width: 600, color: '#94a3b8', color2: '#cbd5e1', isGradient: false, font: 'Noto Sans JP', weight: '400', outline: 0, outlineColor: '#000000', visible: true, z: 84, lineH: 1.2 }
+                ],
+                images: [
+                    { id: 'img1', label: '立ち絵1', url: '', x: 500, y: 600, scale: 0.8, visible: true, z: 10 },
+                    { id: 'img2', label: '立ち絵2', url: '', x: 1000, y: 600, scale: 0.8, visible: true, z: 11 },
+                    { id: 'prohibit', label: '禁止事項', url: '', x: 1400, y: 1000, scale: 0.5, visible: false, z: 100 },
+                ],
+                variations: [],
+                lines: [],
+                radar: {
+                    id: 'radar_obj', visible: true, x: 1350, y: 400, size: 380, maxValue: 25, color: '#6366f1', 
+                    stats: [
+                        { name: 'STR', value: 10 }, { name: 'CON', value: 10 }, { name: 'POW', value: 10 }, 
+                        { name: 'DEX', value: 10 }, { name: 'APP', value: 10 }, { name: 'SIZ', value: 10 }, 
+                        { name: 'INT', value: 10 }, { name: 'EDU', value: 10 }
+                    ],
+                    z: 90
+                }
+            });
+
+            const moveText = (index, direction) => {
+                const nextIndex = index + direction;
+                if (nextIndex < 0 || nextIndex >= layout.texts.length) return;
+                setLayout(prev => {
+                    const newTexts = [...prev.texts];
+                    const z1 = newTexts[index].z;
+                    const z2 = newTexts[nextIndex].z;
+                    newTexts[index] = { ...newTexts[index], z: z2 };
+                    newTexts[nextIndex] = { ...newTexts[nextIndex], z: z1 };
+                    const temp = newTexts[index];
+                    newTexts[index] = newTexts[nextIndex];
+                    newTexts[nextIndex] = temp;
+                    return { ...prev, texts: newTexts };
+                });
+            };
+
+            const moveVariation = (index, direction) => {
+                const nextIndex = index + direction;
+                if (nextIndex < 0 || nextIndex >= layout.variations.length) return;
+                setLayout(prev => {
+                    const newVars = [...prev.variations];
+                    const z1 = newVars[index].z;
+                    const z2 = newVars[nextIndex].z;
+                    newVars[index] = { ...newVars[index], z: z2 };
+                    newVars[nextIndex] = { ...newVars[nextIndex], z: z1 };
+                    const temp = newVars[index];
+                    newVars[index] = newVars[nextIndex];
+                    newVars[nextIndex] = temp;
+                    return { ...prev, variations: newVars };
+                });
+            };
+
+            const moveLine = (index, direction) => {
+                const nextIndex = index + direction;
+                if (nextIndex < 0 || nextIndex >= layout.lines.length) return;
+                setLayout(prev => {
+                    const newLines = [...prev.lines];
+                    const z1 = newLines[index].z;
+                    const z2 = newLines[nextIndex].z;
+                    newLines[index] = { ...newLines[index], z: z2 };
+                    newLines[nextIndex] = { ...newLines[nextIndex], z: z1 };
+                    const temp = newLines[index];
+                    newLines[index] = newLines[nextIndex];
+                    newLines[nextIndex] = temp;
+                    return { ...prev, lines: newLines };
+                });
+            };
+
+            const waitForFonts = async () => {
+                await document.fonts.ready;
+            };
+
+            const updateZoom = useCallback(() => {
+                if (containerRef.current) {
+                    const { clientWidth, clientHeight } = containerRef.current;
+                    const dims = getCanvasDimensions(canvasSize);
+                    const scaleW = (clientWidth - 40) / dims.width;
+                    const scaleH = (clientHeight - 40) / dims.height;
+                    setZoom(Math.min(scaleW, scaleH, 1.0));
+                }
+            }, [canvasSize]);
+
+            useEffect(() => {
+                updateZoom();
+                window.addEventListener('resize', updateZoom);
+                return () => window.removeEventListener('resize', updateZoom);
+            }, [updateZoom]);
+
+            const drawTextLayer = (ctx, t) => {
+                if (!t.visible) return;
+                ctx.save();
+                const fontWeight = t.weight || '900';
+                ctx.font = `${fontWeight} ${t.size}px '${t.font}'`;
+                ctx.textBaseline = 'top';
+                ctx.lineJoin = 'round';
+                const lines = wrapText(ctx, t.text, t.width);
+                const lineHeight = t.size * (t.lineH || 1.2);
+                lines.forEach((line, i) => {
+                    if (line === '') return;
+                    const ly = t.y + (i * lineHeight);
+                    if (t.outline > 0) {
+                        ctx.strokeStyle = t.outlineColor;
+                        ctx.lineWidth = t.outline * 2;
+                        ctx.strokeText(line, t.x, ly);
+                    }
+                    if (t.isGradient) {
+                        const grad = ctx.createLinearGradient(t.x, ly, t.x, ly + t.size);
+                        grad.addColorStop(0, t.color);
+                        grad.addColorStop(1, t.color2);
+                        ctx.fillStyle = grad;
+                    } else {
+                        ctx.fillStyle = t.color;
+                    }
+                    ctx.fillText(line, t.x, ly);
+                });
+                ctx.restore();
+            };
+
+            const drawRadarLayer = (ctx, r) => {
+                if (!r.visible) return;
+                const { x, y, size, stats, maxValue, color } = r;
+                const center = x;
+                const centerY = y;
+                const radius = (size / 2) * 0.75;
+                const angleStep = (Math.PI * 2) / stats.length;
+
+                ctx.save();
+                [0.25, 0.5, 0.75, 1.0].forEach(level => {
+                    ctx.beginPath();
+                    stats.forEach((_, i) => {
+                        const r_level = radius * level;
+                        const px = center + r_level * Math.cos(i * angleStep - Math.PI / 2);
+                        const py = centerY + r_level * Math.sin(i * angleStep - Math.PI / 2);
+                        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    });
+                    ctx.closePath();
+                    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+                    ctx.stroke();
+                });
+
+                ctx.beginPath();
+                stats.forEach((d, i) => {
+                    const ratio = Math.min(Math.max(d.value, 0) / (maxValue || 1), 1.2);
+                    const px = center + radius * ratio * Math.cos(i * angleStep - Math.PI / 2);
+                    const py = centerY + radius * ratio * Math.sin(i * angleStep - Math.PI / 2);
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fillStyle = color + "55";
+                ctx.fill();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                stats.forEach((d, i) => {
+                    const labelDist = radius + 35;
+                    const lx = center + labelDist * Math.cos(i * angleStep - Math.PI / 2);
+                    const ly = centerY + labelDist * Math.sin(i * angleStep - Math.PI / 2);
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = "black";
+                    ctx.font = "bold 14px 'Noto Sans JP'";
+                    ctx.fillStyle = "white";
+                    ctx.textAlign = "center";
+                    ctx.fillText(d.name, lx, ly - 8);
+                    ctx.fillStyle = color;
+                    ctx.fillText(d.value, lx, ly + 10);
+                    ctx.shadowBlur = 0;
+                });
+                ctx.restore();
+            };
+
+            const exportImage = async () => {
+                if (isExporting) return;
+                setIsExporting(true);
+                setSelectedId(null);
+                await waitForFonts();
+                
+                const dims = getCanvasDimensions(canvasSize);
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = dims.width;
+                exportCanvas.height = dims.height;
+                const ctx = exportCanvas.getContext('2d');
+
+                const grad = ctx.createLinearGradient(0, 0, dims.width, dims.height);
+                grad.addColorStop(0, layout.canvas.color1);
+                grad.addColorStop(1, layout.canvas.color2);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, dims.width, dims.height);
+
+                if (layout.canvas.bgImage) {
+                    const bgImg = new Image();
+                    bgImg.crossOrigin = "anonymous";
+                    bgImg.src = layout.canvas.bgImage;
+                    await new Promise(r => bgImg.onload = r);
+                    ctx.save();
+                    const f = layout.canvas.filters || { blur: 0, brightness: 100, contrast: 100, saturate: 100, grayscale: 0, hueRotate: 0, sepia: 0 };
+                    ctx.filter = `blur(${f.blur || 0}px) brightness(${f.brightness ?? 100}%) contrast(${f.contrast ?? 100}%) saturate(${f.saturate ?? 100}%) grayscale(${f.grayscale || 0}%) hue-rotate(${f.hueRotate || 0}deg) sepia(${f.sepia || 0}%)`;
+                    const scale = Math.max(dims.width / bgImg.width, dims.height / bgImg.height);
+                    ctx.drawImage(bgImg, (dims.width - bgImg.width * scale) / 2, (dims.height - bgImg.height * scale) / 2, bgImg.width * scale, bgImg.height * scale);
+                    ctx.restore();
+                }
+
+                const elements = [
+                    ...layout.images.filter(i => i.visible && i.url).map(i => ({...i, type: 'image'})),
+                    ...layout.variations.filter(v => v.visible).map(v => ({...v, type: 'var'})),
+                    ...layout.lines.filter(l => l.visible).map(l => ({...l, type: 'line'})),
+                    ...layout.texts.filter(t => t.visible).map(t => ({...t, type: 'text'})),
+                    ...(layout.radar.visible ? [{...layout.radar, type: 'radar'}] : [])
+                ].sort((a, b) => a.z - b.z);
+
+                for (const el of elements) {
+                    if (el.type === 'image' || el.type === 'var') {
+                        const img = new Image();
+                        img.crossOrigin = "anonymous";
+                        img.src = el.url;
+                        await new Promise(r => img.onload = r);
+                        ctx.save();
+                        ctx.translate(el.x, el.y);
+                        ctx.scale(el.scale, el.scale);
+                        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                        ctx.restore();
+                    } else if (el.type === 'text') {
+                        drawTextLayer(ctx, el);
+                    } else if (el.type === 'radar') {
+                        drawRadarLayer(ctx, el);
+                    } else if (el.type === 'line') {
+                        ctx.save();
+                        if (el.isGradient) {
+                            let grad;
+                            if (el.direction === 'vertical') {
+                                grad = ctx.createLinearGradient(el.x, el.y, el.x, el.y + el.length);
+                            } else {
+                                grad = ctx.createLinearGradient(el.x, el.y, el.x + el.length, el.y);
+                            }
+                            grad.addColorStop(0, el.color);
+                            grad.addColorStop(1, el.color2 || '#cbd5e1');
+                            ctx.fillStyle = grad;
+                        } else {
+                            ctx.fillStyle = el.color;
+                        }
+                        if (el.direction === 'vertical') {
+                            ctx.fillRect(el.x, el.y, el.width, el.length);
+                        } else {
+                            ctx.fillRect(el.x, el.y, el.length, el.width);
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                const charName = layout.texts.find(t => t.id === 'name')?.text.split('\n')[0] || 'character';
+                const link = document.createElement('a');
+                link.download = `${charName}_display.png`;
+                link.href = exportCanvas.toDataURL('image/png', 1.0);
+                link.click();
+                setIsExporting(false);
+            };
+
+            const bringToFront = (type, id) => {
+                const nextZ = maxZ + 1;
+                setMaxZ(nextZ);
+                setLayout(prev => {
+                    const next = { ...prev };
+                    if (type === 'text') next.texts = next.texts.map(t => t.id === id ? {...t, z: nextZ} : t);
+                    else if (type === 'image') next.images = next.images.map(i => i.id === id ? {...i, z: nextZ} : i);
+                    else if (type === 'var') next.variations = next.variations.map(v => v.id === id ? {...v, z: nextZ} : v);
+                    else if (type === 'line') next.lines = next.lines.map(l => l.id === id ? {...l, z: nextZ} : l);
+                    else if (type === 'radar') next.radar = { ...next.radar, z: nextZ };
+                    return next;
+                });
+                setSelectedId(id);
+            };
+
+            const onMouseDown = (e, type, id) => {
+                if (isExporting) return;
+                e.stopPropagation();
+                bringToFront(type, id);
+                const rect = canvasRef.current.getBoundingClientRect();
+                const mouseXInCanvas = (e.clientX - rect.left) / zoom;
+                const mouseYInCanvas = (e.clientY - rect.top) / zoom;
+                
+                let initialX = 0, initialY = 0;
+                if (type === 'text') { const item = layout.texts.find(t => t.id === id); if (item) { initialX = item.x; initialY = item.y; } }
+                else if (type === 'image') { const item = layout.images.find(i => i.id === id); if (item) { initialX = item.x; initialY = item.y; } }
+                else if (type === 'var') { const item = layout.variations.find(v => v.id === id); if (item) { initialX = item.x; initialY = item.y; } }
+                else if (type === 'line') { const item = layout.lines.find(l => l.id === id); if (item) { initialX = item.x; initialY = item.y; } }
+                else if (type === 'radar') { initialX = layout.radar.x; initialY = layout.radar.y; }
+
+                setDragging({ type, id, offsetX: mouseXInCanvas - initialX, offsetY: mouseYInCanvas - initialY });
+            };
+
+            const onMouseMove = useCallback((e) => {
+                if (!dragging) return;
+                const canvasRect = canvasRef.current.getBoundingClientRect();
+                const mouseXInCanvas = (e.clientX - canvasRect.left) / zoom;
+                const mouseYInCanvas = (e.clientY - canvasRect.top) / zoom;
+                let nx = Math.round(mouseXInCanvas - dragging.offsetX);
+                let ny = Math.round(mouseYInCanvas - dragging.offsetY);
+
+                if (snapToGrid) {
+                    nx = Math.round(nx / gridSize) * gridSize;
+                    ny = Math.round(ny / gridSize) * gridSize;
+                }
+
+                setLayout(prev => {
+                    const next = { ...prev };
+                    if (dragging.type === 'text') next.texts = next.texts.map(t => t.id === dragging.id ? { ...t, x: nx, y: ny } : t);
+                    else if (dragging.type === 'image') next.images = next.images.map(i => i.id === dragging.id ? { ...i, x: nx, y: ny } : i);
+                    else if (dragging.type === 'var') next.variations = next.variations.map(v => v.id === dragging.id ? { ...v, x: nx, y: ny } : v);
+                    else if (dragging.type === 'line') next.lines = next.lines.map(l => l.id === dragging.id ? { ...l, x: nx, y: ny } : l);
+                    else if (dragging.type === 'radar') next.radar = { ...next.radar, x: nx, y: ny };
+                    return next;
+                });
+            }, [dragging, zoom, snapToGrid, gridSize]);
+
+            useEffect(() => {
+                const onMouseUp = () => setDragging(null);
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+                return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+            }, [onMouseMove]);
+
+            const handleFile = (e, type, id) => {
+                const files = Array.from(e.target.files);
+                if (!files || files.length === 0) return;
+                
+                if (type === 'vars') {
+                    files.slice(0, 40).forEach((file, idx) => {
+                        const reader = new FileReader();
+                        reader.onload = (f) => {
+                            setLayout(prev => ({
+                                ...prev, variations: [...prev.variations, {
+                                    id: `var-${Date.now()}-${idx}`, label: `差分 ${prev.variations.length + 1}`,
+                                    url: f.target.result, x: 800 + (idx * 30), y: 600 + (idx * 30), scale: 0.5, visible: true, z: maxZ + 1 + idx
+                                }]
+                            }));
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (f) => {
+                    setLayout(prev => {
+                        if (type === 'bg') return { ...prev, canvas: { ...prev.canvas, bgType: 'image', bgImage: f.target.result } };
+                        if (type === 'image') return { ...prev, images: prev.images.map(i => i.id === id ? { ...i, url: f.target.result } : i) };
+                        return prev;
+                    });
+                };
+                reader.readAsDataURL(files[0]);
+            };
+
+            const importCcfolia = () => {
+                try {
+                    const data = JSON.parse(ccfoliaInput);
+                    if (data.kind !== 'character') return;
+                    const char = data.data;
+                    setLayout(prev => {
+                        const baseStats = ['STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU'];
+                        const newStats = (char.params || [])
+                            .filter(p => baseStats.includes(p.label.toUpperCase()))
+                            .map(p => ({ name: p.label.toUpperCase(), value: parseInt(p.value) || 0 }));
+                        return {
+                            ...prev,
+                            texts: prev.texts.map(t => t.id === 'name' ? { ...t, text: char.name || t.text } : t),
+                            images: prev.images.map(img => (img.id === 'img1' && char.image) ? { ...img, url: char.image } : img),
+                            radar: { ...prev.radar, stats: newStats.length > 0 ? newStats : prev.radar.stats }
+                        };
+                    });
+                    setCcfoliaInput('');
+                } catch (e) { console.error("CCFOLIA Import Error"); }
+            };
+
+            const TextDisplay = ({ t }) => {
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+                ctx.font = `${t.weight} ${t.size}px '${t.font}'`;
+                const lines = wrapText(ctx, t.text, t.width);
+                const lineHeight = t.size * (t.lineH || 1.2);
+                const height = lines.length * lineHeight;
+
+                return (
+                    <div 
+                        onMouseDown={e => onMouseDown(e, 'text', t.id)}
+                        className={`draggable ${selectedId === t.id ? 'active-element' : ''}`}
+                        style={{
+                            left: t.x, top: t.y, zIndex: t.z, width: t.width, height: height,
+                            fontFamily: `'${t.font}'`, fontSize: t.size, fontWeight: t.weight,
+                            lineHeight: t.lineH || 1.2,
+                            whiteSpace: 'pre-wrap', 
+                            position: 'absolute',
+                            pointerEvents: 'auto'
+                        }}
+                    >
+                        {/* 縁取り用レイヤー */}
+                        {t.outline > 0 && (
+                            <div style={{
+                                position: 'absolute', left: 0, top: 0, width: '100%', height: '100%',
+                                color: t.outlineColor,
+                                WebkitTextStroke: `${t.outline * 2}px ${t.outlineColor}`,
+                                zIndex: 1
+                            }}>
+                                {lines.map((line, idx) => (
+                                    <div key={idx} style={{ height: lineHeight }}>
+                                        {line || ' '}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {/* 塗り用レイヤー */}
+                        <div style={{
+                            position: 'absolute', left: 0, top: 0, width: '100%', height: '100%',
+                            color: t.color,
+                            zIndex: 2
+                        }}>
+                            {lines.map((line, idx) => (
+                                <div key={idx} style={{ height: lineHeight }}>
+                                    {t.isGradient ? (
+                                        <span style={{
+                                            background: `linear-gradient(to bottom, ${t.color}, ${t.color2})`,
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            display: 'inline-block'
+                                        }}>
+                                            {line || ' '}
+                                        </span>
+                                    ) : (line || ' ')}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            const dims = getCanvasDimensions(canvasSize);
+
+            return (
+                <div className="flex h-full w-full bg-slate-950 text-slate-200 overflow-hidden">
+                    <nav className="w-16 glass flex flex-col items-center py-8 gap-6 z-50 shrink-0">
+                        {[{id:'text', icon:'T'}, {id:'image', icon:'P'}, {id:'line', icon:'/'}, {id:'chart', icon:'C'}, {id:'bg', icon:'B'}].map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg scale-110' : 'text-slate-500 hover:text-slate-300'}`}>
+                                {tab.icon}
+                            </button>
+                        ))}
+                    </nav>
+
+                    <aside className="w-80 glass flex flex-col z-40 overflow-hidden shadow-2xl border-l border-white/5 relative">
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-32">
+                            <button onClick={exportImage} disabled={isExporting} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 disabled:opacity-50 transition-all shadow-lg text-sm">
+                                {isExporting ? '生成中...' : '画像を保存 (PNG)'}
+                            </button>
+
+                            {activeTab === 'text' && (
+                                <div className="space-y-4">
+                                    {layout.texts.map((t, idx) => (
+                                        <div key={t.id} onClick={() => bringToFront('text', t.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === t.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
+                                            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
+                                                <span>{t.label}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        className="hover:text-indigo-400 disabled:opacity-30" 
+                                                        disabled={idx === 0} 
+                                                        onClick={(e) => { e.stopPropagation(); moveText(idx, -1); }}
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <button 
+                                                        className="hover:text-indigo-400 disabled:opacity-30" 
+                                                        disabled={idx === layout.texts.length - 1} 
+                                                        onClick={(e) => { e.stopPropagation(); moveText(idx, 1); }}
+                                                    >
+                                                        ▼
+                                                    </button>
+                                                    <input type="checkbox" checked={t.visible} onChange={() => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,visible:!xt.visible}:xt)}))} />
+                                                </div>
+                                            </div>
+                                            <textarea className="w-full bg-slate-950 p-2 rounded text-xs outline-none h-16 resize-none" value={t.text} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,text:e.target.value}:xt)}))} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] text-slate-400"><span>サイズ</span><span>{t.size}px</span></div>
+                                                    <input type="range" min="10" max="300" value={t.size} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,size:parseInt(e.target.value)}:xt)}))} />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] text-slate-400"><span>折返幅</span><span>{t.width}px</span></div>
+                                                    <input type="range" min="50" max="1500" value={t.width} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,width:parseInt(e.target.value)}:xt)}))} />
+                                                </div>
+                                            </div>
+                                            <select className="w-full bg-slate-950 p-1.5 rounded text-[10px]" value={t.font} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,font:e.target.value}:xt)}))}>
+                                                {FONTS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                            </select>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="color" className="w-full h-8 bg-transparent" value={t.color} title="メイン色" onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,color:e.target.value}:xt)}))} />
+                                                <input type="color" className="w-full h-8 bg-transparent" value={t.color2} title="グラデ色" onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,color2:e.target.value}:xt)}))} />
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px]">
+                                                <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={t.isGradient} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,isGradient:e.target.checked}:xt)}))} /> グラデ</label>
+                                                <span className="ml-auto">縁</span>
+                                                <input type="number" className="w-10 bg-slate-950 p-1 rounded" value={t.outline} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,outline:parseInt(e.target.value)}:xt)}))} />
+                                                <input type="color" className="w-6 h-6 bg-transparent" value={t.outlineColor} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,outlineColor:e.target.value}:xt)}))} />
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px]">
+                                                <span>行間</span>
+                                                <input type="range" min="0.5" max="3.0" step="0.1" value={t.lineH || 1.2} onChange={e => setLayout(p => ({...p, texts: p.texts.map(xt => xt.id===t.id?{...xt,lineH:parseFloat(e.target.value)}:xt)}))} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {activeTab === 'image' && (
+                                <div className="space-y-6">
+                                    {layout.images.map(img => (
+                                        <div key={img.id} onClick={() => bringToFront('image', img.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === img.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
+                                            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">{img.label} <input type="checkbox" checked={img.visible} onChange={() => setLayout(p => ({...p, images: p.images.map(i => i.id===img.id?{...i,visible:!i.visible}:i)}))} /></div>
+                                            <label className="block w-full py-2 bg-slate-800 rounded text-center cursor-pointer text-[10px]">画像を選択<input type="file" className="hidden" onChange={e => handleFile(e, 'image', img.id)} /></label>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>拡大率: {Math.round(img.scale * 100)}%</span>
+                                                </div>
+                                                <input type="range" min="0.1" max="3.0" step="0.01" value={img.scale} onChange={e => setLayout(p => ({...p, images: p.images.map(i => i.id===img.id?{...i,scale:parseFloat(e.target.value)}:i)}))} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="space-y-3 pt-2">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">表情差分リスト（最大40）</p>
+                                        <label className="block w-full py-3 bg-slate-900 border-2 border-dashed border-white/10 rounded-xl text-center cursor-pointer text-[10px] hover:border-indigo-500 transition-colors">画像を一括追加<input type="file" className="hidden" multiple onChange={e => handleFile(e, 'vars')} /></label>
+                                        
+                                        {layout.variations.length > 0 && (
+                                            <div className="p-3 bg-indigo-950/20 rounded-xl border border-indigo-500/20 space-y-3">
+                                                <div className="flex justify-between items-center text-[10px]">
+                                                    <span className="font-bold text-indigo-300">一括操作 ({selectedVarIds.length}選択中)</span>
+                                                    <div className="flex gap-2">
+                                                        <button className="hover:underline text-indigo-400" onClick={() => setSelectedVarIds(layout.variations.map(v => v.id))}>全選択</button>
+                                                        <button className="hover:underline text-indigo-400" onClick={() => setSelectedVarIds([])}>解除</button>
+                                                    </div>
+                                                </div>
+                                                {selectedVarIds.length > 0 && (
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[9px] text-slate-400">
+                                                            <span>選択中の拡大率を一括調整</span>
+                                                        </div>
+                                                        <input 
+                                                            type="range" 
+                                                            min="0.1" 
+                                                            max="3.0" 
+                                                            step="0.01" 
+                                                            defaultValue="0.5"
+                                                            onChange={e => {
+                                                                const newScale = parseFloat(e.target.value);
+                                                                setLayout(p => ({
+                                                                    ...p,
+                                                                    variations: p.variations.map(v => 
+                                                                        selectedVarIds.includes(v.id) ? { ...v, scale: newScale } : v
+                                                                    )
+                                                                }));
+                                                            }} 
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            {layout.variations.map((v, idx) => (
+                                                <div key={v.id} onClick={() => bringToFront('var', v.id)} className={`p-3 bg-slate-900/50 rounded-lg border ${selectedId === v.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-2`}>
+                                                    <div className="flex justify-between items-center text-[10px]">
+                                                        <div className="flex items-center gap-2">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={selectedVarIds.includes(v.id)} 
+                                                                onChange={e => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedVarIds(prev => [...prev, v.id]);
+                                                                    } else {
+                                                                        setSelectedVarIds(prev => prev.filter(id => id !== v.id));
+                                                                    }
+                                                                }} 
+                                                                onClick={e => e.stopPropagation()}
+                                                            />
+                                                            <span className="truncate w-24 font-bold">{v.label}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <button 
+                                                                className="hover:text-indigo-400 disabled:opacity-30" 
+                                                                disabled={idx === 0} 
+                                                                onClick={(e) => { e.stopPropagation(); moveVariation(idx, -1); }}
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button 
+                                                                className="hover:text-indigo-400 disabled:opacity-30" 
+                                                                disabled={idx === layout.variations.length - 1} 
+                                                                onClick={(e) => { e.stopPropagation(); moveVariation(idx, 1); }}
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                            <input type="checkbox" checked={v.visible} onChange={() => setLayout(p => ({...p, variations: p.variations.map(xv => xv.id===v.id?{...xv,visible:!xv.visible}:xv)}))} />
+                                                            <button onClick={(e) => { 
+                                                                e.stopPropagation(); 
+                                                                setLayout(p => ({...p, variations: p.variations.filter(xv => xv.id !== v.id)}));
+                                                                setSelectedVarIds(prev => prev.filter(id => id !== v.id));
+                                                            }} className="text-red-400 hover:text-red-300">✕</button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={v.url} className="w-8 h-8 object-cover rounded bg-black shrink-0" />
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex justify-between text-[9px] text-slate-400">
+                                                                <span>拡大率: {Math.round(v.scale * 100)}%</span>
+                                                            </div>
+                                                            <input type="range" min="0.1" max="3.0" step="0.01" value={v.scale} onChange={e => setLayout(p => ({...p, variations: p.variations.map(xv => xv.id===v.id?{...xv,scale:parseFloat(e.target.value)}:xv)}))} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'line' && (
+                                <div className="space-y-4">
+                                    <button onClick={() => setLayout(p => ({...p, lines: [...p.lines, { id: `line-${Date.now()}`, label: `Line ${p.lines.length + 1}`, direction: 'horizontal', x: 100, y: 100, length: 1400, width: 2, color: '#ffffff', color2: '#cbd5e1', isGradient: false, visible: true, z: maxZ + 1 }] }))} className="w-full py-2 bg-slate-800 rounded text-[10px] hover:bg-slate-700">+ 線を追加</button>
+                                    {layout.lines.map((l, idx) => (
+                                        <div key={l.id} onClick={() => bringToFront('line', l.id)} className={`p-4 bg-slate-900/50 rounded-xl border ${selectedId === l.id ? 'border-indigo-500 bg-slate-800' : 'border-white/5'} space-y-3`}>
+                                            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
+                                                <span>{l.label}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <button className="hover:text-indigo-400 disabled:opacity-30" disabled={idx === 0} onClick={(e) => { e.stopPropagation(); moveLine(idx, -1); }}>▲</button>
+                                                    <button className="hover:text-indigo-400 disabled:opacity-30" disabled={idx === layout.lines.length - 1} onClick={(e) => { e.stopPropagation(); moveLine(idx, 1); }}>▼</button>
+                                                    <input type="checkbox" checked={l.visible} onChange={() => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,visible:!xl.visible}:xl)}))} />
+                                                    <button onClick={(e) => { e.stopPropagation(); setLayout(p => ({...p, lines: p.lines.filter(xl => xl.id !== l.id)})); }} className="text-red-400 hover:text-red-300">✕</button>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 text-[10px]">
+                                                <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`dir-${l.id}`} checked={l.direction === 'horizontal'} onChange={() => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,direction:'horizontal'}:xl)}))} />横線</label>
+                                                <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`dir-${l.id}`} checked={l.direction === 'vertical'} onChange={() => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,direction:'vertical'}:xl)}))} />縦線</label>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400"><span>長さ</span><span>{l.length}px</span></div>
+                                                <input type="range" min="10" max="3000" value={l.length} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,length:parseInt(e.target.value)}:xl)}))} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400"><span>太さ</span><span>{l.width}px</span></div>
+                                                <input type="range" min="1" max="500" value={l.width} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,width:parseInt(e.target.value)}:xl)}))} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="color" className="w-full h-8 bg-transparent" value={l.color} title="メイン色" onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,color:e.target.value}:xl)}))} />
+                                                <input type="color" className="w-full h-8 bg-transparent" value={l.color2 || '#cbd5e1'} title="グラデ色" onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,color2:e.target.value}:xl)}))} />
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px]">
+                                                <label className="flex items-center gap-1 cursor-pointer">
+                                                    <input type="checkbox" checked={l.isGradient || false} onChange={e => setLayout(p => ({...p, lines: p.lines.map(xl => xl.id===l.id?{...xl,isGradient:e.target.checked}:xl)}))} /> グラデ
+                                                </label>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {activeTab === 'chart' && (
+                                <div className="space-y-6">
+                                    <div className="p-4 bg-indigo-950/30 rounded-xl border border-indigo-500/30 space-y-3">
+                                        <p className="text-[10px] font-bold text-indigo-400 uppercase">ココフォリア貼付データ読込</p>
+                                        <textarea className="w-full h-16 bg-slate-950 border border-white/10 rounded-lg p-2 text-[10px] outline-none" placeholder="駒データを貼り付け" value={ccfoliaInput} onChange={e => setCcfoliaInput(e.target.value)} />
+                                        <button onClick={importCcfolia} className="w-full py-2 bg-indigo-600 rounded-lg font-bold text-xs">データを反映</button>
+                                    </div>
+
+                                    <div onClick={() => bringToFront('radar', layout.radar.id)} className={`p-4 rounded-xl border ${selectedId === layout.radar.id ? 'border-indigo-500 bg-slate-800' : 'bg-slate-900/50 border-white/5'} space-y-4`}>
+                                        <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">レーダー表示 <input type="checkbox" checked={layout.radar.visible} onChange={e => setLayout(p => ({...p, radar: {...p.radar, visible: e.target.checked}}))} /></div>
+                                        <div className="space-y-1"><span className="text-[10px] text-slate-400">サイズ: {layout.radar.size}</span><input type="range" min="100" max="800" value={layout.radar.size} onChange={e => setLayout(p => ({...p, radar: {...p.radar, size: parseInt(e.target.value)}}))} /></div>
+                                        <div className="space-y-1"><span className="text-[10px] text-slate-400">最大値: {layout.radar.maxValue}</span><input type="range" min="5" max="100" value={layout.radar.maxValue} onChange={e => setLayout(p => ({...p, radar: {...p.radar, maxValue: parseInt(e.target.value)}}))} /></div>
+                                        <div className="space-y-1"><span className="text-[10px] text-slate-400">チャート色</span><input type="color" className="w-full h-8 bg-transparent" value={layout.radar.color} onChange={e => setLayout(p => ({...p, radar: {...p.radar, color: e.target.value}}))} /></div>
+                                        
+                                        <div className="space-y-2 border-t border-white/10 pt-2">
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase">ステータス編集</p>
+                                            {layout.radar.stats.map((s, i) => (
+                                                <div key={i} className="flex gap-2 items-center">
+                                                    <input type="text" className="w-16 bg-slate-950 p-1 rounded text-[10px]" value={s.name} onChange={e => setLayout(p => ({...p, radar: {...p.radar, stats: p.radar.stats.map((xs, xi) => xi===i?{...xs,name:e.target.value}:xs)}}))} />
+                                                    <input type="number" className="flex-1 bg-slate-950 p-1 rounded text-xs" value={s.value} onChange={e => setLayout(p => ({...p, radar: {...p.radar, stats: p.radar.stats.map((xs, xi) => xi===i?{...xs,value:parseInt(e.target.value)||0}:xs)}}))} />
+                                                    <button onClick={() => setLayout(p => ({...p, radar: {...p.radar, stats: p.radar.stats.filter((_, xi) => xi !== i)}}))} className="text-red-400 text-xs">✕</button>
+                                                </div>
+                                            ))}
+                                            <button onClick={() => setLayout(p => ({...p, radar: {...p.radar, stats: [...p.radar.stats, {name: 'NEW', value: 10}]}}))} className="w-full py-1 bg-slate-800 rounded text-[10px]">+ 項目追加</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'bg' && (
+                                <div className="space-y-6">
+                                    <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 space-y-4">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">キャンバスサイズ</p>
+                                        <div className="flex gap-2 text-[10px]">
+                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="csize" checked={canvasSize === 'horizontal'} onChange={() => setCanvasSize('horizontal')} />横長</label>
+                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="csize" checked={canvasSize === 'square'} onChange={() => setCanvasSize('square')} />正方形</label>
+                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name="csize" checked={canvasSize === 'vertical'} onChange={() => setCanvasSize('vertical')} />縦長</label>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 space-y-4">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">背景色カスタム</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-1"><span className="text-[9px] text-slate-500">色1</span><input type="color" className="w-full h-8 bg-transparent" value={layout.canvas.color1} onChange={e => setLayout(p => ({...p, canvas: {...p.canvas, color1: e.target.value}}))} /></div>
+                                            <div className="space-y-1"><span className="text-[9px] text-slate-500">色2</span><input type="color" className="w-full h-8 bg-transparent" value={layout.canvas.color2} onChange={e => setLayout(p => ({...p, canvas: {...p.canvas, color2: e.target.value}}))} /></div>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 space-y-4">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase text-indigo-400">ダークプリセット</p>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {DARK_PRESETS.map(p => (
+                                                <button key={p.name} className="preset-btn" style={{ background: `linear-gradient(135deg, ${p.c1}, ${p.c2})` }} onClick={() => setLayout(prev => ({...prev, canvas: {...prev.canvas, color1: p.c1, color2: p.c2}}))} />
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase text-orange-400">ライトプリセット</p>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {LIGHT_PRESETS.map(p => (
+                                                <button key={p.name} className="preset-btn" style={{ background: `linear-gradient(135deg, ${p.c1}, ${p.c2})` }} onClick={() => setLayout(prev => ({...prev, canvas: {...prev.canvas, color1: p.c1, color2: p.c2}}))} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 space-y-2">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">背景画像アップロード</p>
+                                        <label className="block w-full py-3 border-2 border-dashed border-white/5 rounded-xl text-center text-slate-500 cursor-pointer hover:bg-white/5 text-[11px]">ファイルを選択<input type="file" className="hidden" onChange={e => handleFile(e, 'bg')} /></label>
+                                        {layout.canvas.bgImage && <button onClick={() => setLayout(p => ({...p, canvas: {...p.canvas, bgImage: ''}}))} className="w-full py-2 text-red-400 text-[10px] hover:underline">削除</button>}
+                                    </div>
+                                    {layout.canvas.bgImage && (
+                                        <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 space-y-4">
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase">背景画像加工</p>
+                                            
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>ぼかし (Blur)</span>
+                                                    <span>{layout.canvas.filters?.blur || 0}px</span>
+                                                </div>
+                                                <input type="range" min="0" max="50" value={layout.canvas.filters?.blur || 0} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), blur: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>明るさ (Brightness)</span>
+                                                    <span>{layout.canvas.filters?.brightness ?? 100}%</span>
+                                                </div>
+                                                <input type="range" min="0" max="200" value={layout.canvas.filters?.brightness ?? 100} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), brightness: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>コントラスト (Contrast)</span>
+                                                    <span>{layout.canvas.filters?.contrast ?? 100}%</span>
+                                                </div>
+                                                <input type="range" min="0" max="200" value={layout.canvas.filters?.contrast ?? 100} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), contrast: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>彩度 (Saturate)</span>
+                                                    <span>{layout.canvas.filters?.saturate ?? 100}%</span>
+                                                </div>
+                                                <input type="range" min="0" max="200" value={layout.canvas.filters?.saturate ?? 100} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), saturate: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>グレースケール (Grayscale)</span>
+                                                    <span>{layout.canvas.filters?.grayscale || 0}%</span>
+                                                </div>
+                                                <input type="range" min="0" max="100" value={layout.canvas.filters?.grayscale || 0} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), grayscale: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>色相回転 (Hue Rotate)</span>
+                                                    <span>{layout.canvas.filters?.hueRotate || 0}°</span>
+                                                </div>
+                                                <input type="range" min="0" max="360" value={layout.canvas.filters?.hueRotate || 0} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), hueRotate: val}}}))
+                                                }} />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-400">
+                                                    <span>セピア (Sepia)</span>
+                                                    <span>{layout.canvas.filters?.sepia || 0}%</span>
+                                                </div>
+                                                <input type="range" min="0" max="100" value={layout.canvas.filters?.sepia || 0} onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setLayout(p => ({...p, canvas: {...p.canvas, filters: {...(p.canvas.filters || {}), sepia: val}}}))
+                                                }} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4 glass border-t border-white/10 bg-slate-950/80 backdrop-blur-md">
+                            <div className="text-center space-y-1">
+                                <p className="text-[10px] text-slate-400 font-bold">Product by 異次元ポケット</p>
+                                <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" className="text-[9px] text-indigo-400 hover:text-indigo-300 transition-colors underline">
+                                    https://ijigenpocket.booth.pm/
+                                </a>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <main ref={containerRef} className="flex-1 canvas-area flex flex-col items-center justify-center p-4 overflow-hidden relative" onMouseDown={() => setSelectedId(null)}>
+                        {/* グリッド・吸着コントロールバー */}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 z-50 text-[11px] text-slate-300">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} />
+                                グリッド表示
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked={snapToGrid} onChange={e => setSnapToGrid(e.target.checked)} />
+                                グリッド吸着
+                            </label>
+                            <div className="flex items-center gap-1">
+                                <span>サイズ:</span>
+                                <select 
+                                    className="bg-slate-950 border border-white/10 rounded px-1 py-0.5 outline-none text-[10px]" 
+                                    value={gridSize} 
+                                    onChange={e => setGridSize(parseInt(e.target.value))}
+                                >
+                                    <option value="25">25px</option>
+                                    <option value="50">50px</option>
+                                    <option value="100">100px</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div 
+                            ref={canvasRef}
+                            className={`relative bg-black shrink-0 shadow-2xl overflow-hidden ${isExporting ? '' : 'rounded-lg'}`}
+                            style={{ width: `${dims.width}px`, height: `${dims.height}px`, transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+                            onMouseDown={e => e.stopPropagation()}
+                        >
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${layout.canvas.color1}, ${layout.canvas.color2})`, width: '100%', height: '100%' }} />
+                            {layout.canvas.bgImage && (
+                                <div 
+                                    className="absolute inset-0 pointer-events-none" 
+                                    style={{ 
+                                        backgroundImage: `url(${layout.canvas.bgImage})`, 
+                                        backgroundSize: 'cover', 
+                                        backgroundPosition: 'center', 
+                                        width: '100%', 
+                                        height: '100%',
+                                        filter: `blur(${layout.canvas.filters?.blur || 0}px) brightness(${layout.canvas.filters?.brightness ?? 100}%) contrast(${layout.canvas.filters?.contrast ?? 100}%) saturate(${layout.canvas.filters?.saturate ?? 100}%) grayscale(${layout.canvas.filters?.grayscale || 0}%) hue-rotate(${layout.canvas.filters?.hueRotate || 0}deg) sepia(${layout.canvas.filters?.sepia || 0}%)`
+                                    }} 
+                                />
+                            )}
+
+                            {/* グリッドオーバーレイ */}
+                            {showGrid && (
+                                <div 
+                                    className="absolute inset-0 pointer-events-none" 
+                                    style={{ 
+                                        backgroundImage: `
+                                            linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
+                                            linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px)
+                                        `, 
+                                        backgroundSize: `${gridSize}px ${gridSize}px`,
+                                        width: '100%',
+                                        height: '100%',
+                                        zIndex: 45
+                                    }} 
+                                />
+                            )}
+
+                            {[
+                                ...layout.images.filter(i => i.visible && i.url).map(i => ({...i, type: 'image'})),
+                                ...layout.variations.filter(v => v.visible).map(v => ({...v, type: 'var'})),
+                                ...layout.lines.filter(l => l.visible).map(l => ({...l, type: 'line'})),
+                                ...layout.texts.filter(t => t.visible).map(t => ({...t, type: 'text'})),
+                                ...(layout.radar.visible ? [{...layout.radar, type: 'radar'}] : [])
+                            ].sort((a, b) => a.z - b.z).map(el => {
+                                if (el.type === 'image' || el.type === 'var') {
+                                    return (
+                                        <div key={el.id} onMouseDown={e => onMouseDown(e, el.type, el.id)}
+                                            className={`draggable ${selectedId === el.id ? 'active-element' : ''}`} 
+                                            style={{ left: `${el.x}px`, top: `${el.y}px`, transform: `translate(-50%, -50%) scale(${el.scale})`, zIndex: el.z }}
+                                        >
+                                            <img src={el.url} className="pointer-events-none block" crossOrigin="anonymous" style={{ maxWidth: 'none' }} />
+                                        </div>
+                                    );
+                                }
+                                if (el.type === 'line') {
+                                    let backgroundStyle;
+                                    if (el.isGradient) {
+                                        if (el.direction === 'vertical') {
+                                            backgroundStyle = `linear-gradient(to bottom, ${el.color}, ${el.color2 || '#cbd5e1'})`;
+                                        } else {
+                                            backgroundStyle = `linear-gradient(to right, ${el.color}, ${el.color2 || '#cbd5e1'})`;
+                                        }
+                                    } else {
+                                        backgroundStyle = el.color;
+                                    }
+
+                                    return (
+                                        <div key={el.id} onMouseDown={e => onMouseDown(e, 'line', el.id)}
+                                            className={`draggable ${selectedId === el.id ? 'active-element' : ''}`}
+                                            style={{
+                                                left: el.x, top: el.y, zIndex: el.z, position: 'absolute',
+                                                width: el.direction === 'horizontal' ? el.length : el.width,
+                                                height: el.direction === 'vertical' ? el.length : el.width,
+                                                background: backgroundStyle,
+                                                pointerEvents: 'auto'
+                                            }}
+                                        />
+                                    );
+                                }
+                                if (el.type === 'text') {
+                                    return <TextDisplay key={el.id} t={el} />;
+                                }
+                                if (el.type === 'radar') {
+                                    const radius = (el.size/2 * 0.75);
+                                    const angleStep = (Math.PI * 2) / el.stats.length;
+                                    return (
+                                        <div key={el.id} onMouseDown={e => onMouseDown(e, 'radar', el.id)}
+                                            className={`draggable ${selectedId === el.id ? 'active-element' : ''}`}
+                                            style={{ left: el.x, top: el.y, transform: 'translate(-50%, -50%)', zIndex: el.z, width: el.size, height: el.size }}
+                                        >
+                                            <svg width={el.size} height={el.size} viewBox={`${el.x - el.size/2} ${el.y - el.size/2} ${el.size} ${el.size}`} className="pointer-events-none overflow-visible">
+                                                {/* 背景グリッド */}
+                                                {[0.25, 0.5, 0.75, 1.0].map(level => (
+                                                    <polygon key={level}
+                                                        points={el.stats.map((_, i) => {
+                                                            const r = radius * level;
+                                                            const px = el.x + r * Math.cos(i * angleStep - Math.PI/2);
+                                                            const py = el.y + r * Math.sin(i * angleStep - Math.PI/2);
+                                                            return `${px},${py}`;
+                                                        }).join(' ')}
+                                                        fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1"
+                                                    />
+                                                ))}
+                                                {/* チャート本体 */}
+                                                <polygon 
+                                                    points={el.stats.map((s, i) => {
+                                                        const r = radius * (s.value / el.maxValue);
+                                                        const px = el.x + r * Math.cos(i * angleStep - Math.PI/2);
+                                                        const py = el.y + r * Math.sin(i * angleStep - Math.PI/2);
+                                                        return `${px},${py}`;
+                                                    }).join(' ')}
+                                                    fill={el.color + '55'} stroke={el.color} strokeWidth="3"
+                                                />
+                                                {/* ラベルと数値 */}
+                                                {el.stats.map((s, i) => {
+                                                    const labelDist = radius + 35;
+                                                    const lx = el.x + labelDist * Math.cos(i * angleStep - Math.PI / 2);
+                                                    const ly = el.y + labelDist * Math.sin(i * angleStep - Math.PI / 2);
+                                                    return (
+                                                        <g key={i}>
+                                                            <text x={lx} y={ly - 8} textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" style={{filter: 'drop-shadow(0 0 4px black)'}}>
+                                                                {s.name}
+                                                            </text>
+                                                            <text x={lx} y={ly + 10} textAnchor="middle" fill={el.color} fontSize="14" fontWeight="bold" style={{filter: 'drop-shadow(0 0 4px black)'}}>
+                                                                {s.value}
+                                                            </text>
+                                                        </g>
+                                                    );
+                                                })}
+                                            </svg>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
