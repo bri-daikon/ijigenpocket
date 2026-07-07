@@ -512,27 +512,48 @@
                         style={{
                             left: t.x, top: t.y, zIndex: t.z, width: t.width, height: height,
                             fontFamily: `'${t.font}'`, fontSize: t.size, fontWeight: t.weight,
-                            color: t.color, lineHeight: t.lineH || 1.2,
+                            lineHeight: t.lineH || 1.2,
                             whiteSpace: 'pre-wrap', 
-                            WebkitTextStroke: t.outline > 0 ? `${t.outline * 2}px ${t.outlineColor}` : 'none',
-                            paintOrder: 'stroke fill', position: 'absolute',
+                            position: 'absolute',
                             pointerEvents: 'auto'
                         }}
                     >
-                        {lines.map((line, idx) => (
-                            <div key={idx} style={{ height: lineHeight }}>
-                                {t.isGradient ? (
-                                    <span style={{
-                                        background: `linear-gradient(to bottom, ${t.color}, ${t.color2})`,
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        display: 'inline-block'
-                                    }}>
+                        {/* 縁取り用レイヤー */}
+                        {t.outline > 0 && (
+                            <div style={{
+                                position: 'absolute', left: 0, top: 0, width: '100%', height: '100%',
+                                color: t.outlineColor,
+                                WebkitTextStroke: `${t.outline * 2}px ${t.outlineColor}`,
+                                zIndex: 1
+                            }}>
+                                {lines.map((line, idx) => (
+                                    <div key={idx} style={{ height: lineHeight }}>
                                         {line || ' '}
-                                    </span>
-                                ) : (line || ' ')}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        )}
+                        {/* 塗り用レイヤー */}
+                        <div style={{
+                            position: 'absolute', left: 0, top: 0, width: '100%', height: '100%',
+                            color: t.color,
+                            zIndex: 2
+                        }}>
+                            {lines.map((line, idx) => (
+                                <div key={idx} style={{ height: lineHeight }}>
+                                    {t.isGradient ? (
+                                        <span style={{
+                                            background: `linear-gradient(to bottom, ${t.color}, ${t.color2})`,
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            display: 'inline-block'
+                                        }}>
+                                            {line || ' '}
+                                        </span>
+                                    ) : (line || ' ')}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 );
             };
