@@ -314,6 +314,12 @@
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             全クリア
           </button>
+          <div class="w-px h-4 bg-slate-200 mx-1"></div>
+          <button onclick="toggleRightPane()" id="btn-toggle-right"
+            class="text-xs text-indigo-500 hover:text-indigo-700 font-bold flex items-center gap-1 transition-all">
+            <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+            ツールを隠す
+          </button>
         </div>
       </div>
 
@@ -352,7 +358,7 @@
     </div>
 
     <!-- 右ペイン：TRPG {}変換 ＆ しおり・付箋 -->
-    <div class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-hidden">
+    <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-hidden transition-all duration-300">
 
       <!-- 3. TRPG用語一括カッコ {} 変換 (固定) -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -2171,6 +2177,20 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    // 右ペインの開閉
+    function toggleRightPane() {
+      const pane = document.getElementById('right-pane');
+      const btn = document.getElementById('btn-toggle-right');
+      if (pane.classList.contains('hidden')) {
+        pane.classList.remove('hidden');
+        btn.innerHTML = '<i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>\nツールを隠す';
+      } else {
+        pane.classList.add('hidden');
+        btn.innerHTML = '<i data-lucide="panel-right-open" class="w-3.5 h-3.5"></i>\nツールを表示';
+      }
+      lucide.createIcons();
     }
 
     // 初期化
