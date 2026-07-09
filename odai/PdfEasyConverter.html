@@ -401,6 +401,26 @@
         </div>
       </div>
 
+      <!-- 5. カスタム一括置換 -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="replace-all" class="w-4 h-4 text-teal-600"></i>
+          5. カスタム一括置換
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">抽出した全てのテキストから、指定した文字を別の文字に一括で置き換えます。</p>
+        
+        <div class="flex items-center gap-2 mb-2.5">
+          <input type="text" id="custom-replace-from" placeholder="・・・ (置換前)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+          <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+          <input type="text" id="custom-replace-to" placeholder="… (置換後)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+        </div>
+
+        <button onclick="applyCustomReplace()" class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          一括置換を実行
+        </button>
+      </div>
+
       <!-- しおり（ブックマーク）リスト -->
       <div
         class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow lg:h-0 overflow-hidden">
@@ -1465,6 +1485,43 @@
       }
       saveToLocalStorage();
       showToast('{} 消去完了', `${count}カードの {} を取り除きました。`, 'info');
+    }
+
+    // カスタム一括置換
+    function applyCustomReplace() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', 'PDFテキストが読み込まれていません。', 'info');
+        return;
+      }
+      
+      const fromStr = document.getElementById('custom-replace-from').value;
+      const toStr = document.getElementById('custom-replace-to').value;
+      
+      if (!fromStr) {
+        showToast('エラー', '置換前の文字を入力してください。', 'error');
+        return;
+      }
+      
+      let replaceCount = 0;
+      processedItems.forEach(item => {
+        if (item.text.includes(fromStr)) {
+          item.text = item.text.split(fromStr).join(toStr);
+          item.original = item.original.split(fromStr).join(toStr);
+          item.furiganaHtml = undefined;
+          replaceCount++;
+        }
+      });
+      
+      if (replaceCount > 0) {
+        renderList();
+        if (kuroshiroEnabled) {
+          toggleFurigana();
+        }
+        saveToLocalStorage();
+        showToast('一括置換完了', `${replaceCount}個のカードで「${fromStr}」を置換しました。`, 'success');
+      } else {
+        showToast('お知らせ', `「${fromStr}」は見つかりませんでした。`, 'info');
+      }
     }
 
     // テキストリストを1カードずつスクロールする（▲ = -1 / ▼ = +1）
