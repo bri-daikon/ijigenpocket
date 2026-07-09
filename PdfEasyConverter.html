@@ -111,13 +111,13 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
         <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
           <i data-lucide="upload" class="w-4 h-4 text-teal-600"></i>
-          1. PDFファイルを読み込む
+          1. PDF / Text ファイルを読込
         </h2>
 
         <div
           class="relative border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-lg p-3 text-center cursor-pointer transition-all bg-slate-50 hover:bg-teal-50/20"
           id="drop-zone">
-          <input type="file" id="pdf-input" accept="application/pdf"
+          <input type="file" id="pdf-input" accept="application/pdf, text/plain, .pdf, .txt"
             class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
           <div class="flex flex-col items-center gap-1.5">
             <div class="text-teal-600">
@@ -495,6 +495,7 @@
     let kuroshiroEnabled = false; // ふりがな表示ON/OFF
     let kuroshiroReady = false;   // Kuroshiro初期化済みフラグ
     let kuroshiroInstance = null; // Kuroshiroインスタンス
+    let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -532,17 +533,25 @@
 
     // ファイル処理の開始
     function handleFileSelect(file) {
-      if (file.type !== 'application/pdf') {
-        showToast('エラー', 'PDFファイルを選択してください。', 'error');
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const isTxt = file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt');
+
+      if (!isPdf && !isTxt) {
+        showToast('エラー', 'PDFまたはテキストファイル(.txt)を選択してください。', 'error');
         return;
       }
       currentFileName = file.name;
-      loadPdf(file);
+      if (isPdf) {
+        loadPdf(file);
+      } else {
+        loadTextFile(file);
+      }
     }
 
-    // PDFの読み込み、テキスト抽出 ＆ プレビュー本紙の読み込み
-    async function loadPdf(file) {
-      updateStatus('loading', 'PDFを解析 ＆ 本紙ロード中...');
+    // テキストファイルの読み込み
+    async function loadTextFile(file) {
+      updateStatus('loading', 'テキストファイルを読み込み中...');
+      isCurrentFileText = true;
       rawTextBlocks = [];
       processedItems = [];
       pdfDoc = null;
@@ -550,7 +559,62 @@
 
       // プレビューの画面初期化
       document.getElementById('preview-canvas').classList.add('hidden');
-      document.getElementById('preview-placeholder').classList.remove('hidden');
+      const placeholder = document.getElementById('preview-placeholder');
+      placeholder.classList.remove('hidden');
+      placeholder.innerHTML = `<i data-lucide="file-text" class="w-8 h-8 text-slate-300 mb-2"></i><p class="text-xs">テキストファイルが読み込まれました。プレビュー機能はPDF専用です。</p>`;
+      lucide.createIcons();
+
+      document.getElementById('preview-total-pages').innerText = '1';
+      document.getElementById('preview-page-input').value = 1;
+      document.getElementById('btn-prev-page').disabled = true;
+      document.getElementById('btn-next-page').disabled = true;
+
+      try {
+        const text = await file.text();
+        const lines = text.split('\n');
+        let items = [];
+        let y = lines.length * 30;
+        for (const line of lines) {
+          if (line.trim() === '') {
+            y -= 30; // 空行は大きくYを下げて段落区切り(\n\n)を誘発
+          } else {
+            items.push({ str: line, x: 0, y: y });
+            y -= 20; // 連続する行は改行(\n)を誘発
+          }
+        }
+
+        rawTextBlocks.push({
+          page: 1,
+          height: lines.length * 30 + 40,
+          items: items
+        });
+
+        updateStatus('success', 'ロード完了！');
+
+        buildSpeakerSet();
+        processAndDisplay(true);
+
+      } catch (error) {
+        console.error(error);
+        updateStatus('error', 'ファイルの読み込みに失敗しました。');
+      }
+    }
+
+    // PDFの読み込み、テキスト抽出 ＆ プレビュー本紙の読み込み
+    async function loadPdf(file) {
+      updateStatus('loading', 'PDFを解析 ＆ 本紙ロード中...');
+      isCurrentFileText = false;
+      rawTextBlocks = [];
+      processedItems = [];
+      pdfDoc = null;
+      currentPreviewPage = 1;
+
+      // プレビューの画面初期化
+      document.getElementById('preview-canvas').classList.add('hidden');
+      const placeholder = document.getElementById('preview-placeholder');
+      placeholder.classList.remove('hidden');
+      placeholder.innerHTML = `<i data-lucide="book-open" class="w-8 h-8 text-slate-300 mb-2"></i><p class="text-xs">PDFを読み込むとここに元のPDFが表示されます。ページの挿絵や全体のルビ確認に便利！</p>`;
+      lucide.createIcons();
 
       try {
         const fileReader = new FileReader();
@@ -954,7 +1018,7 @@
         let lastY = null;
 
         block.items.forEach(item => {
-          if (excludeHeaderFooter) {
+          if (excludeHeaderFooter && !isCurrentFileText) {
             if (item.y < block.height * 0.10 || item.y > block.height * 0.90) {
               return; // 端領域を除外（上下 10% に拡大）
             }
