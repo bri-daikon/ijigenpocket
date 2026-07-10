@@ -150,11 +150,13 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-400 text-xs font-semibold tracking-wider border-b border-slate-200 uppercase">
-                                <th class="py-3.5 px-6">日付</th>
-                                <th class="py-3.5 px-6">スタンプ名</th>
-                                <th class="py-3.5 px-6 text-center">販売個数</th>
-                                <th class="py-3.5 px-6 text-right">分配金(円)</th>
+                            <tr class="bg-slate-50 text-slate-400 text-xs font-semibold tracking-wider border-b border-slate-200 uppercase select-none">
+                                <th class="py-3.5 px-6 cursor-pointer hover:bg-slate-100 transition-colors" data-sort="date">日付<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
+                                <th class="py-3.5 px-6 cursor-pointer hover:bg-slate-100 transition-colors" data-sort="type">種類<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
+                                <th class="py-3.5 px-6 cursor-pointer hover:bg-slate-100 transition-colors" data-sort="country">販売国<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
+                                <th class="py-3.5 px-6 cursor-pointer hover:bg-slate-100 transition-colors" data-sort="itemName">スタンプ名<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
+                                <th class="py-3.5 px-6 text-center cursor-pointer hover:bg-slate-100 transition-colors" data-sort="units">販売個数<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
+                                <th class="py-3.5 px-6 text-right cursor-pointer hover:bg-slate-100 transition-colors" data-sort="revenue">分配金(円)<span class="sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom"></span></th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-100 text-sm text-slate-600">
@@ -190,9 +192,11 @@
         const kpiBestItem = document.getElementById('kpi-best-item');
         const kpiBestItemSales = document.getElementById('kpi-best-item-sales');
         
-        // テーブル検索用
+        // テーブル検索・ソート用
         const searchInput = document.getElementById('table-search');
         let parsedRows = []; // パースされた生データ
+        let currentSortKey = 'date';
+        let currentSortOrder = 'desc';
 
         // Chartインスタンス用
         let dailyChart = null;
@@ -229,10 +233,27 @@
         });
 
         // テーブル検索イベント
-        searchInput.addEventListener('input', (e) => {
-            const keyword = e.target.value.toLowerCase();
-            renderTable(parsedRows.filter(row => row.itemName.toLowerCase().includes(keyword)));
+        searchInput.addEventListener('input', () => {
+            renderTable(getFilteredAndSortedData());
         });
+
+        // テーブルソートイベント
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-sort');
+                if (currentSortKey === key) {
+                    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortKey = key;
+                    currentSortOrder = key === 'date' ? 'desc' : 'asc';
+                }
+                updateSortIcons();
+                renderTable(getFilteredAndSortedData());
+            });
+        });
+
+        // 初期アイコン更新
+        updateSortIcons();
 
         // メッセージ表示関数
         function showMessage(text, type = 'success') {
@@ -290,6 +311,8 @@
                 
                 const fromIdx = headerCols.findIndex(c => c.includes('From') || c.includes('開始'));
                 const toIdx = headerCols.findIndex(c => c.includes('To') || c.includes('終了'));
+                const typeIdx = headerCols.findIndex(c => c.includes('Type') || c.includes('種類'));
+                const countryIdx = headerCols.findIndex(c => c.includes('Country') || c.includes('国'));
 
                 // 「Revenue Share」に完全一致するものを優先して探す
                 let revenueIdx = headerCols.findIndex(c => c === 'Revenue Share');
@@ -315,6 +338,8 @@
                     }
                     
                     const itemName = nameIdx !== -1 ? cols[nameIdx] : 'スタンプA';
+                    const typeName = typeIdx !== -1 && cols[typeIdx] ? cols[typeIdx] : '-';
+                    const countryName = countryIdx !== -1 && cols[countryIdx] ? cols[countryIdx] : '-';
                     const units = parseInt(cols[unitsIdx].replace(/,/g, '')) || 0;
                     const revenue = parseInt(cols[revenueIdx].replace(/,/g, '')) || 0;
 
@@ -328,6 +353,8 @@
                         fromDate: fromDate,
                         toDate: toDate,
                         itemName: itemName,
+                        type: typeName,
+                        country: countryName,
                         units: units,
                         revenue: revenue
                     });
@@ -431,7 +458,8 @@
             drawDailyTrendChart(data);
 
             // 3. データテーブル描画
-            renderTable(data);
+            updateSortIcons();
+            renderTable(getFilteredAndSortedData());
         }
 
         // 日付を「M月D日」のフレンドリーな形式に変換する
@@ -445,24 +473,90 @@
             }
         }
 
+        // ソートアイコンの更新
+        function updateSortIcons() {
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                const key = th.getAttribute('data-sort');
+                const iconSpan = th.querySelector('.sort-icon');
+                if (!iconSpan) return;
+                
+                if (key === currentSortKey) {
+                    iconSpan.innerHTML = currentSortOrder === 'asc' 
+                        ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>'
+                        : '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+                    iconSpan.className = "sort-icon inline-block w-4 h-4 ml-1 text-emerald-500 align-text-bottom";
+                } else {
+                    iconSpan.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>';
+                    iconSpan.className = "sort-icon inline-block w-4 h-4 ml-1 text-slate-300 align-text-bottom opacity-50";
+                }
+            });
+        }
+
+        // 検索とソートを適用したデータの取得
+        function getFilteredAndSortedData() {
+            const keyword = searchInput.value.toLowerCase();
+            
+            // 検索
+            let filtered = parsedRows;
+            if (keyword) {
+                filtered = parsedRows.filter(row => 
+                    row.itemName.toLowerCase().includes(keyword) || 
+                    row.type.toLowerCase().includes(keyword) ||
+                    row.country.toLowerCase().includes(keyword)
+                );
+            }
+            
+            // ソート
+            return [...filtered].sort((a, b) => {
+                let valA = a[currentSortKey];
+                let valB = b[currentSortKey];
+                
+                if (currentSortKey === 'date') {
+                    valA = new Date(valA).getTime();
+                    valB = new Date(valB).getTime();
+                    if (isNaN(valA)) valA = 0;
+                    if (isNaN(valB)) valB = 0;
+                } else if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+                
+                if (valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
         // データテーブルの生成
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="py-6 px-6 text-center text-slate-400">データが見つかりません</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="py-6 px-6 text-center text-slate-400">データが見つかりません</td></tr>`;
                 return;
             }
 
-            // 日付を降順（新しい順）にして並べる
-            const sortedData = [...data].reverse();
-
-            sortedData.forEach(row => {
+            data.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50/50 transition-colors";
+                
+                // 種類タグの色分け
+                let typeBadge = '';
+                if (row.type === 'Emoji') {
+                    typeBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">絵文字</span>';
+                } else if (row.type === 'Sticker') {
+                    typeBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">スタンプ</span>';
+                } else if (row.type === 'Theme') {
+                    typeBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">着せかえ</span>';
+                } else {
+                    typeBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">${row.type}</span>`;
+                }
+
                 tr.innerHTML = `
                     <td class="py-3 px-6 font-medium text-slate-900">${formatDate(row.date)}</td>
+                    <td class="py-3 px-6 text-slate-700">${typeBadge}</td>
+                    <td class="py-3 px-6 text-slate-700 font-medium">${row.country}</td>
                     <td class="py-3 px-6 text-slate-700">${row.itemName}</td>
                     <td class="py-3 px-6 text-center text-slate-800 font-semibold">${row.units}</td>
                     <td class="py-3 px-6 text-right text-slate-900 font-bold">¥${row.revenue.toLocaleString()}</td>
