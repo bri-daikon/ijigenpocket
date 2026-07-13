@@ -604,8 +604,86 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
+        function updateLivePreview() {
+            if (generateBtn.disabled) return;
+            const textValue = document.getElementById('textInput') ? document.getElementById('textInput').value : '';
+            const textColor = document.getElementById('textColorInput') ? document.getElementById('textColorInput').value : '#ffffff';
+            const textPosition = document.getElementById('textPositionInput') ? document.getElementById('textPositionInput').value : 'center';
+            const textSizeRatio = document.getElementById('textSizeInput') ? parseInt(document.getElementById('textSizeInput').value) / 100 : 0.15;
+            
+            if (!loadedImage.src && !textValue) {
+                resultArea.classList.add('hidden');
+                placeholderArea.classList.remove('hidden');
+                return;
+            }
+
+            let baseW = 500;
+            let baseH = 500;
+            if (loadedImage.src && loadedImage.naturalWidth > 0) {
+                baseW = loadedImage.naturalWidth;
+                baseH = loadedImage.naturalHeight;
+            }
+
+            const liveCanvas = document.createElement('canvas');
+            liveCanvas.width = baseW;
+            liveCanvas.height = baseH;
+            const liveCtx = liveCanvas.getContext('2d');
+            
+            if (loadedImage.src && loadedImage.naturalWidth > 0) {
+                liveCtx.drawImage(loadedImage, 0, 0, baseW, baseH);
+            } else {
+                liveCtx.fillStyle = '#f3f4f6';
+                liveCtx.fillRect(0, 0, baseW, baseH);
+            }
+
+            if (textValue) {
+                const fontSize = Math.floor(baseH * textSizeRatio);
+                liveCtx.font = `bold ${fontSize}px sans-serif`;
+                liveCtx.textAlign = 'center';
+                liveCtx.textBaseline = 'middle';
+                liveCtx.fillStyle = textColor;
+                liveCtx.strokeStyle = '#000';
+                liveCtx.lineWidth = Math.max(2, Math.floor(fontSize * 0.15));
+                liveCtx.lineJoin = 'round';
+                
+                const lines = textValue.split('\n');
+                const lineHeight = fontSize * 1.2;
+                const totalLines = lines.length;
+                let startY;
+                if (textPosition === 'top') {
+                    startY = baseH * 0.1 + lineHeight/2;
+                } else if (textPosition === 'bottom') {
+                    startY = baseH * 0.9 - (totalLines-1)*lineHeight - lineHeight/2;
+                } else {
+                    startY = baseH/2 - (totalLines-1)*lineHeight/2;
+                }
+                
+                lines.forEach((line, idx) => {
+                    liveCtx.strokeText(line, baseW/2, startY + idx*lineHeight);
+                    liveCtx.fillText(line, baseW/2, startY + idx*lineHeight);
+                });
+            }
+
+            previewImg.src = liveCanvas.toDataURL('image/png');
+            placeholderArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            replayBtn.style.display = 'none';
+            downloadLink.style.display = 'none';
+        }
+
+        const textInput = document.getElementById('textInput');
+        const textColorInput = document.getElementById('textColorInput');
+        const textPositionInput = document.getElementById('textPositionInput');
+        const textSizeInput = document.getElementById('textSizeInput');
+        
+        if (textInput) textInput.addEventListener('input', updateLivePreview);
+        if (textColorInput) textColorInput.addEventListener('input', updateLivePreview);
+        if (textPositionInput) textPositionInput.addEventListener('change', updateLivePreview);
+        if (textSizeInput) textSizeInput.addEventListener('input', updateLivePreview);
+
         let loadedImage = new Image();
         loadedImage.crossOrigin = "anonymous";
+        loadedImage.onload = updateLivePreview;
         
         let loadedEffectImage = new Image();
         loadedEffectImage.crossOrigin = "anonymous";
@@ -2141,7 +2219,9 @@
             downloadLink.download = filename;
             resetButton();
             placeholderArea.classList.add('hidden'); 
-            resultArea.classList.remove('hidden');    
+            resultArea.classList.remove('hidden');
+            replayBtn.style.display = 'inline-flex';
+            downloadLink.style.display = 'inline-flex';
         }
 
         replayBtn.addEventListener('click', function() {
