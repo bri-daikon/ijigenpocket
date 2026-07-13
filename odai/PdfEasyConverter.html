@@ -127,6 +127,16 @@
           </div>
         </div>
 
+        <!-- エンコード設定 (テキスト用) -->
+        <div class="mt-2.5 flex items-center justify-end gap-2">
+          <label for="text-encoding-select" class="text-[11px] text-slate-500 font-medium">Textエンコード:</label>
+          <select id="text-encoding-select" class="text-xs border border-slate-300 rounded px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white">
+            <option value="UTF-8">UTF-8 (標準)</option>
+            <option value="Shift_JIS">Shift-JIS</option>
+            <option value="EUC-JP">EUC-JP</option>
+          </select>
+        </div>
+
         <!-- 読み込みステータス -->
         <div id="status-container" class="hidden mt-2.5 p-2 rounded-lg text-xs flex items-center gap-2">
           <div id="status-spinner"
@@ -570,7 +580,13 @@
       document.getElementById('btn-next-page').disabled = true;
 
       try {
-        const text = await file.text();
+        const encoding = document.getElementById('text-encoding-select').value;
+        const text = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(e);
+          reader.readAsText(file, encoding);
+        });
         const lines = text.split('\n');
         let items = [];
         let y = lines.length * 30;
