@@ -77,6 +77,14 @@
                                 <label class="text-xs font-bold text-gray-600">サイズ</label>
                                 <input type="range" id="textSizeInput" min="5" max="50" value="15" class="w-24 accent-indigo-500">
                             </div>
+                            
+                            <!-- Target -->
+                            <div class="flex items-center gap-2" title="チェックを入れると、画像は動かさず文字だけにエフェクトをかけます">
+                                <label class="flex items-center text-xs font-bold text-gray-600 cursor-pointer">
+                                    <input type="checkbox" id="effectTargetTextOnly" class="mr-1 accent-indigo-500 rounded">
+                                    文字だけ動かす
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -611,7 +619,7 @@
             const textPosition = document.getElementById('textPositionInput') ? document.getElementById('textPositionInput').value : 'center';
             const textSizeRatio = document.getElementById('textSizeInput') ? parseInt(document.getElementById('textSizeInput').value) / 100 : 0.15;
             
-            if (!loadedImage.src && !textValue) {
+            if (!globalLoadedImage.src && !textValue) {
                 resultArea.classList.add('hidden');
                 placeholderArea.classList.remove('hidden');
                 return;
@@ -619,9 +627,9 @@
 
             let baseW = 500;
             let baseH = 500;
-            if (loadedImage.src && loadedImage.naturalWidth > 0) {
-                baseW = loadedImage.naturalWidth;
-                baseH = loadedImage.naturalHeight;
+            if (globalLoadedImage.src && globalLoadedImage.naturalWidth > 0) {
+                baseW = globalLoadedImage.naturalWidth;
+                baseH = globalLoadedImage.naturalHeight;
             }
 
             const liveCanvas = document.createElement('canvas');
@@ -629,8 +637,8 @@
             liveCanvas.height = baseH;
             const liveCtx = liveCanvas.getContext('2d');
             
-            if (loadedImage.src && loadedImage.naturalWidth > 0) {
-                liveCtx.drawImage(loadedImage, 0, 0, baseW, baseH);
+            if (globalLoadedImage.src && globalLoadedImage.naturalWidth > 0) {
+                liveCtx.drawImage(globalLoadedImage, 0, 0, baseW, baseH);
             } else {
                 liveCtx.fillStyle = '#f3f4f6';
                 liveCtx.fillRect(0, 0, baseW, baseH);
@@ -681,9 +689,9 @@
         if (textPositionInput) textPositionInput.addEventListener('change', updateLivePreview);
         if (textSizeInput) textSizeInput.addEventListener('input', updateLivePreview);
 
-        let loadedImage = new Image();
-        loadedImage.crossOrigin = "anonymous";
-        loadedImage.onload = updateLivePreview;
+        let globalLoadedImage = new Image();
+        globalLoadedImage.crossOrigin = "anonymous";
+        globalLoadedImage.onload = updateLivePreview;
         
         let loadedEffectImage = new Image();
         loadedEffectImage.crossOrigin = "anonymous";
@@ -806,7 +814,7 @@
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                loadedImage.src = event.target.result;
+                globalLoadedImage.src = event.target.result;
             };
             reader.readAsDataURL(file);
         });
@@ -827,7 +835,7 @@
 
         generateBtn.addEventListener('click', function() {
             const textValue = document.getElementById('textInput') ? document.getElementById('textInput').value.trim() : '';
-            if (!loadedImage.src && !textValue) {
+            if (!globalLoadedImage.src && !textValue) {
                 alert('画像を選ぶか、文字を入力してくださいね！');
                 return;
             }
@@ -857,13 +865,15 @@
         });
 
         function createAnimation(effect, format, loopSetting) {
+            const effectTargetTextOnly = document.getElementById('effectTargetTextOnly') && document.getElementById('effectTargetTextOnly').checked;
             const textValue = document.getElementById('textInput') ? document.getElementById('textInput').value.trim() : '';
             const textColor = document.getElementById('textColorInput') ? document.getElementById('textColorInput').value : '#ffffff';
             const textPosition = document.getElementById('textPositionInput') ? document.getElementById('textPositionInput').value : 'center';
             const textSizeRatio = document.getElementById('textSizeInput') ? parseInt(document.getElementById('textSizeInput').value) / 100 : 0.15;
             const isDynamicText = ['typing', 'textShake', 'textBounce'].includes(effect);
 
-            const originalImage = loadedImage;
+            const originalImage = globalLoadedImage;
+            const originalUploadedImage = globalLoadedImage;
             
             let baseW = 500;
             let baseH = 500;
@@ -878,8 +888,10 @@
                 baseCanvas.width = baseW;
                 baseCanvas.height = baseH;
                 const bCtx = baseCanvas.getContext('2d');
-                if (originalImage.src && originalImage.naturalWidth > 0) {
-                    bCtx.drawImage(originalImage, 0, 0, baseW, baseH);
+                if (!effectTargetTextOnly) {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        bCtx.drawImage(originalImage, 0, 0, baseW, baseH);
+                    }
                 }
                 
                 const fontSize = Math.floor(baseH * textSizeRatio);
@@ -914,12 +926,14 @@
             }
 
             if (baseCanvas) {
-                loadedImage = baseCanvas;
+                // do nothing, we will use local loadedImage
             }
+            
+            let loadedImage = baseCanvas ? baseCanvas : originalImage;
 
             const maxSize = 500;
-            let width = loadedImage.width;
-            let height = loadedImage.height;
+            let width = loadedImage.width || loadedImage.naturalWidth;
+            let height = loadedImage.height || loadedImage.naturalHeight;
             
             if (width > maxSize || height > maxSize) {
                 if (width > height) {
@@ -1146,7 +1160,8 @@
                         speedY: Math.random() * 2 + 1,
                         speedX: Math.random() * 2 + 1,
                         rot: Math.random() * Math.PI * 2,
-                        rotSpeed: (Math.random() - 0.5) * 4
+                        rotSpeed: (Math.random() - 0.5) * 4,
+                        progressOffset: Math.random()
                     });
                 }
             } else if (effect === 'customCross') {
@@ -1202,6 +1217,10 @@
                 }
 
                 ctx.translate(paddingX, paddingY);
+                
+                if (effectTargetTextOnly && originalUploadedImage.src && originalUploadedImage.naturalWidth > 0) {
+                    ctx.drawImage(originalUploadedImage, 0, 0, width, height);
+                }
 
                 if (effect === 'shake') {
                     const offsetX = (Math.random() - 0.5) * (width * 0.05);
