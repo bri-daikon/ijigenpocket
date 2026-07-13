@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡単アニメ画像メーカー</title>
+    <!-- 見た目を整えるTailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- APNGを生成するためのライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
+    <!-- GIFを生成するためのライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen p-4 sm:p-8 text-gray-800 font-sans">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- ヘッダー部分 -->
+        <div class="text-center mb-8 relative">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+                ✨ 簡単アニメ画像メーカー
+            </h1>
+            <p class="text-gray-500 font-medium">画像をアップロードして、魔法のエフェクトをかけよう！</p>
+            <div class="absolute top-0 right-0 hidden sm:block">
+                <a href="AozoraFilter.html" class="flex items-center space-x-2 text-sm text-amber-600 hover:text-amber-800 font-medium bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-full transition-colors border border-amber-200 shadow-sm">
+                    <span>あおぞら・フィルターへ</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- 左右2カラムのコンテナ -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- 【左カラム】設定・操作メニュー (全体の7/12幅) -->
+            <div class="lg:col-span-7 xl:col-span-8 bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50 space-y-6">
+                
+                <!-- 1. 画像アップロード部分 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">1</span>
+                        画像を選ぶ
+                    </label>
+                    <div class="relative">
+                        <input type="file" id="imageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:text-blue-700 hover:file:bg-indigo-100 transition-colors cursor-pointer border-2 border-dashed border-blue-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-blue-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 1.2 文字入力部分 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">T</span>
+                        文字を入れる（任意）
+                    </label>
+                    <div class="relative bg-white/50 p-4 rounded-xl border-2 border-indigo-100 mb-4 transition-colors hover:bg-white hover:border-indigo-300">
+                        <textarea id="textInput" rows="2" placeholder="アニメーションさせたい文字を入力（改行もOK）" class="block w-full border-2 border-indigo-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-700 text-sm font-medium bg-white mb-3"></textarea>
+                        
+                        <div class="flex flex-wrap gap-5 items-center">
+                            <!-- Color -->
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-gray-600">文字色</label>
+                                <input type="color" id="textColorInput" value="#ffffff" class="w-8 h-8 rounded cursor-pointer border-0 p-0">
+                            </div>
+                            
+                            <!-- Position -->
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-gray-600">位置</label>
+                                <select id="textPositionInput" class="text-xs border-2 border-indigo-200 rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-gray-700 font-medium">
+                                    <option value="center">中央</option>
+                                    <option value="top">上</option>
+                                    <option value="bottom">下</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Size -->
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-gray-600">サイズ</label>
+                                <input type="range" id="textSizeInput" min="5" max="50" value="15" class="w-24 accent-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.5 エフェクト画像アップロード部分 (任意) -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+                        <span class="bg-red-100 text-red-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">+</span>
+                        カスタムエフェクト用画像（任意）
+                    </label>
+                    <p class="text-xs text-gray-500 mb-3 ml-8">
+                        ※ここに画像をセットすると、以下のエフェクトを選んだ際に<strong class="text-red-500">演出がアップロードした画像に変化</strong>します。<br>
+                        対象：<span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mt-1 mr-1">🔥 燃える</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">💦 液体ビシャ</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">🩸 赤ペンキ</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">🫧 泡コポコポ</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">💸 降らせる</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 mr-1">🐈 横切る</span> <span class="inline-block bg-gray-100 border border-gray-200 text-gray-700 rounded px-1.5 py-0.5">🌪️ 暴れ回る</span>
+                    </p>
+                    <div class="relative">
+                        <input type="file" id="effectImageInput" accept="image/png, image/jpeg, image/gif" class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-red-50 file:to-orange-50 file:text-red-700 hover:file:bg-orange-100 transition-colors cursor-pointer border-2 border-dashed border-red-200 rounded-xl p-4 bg-white/50 hover:bg-white hover:border-red-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 2. エフェクト選択部分 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
+                        <span class="bg-purple-100 text-purple-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">2</span>
+                        エフェクトを選ぶ（1つ選んでね）
+                    </label>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- 🌟 基本のエフェクト -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-gray-800 mb-3"><span class="text-base mr-2">🌟</span> 基本エフェクト</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="shake" class="peer sr-only" checked>
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">揺らす</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blink" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">点滅する</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="scatter" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">散らばる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomInWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomOutWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomInBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームイン(黒)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="zoomOutBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:ring-1 peer-checked:ring-blue-500 shadow-sm">ズームアウト(黒)</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🌀 回転・移動 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-blue-800 mb-3"><span class="text-base mr-2">🌀</span> 回転・移動</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rotateRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右回転</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rotateLeft" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左回転</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveDown" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">上から下</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveUp" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">下から上</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveLeft" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">右から左</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">左から右</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="moveDownRight" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50/50 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white shadow-sm">斜め移動</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🎨 魔法・色 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-purple-800 mb-3"><span class="text-base mr-2">🎨</span> 魔法・色</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rainbow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌈 虹色変化</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeInWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-505 peer-checked:text-white shadow-sm">👻 Fイン(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeInBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 Fイン(黒)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeOutWhite" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🌫️ Fアウト(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="fadeOutBlack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">🖤 Fアウト(黒)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blur" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">💧 ぼかす</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="mosaic" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-purple-100 bg-purple-50/50 text-xs font-medium text-purple-600 transition-all hover:bg-purple-100 peer-checked:border-purple-500 peer-checked:bg-purple-500 peer-checked:text-white shadow-sm">👾 モザイク</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 👻 ユニーク・かっこいい演出 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-orange-800 mb-3"><span class="text-base mr-2">🎬</span> ユニーク・演出</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="slime" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🍮 ぷるぷる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="wave" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌊 波打ち</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="heartbeat" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">❤️ 鼓動</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="bounce" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🏀 バウンド</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="pendulum" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🕰️ 振り子</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="tornado" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">🌪️ 竜巻</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="glitch" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-orange-100 bg-orange-50/50 text-xs font-medium text-orange-600 transition-all hover:bg-orange-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white shadow-sm">📺 ノイズ</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 💥 破壊・ダメージ -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-red-800 mb-3"><span class="text-base mr-2">💥</span> 破壊・ダメージ</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="shatter" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">💥 砕け散る</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="glassCrack" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">⚡ ガラスヒビ割れ</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="glassShatter" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">🌩️ ガラス割れ砕け</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="bullet" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">🎯 銃弾</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="burn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">🔥 燃える</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rubble" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">🧱 瓦礫化</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="explosion" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-red-100 bg-red-50/50 text-xs font-medium text-red-600 transition-all hover:bg-red-100 peer-checked:border-red-500 peer-checked:bg-red-500 peer-checked:text-white shadow-sm">💣 爆発</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🎞️ トランジション -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-gray-800 mb-3"><span class="text-base mr-2">🎞️</span> トランジション</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="curtain" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🎭 幕引き</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="shutterIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">📷 シャッターIn</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="shutterOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">📸 シャッターOut</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blindIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 縦ブラインドIn</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blindOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 縦ブラインドOut</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="hBlindIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 横ブラインドIn</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="hBlindOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">🪟 横ブラインドOut</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blinkIn" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">👁️ 瞬きIn</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="blinkOut" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 peer-checked:border-gray-500 peer-checked:bg-gray-600 peer-checked:text-white shadow-sm">👁️ 瞬きOut</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🌸 自然・パーティクル -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-pink-800 mb-3"><span class="text-base mr-2">🌸</span> 自然・パーティクル</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="rain" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">☔ 雨</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="heavyRain" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">⛈️ 豪雨</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="snow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">❄️ 雪</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="leaves" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">🍂 落ち葉</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="cherryBlossoms" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">🌸 桜</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="sparkles" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(白)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="sparklesYellow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(黄)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="sparklesPastel" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">✨ キラキラ(虹)</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="hearts" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">💖 ハート</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="stars" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">⭐ 星</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="centerGlow" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-pink-100 bg-pink-50/50 text-xs font-medium text-pink-600 transition-all hover:bg-pink-100 peer-checked:border-pink-500 peer-checked:bg-pink-500 peer-checked:text-white shadow-sm">💫 中央発光</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 💧 液体・特殊 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-cyan-800 mb-3"><span class="text-base mr-2">💧</span> 液体・特殊</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="liquidSplash" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">💦 液体ビシャ</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="redPaint" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">🩸 赤ペンキ</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="drip" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">💧 液だれ</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="waterRipple" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">🫧 水紋</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="bubbles" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-cyan-100 bg-cyan-50/50 text-xs font-medium text-cyan-600 transition-all hover:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white shadow-sm">🫧 泡コポコポ</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 📝 テキスト専用 -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-indigo-800 mb-3"><span class="text-base mr-2">📝</span> 文字専用アニメ</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="typing" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-indigo-100 bg-indigo-50/50 text-xs font-medium text-indigo-600 transition-all hover:bg-indigo-100 peer-checked:border-indigo-500 peer-checked:bg-indigo-500 peer-checked:text-white shadow-sm">⌨️ タイピング</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="textShake" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-indigo-100 bg-indigo-50/50 text-xs font-medium text-indigo-600 transition-all hover:bg-indigo-100 peer-checked:border-indigo-500 peer-checked:bg-indigo-500 peer-checked:text-white shadow-sm">🫨 文字だけ揺れる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="textBounce" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-indigo-100 bg-indigo-50/50 text-xs font-medium text-indigo-600 transition-all hover:bg-indigo-100 peer-checked:border-indigo-500 peer-checked:bg-indigo-500 peer-checked:text-white shadow-sm">🏀 文字バウンド</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 🎁 おもしろカスタム -->
+                        <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <span class="flex items-center text-sm font-bold text-emerald-800 mb-3"><span class="text-base mr-2">🎁</span> おもしろカスタム</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="customFall" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50/50 text-xs font-medium text-emerald-600 transition-all hover:bg-emerald-100 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:text-white shadow-sm">💸 降らせる</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="customCross" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50/50 text-xs font-medium text-emerald-600 transition-all hover:bg-emerald-100 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:text-white shadow-sm">🐈 横切る</div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="effect" value="customCrazy" class="peer sr-only">
+                                    <div class="px-2.5 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50/50 text-xs font-medium text-emerald-600 transition-all hover:bg-emerald-100 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:text-white shadow-sm">🌪️ 暴れ回る</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 保存形式の選択 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-yellow-100 text-yellow-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">3</span>
+                        保存形式を選ぶ
+                    </label>
+                    <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="gif" checked class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-yellow-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                                    <span class="text-base mr-1.5">🐦</span> X (Twitter)用 (GIF)
+                                </div>
+                            </label>
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="apng" class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-yellow-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-yellow-500 peer-checked:bg-yellow-400 peer-checked:text-yellow-900 peer-checked:shadow-inner flex items-center">
+                                    <span class="text-base mr-1.5">✨</span> 高画質用 (APNG)
+                                </div>
+                            </label>
+                        </div>
+                        <p class="text-[11px] text-yellow-800 mt-2 font-medium flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                            Xに投稿する場合は必ず「X用 (GIF形式)」を選んでください。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 4. ループ（繰り返し）設定 -->
+                <div>
+                    <label class="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">
+                        <span class="bg-teal-100 text-teal-700 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">4</span>
+                        繰り返し（ループ）設定
+                    </label>
+                    <div class="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-200">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="loop" value="infinite" checked class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-teal-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
+                                    🔄 無限ループ
+                                </div>
+                            </label>
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="loop" value="once" class="peer sr-only">
+                                <div class="px-4 py-2.5 rounded-lg border border-teal-200 bg-white text-xs font-bold text-gray-700 transition-all hover:shadow-md peer-checked:border-teal-500 peer-checked:bg-teal-400 peer-checked:text-teal-900 peer-checked:shadow-inner flex items-center">
+                                    ⏱️ 1回だけ再生して停止
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 【右カラム】完成プレビュー画面 (全体の5/12幅 & スクロール追従) -->
+            <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-8 space-y-6">
+                
+                <!-- 操作とプレビューを統合したスタイリッシュな右パネル -->
+                <div class="bg-white/80 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl border border-white/50 space-y-6">
+                    
+                    <!-- 5. 魔法をかけるボタン -->
+                    <div class="bg-gradient-to-r from-blue-50/50 to-purple-50/50 p-4 rounded-xl border border-blue-100/50">
+                        <label class="flex items-center text-xs font-bold text-blue-700 mb-2.5 uppercase tracking-wider">
+                            <span class="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center mr-2 text-[10px]">GO</span>
+                            アニメーションの生成
+                        </label>
+                        <button id="generateBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-0.5 hover:shadow-xl w-full shadow-lg text-base flex items-center justify-center mx-auto">
+                            <svg class="w-5 h-5 mr-2 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="btnText">魔法をかける！</span>
+                        </button>
+                        <p id="loadingMsg" class="text-blue-600 mt-3 text-center hidden text-xs animate-pulse font-bold">🪄 一生懸命作成しています...</p>
+                        <p class="text-[11px] text-gray-500 mt-3 text-center font-medium leading-relaxed">
+                            ※ハートや星、キラキラエフェクトは位置がランダムで作成されます。<br>
+                            位置が気に入らない場合は、何度でも魔法をかけ直してみてください✨
+                        </p>
+                    </div>
+
+                    <div class="border-t border-gray-200/60 my-2"></div>
+
+                    <h2 class="text-xl font-extrabold text-gray-800 mb-2 flex items-center">
+                        <span class="mr-2">🎉</span>
+                        プレビュー＆ダウンロード
+                    </h2>
+
+                    <!-- デフォルト時のプレースホルダー -->
+                    <div id="placeholderArea" class="flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl p-6 min-h-[300px] border-2 border-dashed border-gray-200 text-center">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 text-sm font-bold mb-1">まだアニメが作成されていません</p>
+                        <p class="text-gray-400 text-xs max-w-[200px]">上の設定を終えたら「魔法をかける！」ボタンを押してくださいね。</p>
+                    </div>
+
+                    <!-- 完成後の表示部分（最初は非表示） -->
+                    <div id="resultArea" class="hidden space-y-4">
+                        <div class="flex justify-center bg-gray-50 rounded-2xl p-4 min-h-[250px] items-center border border-gray-100 shadow-inner">
+                            <img id="previewImg" src="" alt="プレビュー" class="max-w-full max-h-[320px] rounded-lg shadow-md">
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                            <button id="replayBtn" class="inline-flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 px-5 rounded-full transition-all text-sm border border-blue-200 shadow-sm">
+                                🔁 もう一度再生
+                            </button>
+                            <a id="downloadLink" href="#" download="animated.gif" class="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3.5 px-6 rounded-full transition-all transform hover:-translate-y-1 hover:shadow-lg shadow-md text-base flex-1">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                ダウンロード
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- 🏷️ 異次元ポケットのクレジットフッターを追加！ -->
+        <div class="text-center mt-12 mb-6 text-sm text-gray-400 font-medium">
+            <p>Projected by <span class="font-bold text-gray-500">異次元ポケット</span></p>
+            <p class="mt-1.5">
+                <a href="https://ijigenpocket.booth.pm/" target="_blank" class="text-indigo-400 hover:text-indigo-500 underline transition-colors">
+                    https://ijigenpocket.booth.pm/
+                </a>
+            </p>
+        </div>
+
+    </div>
+
+    <!-- 画像を処理するための見えないキャンバス -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+        const effectRadios = document.getElementsByName('effect');
+        const formatRadios = document.getElementsByName('format');
+        const loopRadios = document.getElementsByName('loop');
+        const placeholderArea = document.getElementById('placeholderArea');
+        const resultArea = document.getElementById('resultArea');
+        const replayBtn = document.getElementById('replayBtn');
+        
+        let previewImg = document.getElementById('previewImg');
+        
+        const downloadLink = document.getElementById('downloadLink');
+        const loadingMsg = document.getElementById('loadingMsg');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let loadedImage = new Image();
+        loadedImage.crossOrigin = "anonymous";
+        
+        let loadedEffectImage = new Image();
+        loadedEffectImage.crossOrigin = "anonymous";
+
+        // CRC32計算用のハックテーブル（APNG書き換え用）
+        const crcTable = [];
+        for (let n = 0; n < 256; n++) {
+            let k = n;
+            for (let i = 0; i < 8; i++) {
+                if (k & 1) k = 0xedb88320 ^ (k >>> 1);
+                else k = k >>> 1;
+            }
+            crcTable[n] = k;
+        }
+
+        function crc32(uint8Array) {
+            let c = 0xffffffff;
+            for (let i = 0; i < uint8Array.length; i++) {
+                c = crcTable[(c ^ uint8Array[i]) & 0xff] ^ (c >>> 8);
+            }
+            return (c ^ 0xffffffff) >>> 0;
+        }
+
+        // APNGバイナリのacTLチャンク（ループパラメータ）を強制上書きしてCRCを再計算するハック
+        function setApngLoopCount(arrayBuffer, loopCount) {
+            const view = new DataView(arrayBuffer);
+            const len = arrayBuffer.byteLength;
+            let offset = 8;
+
+            while (offset < len) {
+                if (offset + 8 > len) break;
+                const chunkLength = view.getUint32(offset);
+                if (offset + 12 + chunkLength > len) break;
+                
+                const chunkType = String.fromCharCode(
+                    view.getUint8(offset + 4),
+                    view.getUint8(offset + 5),
+                    view.getUint8(offset + 6),
+                    view.getUint8(offset + 7)
+                );
+
+                if (chunkType === "acTL") {
+                    view.setUint32(offset + 12, loopCount);
+                    const crcData = new Uint8Array(arrayBuffer, offset + 4, 12);
+                    const crc = crc32(crcData);
+                    view.setUint32(offset + 16, crc);
+                    break;
+                }
+                offset += 12 + chunkLength;
+            }
+        }
+
+        // Base64データをバイト配列に直す関数（GIFハック用）
+        function base64ToUint8Array(base64) {
+            const binaryString = atob(base64.split(',')[1]);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        // GIFのループ拡張ブロックを削除して1回再生（ループなし）にする関数
+        function removeGifLoopExtension(uint8Array) {
+            const needle = [0x21, 0xff, 0x0b, 0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30, 0x03, 0x01];
+            let foundOffset = -1;
+            for (let i = 0; i < uint8Array.length - needle.length; i++) {
+                let match = true;
+                for (let j = 0; j < needle.length; j++) {
+                    if (uint8Array[i + j] !== needle[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    foundOffset = i;
+                    break;
+                }
+            }
+            if (foundOffset !== -1) {
+                const newArray = new Uint8Array(uint8Array.length - 19);
+                newArray.set(uint8Array.subarray(0, foundOffset), 0);
+                newArray.set(uint8Array.subarray(foundOffset + 19), foundOffset);
+                return newArray;
+            }
+            return uint8Array;
+        }
+
+        // GIFバイナリを直接書き換えて「ループ停止設定」を確実にファイルに刻む独自ハック
+        function setGifLoopCount(uint8Array, loopCount) {
+            const needle = [0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30]; // "NETSCAPE2.0"
+            let foundOffset = -1;
+            
+            for (let i = 0; i < uint8Array.length - needle.length; i++) {
+                let match = true;
+                for (let j = 0; j < needle.length; j++) {
+                    if (uint8Array[i + j] !== needle[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    foundOffset = i;
+                    break;
+                }
+            }
+            
+            if (foundOffset !== -1) {
+                if (uint8Array[foundOffset + 11] === 3 && uint8Array[foundOffset + 12] === 1) {
+                    uint8Array[foundOffset + 13] = loopCount & 0xff;
+                    uint8Array[foundOffset + 14] = (loopCount >> 8) & 0xff;
+                }
+            }
+        }
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadedImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const effectImageInput = document.getElementById('effectImageInput');
+        effectImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                loadedEffectImage.src = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadedEffectImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        generateBtn.addEventListener('click', function() {
+            const textValue = document.getElementById('textInput') ? document.getElementById('textInput').value.trim() : '';
+            if (!loadedImage.src && !textValue) {
+                alert('画像を選ぶか、文字を入力してくださいね！');
+                return;
+            }
+
+            // UIを処理中状態にする
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            spinner.classList.remove('hidden');
+            btnText.textContent = "作成中...";
+            loadingMsg.classList.remove('hidden');
+            
+            resultArea.classList.add('hidden');
+            placeholderArea.classList.remove('hidden');
+
+            let selectedEffect = 'shake';
+            effectRadios.forEach(radio => { if (radio.checked) selectedEffect = radio.value; });
+            
+            let selectedFormat = 'gif';
+            formatRadios.forEach(radio => { if (radio.checked) selectedFormat = radio.value; });
+
+            let selectedLoop = 'infinite';
+            loopRadios.forEach(radio => { if (radio.checked) selectedLoop = radio.value; });
+
+            setTimeout(() => {
+                createAnimation(selectedEffect, selectedFormat, selectedLoop);
+            }, 50);
+        });
+
+        function createAnimation(effect, format, loopSetting) {
+            const textValue = document.getElementById('textInput') ? document.getElementById('textInput').value.trim() : '';
+            const textColor = document.getElementById('textColorInput') ? document.getElementById('textColorInput').value : '#ffffff';
+            const textPosition = document.getElementById('textPositionInput') ? document.getElementById('textPositionInput').value : 'center';
+            const textSizeRatio = document.getElementById('textSizeInput') ? parseInt(document.getElementById('textSizeInput').value) / 100 : 0.15;
+            const isDynamicText = ['typing', 'textShake', 'textBounce'].includes(effect);
+
+            const originalImage = loadedImage;
+            
+            let baseW = 500;
+            let baseH = 500;
+            if (originalImage.src && originalImage.naturalWidth > 0) {
+                baseW = originalImage.naturalWidth;
+                baseH = originalImage.naturalHeight;
+            }
+
+            let baseCanvas = null;
+            if (textValue && !isDynamicText) {
+                baseCanvas = document.createElement('canvas');
+                baseCanvas.width = baseW;
+                baseCanvas.height = baseH;
+                const bCtx = baseCanvas.getContext('2d');
+                if (originalImage.src && originalImage.naturalWidth > 0) {
+                    bCtx.drawImage(originalImage, 0, 0, baseW, baseH);
+                }
+                
+                const fontSize = Math.floor(baseH * textSizeRatio);
+                bCtx.font = `bold ${fontSize}px sans-serif`;
+                bCtx.textAlign = 'center';
+                bCtx.textBaseline = 'middle';
+                bCtx.fillStyle = textColor;
+                bCtx.strokeStyle = '#000';
+                bCtx.lineWidth = Math.max(2, Math.floor(fontSize * 0.15));
+                bCtx.lineJoin = 'round';
+                
+                const lines = textValue.split('\n');
+                const lineHeight = fontSize * 1.2;
+                const totalLines = lines.length;
+                let startY;
+                if (textPosition === 'top') {
+                    startY = baseH * 0.1 + lineHeight/2;
+                } else if (textPosition === 'bottom') {
+                    startY = baseH * 0.9 - (totalLines-1)*lineHeight - lineHeight/2;
+                } else {
+                    startY = baseH/2 - (totalLines-1)*lineHeight/2;
+                }
+                
+                lines.forEach((line, idx) => {
+                    bCtx.strokeText(line, baseW/2, startY + idx*lineHeight);
+                    bCtx.fillText(line, baseW/2, startY + idx*lineHeight);
+                });
+            } else if (!originalImage.src || originalImage.naturalWidth === 0) {
+                baseCanvas = document.createElement('canvas');
+                baseCanvas.width = baseW;
+                baseCanvas.height = baseH;
+            }
+
+            if (baseCanvas) {
+                loadedImage = baseCanvas;
+            }
+
+            const maxSize = 500;
+            let width = loadedImage.width;
+            let height = loadedImage.height;
+            
+            if (width > maxSize || height > maxSize) {
+                if (width > height) {
+                    height = Math.floor(height * (maxSize / width));
+                    width = maxSize;
+                } else {
+                    width = Math.floor(width * (maxSize / height));
+                    height = maxSize;
+                }
+            }
+
+            let paddingX = 0;
+            let paddingY = 0;
+            const uniqueEffects = ['slime', 'wave', 'heartbeat', 'bounce', 'pendulum', 'tornado', 'glitch', 'explosion'];
+            if (uniqueEffects.includes(effect)) {
+                paddingX = Math.floor(width * 0.2);
+                paddingY = Math.floor(height * 0.2);
+            }
+
+            const canvasWidth = width + paddingX * 2;
+            const canvasHeight = height + paddingY * 2;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            const framesAPNG = []; 
+            const framesGIF = [];  
+            const delays = [];     
+            
+            let frameCount = 10;
+            const longEffects = ['burn', 'shatter', 'glassShatter', 'rubble', 'explosion', 'customFall', 'customCross', 'customCrazy'];
+            if (longEffects.includes(effect)) {
+                frameCount = 30; // 25 -> 30 
+            } else if (['snow', 'leaves', 'cherryBlossoms'].includes(effect)) {
+                frameCount = 40; // もっと長く
+            }
+
+            let particles = [];
+            let pieces = [];
+            let splashes = [];
+            let drips = [];
+            let bullets = [];
+
+            if (['rain', 'heavyRain'].includes(effect)) {
+                const count = effect === 'heavyRain' ? 150 : 60;
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: Math.random() * canvasWidth,
+                        y: Math.random() * canvasHeight,
+                        len: effect === 'heavyRain' ? 30 + Math.random() * 20 : 15 + Math.random() * 10,
+                        speed: effect === 'heavyRain' ? 25 + Math.random() * 10 : 15 + Math.random() * 5
+                    });
+                }
+            } else if (effect === 'snow') {
+                for (let i = 0; i < 80; i++) {
+                    particles.push({
+                        startX: Math.random() * canvasWidth,
+                        startY: Math.random() * canvasHeight,
+                        size: 2 + Math.random() * 4,
+                        speedY: 2 + Math.random() * 3,
+                        speedX: (Math.random() - 0.5) * 2,
+                        angle: Math.random() * Math.PI * 2
+                    });
+                }
+            } else if (['leaves', 'cherryBlossoms'].includes(effect)) {
+                for (let i = 0; i < 40; i++) {
+                    particles.push({
+                        startX: Math.random() * canvasWidth,
+                        startY: Math.random() * canvasHeight,
+                        size: 10 + Math.random() * 10,
+                        speedY: 3 + Math.random() * 4,
+                        speedX: 1 + Math.random() * 3,
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.2
+                    });
+                }
+            } else if (['sparkles', 'sparklesYellow', 'sparklesPastel', 'stars', 'hearts'].includes(effect)) {
+                for (let i = 0; i < 30; i++) {
+                    let c = '#fff';
+                    if (effect === 'sparklesYellow' || effect === 'stars') c = '#FFD700';
+                    else if (effect === 'hearts') c = '#FF69B4';
+                    else if (effect === 'sparklesPastel') c = `hsl(${Math.random() * 360}, 100%, 75%)`;
+                    
+                    // ドーナツ状に配置
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = (Math.random() * 0.4 + 0.3) * Math.min(width, height);
+                    
+                    particles.push({
+                        x: width / 2 + Math.cos(angle) * r,
+                        y: height / 2 + Math.sin(angle) * r,
+                        baseSize: 20 + Math.random() * 30, // 星やハートを大きく
+                        phase: Math.random() * Math.PI * 2,
+                        speed: 0.1 + Math.random() * 0.2,
+                        color: c
+                    });
+                }
+            } else if (['shatter', 'rubble', 'glassShatter'].includes(effect)) {
+                if (effect === 'shatter') {
+                    const cols = 6; const rows = 6;
+                    const w = width / cols; const h = height / rows;
+                    for (let y = 0; y < rows; y++) {
+                        for (let x = 0; x < cols; x++) {
+                            pieces.push({
+                                type: 'rect', sx: x * w, sy: y * h, w: w, h: h, dx: x * w, dy: y * h,
+                                vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, rot: 0, vrot: (Math.random() - 0.5) * 0.3
+                            });
+                        }
+                    }
+                } else if (effect === 'rubble') {
+                    const cols = 5; const rows = 5;
+                    const pts = [];
+                    for(let y=0; y<=rows; y++){
+                        let row = [];
+                        for(let x=0; x<=cols; x++){
+                            let px = (x/cols)*width;
+                            let py = (y/rows)*height;
+                            if (x>0 && x<cols) px += (Math.random()-0.5) * (width/cols)*0.8;
+                            if (y>0 && y<rows) py += (Math.random()-0.5) * (height/rows)*0.8;
+                            row.push({x:px, y:py});
+                        }
+                        pts.push(row);
+                    }
+                    for(let y=0; y<rows; y++){
+                        for(let x=0; x<cols; x++){
+                            let p1 = pts[y][x], p2 = pts[y][x+1], p3 = pts[y+1][x], p4 = pts[y+1][x+1];
+                            let cx1 = (p1.x+p2.x+p3.x)/3, cy1 = (p1.y+p2.y+p3.y)/3;
+                            pieces.push({ type:'poly', pts:[p1, p2, p3], cx: cx1, cy: cy1, x: cx1, y: cy1,
+                                vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-5, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                            let cx2 = (p2.x+p4.x+p3.x)/3, cy2 = (p2.y+p4.y+p3.y)/3;
+                            pieces.push({ type:'poly', pts:[p2, p4, p3], cx: cx2, cy: cy2, x: cx2, y: cy2,
+                                vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-5, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        }
+                    }
+                } else if (effect === 'glassShatter') {
+                    const cx = width/2, cy = height/2;
+                    const rings = 4;
+                    const segments = 8;
+                    const pts = [];
+                    pts.push({x: cx, y: cy}); 
+                    for(let r=1; r<=rings; r++){
+                        let rRad = (r/rings)*width*0.8;
+                        let ringPts = [];
+                        for(let s=0; s<segments; s++){
+                            let angle = (s/segments)*Math.PI*2 + (Math.random()-0.5)*0.3;
+                            let rad = rRad + (Math.random()-0.5)*(width*0.1);
+                            ringPts.push({x: cx + Math.cos(angle)*rad, y: cy + Math.sin(angle)*rad});
+                        }
+                        pts.push(ringPts);
+                    }
+                    for(let s=0; s<segments; s++){
+                        let sNext = (s+1)%segments;
+                        let p1 = pts[0]; 
+                        let p2 = pts[1][s];
+                        let p3 = pts[1][sNext];
+                        let cxt = (p1.x+p2.x+p3.x)/3, cyt = (p1.y+p2.y+p3.y)/3;
+                        pieces.push({ type:'poly', pts:[p1, p2, p3], cx:cxt, cy:cyt, x:cxt, y:cyt, vx:(cxt-cx)*0.1, vy:(cyt-cy)*0.1, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        for(let r=1; r<rings; r++){
+                            let pA = pts[r][s], pB = pts[r][sNext], pC = pts[r+1][s], pD = pts[r+1][sNext];
+                            let c1x=(pA.x+pB.x+pC.x)/3, c1y=(pA.y+pB.y+pC.y)/3;
+                            pieces.push({ type:'poly', pts:[pA, pB, pC], cx:c1x, cy:c1y, x:c1x, y:c1y, vx:(c1x-cx)*0.08, vy:(c1y-cy)*0.08, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                            let c2x=(pB.x+pD.x+pC.x)/3, c2y=(pB.y+pD.y+pC.y)/3;
+                            pieces.push({ type:'poly', pts:[pB, pD, pC], cx:c2x, cy:c2y, x:c2x, y:c2y, vx:(c2x-cx)*0.08, vy:(c2y-cy)*0.08, rot:0, vrot:(Math.random()-0.5)*0.2 });
+                        }
+                    }
+                }
+            } else if (['liquidSplash', 'redPaint'].includes(effect)) {
+                for (let i = 0; i < 6; i++) {
+                    splashes.push({
+                        x: width * 0.1 + Math.random() * width * 0.8,
+                        y: height * 0.1 + Math.random() * height * 0.8,
+                        size: width * 0.05 + Math.random() * width * 0.08,
+                        delay: Math.random() * 0.5,
+                        active: false,
+                        progress: 0
+                    });
+                }
+            } else if (effect === 'drip') {
+                for (let i = 0; i < 12; i++) {
+                    drips.push({
+                        x: Math.random() * width,
+                        y: 0,
+                        targetLen: height * 0.3 + Math.random() * height * 0.6,
+                        width: 5 + Math.random() * 8
+                    });
+                }
+            } else if (effect === 'bubbles') {
+                for (let i = 0; i < 40; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        startY: height + Math.random() * height * 0.2, // 下から発生
+                        size: width * 0.01 + Math.random() * width * 0.04,
+                        speedY: Math.random() * 1.5 + 1.0, // 上に昇る速度
+                        wobbleSpeed: Math.random() * 0.1 + 0.05,
+                        wobbleAmp: Math.random() * 15 + 5,
+                        delay: Math.random() * 0.3 // 時間差で出始める
+                    });
+                }
+            } else if (effect === 'bullet') {
+                for (let i = 0; i < 5; i++) {
+                    bullets.push({
+                        x: width * 0.1 + Math.random() * width * 0.8,
+                        y: height * 0.1 + Math.random() * height * 0.8,
+                        frame: Math.floor(Math.random() * 8)
+                    });
+                }
+                bullets.sort((a,b)=>a.frame-b.frame);
+            } else if (effect === 'explosion') {
+                for (let i = 0; i < 40; i++) {
+                    particles.push({
+                        x: 0,
+                        y: 0,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 30 + 10,
+                        size: Math.random() * 20 + 5,
+                        color: Math.random() > 0.6 ? '#ffaa00' : (Math.random() > 0.5 ? '#ff3300' : '#444')
+                    });
+                }
+            } else if (effect === 'customFall') {
+                for (let i = 0; i < 20; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        size: width * 0.1 + Math.random() * width * 0.1,
+                        speedY: Math.random() * 2 + 1,
+                        speedX: Math.random() * 2 + 1,
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 4
+                    });
+                }
+            } else if (effect === 'customCross') {
+                for (let i = 0; i < 3; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: height * 0.1 + Math.random() * height * 0.7,
+                        size: width * 0.2 + Math.random() * width * 0.1,
+                        speedX: Math.random() * 2 + 1,
+                        speedY: Math.random() * 2 + 1
+                    });
+                }
+            } else if (effect === 'customCrazy') {
+                for (let i = 0; i < 5; i++) {
+                    particles.push({
+                        x: width / 2,
+                        y: height / 2,
+                        size: width * 0.15 + Math.random() * width * 0.1,
+                        freqX: Math.round(Math.random() * 3 + 1),
+                        freqY: Math.round(Math.random() * 3 + 1),
+                        phaseX: Math.random() * Math.PI * 2,
+                        phaseY: Math.random() * Math.PI * 2,
+                        ampX: width * 0.4,
+                        ampY: height * 0.4,
+                        rot: Math.random() * Math.PI * 2,
+                        rotFreq: Math.round((Math.random() - 0.5) * 4)
+                    });
+                }
+            }
+
+            // 1コマずつ描画
+            for (let i = 0; i < frameCount; i++) {
+                const progress = i / (frameCount - 1);
+
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.globalAlpha = 1.0;
+                ctx.filter = 'none';
+
+                if (format === 'gif') {
+                    if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
+                        ctx.fillStyle = '#000000';
+                    } else {
+                        ctx.fillStyle = '#ffffff'; 
+                    }
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                } else {
+                    if (effect.includes('White') || effect === 'fadeInWhite' || effect === 'fadeOutWhite') {
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                    } else if (effect.includes('Black') || effect === 'fadeInBlack' || effect === 'fadeOutBlack') {
+                        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                    }
+                }
+
+                ctx.translate(paddingX, paddingY);
+
+                if (effect === 'shake') {
+                    const offsetX = (Math.random() - 0.5) * (width * 0.05);
+                    const offsetY = (Math.random() - 0.5) * (height * 0.05);
+                    ctx.drawImage(loadedImage, offsetX, offsetY, width, height);
+                } 
+                else if (effect === 'blink') {
+                    ctx.globalAlpha = (i % 2 === 0) ? 1.0 : 0.0;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                } 
+                else if (effect === 'scatter') {
+                    for (let j = 0; j < 5; j++) {
+                        const size = width * (0.3 + Math.random() * 0.4);
+                        const x = Math.random() * (width - size);
+                        const y = Math.random() * (height - size);
+                        ctx.drawImage(loadedImage, x, y, size, size);
+                    }
+                }
+                else if (effect.startsWith('zoom')) {
+                    let scale = 1.0;
+                    if (effect.includes('In')) scale = 1.0 + progress * 0.5;
+                    else scale = effect.includes('White') || effect.includes('Black') ? Math.max(0, 1.0 - progress) : 1.0 - progress * 0.5;
+                    
+                    const dw = width * scale; const dh = height * scale;
+                    const dx = (width - dw) / 2; const dy = (height - dh) / 2;
+                    if (effect.includes('White') || effect.includes('Black')) ctx.globalAlpha = Math.max(0, 1.0 - progress);
+                    if (dw > 0 && dh > 0) ctx.drawImage(loadedImage, dx, dy, dw, dh);
+                }
+                else if (effect.startsWith('rotate')) {
+                    let angle = progress * (2 * Math.PI);
+                    if (effect === 'rotateLeft') angle = -angle; 
+                    ctx.translate(width / 2, height / 2);
+                    ctx.rotate(angle);                    
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('move')) {
+                    let dx = 0; let dy = 0;
+                    if (effect.includes('Down')) dy = (progress - 1.0) * height;
+                    else if (effect.includes('Up')) dy = (1.0 - progress) * height;
+                    if (effect.includes('Left')) dx = (1.0 - progress) * width;
+                    else if (effect.includes('Right')) dx = (progress - 1.0) * width;
+                    ctx.drawImage(loadedImage, dx, dy, width, height);
+                }
+                else if (effect === 'rainbow') {
+                    ctx.filter = `hue-rotate(${progress * 360}deg)`;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('fadeIn')) {
+                    ctx.globalAlpha = progress;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect.startsWith('fadeOut')) {
+                    ctx.globalAlpha = 1.0 - progress;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'blur') {
+                    ctx.filter = `blur(${progress * 15}px)`;
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'mosaic') {
+                    const ratio = Math.max(0.01, 1.0 - progress * 0.95); 
+                    const tWidth = Math.max(1, width * ratio);
+                    const tHeight = Math.max(1, height * ratio);
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = tWidth; tempCanvas.height = tHeight;
+                    tempCanvas.getContext('2d').drawImage(loadedImage, 0, 0, tWidth, tHeight);
+                    
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(tempCanvas, 0, 0, width, height);
+                    ctx.imageSmoothingEnabled = true;
+                }
+                else if (effect === 'slime') {
+                    const scaleX = 1.0 + Math.sin(progress * Math.PI * 2) * 0.15;
+                    const scaleY = 1.0 - Math.sin(progress * Math.PI * 2) * 0.15;
+                    ctx.translate(width / 2, height / 2);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'wave') {
+                    const ratioY = loadedImage.height / height;
+                    for (let y = 0; y < height; y += 4) {
+                        const offsetX = Math.sin((y * 0.05) + (progress * Math.PI * 2)) * (width * 0.05);
+                        ctx.drawImage(loadedImage, 0, y * ratioY, loadedImage.width, 4 * ratioY, offsetX, y, width, 4);
+                    }
+                }
+                else if (effect === 'heartbeat') {
+                    let scale = 1.0;
+                    if (progress > 0.1 && progress < 0.4) scale = 1.15; // 1回だけ鼓動
+                    ctx.translate(width / 2, height / 2);
+                    ctx.scale(scale, scale);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'bounce') {
+                    const bounceY = -Math.abs(Math.sin(progress * Math.PI)) * (height * 0.2);
+                    ctx.translate(0, bounceY);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'pendulum') {
+                    ctx.translate(width / 2, 0);
+                    ctx.rotate(Math.sin(progress * Math.PI * 2) * 0.2);
+                    ctx.translate(-width / 2, 0);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'tornado') {
+                    ctx.translate(width / 2, height / 2);
+                    ctx.rotate(progress * Math.PI * 2);
+                    ctx.scale(progress, progress);
+                    ctx.translate(-width / 2, -height / 2);
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                }
+                else if (effect === 'glitch') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    if (Math.random() > 0.3) {
+                        ctx.globalAlpha = 0.5;
+                        ctx.drawImage(loadedImage, (Math.random() - 0.5) * 20, 0, width, height);
+                        ctx.globalAlpha = 1.0;
+                        for (let k = 0; k < 4; k++) {
+                            const sliceY = Math.random() * height;
+                            const sliceH = Math.random() * (height * 0.15);
+                            const sliceX = (Math.random() - 0.5) * (width * 0.15);
+                            ctx.drawImage(canvas, paddingX, paddingY + sliceY, width, sliceH, sliceX, sliceY, width, sliceH);
+                        }
+                    }
+                }
+                // --- 💥 破壊・ダメージ系 ---
+                else if (effect === 'shatter' || effect === 'rubble') {
+                    pieces.forEach(p => {
+                        if (i > 2) {
+                            if (p.type === 'rect') { p.dx += p.vx; p.dy += p.vy; }
+                            else { p.x += p.vx; p.y += p.vy; }
+                            if (effect === 'rubble') p.vy += 3; 
+                            p.rot += p.vrot;
+                        }
+                        ctx.save();
+                        if (p.type === 'rect') {
+                            ctx.translate(p.dx + p.w/2, p.dy + p.h/2);
+                            ctx.rotate(p.rot);
+                            ctx.drawImage(loadedImage, p.sx * (loadedImage.width/width), p.sy * (loadedImage.height/height), p.w * (loadedImage.width/width), p.h * (loadedImage.height/height), -p.w/2, -p.h/2, p.w, p.h);
+                        } else {
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(p.rot);
+                            ctx.translate(-p.cx, -p.cy);
+                            ctx.beginPath();
+                            ctx.moveTo(p.pts[0].x, p.pts[0].y);
+                            for(let pt=1; pt<p.pts.length; pt++) ctx.lineTo(p.pts[pt].x, p.pts[pt].y);
+                            ctx.closePath();
+                            ctx.clip();
+                            ctx.drawImage(loadedImage, 0, 0, width, height);
+                        }
+                        ctx.restore();
+                    });
+                }
+                else if (effect === 'glassCrack') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const cx = width / 2;
+                    const cy = height / 2;
+                    for (let a = 0; a < 6; a++) {
+                        let angle = (a / 6) * Math.PI * 2 + 0.5;
+                        let dist = 0;
+                        ctx.moveTo(cx, cy);
+                        for (let s = 0; s < progress * 10; s++) {
+                            dist += 20 + Math.sin(a*s)*10;
+                            angle += (Math.sin(a+s)-0.5)*0.5;
+                            ctx.lineTo(cx + Math.cos(angle)*dist, cy + Math.sin(angle)*dist);
+                        }
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                else if (effect === 'glassShatter') {
+                    if (progress < 0.2) {
+                        ctx.drawImage(loadedImage, 0, 0, width, height);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        const cx = width / 2, cy = height / 2;
+                        for (let a = 0; a < 8; a++) {
+                            let angle = (a / 8) * Math.PI * 2 + 0.5;
+                            let dist = 0;
+                            ctx.moveTo(cx, cy);
+                            for (let s = 0; s < progress * 20; s++) {
+                                dist += 30; angle += (Math.sin(a+s)-0.5)*0.5;
+                                ctx.lineTo(cx + Math.cos(angle)*dist, cy + Math.sin(angle)*dist);
+                            }
+                        }
+                        ctx.stroke();
+                    } else {
+                        pieces.forEach(p => {
+                            p.x += p.vx; p.y += p.vy; p.vy += 1; p.rot += p.vrot;
+                            ctx.save();
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(p.rot);
+                            ctx.translate(-p.cx, -p.cy);
+                            ctx.beginPath();
+                            ctx.moveTo(p.pts[0].x, p.pts[0].y);
+                            for(let pt=1; pt<p.pts.length; pt++) ctx.lineTo(p.pts[pt].x, p.pts[pt].y);
+                            ctx.closePath();
+                            ctx.clip();
+                            ctx.drawImage(loadedImage, 0, 0, width, height);
+                            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke();
+                            ctx.restore();
+                        });
+                    }
+                }
+                else if (effect === 'bullet') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#000';
+                    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+                    bullets.forEach(b => {
+                        if (i >= b.frame) {
+                            // Flash
+                            if (i === b.frame) {
+                                ctx.save();
+                                ctx.globalCompositeOperation = 'screen';
+                                const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 80);
+                                g.addColorStop(0, 'rgba(255,255,200,1)'); g.addColorStop(0.5, 'rgba(255,150,0,0.8)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+                                ctx.fillStyle = g;
+                                ctx.beginPath(); ctx.arc(b.x, b.y, 80, 0, Math.PI*2); ctx.fill();
+                                ctx.restore();
+                            }
+                            // Hole
+                            ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI*2); ctx.fill();
+                            // Deep Cracks
+                            ctx.lineWidth = 2.5;
+                            for(let a=0; a<8; a++){
+                                ctx.beginPath(); ctx.moveTo(b.x, b.y);
+                                let angle = a*0.8 + Math.random()*0.4;
+                                let len = 40 + Math.random()*40;
+                                ctx.lineTo(b.x + Math.cos(angle)*len, b.y + Math.sin(angle)*len);
+                                ctx.stroke();
+                            }
+                            // Fragments
+                            const fragT = i - b.frame;
+                            if (fragT < 5) {
+                                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                                for(let f=0; f<5; f++){
+                                    let fx = b.x + Math.cos(f)*20*fragT;
+                                    let fy = b.y + Math.sin(f)*20*fragT + fragT*fragT*2;
+                                    ctx.fillRect(fx, fy, 4, 4);
+                                }
+                            }
+                        }
+                    });
+                }
+                else if (effect === 'explosion') {
+                    // 画像が膨れる
+                    let scale = 1.0;
+                    if (progress < 0.4) {
+                        scale = 1.0 + (progress / 0.4) * 0.2; // 少し膨らむ
+                    } else if (progress < 0.5) {
+                        scale = 1.2 + ((progress - 0.4) / 0.1) * 0.5; // 急激に膨らむ
+                    }
+                    
+                    if (progress < 0.5) {
+                        ctx.translate(width/2, height/2);
+                        ctx.scale(scale, scale);
+                        ctx.drawImage(loadedImage, -width/2, -height/2, width, height);
+                        
+                        // 内側から光が漏れる
+                        const glowP = Math.max(0, (progress - 0.2) / 0.3);
+                        if (glowP > 0) {
+                            ctx.globalCompositeOperation = 'screen';
+                            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, width/2);
+                            g.addColorStop(0, `rgba(255, 255, 255, ${glowP})`);
+                            g.addColorStop(0.5, `rgba(255, 200, 50, ${glowP * 0.8})`);
+                            g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                            ctx.fillStyle = g;
+                            ctx.fillRect(-width/2, -height/2, width, height);
+                            ctx.globalCompositeOperation = 'source-over';
+                        }
+                        
+                        ctx.scale(1/scale, 1/scale);
+                        ctx.translate(-width/2, -height/2);
+                    } else {
+                        // ボンッと破裂
+                        const burstP = (progress - 0.5) / 0.5; // 0.0 ~ 1.0
+                        
+                        // 閃光
+                        if (burstP < 0.2) {
+                            ctx.fillStyle = `rgba(255, 255, 200, ${1.0 - burstP/0.2})`;
+                            ctx.fillRect(0, 0, width, height);
+                        }
+                        
+                        // 破片が飛び散る
+                        ctx.save();
+                        ctx.translate(width/2, height/2);
+                        particles.forEach(p => {
+                            let curX = Math.cos(p.angle) * p.speed * burstP * 10;
+                            let curY = Math.sin(p.angle) * p.speed * burstP * 10 + (burstP * burstP * 50); // 重力
+                            let curSize = p.size * (1 - burstP);
+                            if (curSize > 0) {
+                                ctx.fillStyle = p.color;
+                                ctx.beginPath();
+                                ctx.arc(curX, curY, curSize, 0, Math.PI*2);
+                                ctx.fill();
+                            }
+                        });
+                        ctx.restore();
+                    }
+                }
+                else if (effect === 'burn') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.save();
+                    
+                    if (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0) {
+                        // カスタム画像を使った炎エフェクト
+                        const fireH = height * (0.6 + Math.sin(progress * Math.PI * 2) * 0.1);
+                        
+                        // 背景を少し暗く・赤っぽくして炎を目立たせる
+                        ctx.globalCompositeOperation = 'multiply';
+                        ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.6})`;
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // 端の隙間をなくすため、画面幅・高さよりも一回り大きく描画する
+                        const drawW = width * 1.5;
+                        const drawH = fireH * 1.3;
+
+                        for (let layer = 0; layer < 4; layer++) {
+                            const offsetProgress = (progress + layer * 0.25) % 1.0;
+                            
+                            // 左右の隙間を埋めるため、左にずらして配置。上下も隙間ができないよう調整
+                            const offsetX = -(width * 0.25) + Math.sin(offsetProgress * Math.PI * 6) * 20;
+                            const fireY = height - drawH * 0.9 + (Math.sin(offsetProgress * Math.PI * 4) * 15);
+                            
+                            if (layer === 0) {
+                                // 1層目は不透明度100%でしっかり描画
+                                ctx.globalCompositeOperation = 'source-over';
+                                ctx.globalAlpha = 1.0;
+                            } else {
+                                // 2〜4層目はスクリーンで光らせる
+                                ctx.globalCompositeOperation = 'screen';
+                                ctx.globalAlpha = 0.9;
+                            }
+                            
+                            ctx.drawImage(loadedEffectImage, offsetX, fireY, drawW, drawH);
+                        }
+                    } else {
+                        const fireHeight = height * (0.3 + progress * 0.7);
+                        const burnY = height - fireHeight;
+    
+                        // 背景を少し暗く・赤っぽくして炎を目立たせる
+                        ctx.globalCompositeOperation = 'multiply';
+                        ctx.fillStyle = `rgba(150, 80, 50, ${progress * 0.5})`;
+                        ctx.fillRect(0, 0, width, height);
+                        
+                        // 炎のベース（濃い色で透けないようにする）
+                        ctx.globalCompositeOperation = 'source-over';
+                        const baseGrad = ctx.createLinearGradient(0, burnY, 0, height);
+                        baseGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                        baseGrad.addColorStop(0.1, 'rgba(255,50,0,0.8)');
+                        baseGrad.addColorStop(0.4, 'rgba(200,0,0,1)');
+                        baseGrad.addColorStop(1, 'rgba(50,0,0,1)');
+                        ctx.fillStyle = baseGrad;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
+                        for(let x=0; x<=width; x+=5) {
+                            let y = burnY 
+                                  + Math.sin(x*0.03 - progress*20)*20 
+                                  + Math.sin(x*0.07 + progress*15)*15
+                                  + Math.random()*10;
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.lineTo(width, height);
+                        ctx.fill();
+    
+                        // 炎のハイライト (ハードライトで濃く明るく)
+                        ctx.globalCompositeOperation = 'hard-light';
+                        const highGrad = ctx.createLinearGradient(0, burnY + fireHeight*0.1, 0, height);
+                        highGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                        highGrad.addColorStop(0.2, 'rgba(255,200,0,0.9)');
+                        highGrad.addColorStop(0.6, 'rgba(255,100,0,1)');
+                        highGrad.addColorStop(1, 'rgba(200,0,0,1)');
+                        ctx.fillStyle = highGrad;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
+                        for(let x=0; x<=width; x+=5) {
+                            let y = burnY + fireHeight*0.1
+                                  + Math.sin(x*0.04 - progress*25)*15 
+                                  + Math.sin(x*0.08 + progress*12)*10
+                                  + Math.random()*5;
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.lineTo(width, height);
+                        ctx.fill();
+    
+                        // 火の粉
+                        ctx.globalCompositeOperation = 'screen';
+                        ctx.fillStyle = 'rgba(255, 180, 50, 1)';
+                        for(let f=0; f<40; f++) {
+                            const startY = height - (f/40)*fireHeight;
+                            const fx = (f*37) % width + Math.sin(progress*10 + f)*15;
+                            const fy = startY - progress * height * 0.5 - Math.random()*20;
+                            if (fy > 0 && fy < height) {
+                                ctx.beginPath();
+                                ctx.arc(fx, fy, 2 + Math.random()*4, 0, Math.PI*2);
+                                ctx.fill();
+                            }
+                        }
+                        
+                        // 焦げ跡 (Multiply)
+                        ctx.globalCompositeOperation = 'multiply';
+                        const smokeGrad = ctx.createLinearGradient(0, height - fireHeight*0.5, 0, height);
+                        smokeGrad.addColorStop(0, 'rgba(255,255,255,1)');
+                        smokeGrad.addColorStop(1, 'rgba(20,20,20,1)');
+                        ctx.fillStyle = smokeGrad;
+                        ctx.fillRect(0, height - fireHeight*0.5, width, fireHeight*0.5);
+                    }
+                    
+                    ctx.restore();
+                }
+                // --- 🎞️ トランジション系 ---
+                else if (effect === 'curtain') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(0, 0, width * progress, height);
+                }
+                else if (effect === 'shutterIn') {
+                    // シャッターが開いて画像が現れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#222';
+                    const h2 = height / 2;
+                    ctx.fillRect(0, 0, width, h2 * (1 - progress));
+                    ctx.fillRect(0, height - h2 * (1 - progress), width, h2 * (1 - progress));
+                }
+                else if (effect === 'shutterOut') {
+                    // シャッターが閉じて画像が隠れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#222';
+                    const h2 = height / 2;
+                    ctx.fillRect(0, 0, width, h2 * progress);
+                    ctx.fillRect(0, height - h2 * progress, width, h2 * progress);
+                }
+                else if (effect === 'blindIn') {
+                    // ブラインドが開いて画像が現れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bw = width / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(j * bw, 0, bw * (1 - progress), height);
+                    }
+                }
+                else if (effect === 'blindOut') {
+                    // ブラインドが閉じて画像が隠れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bw = width / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(j * bw, 0, bw * progress, height);
+                    }
+                }
+                else if (effect === 'hBlindIn') {
+                    // 横ブラインドが開いて画像が現れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bh = height / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(0, j * bh, width, bh * (1 - progress));
+                    }
+                }
+                else if (effect === 'hBlindOut') {
+                    // 横ブラインドが閉じて画像が隠れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#111';
+                    const count = 8;
+                    const bh = height / count;
+                    for (let j = 0; j < count; j++) {
+                        ctx.fillRect(0, j * bh, width, bh * progress);
+                    }
+                }
+                else if (effect === 'blinkIn') {
+                    // まぶたが開いて画像が現れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.rect(0, 0, width, height);
+                    ctx.ellipse(width/2, height/2, width*0.8, height*0.6 * progress, 0, 0, Math.PI*2);
+                    ctx.fill('evenodd');
+                }
+                else if (effect === 'blinkOut') {
+                    // まぶたが閉じて画像が隠れる
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.rect(0, 0, width, height);
+                    ctx.ellipse(width/2, height/2, width*0.8, height*0.6 * (1 - progress), 0, 0, Math.PI*2);
+                    ctx.fill('evenodd');
+                }
+                // --- 🌸 自然・パーティクル系 ---
+                else if (effect === 'rain' || effect === 'heavyRain') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    ctx.lineWidth = effect === 'heavyRain' ? 2 : 1.5;
+                    particles.forEach(p => {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p.x - p.len*0.4, p.y + p.len);
+                        ctx.stroke();
+                        p.x -= p.speed * 0.4;
+                        p.y += p.speed;
+                        if (p.y > canvasHeight) { p.y = -p.len; p.x = Math.random() * canvasWidth; }
+                    });
+                }
+                else if (effect === 'snow') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    particles.forEach(p => {
+                        let travelDist = canvasHeight + p.size * 2;
+                        let loops = Math.max(1, Math.round(p.speedY));
+                        let currentY = (p.startY + progress * travelDist * loops) % travelDist - p.size;
+                        let currentX = p.startX + Math.sin(p.angle + progress * Math.PI * 2 * loops) * 15;
+                        
+                        ctx.beginPath();
+                        ctx.arc(currentX, currentY, p.size, 0, Math.PI*2);
+                        ctx.fill();
+                    });
+                }
+                else if (effect === 'leaves' || effect === 'cherryBlossoms') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = effect === 'leaves' ? 'rgba(210, 100, 30, 0.85)' : 'rgba(255, 180, 200, 0.85)';
+                    particles.forEach(p => {
+                        let travelDist = canvasHeight + p.size * 2;
+                        let loops = Math.max(1, Math.round(p.speedY / 2));
+                        let currentY = (p.startY + progress * travelDist * loops) % travelDist - p.size;
+                        let currentX = p.startX + Math.sin(p.rot + progress * Math.PI * 2 * loops) * 30 + progress * p.speedX * frameCount; // Seamless X drift
+                        let currentRot = p.rot + progress * Math.PI * 2 * loops * Math.sign(p.rotSpeed || 1);
+
+                        ctx.save();
+                        ctx.translate(currentX % (canvasWidth + 100) - 50, currentY); // Seamless X wrap
+                        ctx.rotate(currentRot);
+                        ctx.beginPath();
+                        if (effect === 'leaves') {
+                            ctx.ellipse(0, 0, p.size, p.size*0.5, 0, 0, Math.PI*2);
+                        } else {
+                            ctx.moveTo(0, p.size*0.5);
+                            ctx.bezierCurveTo(p.size*0.5, p.size*0.5, p.size*0.4, 0, 0, 0);
+                            ctx.bezierCurveTo(-p.size*0.4, 0, -p.size*0.5, p.size*0.5, 0, p.size*0.5);
+                        }
+                        ctx.fill();
+                        ctx.restore();
+                    });
+                }
+                else if (['sparkles', 'sparklesYellow', 'sparklesPastel', 'stars', 'hearts'].includes(effect)) {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    particles.forEach(p => {
+                        let size = p.baseSize * (0.5 + Math.sin(p.phase + i * p.speed) * 0.5);
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        if (effect.startsWith('sparkles')) {
+                            ctx.fillStyle = p.color;
+                            ctx.beginPath();
+                            ctx.moveTo(0, -size);
+                            ctx.quadraticCurveTo(0, 0, size*0.3, 0);
+                            ctx.quadraticCurveTo(0, 0, 0, size);
+                            ctx.quadraticCurveTo(0, 0, -size*0.3, 0);
+                            ctx.quadraticCurveTo(0, 0, 0, -size);
+                            ctx.fill();
+                        } else if (effect === 'stars') {
+                            ctx.fillStyle = '#FFD700';
+                            ctx.beginPath();
+                            for(let j=0; j<5; j++){
+                                ctx.lineTo(Math.cos((18+j*72)/180*Math.PI)*size, -Math.sin((18+j*72)/180*Math.PI)*size);
+                                ctx.lineTo(Math.cos((54+j*72)/180*Math.PI)*size*0.4, -Math.sin((54+j*72)/180*Math.PI)*size*0.4);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        } else if (effect === 'hearts') {
+                            ctx.fillStyle = '#FF69B4';
+                            ctx.beginPath();
+                            ctx.moveTo(0, size*0.25);
+                            ctx.bezierCurveTo(size*0.5, -size*0.5, size, size*0.3, 0, size);
+                            ctx.bezierCurveTo(-size, size*0.3, -size*0.5, -size*0.5, 0, size*0.25);
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    });
+                }
+                else if (effect === 'centerGlow') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+                    const rad = progress * width * 1.5;
+                    if(rad > 0) {
+                        const grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, rad);
+                        grad.addColorStop(0, 'rgba(255, 255, 200, 1)');
+                        grad.addColorStop(0.5, 'rgba(255, 200, 50, 0.8)');
+                        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                        ctx.fillStyle = grad;
+                        ctx.globalAlpha = 1.0 - progress;
+                        ctx.fillRect(0, 0, width, height);
+                    }
+                    ctx.restore();
+                }
+                // --- 💧 液体・特殊系 ---
+                else if (effect === 'liquidSplash' || effect === 'redPaint') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = effect === 'redPaint' ? '#C11' : '#1BF';
+                    
+                    const useCustomImage = (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0);
+                    
+                    splashes.forEach((s, idx) => {
+                        // 時間経過に合わせて各スプラッシュの進行度を計算
+                        if (progress > s.delay) {
+                            let sp = (progress - s.delay) / (1.0 - s.delay); // 0.0 ~ 1.0
+                            sp = Math.min(sp * 1.5, 1.0); // 少し早めに終わる
+                            
+                            if (sp < 0.3) {
+                                // 落ちてくる水滴
+                                let dropY = s.y * (sp / 0.3);
+                                if (useCustomImage) {
+                                    ctx.save();
+                                    ctx.translate(s.x, dropY);
+                                    ctx.scale(0.4, 0.8);
+                                    const dropS = s.size * 1.5;
+                                    ctx.drawImage(loadedEffectImage, -dropS, -dropS, dropS*2, dropS*2);
+                                    ctx.restore();
+                                } else {
+                                    ctx.beginPath();
+                                    ctx.ellipse(s.x, dropY, s.size*0.2, s.size*0.5, 0, 0, Math.PI*2);
+                                    ctx.fill();
+                                }
+                            } else {
+                                // ビシャっと広がる
+                                let splashP = (sp - 0.3) / 0.7; // 0.0 ~ 1.0
+                                
+                                if (useCustomImage) {
+                                    ctx.save();
+                                    ctx.translate(s.x, s.y);
+                                    // はじける瞬間は少し大きく、その後落ち着く
+                                    let scale = splashP < 0.2 ? splashP / 0.2 * 1.2 : 1.2 - (splashP - 0.2) * 0.2;
+                                    scale *= (1.0 + (idx % 3) * 0.3); // 個別に少しサイズを変える
+                                    ctx.scale(scale, scale);
+                                    ctx.rotate(idx * Math.PI / 3); // 個別に角度を変える
+                                    ctx.globalAlpha = Math.min(splashP * 5, 1.0); // すぐに不透明になる
+                                    
+                                    const drawW = s.size * 6;
+                                    const drawH = s.size * 6;
+                                    ctx.drawImage(loadedEffectImage, -drawW/2, -drawH/2, drawW, drawH);
+                                    ctx.restore();
+                                } else {
+                                    ctx.save();
+                                    ctx.translate(s.x, s.y);
+                                    
+                                    // 広がる本体
+                                    ctx.scale(splashP + 0.2, splashP + 0.2);
+                                    ctx.beginPath();
+                                    const pts = 8;
+                                    for(let a=0; a<=pts; a++){
+                                        let angle = (a/pts)*Math.PI*2;
+                                        let r = s.size * (0.6 + Math.sin(a * 4 + idx)*0.4);
+                                        let px = Math.cos(angle)*r;
+                                        let py = Math.sin(angle)*r;
+                                        if(a===0) ctx.moveTo(px, py);
+                                        else {
+                                            let prevA = ((a-1)/pts)*Math.PI*2;
+                                            let cpX = Math.cos(prevA + Math.PI/pts) * s.size * 1.2;
+                                            let cpY = Math.sin(prevA + Math.PI/pts) * s.size * 1.2;
+                                            ctx.quadraticCurveTo(cpX, cpY, px, py);
+                                        }
+                                    }
+                                    ctx.fill();
+                                    
+                                    // 飛沫
+                                    ctx.strokeStyle = ctx.fillStyle;
+                                    for(let a=0; a<10; a++){
+                                        const angle = a * (Math.PI*2/10) + idx*0.5;
+                                        const d = s.size * (1.0 + splashP * 1.5);
+                                        
+                                        ctx.beginPath();
+                                        ctx.arc(Math.cos(angle)*d, Math.sin(angle)*d, s.size*0.1 * (1-splashP), 0, Math.PI*2);
+                                        ctx.fill();
+                                        
+                                        // 垂れる液
+                                        if (angle > 0 && angle < Math.PI) {
+                                            ctx.fillRect(Math.cos(angle)*(s.size*0.5), Math.sin(angle)*(s.size*0.5), s.size*0.05, splashP * s.size);
+                                        }
+                                    }
+                                    ctx.restore();
+                                }
+                            }
+                        }
+                    });
+                }
+                else if (effect === 'drip') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.fillStyle = 'rgba(20, 180, 255, 0.85)';
+                    drips.forEach(d => {
+                        const len = d.targetLen * progress;
+                        ctx.fillRect(d.x, d.y, d.width, len);
+                        ctx.beginPath();
+                        ctx.arc(d.x + d.width/2, d.y + len, d.width/2, 0, Math.PI*2);
+                        ctx.fill();
+                    });
+                }
+                else if (effect === 'waterRipple') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.lineWidth = 4;
+                    const maxRad = width * 0.8;
+                    for(let r=0; r<3; r++) {
+                        let rp = (progress + r*0.33) % 1.0;
+                        ctx.globalAlpha = 1.0 - rp;
+                        ctx.beginPath();
+                        ctx.arc(width/2, height/2, maxRad * rp, 0, Math.PI*2);
+                        ctx.stroke();
+                    }
+                }
+                else if (effect === 'bubbles') {
+                    ctx.drawImage(loadedImage, 0, 0, width, height);
+                    const useCustomImage = (loadedEffectImage.src && loadedEffectImage.complete && loadedEffectImage.naturalWidth > 0);
+                    
+                    particles.forEach(p => {
+                        if (progress > p.delay) {
+                            let sp = (progress - p.delay) / (1.0 - p.delay); // 0.0 ~ 1.0
+                            // 上に昇る。マイナスY方向
+                            let currentY = p.startY - sp * (height * 1.2) * p.speedY;
+                            // 左右にゆらゆら
+                            let currentX = p.x + Math.sin(sp * Math.PI * 20 * p.wobbleSpeed) * p.wobbleAmp;
+                            
+                            if (currentY < -p.size) return;
+
+                            if (useCustomImage) {
+                                ctx.save();
+                                ctx.translate(currentX, currentY);
+                                ctx.rotate(Math.sin(sp * Math.PI * 10) * 0.2); // 少し揺れる
+                                ctx.globalAlpha = Math.min(1.0, sp * 5); // 最初はフェードイン
+                                const drawW = p.size * 3;
+                                const drawH = p.size * 3;
+                                ctx.drawImage(loadedEffectImage, -drawW/2, -drawH/2, drawW, drawH);
+                                ctx.restore();
+                            } else {
+                                ctx.save();
+                                ctx.translate(currentX, currentY);
+                                ctx.globalAlpha = Math.min(1.0, sp * 5);
+                                ctx.beginPath();
+                                ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                                // 泡っぽいグラデーション
+                                let grad = ctx.createRadialGradient(-p.size*0.3, -p.size*0.3, p.size*0.1, 0, 0, p.size);
+                                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                                grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.3)');
+                                grad.addColorStop(0.8, 'rgba(150, 200, 255, 0.5)');
+                                grad.addColorStop(1, 'rgba(100, 150, 255, 0.8)');
+                                ctx.fillStyle = grad;
+                                ctx.fill();
+                                
+                                // キラッとしたハイライト
+                                ctx.beginPath();
+                                ctx.arc(-p.size*0.4, -p.size*0.4, p.size*0.2, 0, Math.PI*2);
+                                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                                ctx.fill();
+                                ctx.restore();
+                            }
+                        }
+                    });
+                }
+                else if (effect === 'typing') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    const visibleChars = Math.floor(progress * textValue.length) + 1;
+                    const currentText = textValue.substring(0, visibleChars);
+                    const fontSize = Math.floor(height * textSizeRatio);
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = textColor;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = Math.max(2, Math.floor(fontSize * 0.15));
+                    ctx.lineJoin = 'round';
+                    const lines = currentText.split('\n');
+                    const lineHeight = fontSize * 1.2;
+                    const totalLines = textValue.split('\n').length;
+                    
+                    let startY;
+                    if (textPosition === 'top') {
+                        startY = height * 0.1 + lineHeight/2;
+                    } else if (textPosition === 'bottom') {
+                        startY = height * 0.9 - (totalLines-1)*lineHeight - lineHeight/2;
+                    } else {
+                        startY = height/2 - (totalLines-1)*lineHeight/2;
+                    }
+                    
+                    lines.forEach((line, idx) => {
+                        ctx.strokeText(line, width/2, startY + idx*lineHeight);
+                        ctx.fillText(line, width/2, startY + idx*lineHeight);
+                    });
+                }
+                else if (effect === 'textShake') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    const offsetX = (Math.random() - 0.5) * (width * 0.05);
+                    const offsetY = (Math.random() - 0.5) * (height * 0.05);
+                    const fontSize = Math.floor(height * textSizeRatio);
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = textColor;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = Math.max(2, Math.floor(fontSize * 0.15));
+                    ctx.lineJoin = 'round';
+                    const lines = textValue.split('\n');
+                    const lineHeight = fontSize * 1.2;
+                    const totalLines = lines.length;
+                    
+                    let startY;
+                    if (textPosition === 'top') {
+                        startY = height * 0.1 + lineHeight/2;
+                    } else if (textPosition === 'bottom') {
+                        startY = height * 0.9 - (totalLines-1)*lineHeight - lineHeight/2;
+                    } else {
+                        startY = height/2 - (totalLines-1)*lineHeight/2;
+                    }
+                    
+                    lines.forEach((line, idx) => {
+                        ctx.strokeText(line, width/2 + offsetX, startY + idx*lineHeight + offsetY);
+                        ctx.fillText(line, width/2 + offsetX, startY + idx*lineHeight + offsetY);
+                    });
+                }
+                else if (effect === 'textBounce') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    const bounceY = -Math.abs(Math.sin(progress * Math.PI * 4)) * (height * 0.1);
+                    const fontSize = Math.floor(height * textSizeRatio);
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = textColor;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = Math.max(2, Math.floor(fontSize * 0.15));
+                    ctx.lineJoin = 'round';
+                    const lines = textValue.split('\n');
+                    const lineHeight = fontSize * 1.2;
+                    const totalLines = lines.length;
+                    
+                    let startY;
+                    if (textPosition === 'top') {
+                        startY = height * 0.1 + lineHeight/2;
+                    } else if (textPosition === 'bottom') {
+                        startY = height * 0.9 - (totalLines-1)*lineHeight - lineHeight/2;
+                    } else {
+                        startY = height/2 - (totalLines-1)*lineHeight/2;
+                    }
+                    
+                    lines.forEach((line, idx) => {
+                        ctx.strokeText(line, width/2, startY + idx*lineHeight + bounceY);
+                        ctx.fillText(line, width/2, startY + idx*lineHeight + bounceY);
+                    });
+                }
+                else if (effect === 'customFall') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    particles.forEach(p => {
+                        let travelDistY = height + p.size * 4;
+                        let loopsY = Math.max(1, Math.round(p.speedY));
+                        let currentY = (p.y + progress * travelDistY * loopsY) % travelDistY - p.size * 2;
+                        let currentX = p.x + Math.sin(p.rot + progress * Math.PI * 2 * Math.round(p.speedX)) * width * 0.1;
+                        let currentRot = p.rot + progress * Math.PI * 2 * Math.round(p.rotSpeed);
+
+                        ctx.save();
+                        ctx.translate(currentX, currentY);
+                        ctx.rotate(currentRot);
+                        if (loadedEffectImage.src && loadedEffectImage.naturalWidth > 0) {
+                            ctx.drawImage(loadedEffectImage, -p.size/2, -p.size/2, p.size, p.size);
+                        } else {
+                            ctx.font = `${p.size}px sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('💸', 0, 0);
+                        }
+                        ctx.restore();
+                    });
+                }
+                else if (effect === 'customCross') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    particles.forEach(p => {
+                        let travelDistX = width + p.size * 4;
+                        let loopsX = Math.max(1, Math.round(p.speedX));
+                        let currentX = (p.x + progress * travelDistX * loopsX) % travelDistX - p.size * 2;
+                        let currentY = p.y + Math.sin(progress * Math.PI * 2 * Math.round(p.speedY)) * height * 0.05;
+
+                        ctx.save();
+                        ctx.translate(currentX, currentY);
+                        if (loadedEffectImage.src && loadedEffectImage.naturalWidth > 0) {
+                            ctx.drawImage(loadedEffectImage, -p.size/2, -p.size/2, p.size, p.size);
+                        } else {
+                            ctx.scale(-1, 1);
+                            ctx.font = `${p.size}px sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('🐈', 0, 0);
+                        }
+                        ctx.restore();
+                    });
+                }
+                else if (effect === 'customCrazy') {
+                    if (originalImage.src && originalImage.naturalWidth > 0) {
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    particles.forEach(p => {
+                        let currentX = p.x + Math.sin(p.phaseX + progress * Math.PI * 2 * p.freqX) * p.ampX;
+                        let currentY = p.y + Math.sin(p.phaseY + progress * Math.PI * 2 * p.freqY) * p.ampY;
+                        let currentRot = p.rot + progress * Math.PI * 2 * p.rotFreq;
+
+                        ctx.save();
+                        ctx.translate(currentX, currentY);
+                        ctx.rotate(currentRot);
+                        if (loadedEffectImage.src && loadedEffectImage.naturalWidth > 0) {
+                            ctx.drawImage(loadedEffectImage, -p.size/2, -p.size/2, p.size, p.size);
+                        } else {
+                            ctx.font = `${p.size}px sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('🌪️', 0, 0);
+                        }
+                        ctx.restore();
+                    });
+                }
+
+                if (format === 'apng') {
+                    const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+                    framesAPNG.push(imageData.data.buffer);
+                    delays.push(150);
+                } else {
+                    framesGIF.push(canvas.toDataURL('image/png'));
+                }
+            }
+
+            loadedImage = originalImage; // RESTORE global variable
+
+            const singleLoopEffects = ['curtain', 'shutterIn', 'shutterOut', 'blindIn', 'blindOut', 'hBlindIn', 'hBlindOut', 'blinkIn', 'blinkOut'];
+            const forceOnce = (loopSetting === 'once' || singleLoopEffects.includes(effect));
+            const numLoopsAPNG = forceOnce ? 1 : 0;
+            const numLoopsGIF = forceOnce ? 1 : 0;
+
+            if (forceOnce) {
+                // 停止時間を伸ばす（最後のフレームを延長）
+                if (format === 'apng') {
+                    delays[delays.length - 1] = 4000; // 最後で4秒止まる
+                } else {
+                    const lastFrame = framesGIF[framesGIF.length - 1];
+                    for (let f = 0; f < 25; f++) {
+                        framesGIF.push(lastFrame);
+                    }
+                }
+            }
+
+            if (format === 'apng') {
+                const apngArrayBuffer = UPNG.encode(framesAPNG, canvasWidth, canvasHeight, 0, delays, numLoopsAPNG);
+                setApngLoopCount(apngArrayBuffer, numLoopsAPNG);
+
+                const blob = new Blob([apngArrayBuffer], { type: 'image/png' });
+                const url = URL.createObjectURL(blob);
+                finishGeneration(url, 'animated.png');
+            } else {
+                gifshot.createGIF({
+                    images: framesGIF,
+                    interval: 0.15,
+                    gifWidth: canvasWidth,
+                    gifHeight: canvasHeight,
+                    numWorkers: 2, 
+                    loop: 0 
+                }, function(obj) {
+                    if (!obj.error) {
+                        let gifBytes = base64ToUint8Array(obj.image);
+                        if (forceOnce) {
+                            gifBytes = removeGifLoopExtension(gifBytes); // ループ拡張自体を削除
+                        } else {
+                            setGifLoopCount(gifBytes, 0); // 無限ループ
+                        }
+
+                        const blob = new Blob([gifBytes], { type: 'image/gif' });
+                        const url = URL.createObjectURL(blob);
+                        finishGeneration(url, 'animated.gif');
+                    } else {
+                        alert('GIFの作成に失敗しました。別の画像で試してみてください。');
+                        resetButton();
+                    }
+                });
+            }
+        }
+
+        function finishGeneration(url, filename) {
+            if (previewImg.src && previewImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL(previewImg.src);
+            }
+
+            const newImg = document.createElement('img');
+            newImg.id = 'previewImg';
+            newImg.alt = 'プレビュー';
+            newImg.className = 'max-w-full max-h-[320px] rounded-lg shadow-md';
+            newImg.src = url;
+
+            const parent = previewImg.parentNode;
+            parent.replaceChild(newImg, previewImg);
+            previewImg = newImg;
+
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            resetButton();
+            placeholderArea.classList.add('hidden'); 
+            resultArea.classList.remove('hidden');    
+        }
+
+        replayBtn.addEventListener('click', function() {
+            if (!previewImg || !previewImg.src) return;
+            const currentSrc = previewImg.src;
+            previewImg.src = "";
+            setTimeout(() => {
+                previewImg.src = currentSrc;
+            }, 50);
+        });
+
+        function resetButton() {
+            loadingMsg.classList.add('hidden');
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            spinner.classList.add('hidden');
+            btnText.textContent = "魔法をかける！";
+        }
+    </script>
+</body>
+</html>
