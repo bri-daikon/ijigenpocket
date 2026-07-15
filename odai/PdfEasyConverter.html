@@ -13,9 +13,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <!-- Kuroshiro (日本語ふりがな変換) -->
-  <script src="https://cdn.jsdelivr.net/npm/kuroshiro@1.1.2/dist/kuroshiro.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js"></script>
+  <!-- Kuroshiro (日本語ふりがな変換) は Web Worker 内で読み込むためメインスレッドからは削除 -->
   <style>
     body {
       font-family: 'Noto Sans JP', sans-serif;
@@ -506,7 +504,9 @@
     let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
     let kuroshiroEnabled = false; // ふりがな表示ON/OFF
     let kuroshiroReady = false;   // Kuroshiro初期化済みフラグ
-    let kuroshiroInstance = null; // Kuroshiroインスタンス
+    let kuroshiroWorker = null;   // Kuroshiro用Web Worker
+    let furiganaQueue = [];       // 変換待ちキュー
+    let isFuriganaConverting = false;
     let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
 
     // ドロップエリアの設定
@@ -1656,6 +1656,41 @@
 
     let isFuriganaProcessing = false;
 
+    // Web Worker 用のコード
+    const workerScript = `
+      importScripts(
+        'https://cdn.jsdelivr.net/npm/kuroshiro@1.1.2/dist/kuroshiro.min.js',
+        'https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js'
+      );
+      
+      let kuroshiroInstance = null;
+      
+      self.onmessage = async function(e) {
+        const { type, payload, id } = e.data;
+        
+        if (type === 'init') {
+          try {
+            kuroshiroInstance = new Kuroshiro();
+            await kuroshiroInstance.init(new KuromojiAnalyzer({
+              dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
+            }));
+            self.postMessage({ type: 'init_success' });
+          } catch (err) {
+            self.postMessage({ type: 'init_error', error: err.message });
+          }
+        } 
+        else if (type === 'convert') {
+          try {
+            if (!kuroshiroInstance) throw new Error("Not initialized");
+            const result = await kuroshiroInstance.convert(payload, { mode: 'furigana', to: 'hiragana' });
+            self.postMessage({ type: 'convert_success', id: id, result: result });
+          } catch (err) {
+            self.postMessage({ type: 'convert_error', id: id, error: err.message });
+          }
+        }
+      };
+    `;
+
     // ふりがなチェックボックスのON/OFF
     async function toggleFurigana() {
       if (isFuriganaProcessing) return;
@@ -1671,7 +1706,7 @@
       isFuriganaProcessing = true;
       try {
         // 辞書の初期化（初回のみ）
-        const ok = await initKuroshiro();
+        const ok = await initKuroshiroWorker();
         if (!ok) {
           chk.checked = false;
           kuroshiroEnabled = false;
@@ -1681,7 +1716,7 @@
         // まだ変換していないカードのみ処理する
         const toProcess = processedItems.filter(item => !item.furiganaHtml);
         if (toProcess.length > 0) {
-          showToast('ふりがな生成中', `${toProcess.length}件のカードを変換しています...`, 'info');
+          showToast('ふりがな生成中', `${toProcess.length}件のカードをバックグラウンドで変換しています...`, 'info');
           updateStatus('loading', `ふりがな生成中... (0/${toProcess.length})`);
           
           let count = 0;
@@ -1691,18 +1726,13 @@
               break;
             }
             try {
-              const raw = await kuroshiroInstance.convert(item.text, { mode: 'furigana', to: 'hiragana' });
+              const raw = await convertFuriganaWorker(item.text, item.id);
               item.furiganaHtml = rubyToFuriganaSpan(raw, item.id);
             } catch (e) {
               item.furiganaHtml = escapeHtml(item.text);
             }
             count++;
-            
-            // フリーズを防ぐため、2件ごとにイベントループを解放して画面を更新
-            if (count % 2 === 0) {
-              updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
-              await new Promise(resolve => setTimeout(resolve, 5));
-            }
+            updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
           }
           updateStatus('success', 'ふりがな生成完了！');
         }
@@ -1716,27 +1746,59 @@
       }
     }
 
-    // Kuroshiro辞書の初期化（初回のみネットワークからダウンロード）
-    async function initKuroshiro() {
-      if (kuroshiroReady) return true;
-      try {
-        showToast('辞書を読み込み中...', '辞書データを解析しています。お使いの端末により数秒〜十数秒ブラウザが固まることがありますが、そのままお待ちください（初回のみ）。', 'info');
-        updateStatus('loading', '辞書データを解析中...（そのままお待ちください）');
-        
-        // メッセージを確実に画面に描画させるため、少し長めに待機
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        kuroshiroInstance = new Kuroshiro();
-        await kuroshiroInstance.init(new KuromojiAnalyzer({
-          dictPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'
-        }));
-        kuroshiroReady = true;
-        return true;
-      } catch (e) {
-        console.error('Kuroshiro init failed:', e);
-        showToast('エラー', 'ふりがな辞書の読み込みに失敗しました。ネットワーク接続を確認してください。', 'error');
-        return false;
-      }
+    // KuroshiroのWeb Worker初期化
+    function initKuroshiroWorker() {
+      return new Promise((resolve) => {
+        if (kuroshiroReady) {
+          resolve(true);
+          return;
+        }
+
+        showToast('辞書を読み込み中...', 'バックグラウンドで辞書データを解析しています。画面は固まりませんのでそのままお待ちください（初回のみ）。', 'info');
+        updateStatus('loading', '辞書データを解析中...（バックグラウンド処理）');
+
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        kuroshiroWorker = new Worker(URL.createObjectURL(blob));
+
+        kuroshiroWorker.onmessage = function(e) {
+          if (e.data.type === 'init_success') {
+            kuroshiroReady = true;
+            resolve(true);
+          } else if (e.data.type === 'init_error') {
+            console.error('Kuroshiro Worker Init Error:', e.data.error);
+            showToast('エラー', 'ふりがな辞書の読み込みに失敗しました。ネットワーク接続を確認してください。', 'error');
+            updateStatus('error', '辞書の読み込みに失敗しました。');
+            resolve(false);
+          }
+        };
+
+        kuroshiroWorker.onerror = function(err) {
+          console.error('Worker Error:', err);
+          showToast('エラー', 'Web Workerの起動に失敗しました。', 'error');
+          resolve(false);
+        };
+
+        kuroshiroWorker.postMessage({ type: 'init' });
+      });
+    }
+
+    // Workerを使ってふりがなを変換する
+    function convertFuriganaWorker(text, id) {
+      return new Promise((resolve, reject) => {
+        const messageHandler = function(e) {
+          if (e.data.id === id) {
+            if (e.data.type === 'convert_success') {
+              kuroshiroWorker.removeEventListener('message', messageHandler);
+              resolve(e.data.result);
+            } else if (e.data.type === 'convert_error') {
+              kuroshiroWorker.removeEventListener('message', messageHandler);
+              reject(new Error(e.data.error));
+            }
+          }
+        };
+        kuroshiroWorker.addEventListener('message', messageHandler);
+        kuroshiroWorker.postMessage({ type: 'convert', payload: text, id: id });
+      });
     }
 
     // Kuroshiroの<ruby>出力をカスタムtooltipスパンに変換する
