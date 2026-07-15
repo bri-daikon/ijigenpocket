@@ -161,7 +161,7 @@ function renderManager() {
                         badge.draggable = true;
                         badge.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
                         badge.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
-                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1 pointer-events-none">${entry.content}</span><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none z-50">✕</button>`;
+                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1 pointer-events-none">${entry.content}</span><div class="flex gap-2 z-50"><button onclick="event.stopPropagation(); copyEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-xs leading-none" title="コピー">📋</button><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none" title="削除">✕</button></div>`;
                         container.appendChild(badge);
                     } else {
                         const empty = document.createElement('div');
@@ -269,6 +269,31 @@ window.cancelEdit = () => {
     document.getElementById('btn-apply-action').textContent = '適用する';
     document.getElementById('btn-apply-action').className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
     document.getElementById('btn-cancel-action').classList.add('hidden');
+};
+
+window.copyEntry = (id) => {
+    const entry = statusEntries.find(e => e.id === id);
+    if (!entry) return;
+    
+    cancelEdit();
+    
+    document.getElementById('action-person-select').value = entry.personIndex;
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${entry.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    const duration = entry.endRound - entry.startRound;
+    const newStart = config.currentRound;
+    const newEnd = newStart + duration;
+    
+    document.getElementById('action-start-round').value = newStart;
+    document.getElementById('action-end-round').value = newEnd;
+    document.getElementById('action-content').value = entry.content;
+    
+    document.getElementById('main-manager').scrollIntoView({ behavior: 'smooth' });
+    showMsg("コピーしました。対象等を変更して適用してください。");
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
 };
 
 window.removeEntry = (id) => {
