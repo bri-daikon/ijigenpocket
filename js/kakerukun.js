@@ -681,7 +681,8 @@ function exportHTML() {
                 continue;
             }
             
-            p.style.margin = '0';
+            p.style.marginTop = '0';
+            p.style.marginBottom = '0';
             
             let next = p.nextElementSibling;
             
@@ -689,6 +690,10 @@ function exportHTML() {
                 const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
                 if (isNextEmpty) {
                     if (next.innerHTML.trim() === '') next.innerHTML = '<br>';
+                    break;
+                }
+                // margin-leftが異なる場合は結合しない（インデントを維持するため）
+                if (p.style.marginLeft !== next.style.marginLeft) {
                     break;
                 }
                 p.innerHTML += '<br>' + next.innerHTML;
