@@ -326,73 +326,6 @@
     <!-- 右ペイン：TRPG {}変換 ＆ しおり・付箋 -->
     <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 transition-all duration-300">
 
-      <!-- 3. TRPG用語一括カッコ {} 変換 (固定) -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-          <i data-lucide="replace" class="w-4 h-4 text-teal-600"></i>
-          3. カッコ {} 一括変換
-        </h2>
-        <p class="text-[10px] text-slate-400 mb-2.5">特定のTRPG頻出ワードを自動で `{ワード}` に囲み置換します。</p>
-
-        <div class="mb-2.5">
-          <label class="block text-[10px] font-bold text-slate-500 mb-1">置換する語句（カンマ区切り）</label>
-          <input type="text" id="replace-keywords" value="KPC, PC, HO1, HO2, HO3, HO4, KP, PL, HO"
-            class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
-        </div>
-
-        <div class="flex gap-2">
-          <button onclick="applyKeywordWrapping()"
-            class="flex-grow bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-            {} で囲む
-          </button>
-          <button onclick="removeAllBraces()"
-            class="flex-shrink-0 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5" title="全ての {} を消去する">
-            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-            {} 消去
-          </button>
-        </div>
-      </div>
-
-      <!-- 4. ココフォリア連携用ブックマークレット -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-          <i data-lucide="send" class="w-4 h-4 text-teal-600"></i>
-          4. ココフォリア連携ツール
-        </h2>
-        <p class="text-[10px] text-slate-400 mb-2.5">
-          下のボタンをブラウザのブックマークバーにドラッグ＆ドロップして登録すると、ココフォリア上で「貼付のみ」「貼付＆送信」の2つのボタンを呼び出せます。
-        </p>
-        <div class="flex justify-center">
-          <a href="javascript:(function(){var c=document.createElement('div');c.style.cssText='position:fixed;bottom:20px;left:20px;z-index:9999;display:flex;gap:10px;';var b1=document.createElement('button');b1.textContent='📋 貼付のみ';b1.style.cssText='padding:10px 15px;background:#0284c7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b1.onclick=async function(){try{var t=await navigator.clipboard.readText();if(!t)return;var ta=document.querySelector('textarea');if(ta){var set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,t);ta.dispatchEvent(new Event('input',{bubbles:true}));}}catch(e){alert('許可が必要です');}};var b2=document.createElement('button');b2.textContent='🚀 貼付＆送信';b2.style.cssText='padding:10px 15px;background:#0d9488;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b2.onclick=async function(){try{var t=await navigator.clipboard.readText();if(!t)return;var ta=document.querySelector('textarea');if(ta){var set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,t);ta.dispatchEvent(new Event('input',{bubbles:true}));setTimeout(function(){var btn=document.evaluate('//button[contains(.,\'送信\')]',document,null,9,null).singleNodeValue;if(btn)btn.click();else{var o={key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true};ta.dispatchEvent(new KeyboardEvent('keydown',o));ta.dispatchEvent(new KeyboardEvent('keypress',o));ta.dispatchEvent(new KeyboardEvent('keyup',o));}},100);}}catch(e){alert('許可が必要です');}};c.appendChild(b1);c.appendChild(b2);document.body.appendChild(c);alert('「貼付のみ」「貼付＆送信」ボタンを追加しました。');})();" 
-             class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing w-full justify-center"
-             title="このボタンをブックマークバーにドラッグ＆ドロップ！">
-            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
-            ココフォリア連携ボタン (D&D)
-          </a>
-        </div>
-      </div>
-
-      <!-- 5. カスタム一括置換 -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-          <i data-lucide="replace-all" class="w-4 h-4 text-teal-600"></i>
-          5. カスタム一括置換
-        </h2>
-        <p class="text-[10px] text-slate-400 mb-2.5">抽出した全てのテキストから、指定した文字を別の文字に一括で置き換えます。</p>
-        
-        <div class="flex items-center gap-2 mb-2.5">
-          <input type="text" id="custom-replace-from" placeholder="・・・ (置換前)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
-          <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
-          <input type="text" id="custom-replace-to" placeholder="… (置換後)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
-        </div>
-
-        <button onclick="applyCustomReplace()" class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          一括置換を実行
-        </button>
-      </div>
-
       <!-- 2. テキスト設定 (常に固定) -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
         <h2 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5">
@@ -470,6 +403,75 @@
           </div>
         </div>
       </div>
+
+      <!-- 3. TRPG用語一括カッコ {} 変換 (固定) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="replace" class="w-4 h-4 text-teal-600"></i>
+          3. カッコ {} 一括変換
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">特定のTRPG頻出ワードを自動で `{ワード}` に囲み置換します。</p>
+
+        <div class="mb-2.5">
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">置換する語句（カンマ区切り）</label>
+          <input type="text" id="replace-keywords" value="KPC, PC, HO1, HO2, HO3, HO4, KP, PL, HO"
+            class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="applyKeywordWrapping()"
+            class="flex-grow bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            {} で囲む
+          </button>
+          <button onclick="removeAllBraces()"
+            class="flex-shrink-0 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5" title="全ての {} を消去する">
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+            {} 消去
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. ココフォリア連携用ブックマークレット -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="send" class="w-4 h-4 text-teal-600"></i>
+          4. ココフォリア連携ツール
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">
+          下のボタンをブラウザのブックマークバーにドラッグ＆ドロップして登録すると、ココフォリア上で「貼付のみ」「貼付＆送信」の2つのボタンを呼び出せます。
+        </p>
+        <div class="flex justify-center">
+          <a href="javascript:(function(){var c=document.createElement('div');c.style.cssText='position:fixed;bottom:20px;left:20px;z-index:9999;display:flex;gap:10px;';var b1=document.createElement('button');b1.textContent='📋 貼付のみ';b1.style.cssText='padding:10px 15px;background:#0284c7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b1.onclick=async function(){try{var t=await navigator.clipboard.readText();if(!t)return;var ta=document.querySelector('textarea');if(ta){var set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,t);ta.dispatchEvent(new Event('input',{bubbles:true}));}}catch(e){alert('許可が必要です');}};var b2=document.createElement('button');b2.textContent='🚀 貼付＆送信';b2.style.cssText='padding:10px 15px;background:#0d9488;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b2.onclick=async function(){try{var t=await navigator.clipboard.readText();if(!t)return;var ta=document.querySelector('textarea');if(ta){var set=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;set.call(ta,t);ta.dispatchEvent(new Event('input',{bubbles:true}));setTimeout(function(){var btn=document.evaluate('//button[contains(.,\'送信\')]',document,null,9,null).singleNodeValue;if(btn)btn.click();else{var o={key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true};ta.dispatchEvent(new KeyboardEvent('keydown',o));ta.dispatchEvent(new KeyboardEvent('keypress',o));ta.dispatchEvent(new KeyboardEvent('keyup',o));}},100);}}catch(e){alert('許可が必要です');}};c.appendChild(b1);c.appendChild(b2);document.body.appendChild(c);alert('「貼付のみ」「貼付＆送信」ボタンを追加しました。');})();" 
+             class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing w-full justify-center"
+             title="このボタンをブックマークバーにドラッグ＆ドロップ！">
+            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+            ココフォリア連携ボタン (D&D)
+          </a>
+        </div>
+      </div>
+
+      <!-- 5. カスタム一括置換 -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="replace-all" class="w-4 h-4 text-teal-600"></i>
+          5. カスタム一括置換
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">抽出した全てのテキストから、指定した文字を別の文字に一括で置き換えます。</p>
+        
+        <div class="flex items-center gap-2 mb-2.5">
+          <input type="text" id="custom-replace-from" placeholder="・・・ (置換前)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+          <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+          <input type="text" id="custom-replace-to" placeholder="… (置換後)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+        </div>
+
+        <button onclick="applyCustomReplace()" class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          一括置換を実行
+        </button>
+      </div>
+
+
 
     </div>
   </main>
