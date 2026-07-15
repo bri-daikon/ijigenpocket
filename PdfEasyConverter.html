@@ -218,81 +218,37 @@
         </div>
       </div>
 
-      <!-- 2. テキスト設定 (常に固定) -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-        <h2 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5">
-          <i data-lucide="sliders" class="w-4 h-4 text-teal-600"></i>
-          2. テキスト表示・整形設定
+      <!-- しおり（ブックマーク）リスト -->
+      <div
+        class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 h-64 overflow-hidden">
+        <h2
+          class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="bookmark" class="w-4 h-4 text-amber-500 fill-amber-500"></i>
+            しおりを挟んだ項目
+          </span>
+          <span id="bookmark-count"
+            class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
         </h2>
-
-        <!-- 表示単位の切り替え -->
-        <div class="mb-3">
-          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg">
-            <button id="btn-mode-paragraph"
-              class="py-1 px-2 rounded text-xs font-semibold transition-all bg-white text-teal-700 shadow-sm"
-              onclick="setSplitMode('paragraph')">
-              段落ごと (推奨)
-            </button>
-            <button id="btn-mode-line"
-              class="py-1 px-2 rounded text-xs font-semibold transition-all text-slate-600 hover:text-slate-800"
-              onclick="setSplitMode('line')">
-              1行ごと
-            </button>
-          </div>
+        <div id="bookmark-list" class="overflow-y-auto space-y-1.5 flex-grow pr-1">
+          <p class="text-[11px] text-slate-400 text-center py-6">しおりを挟むとここにリスト化されます</p>
         </div>
+      </div>
 
-        <!-- フィルター -->
-        <div class="space-y-2 border-t border-slate-100 pt-2.5">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-clean-newlines"
-              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
-              onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-remove-half-spaces"
-              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
-              onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">半角スペースを削除</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-exclude-header-footer" checked
-              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
-              onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">ヘッダー・フッターを除外</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-exclude-toc" checked
-              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
-              onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">目次・リーダー線を除外</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-convert-alphanum" checked
-              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
-              onchange="processAndDisplay()">
-            <span class="text-xs font-bold text-slate-700">全角英数字を半角に変換</span>
-          </label>
-
-          <!-- 動的・リアルタイム連動型話者名除外チェックボックス (静的HTML配置で絶対に消えません) -->
-          <div class="border-t border-slate-100 pt-2 mt-1">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="chk-speech-only"
-                class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500" onchange="renderList()">
-              <span class="text-xs font-bold text-teal-700">コピー時に話者名を除外（セリフのみ）</span>
-            </label>
-            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">チェックを入れると、コピー時に「山田「こんにちは」」のような単独セリフから「山田」をカットしてコピーします（画面上には話者名が表示されたままになります）。
-            </p>
-          </div>
-          <!-- ふりがな表示 -->
-          <div class="border-t border-slate-100 pt-2 mt-1">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="chk-furigana"
-                class="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500" onchange="toggleFurigana()">
-              <span class="text-xs font-bold text-violet-700">ふりがな（ホバーで表示）</span>
-            </label>
-            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">漢字にカーソルを乗せると読み仮名がポップアップします。初回のみ辞書データのダウンロードが発生します。</p>
-          </div>
+      <!-- 付箋（メモ）リスト -->
+      <div
+        class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 h-64 overflow-hidden">
+        <h2
+          class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="sticky-note" class="w-4 h-4 text-emerald-500 fill-emerald-100"></i>
+            作成した付箋（メモ）
+          </span>
+          <span id="note-count"
+            class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
+        </h2>
+        <div id="note-list" class="overflow-y-auto space-y-1.5 flex-grow pr-1">
+          <p class="text-[11px] text-slate-400 text-center py-6">付箋を貼るとここにリスト化されます</p>
         </div>
       </div>
 
@@ -368,7 +324,7 @@
     </div>
 
     <!-- 右ペイン：TRPG {}変換 ＆ しおり・付箋 -->
-    <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-hidden transition-all duration-300">
+    <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 transition-all duration-300">
 
       <!-- 3. TRPG用語一括カッコ {} 変換 (固定) -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -437,37 +393,81 @@
         </button>
       </div>
 
-      <!-- しおり（ブックマーク）リスト -->
-      <div
-        class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow lg:h-0 overflow-hidden">
-        <h2
-          class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
-          <span class="flex items-center gap-1.5">
-            <i data-lucide="bookmark" class="w-4 h-4 text-amber-500 fill-amber-500"></i>
-            しおりを挟んだ項目
-          </span>
-          <span id="bookmark-count"
-            class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
+      <!-- 2. テキスト設定 (常に固定) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5">
+          <i data-lucide="sliders" class="w-4 h-4 text-teal-600"></i>
+          2. テキスト表示・整形設定
         </h2>
-        <div id="bookmark-list" class="overflow-y-auto space-y-1.5 flex-grow pr-1">
-          <p class="text-[11px] text-slate-400 text-center py-6">しおりを挟むとここにリスト化されます</p>
-        </div>
-      </div>
 
-      <!-- 付箋（メモ）リスト -->
-      <div
-        class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow lg:h-0 overflow-hidden">
-        <h2
-          class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
-          <span class="flex items-center gap-1.5">
-            <i data-lucide="sticky-note" class="w-4 h-4 text-emerald-500 fill-emerald-100"></i>
-            作成した付箋（メモ）
-          </span>
-          <span id="note-count"
-            class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
-        </h2>
-        <div id="note-list" class="overflow-y-auto space-y-1.5 flex-grow pr-1">
-          <p class="text-[11px] text-slate-400 text-center py-6">付箋を貼るとここにリスト化されます</p>
+        <!-- 表示単位の切り替え -->
+        <div class="mb-3">
+          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg">
+            <button id="btn-mode-paragraph"
+              class="py-1 px-2 rounded text-xs font-semibold transition-all bg-white text-teal-700 shadow-sm"
+              onclick="setSplitMode('paragraph')">
+              段落ごと (推奨)
+            </button>
+            <button id="btn-mode-line"
+              class="py-1 px-2 rounded text-xs font-semibold transition-all text-slate-600 hover:text-slate-800"
+              onclick="setSplitMode('line')">
+              1行ごと
+            </button>
+          </div>
+        </div>
+
+        <!-- フィルター -->
+        <div class="space-y-2 border-t border-slate-100 pt-2.5">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-clean-newlines"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-remove-half-spaces"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">半角スペースを削除</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-exclude-header-footer" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">ヘッダー・フッターを除外</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-exclude-toc" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">目次・リーダー線を除外</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-convert-alphanum" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">全角英数字を半角に変換</span>
+          </label>
+
+          <!-- 動的・リアルタイム連動型話者名除外チェックボックス (静的HTML配置で絶対に消えません) -->
+          <div class="border-t border-slate-100 pt-2 mt-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="chk-speech-only"
+                class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500" onchange="renderList()">
+              <span class="text-xs font-bold text-teal-700">コピー時に話者名を除外（セリフのみ）</span>
+            </label>
+            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">チェックを入れると、コピー時に「山田「こんにちは」」のような単独セリフから「山田」をカットしてコピーします（画面上には話者名が表示されたままになります）。
+            </p>
+          </div>
+          <!-- ふりがな表示 -->
+          <div class="border-t border-slate-100 pt-2 mt-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="chk-furigana"
+                class="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500" onchange="toggleFurigana()">
+              <span class="text-xs font-bold text-violet-700">ふりがな（ホバーで表示）</span>
+            </label>
+            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">漢字にカーソルを乗せると読み仮名がポップアップします。初回のみ辞書データのダウンロードが発生します。</p>
+          </div>
         </div>
       </div>
 
