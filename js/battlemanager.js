@@ -374,4 +374,38 @@ window.newSession = () => {
     }
 };
 
-window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); };
+window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); initDragToScroll(); };
+
+function initDragToScroll() {
+    const slider = document.getElementById('table-scroll-container');
+    if (!slider) return;
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.status-badge') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
+            return;
+        }
+        isDown = true;
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2;
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
