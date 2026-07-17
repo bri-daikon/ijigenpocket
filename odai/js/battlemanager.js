@@ -67,12 +67,16 @@ window.deployManager = () => {
     const numPeople = parseInt(document.getElementById('input-num-people').value) || 1;
     const numRounds = parseInt(document.getElementById('input-num-rounds').value) || 10;
     const names = [];
+    const characters = [];
     for (let i = 0; i < numPeople; i++) {
         const el = document.getElementById(`name-input-${i}`);
-        names.push(el && el.value ? el.value : `PC ${i + 1}`);
+        const name = el && el.value ? el.value : `PC ${i + 1}`;
+        names.push(name);
+        characters.push({ id: i.toString(), name: name, inactive: false });
     }
-    config = { numPeople, numRounds, names, currentRound: 1 };
+    config = { numPeople, numRounds, names, characters, currentRound: 1 };
     statusEntries = [];
+    renderPresets();
     renderManager();
     document.getElementById('setup-section').classList.add('hidden');
     document.getElementById('main-manager').classList.remove('hidden');
@@ -85,10 +89,11 @@ function renderManager() {
     const currentSelectedPerson = select.value; // 現在の選択を保存
     
     select.innerHTML = '';
-    config.names.forEach((name, i) => {
+    const sortedCharacters = config.characters ? [...config.characters].sort((a, b) => (a.inactive === b.inactive ? 0 : a.inactive ? 1 : -1)) : [];
+    sortedCharacters.forEach((char) => {
         const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = name;
+        opt.value = char.id;
+        opt.textContent = char.inactive ? `${char.name} (離脱)` : char.name;
         select.appendChild(opt);
     });
     
@@ -113,18 +118,21 @@ function renderManager() {
 
     const body = document.getElementById('status-table-body');
     body.innerHTML = '';
-    config.names.forEach((name, pIdx) => {
-        const groupClass = pIdx % 2 === 0 ? "person-group-even" : "person-group-odd";
+    sortedCharacters.forEach((char, loopIdx) => {
+        const pIdx = char.id;
+        const name = char.name;
+        const groupClass = loopIdx % 2 === 0 ? "person-group-even" : "person-group-odd";
+        const inactiveClass = char.inactive ? "opacity-40 grayscale" : "";
         
         categories.forEach((cat, cIdx) => {
             const tr = document.createElement('tr');
             const borderTopClass = cIdx === 0 ? "border-t-2 border-white/20" : "";
-            tr.className = `border-b border-white/5 hover:bg-white/10 transition-colors ${groupClass} ${borderTopClass}`;
+            tr.className = `border-b border-white/5 hover:bg-white/10 transition-colors ${groupClass} ${borderTopClass} ${inactiveClass}`;
             
             const tdLabel = document.createElement('td');
-            tdLabel.className = "p-4 border-r sticky-col bg-inherit z-20";
+            tdLabel.className = "p-4 border-r sticky-col bg-inherit z-20 group/label";
             if (cIdx === 0) {
-                tdLabel.innerHTML = `<div class="font-black text-base truncate">${name}</div><div class="text-[9px] opacity-40 font-bold uppercase tracking-tighter mt-1">${cat.label}</div>`;
+                tdLabel.innerHTML = `<div class="flex justify-between items-start"><div class="font-black text-base truncate flex-1">${name}</div><button onclick="toggleCharacterStatus('${pIdx}')" class="opacity-0 group-hover/label:opacity-100 hover:scale-110 transition-all text-xs bg-black/30 px-2 py-0.5 rounded ml-1" title="キャラクターの状態切り替え">${char.inactive ? '復帰' : '離脱'}</button></div><div class="text-[9px] opacity-40 font-bold uppercase tracking-tighter mt-1">${cat.label}</div>`;
             } else {
                 tdLabel.innerHTML = `<div class="text-[9px] opacity-40 font-bold text-right uppercase tracking-tighter">${cat.label}</div>`;
             }
@@ -344,8 +352,11 @@ window.loadSession = () => {
     const session = sessions.find(s => s.id === id);
     if (session) {
         config = session.config; statusEntries = session.statusEntries || []; currentTheme = session.currentTheme || 'dark'; currentSessionId = session.id;
+        if (!config.characters && config.names) {
+            config.characters = config.names.map((name, i) => ({ id: i.toString(), name: name, inactive: false }));
+        }
         document.getElementById('save-name').value = session.sessionName;
-        changeTheme(currentTheme); renderManager();
+        changeTheme(currentTheme); renderPresets(); renderManager();
         document.getElementById('setup-section').classList.add('hidden');
         document.getElementById('main-manager').classList.remove('hidden');
         showMsg("読み込みました");
@@ -374,7 +385,82 @@ window.newSession = () => {
     }
 };
 
-window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); initDragToScroll(); };
+window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); initDragToScroll(); renderPresets(); };
+
+const PRESET_STORAGE_KEY = 'weby_trpg_presets_v1';
+let presets = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY) || '[]');
+
+window.renderPresets = () => {
+    const container = document.getElementById('presets-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (presets.length === 0) {
+        container.innerHTML = '<span class="text-xs opacity-50">プリセットはまだありません。よく使うバフや状態を登録できます。</span>';
+        return;
+    }
+    
+    presets.forEach(p => {
+        const catInfo = categories.find(c => c.id === p.category) || categories[0];
+        const btn = document.createElement('button');
+        btn.className = `preset-badge flex items-center gap-1 ${catInfo.color} text-white text-[10px] px-3 py-1.5 rounded-lg shadow-sm hover:scale-105 transition-all group`;
+        btn.innerHTML = `<span class="font-bold pointer-events-none">${p.content}</span><span onclick="event.stopPropagation(); removePreset('${p.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all ml-1 cursor-pointer">✕</span>`;
+        btn.onclick = () => applyPreset(p);
+        container.appendChild(btn);
+    });
+};
+
+window.savePreset = () => {
+    const cat = document.querySelector('input[name="action-cat"]:checked').value;
+    const content = document.getElementById('action-content').value;
+    if (!content) return showMsg("内容を入力してください", "error");
+    if (presets.find(p => p.category === cat && p.content === content)) {
+        return showMsg("すでに登録されています", "error");
+    }
+    presets.push({ id: Date.now().toString(), category: cat, content: content });
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
+    renderPresets();
+    showMsg("プリセットに登録しました");
+};
+
+window.removePreset = (id) => {
+    presets = presets.filter(p => p.id !== id);
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
+    renderPresets();
+};
+
+window.applyPreset = (preset) => {
+    const pIdx = document.getElementById('action-person-select').value;
+    if (!pIdx) return showMsg("対象者を選択してください", "error");
+    
+    const r = config.currentRound;
+    statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: preset.category, startRound: r, endRound: r, content: preset.content });
+    
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${preset.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    document.getElementById('action-content').value = preset.content;
+    
+    renderManager();
+    showMsg(`「${preset.content}」を適用しました`);
+};
+
+window.addCharacter = () => {
+    const name = prompt("追加するキャラクターの名前を入力してください:");
+    if (!name) return;
+    const newId = Date.now().toString();
+    if (!config.characters) config.characters = [];
+    config.characters.push({ id: newId, name: name, inactive: false });
+    config.numPeople++;
+    renderManager();
+    showMsg("キャラクターを追加しました");
+};
+
+window.toggleCharacterStatus = (id) => {
+    const char = config.characters.find(c => c.id === id);
+    if (char) {
+        char.inactive = !char.inactive;
+        renderManager();
+    }
+};
 
 function initDragToScroll() {
     const slider = document.getElementById('table-scroll-container');
