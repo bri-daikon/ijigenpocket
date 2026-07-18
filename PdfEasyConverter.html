@@ -74,6 +74,118 @@
     .furigana-word:hover::after {
       opacity: 1;
     }
+
+    /* テーマ切り替え用のCSSオーバーライド */
+    /* ダークモード */
+    body[data-theme="dark"] {
+      background-color: #0f172a !important;
+      color: #f1f5f9 !important;
+    }
+    body[data-theme="dark"] .bg-white {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    body[data-theme="dark"] .bg-slate-50, body[data-theme="dark"] .bg-slate-100 {
+      background-color: #0f172a !important;
+    }
+    body[data-theme="dark"] .bg-slate-200 {
+      background-color: #334155 !important;
+    }
+    body[data-theme="dark"] .text-slate-800, body[data-theme="dark"] .text-slate-700 {
+      color: #e2e8f0 !important;
+    }
+    body[data-theme="dark"] .text-slate-600, body[data-theme="dark"] .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    body[data-theme="dark"] .text-slate-400 {
+      color: #64748b !important;
+    }
+    body[data-theme="dark"] .border-slate-200, body[data-theme="dark"] .border-slate-100, body[data-theme="dark"] .border-slate-300 {
+      border-color: #334155 !important;
+    }
+    body[data-theme="dark"] .bg-teal-50 {
+      background-color: rgba(13, 148, 136, 0.15) !important;
+    }
+    body[data-theme="dark"] .text-teal-800, body[data-theme="dark"] .text-teal-700 {
+      color: #5eead4 !important;
+    }
+    body[data-theme="dark"] #canvas-container {
+      background-color: #1e293b !important;
+    }
+
+    /* ベージュモード */
+    body[data-theme="beige"] {
+      background-color: #fdf6e3 !important;
+      color: #586e75 !important;
+    }
+    body[data-theme="beige"] .bg-white {
+      background-color: #eee8d5 !important;
+      border-color: #d2cbb5 !important;
+    }
+    body[data-theme="beige"] .bg-slate-50, body[data-theme="beige"] .bg-slate-100 {
+      background-color: #e4dfcb !important;
+    }
+    body[data-theme="beige"] .bg-slate-200 {
+      background-color: #d2cbb5 !important;
+    }
+    body[data-theme="beige"] .text-slate-800, body[data-theme="beige"] .text-slate-700 {
+      color: #586e75 !important;
+    }
+    body[data-theme="beige"] .text-slate-600, body[data-theme="beige"] .text-slate-500 {
+      color: #839496 !important;
+    }
+    body[data-theme="beige"] .text-slate-400 {
+      color: #93a1a1 !important;
+    }
+    body[data-theme="beige"] .border-slate-200, body[data-theme="beige"] .border-slate-100, body[data-theme="beige"] .border-slate-300 {
+      border-color: #d2cbb5 !important;
+    }
+    body[data-theme="beige"] .bg-teal-50 {
+      background-color: #e8f4ec !important;
+    }
+    body[data-theme="beige"] .text-teal-800, body[data-theme="beige"] .text-teal-700 {
+      color: #0f766e !important;
+    }
+    body[data-theme="beige"] #canvas-container {
+      background-color: #eee8d5 !important;
+    }
+    
+    /* 薄いグリーンモード */
+    body[data-theme="light-green"] {
+      background-color: #f2fbf5 !important; 
+      color: #334b3e !important;
+    }
+    body[data-theme="light-green"] .bg-white {
+      background-color: #e6f7ec !important; 
+      border-color: #c0e0cc !important;
+    }
+    body[data-theme="light-green"] .bg-slate-50, body[data-theme="light-green"] .bg-slate-100 {
+      background-color: #d3f0de !important;
+    }
+    body[data-theme="light-green"] .bg-slate-200 {
+      background-color: #b3e3c6 !important;
+    }
+    body[data-theme="light-green"] .text-slate-800, body[data-theme="light-green"] .text-slate-700 {
+      color: #334b3e !important;
+    }
+    body[data-theme="light-green"] .text-slate-600, body[data-theme="light-green"] .text-slate-500 {
+      color: #4b6958 !important;
+    }
+    body[data-theme="light-green"] .text-slate-400 {
+      color: #6a8b78 !important;
+    }
+    body[data-theme="light-green"] .border-slate-200, body[data-theme="light-green"] .border-slate-100, body[data-theme="light-green"] .border-slate-300 {
+      border-color: #c0e0cc !important;
+    }
+    body[data-theme="light-green"] .bg-teal-50 {
+      background-color: #dcfce7 !important;
+    }
+    body[data-theme="light-green"] .text-teal-800, body[data-theme="light-green"] .text-teal-700 {
+      color: #166534 !important;
+    }
+    body[data-theme="light-green"] #canvas-container {
+      background-color: #e6f7ec !important;
+    }
   </style>
 </head>
 
@@ -91,9 +203,22 @@
           <p class="text-[11px] text-teal-100">PDFをプレビューで見ながら、改行を整え、クリックで簡単コピー！</p>
         </div>
       </div>
-      <div class="flex items-center gap-2 text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">
-        <i data-lucide="shield-check" class="w-4 h-4 text-teal-300"></i>
-        <span>データはすべてお使いのブラウザ内（Local Storage）に安全に自動保存されます</span>
+      <div class="flex items-center gap-4">
+        <!-- テーマセレクター -->
+        <div class="flex items-center gap-1.5 text-xs">
+          <i data-lucide="palette" class="w-4 h-4 text-teal-200"></i>
+          <select id="theme-selector" class="bg-white/20 border border-white/30 text-white text-xs rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-white/50 [&>option]:text-slate-800 cursor-pointer" onchange="changeTheme(this.value)">
+            <option value="light">標準 (ライト)</option>
+            <option value="dark">ダークモード</option>
+            <option value="beige">ベージュモード</option>
+            <option value="light-green">薄いグリーン</option>
+          </select>
+        </div>
+        <!-- セキュリティ表示 -->
+        <div class="hidden md:flex items-center gap-2 text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">
+          <i data-lucide="shield-check" class="w-4 h-4 text-teal-300"></i>
+          <span>データは安全に自動保存されます</span>
+        </div>
       </div>
     </div>
   </header>
@@ -508,6 +633,23 @@
     let furiganaQueue = [];       // 変換待ちキュー
     let isFuriganaConverting = false;
     let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
+
+    // テーマ管理
+    function initTheme() {
+      const savedTheme = localStorage.getItem('pdf-converter-theme') || 'light';
+      changeTheme(savedTheme);
+      const selector = document.getElementById('theme-selector');
+      if (selector) selector.value = savedTheme;
+    }
+    
+    function changeTheme(themeName) {
+      if (themeName === 'light') {
+        document.body.removeAttribute('data-theme');
+      } else {
+        document.body.setAttribute('data-theme', themeName);
+      }
+      localStorage.setItem('pdf-converter-theme', themeName);
+    }
 
     // ドロップエリアの設定
     const dropZone = document.getElementById('drop-zone');
@@ -2345,6 +2487,7 @@
 
     // 初期化
     window.onload = function () {
+      initTheme();
       lucide.createIcons();
     }
   </script>
