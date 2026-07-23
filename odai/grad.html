@@ -330,52 +330,88 @@
 
         function getShapeLocalPoints(shape) {
             const pts = [];
-            const steps = 20;
             switch (shape) {
                 case 'zigzag':
+                    return [[0,0], [0.25, -0.5], [0.75, 0.5], [1,0]];
                 case 'diamond':
                 case 'rhombus':
-                    return [[0,0], [0.25, 1], [0.75, -1], [1,0]];
+                    return [
+                        [0, 0], [0.25, 0], [0.5, -0.5], 
+                        [0.75, 0], [0.5, 0.5], [0.25, 0], [1, 0]
+                    ];
                 case 'wave':
-                    for (let i = 0; i <= steps; i++) {
-                        let t = i / steps;
-                        pts.push([t, Math.sin(t * Math.PI * 2)]);
+                    for (let i = 0; i <= 20; i++) {
+                        let t = i / 20;
+                        pts.push([t, Math.sin(t * Math.PI * 2) * 0.5]);
                     }
                     return pts;
                 case 'circle':
-                    for (let i = 0; i <= steps; i++) {
-                        let t = i / steps;
-                        let phase = t * 2;
-                        let sign = phase < 1 ? 1 : -1;
-                        let x = (phase % 1) * 2 - 1;
-                        let y = sign * Math.sqrt(Math.max(0, 1 - x*x));
-                        pts.push([t, y]);
+                    for(let i=0; i<=20; i++) {
+                        let a = Math.PI - (i/20) * Math.PI * 2; 
+                        pts.push([0.5 + Math.cos(a)*0.5, Math.sin(a)*0.5]);
                     }
+                    pts.push([1, 0]);
                     return pts;
                 case 'square':
-                    return [[0,0], [0,1], [0.5,1], [0.5,-1], [1,-1], [1,0]];
+                    return [
+                        [0, 0], [0.25, 0], [0.25, -0.5], [0.75, -0.5],
+                        [0.75, 0.5], [0.25, 0.5], [0.25, 0], [1, 0]
+                    ];
                 case 'star':
-                    return [
-                        [0, 0], [0.1, 0.3], [0.2, 0.3], [0.3, 1],
-                        [0.4, 0.3], [0.5, 0.3], [0.6, -0.2],
-                        [0.7, -1], [0.8, -0.4], [0.9, -1], [1, 0]
-                    ];
+                    for(let i=0; i<=10; i++) {
+                        let a = -Math.PI/2 + (i/10) * Math.PI * 2;
+                        let r = (i % 2 === 0) ? 0.5 : 0.2;
+                        let x = 0.5 + Math.cos(a) * r;
+                        let y = Math.sin(a) * r;
+                        pts.push([x, y]);
+                    }
+                    pts.push([1, 0]);
+                    return pts;
                 case 'heart':
-                    return [
-                        [0, 0], [0.125, 1], [0.25, 0.2], [0.375, 1],
-                        [0.5, 0], [0.75, -1], [1, 0]
-                    ];
+                    for(let i=0; i<=30; i++) {
+                        let a = -Math.PI + (i/30) * Math.PI * 2;
+                        let hx = 16 * Math.pow(Math.sin(a), 3);
+                        let hy = 13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a);
+                        let x = 0.5 + hx / 32;
+                        let y = -hy / 32; 
+                        pts.push([x, y]);
+                    }
+                    pts.push([1, 0]);
+                    return pts;
                 case 'spade':
-                    return [
-                        [0, 0], [0.1, -0.2], [0.2, 0], [0.5, 1],
-                        [0.8, 0], [0.9, -0.2], [0.95, -1], [1, 0]
-                    ];
+                    for(let i=0; i<=30; i++) {
+                        let a = -Math.PI + (i/30) * Math.PI * 2;
+                        let hx = 16 * Math.pow(Math.sin(a), 3);
+                        let hy = 13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a);
+                        let x = 0.5 + hx / 32;
+                        let y = hy / 32; 
+                        pts.push([x, y]);
+                    }
+                    pts.push([0.5, 12/32]);
+                    pts.push([0.45, 18/32]);
+                    pts.push([0.55, 18/32]);
+                    pts.push([0.5, 12/32]);
+                    pts.push([1, 0]);
+                    return pts;
                 case 'clover':
-                    return [
-                        [0, 0], [0.1, 0.6], [0.2, 0], [0.25, 1],
-                        [0.35, 1], [0.4, 0], [0.5, 0.6], [0.6, 0],
-                        [0.75, -1], [1, 0]
-                    ];
+                    for(let i=0; i<=10; i++) {
+                        let a = Math.PI/2 - (i/10)*Math.PI*2; 
+                        pts.push([0.5 + Math.cos(a)*0.2, -0.2 - Math.sin(a)*0.2]);
+                    }
+                    for(let i=0; i<=10; i++) {
+                        let a = Math.PI - (i/10)*Math.PI*2;
+                        pts.push([0.7 + Math.cos(a)*0.2, 0.1 - Math.sin(a)*0.2]);
+                    }
+                    for(let i=0; i<=10; i++) {
+                        let a = 0 - (i/10)*Math.PI*2;
+                        pts.push([0.3 + Math.cos(a)*0.2, 0.1 - Math.sin(a)*0.2]);
+                    }
+                    pts.push([0.5, 0.1]);
+                    pts.push([0.45, 0.5]);
+                    pts.push([0.55, 0.5]);
+                    pts.push([0.5, 0.1]);
+                    pts.push([1, 0]);
+                    return pts;
                 default:
                     return [[0,0], [1,0]];
             }
