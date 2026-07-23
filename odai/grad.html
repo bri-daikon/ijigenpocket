@@ -100,11 +100,20 @@
                     <i class="fa-solid fa-sliders"></i> 3. グラデーション設定
                 </h2>
                 
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-xs text-slate-400">角度: <span id="angleVal" class="text-slate-200 font-mono">90°</span></label>
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">種類</label>
+                        <select id="gradType" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="linear">線形 (Linear)</option>
+                            <option value="radial">円形 (Radial)</option>
+                        </select>
                     </div>
-                    <input type="range" id="angleInput" min="0" max="360" value="90" class="w-full accent-indigo-500">
+                    <div id="angleControl">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs text-slate-400">角度: <span id="angleVal" class="text-slate-200 font-mono">90°</span></label>
+                        </div>
+                        <input type="range" id="angleInput" min="0" max="360" value="90" class="w-full accent-indigo-500">
+                    </div>
                 </div>
 
                 <div>
@@ -195,6 +204,7 @@
         const state = {
             width: 800,
             height: 600,
+            type: 'linear',
             angle: 90,
             showGrid: false,
             colorStops: [
@@ -219,6 +229,8 @@
         const imgHeightInput = document.getElementById('imgHeight');
         const applySizeBtn = document.getElementById('applySizeBtn');
         const gridToggle = document.getElementById('gridToggle');
+        const gradTypeSelect = document.getElementById('gradType');
+        const angleControl = document.getElementById('angleControl');
         const angleInput = document.getElementById('angleInput');
         const angleVal = document.getElementById('angleVal');
         const colorStopsContainer = document.getElementById('colorStopsContainer');
@@ -272,17 +284,21 @@
             canvas.width = state.width;
             canvas.height = state.height;
 
-            const rad = (state.angle * Math.PI) / 180;
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const r = Math.hypot(canvas.width, canvas.height) / 2;
 
-            const x0 = cx - Math.cos(rad) * r;
-            const y0 = cy - Math.sin(rad) * r;
-            const x1 = cx + Math.cos(rad) * r;
-            const y1 = cy + Math.sin(rad) * r;
-
-            const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+            let grad;
+            if (state.type === 'radial') {
+                grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            } else {
+                const rad = (state.angle * Math.PI) / 180;
+                const x0 = cx - Math.cos(rad) * r;
+                const y0 = cy - Math.sin(rad) * r;
+                const x1 = cx + Math.cos(rad) * r;
+                const y1 = cy + Math.sin(rad) * r;
+                grad = ctx.createLinearGradient(x0, y0, x1, y1);
+            }
             
             const sortedStops = [...state.colorStops].sort((a, b) => a.offset - b.offset);
             sortedStops.forEach(s => {
@@ -895,7 +911,18 @@
             statusText.textContent = `キャンバスサイズを ${w} × ${h} px に変更しました。`;
         });
 
-        // 2. グラデーション角度変更
+        gradTypeSelect.addEventListener('change', (e) => {
+            state.type = e.target.value;
+            if (state.type === 'radial') {
+                angleControl.style.opacity = '0.3';
+                angleInput.disabled = true;
+            } else {
+                angleControl.style.opacity = '1';
+                angleInput.disabled = false;
+            }
+            drawBaseGradient(true);
+        });
+
         angleInput.addEventListener('input', (e) => {
             state.angle = parseInt(e.target.value, 10) || 0;
             angleVal.textContent = `${state.angle}°`;
