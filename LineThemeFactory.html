@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE着せ替え工場 - LINE Theme Factory</title>
+    <!-- JSZip CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #10B981;
+            --primary-dark: #059669;
+            --bg: #0B0F19;
+            --card-bg: #151D30;
+            --text: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --border: #1E293B;
+            --line-green: #06C755;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            background: linear-gradient(135deg, #151D30 0%, #0B0F19 100%);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--line-green);
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(6, 199, 85, 0.3);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+            color: #FFF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Drag and Drop Zone */
+        .upload-slot {
+            background-color: rgba(255,255,255,0.02);
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-slot:hover {
+            border-color: var(--primary);
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-slot input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-slot img {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .upload-slot-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .upload-slot-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Color Preset Selection */
+        .color-presets {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .color-preset {
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.1);
+        }
+
+        .color-preset.active {
+            border-color: #FFF;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* Main Workspace Preview */
+        .preview-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: #FFF;
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .tab-btn.active {
+            color: #FFF;
+            background-color: var(--primary);
+        }
+
+        .preview-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            padding: 20px;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            min-height: 500px;
+        }
+
+        /* Simulated Mobile Device Preview */
+        .mobile-device {
+            width: 320px;
+            height: 568px;
+            border-radius: 36px;
+            border: 12px solid #27272A;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            overflow: hidden;
+            position: relative;
+            background-color: #FFF;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .device-status-bar {
+            height: 24px;
+            background-color: rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 10px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .device-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Chat View Simulation */
+        .chat-view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-weight: 700;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .chat-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .chat-bubble.incoming {
+            align-self: flex-start;
+            background-color: #FFF;
+            color: #000;
+            border-top-left-radius: 2px;
+        }
+
+        .chat-bubble.outgoing {
+            align-self: flex-end;
+            background-color: #85e085;
+            color: #000;
+            border-top-right-radius: 2px;
+        }
+
+        .chat-input-area {
+            height: 44px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 8px;
+        }
+
+        .chat-input-mock {
+            flex: 1;
+            height: 28px;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background-color: rgba(255,255,255,0.8);
+        }
+
+        /* Menu Bar Simulation */
+        .menu-bar {
+            height: 56px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            background-size: cover;
+            position: relative;
+        }
+
+        .menu-item-mock {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .menu-item-mock img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        /* Passcode Simulation */
+        .passcode-view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .passcode-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .passcode-dots {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .passcode-dot-mock {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .passcode-dot-mock img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .passcode-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 80%;
+        }
+
+        .keypad-num {
+            height: 48px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 50%;
+            color: #333;
+        }
+
+        /* Theme Item Grid */
+        .asset-list-title {
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #FFF;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .asset-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .asset-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .asset-card-canvas-wrap {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+        }
+
+        .asset-card canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .asset-card-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #DDD;
+        }
+
+        .asset-card-size {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Action Buttons */
+        .action-area {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--line-green);
+            color: #FFF;
+            box-shadow: 0 4px 15px rgba(6, 199, 85, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #05b04b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: #FFF;
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        /* Editor Modal */
+        #editor-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .editor-box {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .editor-canvas-container {
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        #editor-canvas {
+            cursor: move;
+            width: 100%;
+            height: 100%;
+        }
+
+        .editor-controls {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .control-row label {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .control-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--line-green);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👾 LINE着せ替え工場</h1>
+            <p>キャラクター画像をインポートするだけで、LINE Creators Market仕様の着せ替えパッケージ（全62枚）を自動ビルド</p>
+        </header>
+
+        <div class="grid-layout">
+            <!-- Sidebar Panel: Inputs and Settings -->
+            <div class="sidebar">
+                <div class="panel">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>1. 素材のインポート</span>
+                        <button class="btn btn-secondary" id="btn-open-bulk-cleaner" style="padding: 4px 8px; font-size: 0.75rem; flex: none; border-radius: 6px; font-weight: 600; background-color: var(--primary);">⚡ 一括文字消し</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-main" accept="image/*">
+                            <img id="img-slot-main" src="" style="display:none;">
+                            <div class="upload-slot-title">メイン画像用キャラ</div>
+                            <div class="upload-slot-desc">推奨: 透過PNG 立ち絵など</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-main" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-off" accept="image/*">
+                            <img id="img-slot-off" src="" style="display:none;">
+                            <div class="upload-slot-title">メニュー未選択/OFF用</div>
+                            <div class="upload-slot-desc">推奨: 透過PNG 通常顔など</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-off" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-on" accept="image/*">
+                            <img id="img-slot-on" src="" style="display:none;">
+                            <div class="upload-slot-title">メニュー選択/ON用</div>
+                            <div class="upload-slot-desc">推奨: 透過PNG 笑顔など</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-on" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+
+                    <details style="margin-bottom: 16px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                        <summary style="font-weight: 600; cursor: pointer; padding: 5px 0;">🔽 メニュー個別設定 (詳細)</summary>
+                        <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
+                            <!-- Home -->
+                            <div><label>ホーム(OFF)</label><input type="file" id="slot-menuHomeOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>ホーム(ON)</label><input type="file" id="slot-menuHomeOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- Talk -->
+                            <div><label>トーク(OFF)</label><input type="file" id="slot-menuTalkOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>トーク(ON)</label><input type="file" id="slot-menuTalkOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- VOOM -->
+                            <div><label>VOOM(OFF)</label><input type="file" id="slot-menuVoomOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>VOOM(ON)</label><input type="file" id="slot-menuVoomOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- Shopping -->
+                            <div><label>ショプ(OFF)</label><input type="file" id="slot-menuShoppingOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>ショプ(ON)</label><input type="file" id="slot-menuShoppingOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- Call -->
+                            <div><label>通話(OFF)</label><input type="file" id="slot-menuCallOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>通話(ON)</label><input type="file" id="slot-menuCallOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- News -->
+                            <div><label>ニュース(OFF)</label><input type="file" id="slot-menuNewsOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>ニュース(ON)</label><input type="file" id="slot-menuNewsOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- TODAY -->
+                            <div><label>TODAY(OFF)</label><input type="file" id="slot-menuTodayOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>TODAY(ON)</label><input type="file" id="slot-menuTodayOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- Wallet -->
+                            <div><label>ウォレット(OFF)</label><input type="file" id="slot-menuWalletOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>ウォレット(ON)</label><input type="file" id="slot-menuWalletOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <!-- Apps -->
+                            <div><label>アプリ(OFF)</label><input type="file" id="slot-menuAppsOff" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                            <div><label>アプリ(ON)</label><input type="file" id="slot-menuAppsOn" accept="image/*" style="width: 100%; font-size: 0.7rem;"></div>
+                        </div>
+                    </details>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-pass-off" accept="image/*">
+                            <img id="img-slot-pass-off" src="" style="display:none;">
+                            <div class="upload-slot-title">パスコード未入力用</div>
+                            <div class="upload-slot-desc">推奨: 眠っている顔や後ろ姿など</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-pass-off" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-pass-on" accept="image/*">
+                            <img id="img-slot-pass-on" src="" style="display:none;">
+                            <div class="upload-slot-title">パスコード入力後用</div>
+                            <div class="upload-slot-desc">推奨: 笑顔や正面の顔など</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-pass-on" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <div class="upload-slot" style="margin-bottom: 4px;">
+                            <input type="file" id="slot-chat-bg" accept="image/*">
+                            <img id="img-slot-chat-bg" src="" style="display:none;">
+                            <div class="upload-slot-title">トークルーム背景画像</div>
+                            <div class="upload-slot-desc">推奨: 1482x1334 などの背景イラスト</div>
+                        </div>
+                        <button class="btn btn-secondary" id="btn-clean-chat-bg" style="display:none; padding: 6px 12px; font-size: 0.8rem; width: 100%; border-radius: 8px;">🎨 文字を消す・修復する</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">2. カラースキン設定</div>
+                    <div class="color-presets" id="color-presets-container">
+                        <!-- Color presets filled by JavaScript -->
+                    </div>
+                    <div class="control-row" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                        <label>カスタム3色グラデーション設定:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="color" id="theme-color-picker-1" value="#FFE5EC" style="flex: 1; height: 36px; cursor: pointer;">
+                            <input type="color" id="theme-color-picker-2" value="#FFC2D1" style="flex: 1; height: 36px; cursor: pointer;">
+                            <input type="color" id="theme-color-picker-3" value="#FFA5AB" style="flex: 1; height: 36px; cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-area">
+                    <button class="btn btn-primary" id="btn-export-zip">
+                        <span>📦 一括ZIPダウンロード</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace Panel: Preview and Asset List -->
+            <div class="workspace">
+                <div class="panel">
+                    <div class="panel-title">実機シミュレート・プレビュー</div>
+                    <div class="preview-tabs">
+                        <button class="tab-btn active" onclick="switchPreviewTab('chat')">トークルーム</button>
+                        <button class="tab-btn" onclick="switchPreviewTab('menu')">メニューバー</button>
+                        <button class="tab-btn" onclick="switchPreviewTab('passcode')">パスコード</button>
+                    </div>
+
+                    <div class="preview-container">
+                        <div class="mobile-device">
+                            <div class="device-status-bar">
+                                <span>12:34</span>
+                                <span>📶 🔋 100%</span>
+                            </div>
+                            <div class="device-content" id="device-screen">
+                                <!-- Dynamic screen contents -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="asset-list-title">ビルド済みアセット一覧（クリックして位置・倍率調整）</h2>
+        <div class="asset-grid" id="asset-grid-container">
+            <!-- 62 asset cards generated here -->
+        </div>
+    </div>
+    <!-- Image Editor Modal -->
+    <div id="editor-modal">
+        <div class="editor-box">
+            <h3 id="editor-asset-title">アセットの配置調整</h3>
+            <div class="editor-canvas-container">
+                <canvas id="editor-canvas"></canvas>
+            </div>
+            <div class="editor-controls">
+                <div class="control-row">
+                    <label>表示倍率:</label>
+                    <input type="range" id="editor-scale-slider" min="0.1" max="3.0" step="0.01" value="1.0">
+                    <span id="editor-scale-text">100%</span>
+                </div>
+                <div class="control-row">
+                    <label>個別に別画像を割り当てる:</label>
+                    <input type="file" id="editor-custom-file" accept="image/*" style="max-width: 200px;">
+                </div>
+                <div class="control-row" id="editor-custom-clear-row" style="display: none;">
+                    <label>個別設定を解除してデフォルト画像に戻す:</label>
+                    <button class="btn btn-secondary" id="btn-editor-custom-clear" style="padding: 6px 12px; font-size: 0.85rem; flex: none;">クリア</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeEditor(false)">キャンセル</button>
+                <button class="btn btn-primary" onclick="closeEditor(true)">適用する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Image Cleaner Modal -->
+    <div id="bulk-cleaner-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div class="editor-box" style="max-width: 1000px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">⚡ 一括スタンプ文字消しユーティリティ</h3>
+                <button class="btn btn-secondary" onclick="closeBulkCleaner()" style="padding: 6px 12px; font-size: 0.85rem; flex: none;">✕ 閉じる</button>
+            </div>
+            
+            <div style="display: flex; flex: 1; gap: 20px; min-height: 0; overflow: hidden; text-align: left;">
+                <!-- Left panel: Controls -->
+                <div style="width: 280px; display: flex; flex-direction: column; gap: 15px; border-right: 1px solid var(--border); padding-right: 20px; overflow-y: auto;">
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">1. 画像の追加:</label>
+                        <div class="upload-slot" style="min-height: 80px; margin-bottom: 0;">
+                            <input type="file" id="bulk-input-files" accept="image/*" multiple>
+                            <div class="upload-slot-title" style="font-size: 0.8rem;">複数画像を選択</div>
+                            <div class="upload-slot-desc" style="font-size: 0.7rem;">ドラッグ＆ドロップ可</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">2. 消去位置:</label>
+                        <select id="bulk-opt-pos" style="width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 8px;">
+                            <option value="bottom">下部 (Bottom)</option>
+                            <option value="top">上部 (Top)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px;">
+                            <label>3. 消去高さ:</label>
+                            <span id="bulk-opt-range-text">25%</span>
+                        </div>
+                        <input type="range" id="bulk-opt-range" min="5" max="80" value="25" style="width: 100%; accent-color: var(--line-green);">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">4. 消去方法:</label>
+                        <select id="bulk-opt-method" style="width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 8px;">
+                            <option value="transparent">透過 (Transparent)</option>
+                            <option value="fill">背景色で塗りつぶす</option>
+                        </select>
+                    </div>
+
+                    <div id="bulk-opt-color-row" style="display: none;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">塗りつぶし色:</label>
+                        <input type="color" id="bulk-opt-color" value="#FFFFFF" style="width: 100%; height: 36px; border: none; cursor: pointer; border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                        <button class="btn btn-primary" id="btn-bulk-process-run" style="width: 100%; padding: 12px;">⚡ 一括文字消しを実行</button>
+                        <button class="btn btn-secondary" id="btn-bulk-zip-download" style="width: 100%; padding: 12px; display: none;">📦 処理済み画像をZIP保存</button>
+                    </div>
+                </div>
+
+                <!-- Right panel: Previews Grid -->
+                <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                    <div style="font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>プレビュー一覧 (<span id="bulk-preview-count">0</span>枚)</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">※赤い領域が消去されます。一括実行後にスロットへ適用できます。</span>
+                    </div>
+                    <div id="bulk-previews-container" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; padding: 5px;">
+                        <!-- Preview cards dynamically rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Cleaner Modal -->
+    <div id="cleaner-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div class="editor-box" style="max-width: 800px; width: 95%;">
+            <h3 id="cleaner-asset-title">スタンプ文字消し・修復エディタ</h3>
+            <div style="display: flex; gap: 20px; margin: 20px 0; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+                <!-- Canvas Wrapper -->
+                <div style="border: 2px solid var(--border); border-radius: 12px; overflow: auto; max-width: 500px; max-height: 500px; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222); background-size: 20px 20px; background-position: 0 0, 10px 10px; cursor: crosshair;">
+                    <canvas id="cleaner-canvas" width="400" height="400" style="display: block;"></canvas>
+                </div>
+                <!-- Tools Panel -->
+                <div style="flex: 1; min-width: 250px; text-align: left; display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">ツール選択:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="tool-eraser" style="flex: 1; padding: 8px 12px; font-size: 0.9rem;">🧼 消しゴム (透過)</button>
+                            <button class="btn btn-secondary" id="tool-brush" style="flex: 1; padding: 8px 12px; font-size: 0.9rem;">🖌️ 修復ブラシ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">ブラシサイズ:</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="cleaner-brush-size" min="2" max="50" value="15" style="flex: 1; accent-color: var(--line-green);">
+                            <span id="cleaner-brush-size-text" style="font-size: 0.9rem; font-weight: 600; min-width: 30px;">15px</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">表示ズーム:</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="cleaner-zoom" min="50" max="400" value="100" style="flex: 1; accent-color: var(--line-green);">
+                            <span id="cleaner-zoom-text" style="font-size: 0.9rem; font-weight: 600; min-width: 40px;">100%</span>
+                        </div>
+                    </div>
+                    <div id="cleaner-color-section" style="display: none;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">ブラシカラー:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="color" id="cleaner-color-picker" value="#FFFFFF" style="width: 40px; height: 40px; border-radius: 8px; border: none; cursor: pointer;">
+                            <button class="btn btn-secondary btn-sm" id="tool-pipette" style="padding: 6px 12px; font-size: 0.85rem;">🧪 スポイト</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn btn-secondary" id="btn-cleaner-undo" style="flex: 1; padding: 8px;">↩️ Undo</button>
+                        <button class="btn btn-secondary" id="btn-cleaner-redo" style="flex: 1; padding: 8px;">🔁 Redo</button>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.4;">
+                        💡 <b>消しゴム</b>: なぞって透明（透過スタンプの余白文字用）<br>
+                        💡 <b>修復ブラシ</b>: 周囲の肌や背景色で上塗り（重なった文字用）
+                    </p>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeCleaner(false)">キャンセル</button>
+                <button class="btn btn-primary" onclick="closeCleaner(true)">修復完了 (適用)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // カラースキンのプリセット定義（3色グラデーション）
+        const colorPresets = [
+            { name: "Pink", color1: "#FFE5EC", color2: "#FFC2D1", color3: "#FFA5AB", text: "#4A1525" },
+            { name: "Mint", color1: "#E8F5E9", color2: "#C8E6C9", color3: "#A5D6A7", text: "#1B5E20" },
+            { name: "Yellow", color1: "#FFFDE7", color2: "#FFF9C4", color3: "#FFF59D", text: "#5D4037" },
+            { name: "Blue", color1: "#E3F2FD", color2: "#BBDEFB", color3: "#90CAF9", text: "#0D47A1" },
+            { name: "Black", color1: "#1A1D20", color2: "#212529", color3: "#343A40", text: "#F8F9FA" }
+        ];
+
+        let activeColor = colorPresets[0];
+        let activeTab = 'chat';
+
+        // インポートされた画像データ (HTMLImageElement)
+        const importedImages = {
+            main: null,
+            off: null,
+            on: null,
+            passOff: null,
+            passOn: null,
+            chatBg: null,
+            menuHomeOff: null, menuHomeOn: null,
+            menuTalkOff: null, menuTalkOn: null,
+            menuVoomOff: null, menuVoomOn: null,
+            menuShoppingOff: null, menuShoppingOn: null,
+            menuCallOff: null, menuCallOn: null,
+            menuNewsOff: null, menuNewsOn: null,
+            menuTodayOff: null, menuTodayOn: null,
+            menuWalletOff: null, menuWalletOn: null,
+            menuAppsOff: null, menuAppsOn: null
+        };
+
+        // ビルド済みアセットのメタデータ (62種類)
+        const themeAssets = {};
+
+        // アセット名とアセット設定を構築する (最新のLINE Creators Market公式仕様)
+        const assetDefinitions = [
+            // A. メイン画像 (3枚)
+            { key: "ios_thumbnail.png", width: 200, height: 284, role: "main", isTransparent: false },
+            { key: "android_thumbnail.png", width: 136, height: 202, role: "main", isTransparent: false },
+            { key: "store_thumbnail.png", width: 198, height: 278, role: "main", isTransparent: false },
+            
+            // C. メニュー背景画像 (1枚)
+            { key: "i_11.png", width: 1472, height: 150, role: "menuBg", isTransparent: false },
+            
+            // F. トークルーム背景画像 (2枚)
+            { key: "i_22.png", width: 1482, height: 1334, role: "chatBg", isTransparent: false },
+            { key: "a_22.png", width: 1300, height: 1300, role: "chatBg", isTransparent: false },
+            
+            // E. プロフィール画像 (4枚)
+            { key: "i_20.png", width: 240, height: 240, role: "profileSingle", isTransparent: true },
+            { key: "i_21.png", width: 240, height: 240, role: "profileGroup", isTransparent: true },
+            { key: "a_20.png", width: 247, height: 247, role: "profileSingle", isTransparent: true },
+            { key: "a_21.png", width: 247, height: 247, role: "profileGroup", isTransparent: true },
+            
+            // B. メニューボタン画像 (18枚: すべて 横128px × 縦150px)
+            // ホーム
+            { key: "i_29.png", width: 128, height: 150, role: "menuHomeOff", isTransparent: true },
+            { key: "i_30.png", width: 128, height: 150, role: "menuHomeOn", isTransparent: true },
+            // トーク
+            { key: "i_03.png", width: 128, height: 150, role: "menuTalkOff", isTransparent: true },
+            { key: "i_04.png", width: 128, height: 150, role: "menuTalkOn", isTransparent: true },
+            // VOOM
+            { key: "i_33.png", width: 128, height: 150, role: "menuVoomOff", isTransparent: true },
+            { key: "i_34.png", width: 128, height: 150, role: "menuVoomOn", isTransparent: true },
+            // ショッピング
+            { key: "i_35.png", width: 128, height: 150, role: "menuShoppingOff", isTransparent: true },
+            { key: "i_36.png", width: 128, height: 150, role: "menuShoppingOn", isTransparent: true },
+            // 通話
+            { key: "i_07.png", width: 128, height: 150, role: "menuCallOff", isTransparent: true },
+            { key: "i_08.png", width: 128, height: 150, role: "menuCallOn", isTransparent: true },
+            // ニュース
+            { key: "i_25.png", width: 128, height: 150, role: "menuNewsOff", isTransparent: true },
+            { key: "i_26.png", width: 128, height: 150, role: "menuNewsOn", isTransparent: true },
+            // TODAY
+            { key: "i_31.png", width: 128, height: 150, role: "menuTodayOff", isTransparent: true },
+            { key: "i_32.png", width: 128, height: 150, role: "menuTodayOn", isTransparent: true },
+            // ウォレット
+            { key: "i_27.png", width: 128, height: 150, role: "menuWalletOff", isTransparent: true },
+            { key: "i_28.png", width: 128, height: 150, role: "menuWalletOn", isTransparent: true },
+            // MINI
+            { key: "i_37.png", width: 128, height: 150, role: "menuAppsOff", isTransparent: true },
+            { key: "i_38.png", width: 128, height: 150, role: "menuAppsOn", isTransparent: true },
+            
+            // iOS 26 メニューボタン画像 (18枚: すべて 横80px × 縦56px)
+            { key: "i_29_g.png", width: 80, height: 56, role: "menuHomeOff", isTransparent: true },
+            { key: "i_30_g.png", width: 80, height: 56, role: "menuHomeOn", isTransparent: true },
+            { key: "i_03_g.png", width: 80, height: 56, role: "menuTalkOff", isTransparent: true },
+            { key: "i_04_g.png", width: 80, height: 56, role: "menuTalkOn", isTransparent: true },
+            { key: "i_33_g.png", width: 80, height: 56, role: "menuVoomOff", isTransparent: true },
+            { key: "i_34_g.png", width: 80, height: 56, role: "menuVoomOn", isTransparent: true },
+            { key: "i_35_g.png", width: 80, height: 56, role: "menuShoppingOff", isTransparent: true },
+            { key: "i_36_g.png", width: 80, height: 56, role: "menuShoppingOn", isTransparent: true },
+            { key: "i_07_g.png", width: 80, height: 56, role: "menuCallOff", isTransparent: true },
+            { key: "i_08_g.png", width: 80, height: 56, role: "menuCallOn", isTransparent: true },
+            { key: "i_25_g.png", width: 80, height: 56, role: "menuNewsOff", isTransparent: true },
+            { key: "i_26_g.png", width: 80, height: 56, role: "menuNewsOn", isTransparent: true },
+            { key: "i_31_g.png", width: 80, height: 56, role: "menuTodayOff", isTransparent: true },
+            { key: "i_32_g.png", width: 80, height: 56, role: "menuTodayOn", isTransparent: true },
+            { key: "i_27_g.png", width: 80, height: 56, role: "menuWalletOff", isTransparent: true },
+            { key: "i_28_g.png", width: 80, height: 56, role: "menuWalletOn", isTransparent: true },
+            { key: "i_37_g.png", width: 80, height: 56, role: "menuAppsOff", isTransparent: true },
+            { key: "i_38_g.png", width: 80, height: 56, role: "menuAppsOn", isTransparent: true },
+            
+            // D. パスコード画像 (16枚)
+            // iOS (120x120)
+            { key: "i_12.png", width: 120, height: 120, role: "passOff", isTransparent: true },
+            { key: "i_13.png", width: 120, height: 120, role: "passOn", isTransparent: true },
+            { key: "i_14.png", width: 120, height: 120, role: "passOff", isTransparent: true },
+            { key: "i_15.png", width: 120, height: 120, role: "passOn", isTransparent: true },
+            { key: "i_16.png", width: 120, height: 120, role: "passOff", isTransparent: true },
+            { key: "i_17.png", width: 120, height: 120, role: "passOn", isTransparent: true },
+            { key: "i_18.png", width: 120, height: 120, role: "passOff", isTransparent: true },
+            { key: "i_19.png", width: 120, height: 120, role: "passOn", isTransparent: true },
+            // Android (116x116)
+            { key: "a_12.png", width: 116, height: 116, role: "passOff", isTransparent: true },
+            { key: "a_13.png", width: 116, height: 116, role: "passOn", isTransparent: true },
+            { key: "a_14.png", width: 116, height: 116, role: "passOff", isTransparent: true },
+            { key: "a_15.png", width: 116, height: 116, role: "passOn", isTransparent: true },
+            { key: "a_16.png", width: 116, height: 116, role: "passOff", isTransparent: true },
+            { key: "a_17.png", width: 116, height: 116, role: "passOn", isTransparent: true },
+            { key: "a_18.png", width: 116, height: 116, role: "passOff", isTransparent: true },
+            { key: "a_19.png", width: 116, height: 116, role: "passOn", isTransparent: true }
+        ];
+
+        // 初期化処理
+        window.addEventListener('DOMContentLoaded', () => {
+            initColorPresets();
+            initAssetStore();
+            setupUploadSlots();
+            renderAssetGrid();
+            switchPreviewTab('chat');
+            setupEditorCustomUpload();
+        });
+
+        // カラープリセットUIの初期化
+        function initColorPresets() {
+            const container = document.getElementById('color-presets-container');
+            container.innerHTML = '';
+            colorPresets.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = `color-preset ${idx === 0 ? 'active' : ''}`;
+                div.style.background = `linear-gradient(135deg, ${p.color1}, ${p.color2}, ${p.color3})`;
+                div.title = p.name;
+                div.onclick = () => {
+                    document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('active'));
+                    div.classList.add('active');
+                    activeColor = p;
+                    document.getElementById('theme-color-picker-1').value = p.color1;
+                    document.getElementById('theme-color-picker-2').value = p.color2;
+                    document.getElementById('theme-color-picker-3').value = p.color3;
+                    updateThemeColors();
+                };
+                container.appendChild(div);
+            });
+
+            const onPickerChange = () => {
+                document.querySelectorAll('.color-preset').forEach(el => el.classList.remove('active'));
+                const c1 = document.getElementById('theme-color-picker-1').value;
+                const c2 = document.getElementById('theme-color-picker-2').value;
+                const c3 = document.getElementById('theme-color-picker-3').value;
+                activeColor = {
+                    name: "Custom",
+                    color1: c1,
+                    color2: c2,
+                    color3: c3,
+                    text: "#1E293B" // デフォルトの暗めのテキスト色
+                };
+                updateThemeColors();
+            };
+
+            document.getElementById('theme-color-picker-1').oninput = onPickerChange;
+            document.getElementById('theme-color-picker-2').oninput = onPickerChange;
+            document.getElementById('theme-color-picker-3').oninput = onPickerChange;
+        }
+
+        // 明度の自動調整ユーティリティ
+        function adjustColorBrightness(hex, percent) {
+            let num = parseInt(hex.replace("#",""), 16),
+                amt = Math.round(2.55 * percent),
+                R = (num >> 16) + amt,
+                G = (num >> 8 & 0x00FF) + amt,
+                B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<0?0:R:255)*0x10000 + (G<255?G<0?0:G:255)*0x100 + (B<255?B<0?0:B:255)).toString(16).slice(1);
+        }
+
+        // アセットのメモリストア初期化
+        function initAssetStore() {
+            assetDefinitions.forEach(def => {
+                themeAssets[def.key] = {
+                    key: def.key,
+                    width: def.width,
+                    height: def.height,
+                    role: def.role,
+                    isTransparent: def.isTransparent,
+                    // デフォルトの編集値
+                    scale: 1.0,
+                    x: 0,
+                    y: 0
+                };
+            });
+        }
+
+        // ファイルアップロードスロットのイベントハンドラ設定
+        function setupUploadSlots() {
+            const slots = [
+                { id: 'slot-main', imgId: 'img-slot-main', role: 'main' },
+                { id: 'slot-off', imgId: 'img-slot-off', role: 'off' },
+                { id: 'slot-on', imgId: 'img-slot-on', role: 'on' },
+                { id: 'slot-pass-off', imgId: 'img-slot-pass-off', role: 'passOff' },
+                { id: 'slot-pass-on', imgId: 'img-slot-pass-on', role: 'passOn' },
+                { id: 'slot-chat-bg', imgId: 'img-slot-chat-bg', role: 'chatBg' }
+            ];
+
+            slots.forEach(slot => {
+                const input = document.getElementById(slot.id);
+                const img = document.getElementById(slot.imgId);
+                const slotContainer = input.parentElement;
+
+                slotContainer.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    slotContainer.style.borderColor = 'var(--primary)';
+                });
+
+                slotContainer.addEventListener('dragleave', () => {
+                    slotContainer.style.borderColor = '#334155';
+                });
+
+                input.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const newImg = new Image();
+                            newImg.onload = () => {
+                                importedImages[slot.role] = newImg;
+                                img.src = event.target.result;
+                                img.style.display = 'block';
+                                slotContainer.querySelector('.upload-slot-title').style.display = 'none';
+                                slotContainer.querySelector('.upload-slot-desc').style.display = 'none';
+                                
+                                // 文字消しボタンを表示してイベントを登録
+                                let roleSuffix = slot.role;
+                                if (slot.role === 'passOff') roleSuffix = 'pass-off';
+                                else if (slot.role === 'passOn') roleSuffix = 'pass-on';
+                                else if (slot.role === 'chatBg') roleSuffix = 'chat-bg';
+                                const cleanBtn = document.getElementById(`btn-clean-${roleSuffix}`);
+                                if (cleanBtn) {
+                                    cleanBtn.style.display = 'block';
+                                    cleanBtn.onclick = (ev) => {
+                                        ev.preventDefault();
+                                        ev.stopPropagation();
+                                        openCleaner(slot.role);
+                                    };
+                                }
+
+                                // 各アセットに配置スケールを最適化
+                                autoFitAssetsForRole(slot.role);
+                                refreshAllCanvases();
+                                updatePreview();
+                            };
+                            newImg.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+
+            // 個別メニュー画像用のイベントリスナー設定
+            const specificMenuRoles = [
+                'menuHomeOff', 'menuHomeOn', 'menuTalkOff', 'menuTalkOn', 
+                'menuVoomOff', 'menuVoomOn', 'menuShoppingOff', 'menuShoppingOn',
+                'menuCallOff', 'menuCallOn', 'menuNewsOff', 'menuNewsOn',
+                'menuTodayOff', 'menuTodayOn', 'menuWalletOff', 'menuWalletOn',
+                'menuAppsOff', 'menuAppsOn'
+            ];
+            specificMenuRoles.forEach(role => {
+                const input = document.getElementById('slot-' + role);
+                if(input) {
+                    input.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                const newImg = new Image();
+                                newImg.onload = () => {
+                                    importedImages[role] = newImg;
+                                    autoFitAssetsForRole(role);
+                                    refreshAllCanvases();
+                                    updatePreview();
+                                };
+                                newImg.src = event.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            });
+        }
+
+        // 画像のフィット率を自動計算する
+        function autoFitAssetsForRole(role) {
+            Object.values(themeAssets).forEach(asset => {
+                if (asset.role === role || 
+                    (role === 'main' && (asset.role === 'chatBg' || asset.role === 'menuBg' || asset.role === 'profileGroup' || asset.role === 'profileSingle')) ||
+                    (role === 'chatBg' && asset.role === 'chatBg') ||
+                    (role === 'off' && asset.role.endsWith('Off')) ||
+                    (role === 'on' && asset.role.endsWith('On'))) {
+                    
+                    const img = getImgForAsset(asset);
+                    if (img) {
+                        let baseScale = 1.0;
+                        if (asset.role === 'chatBg') {
+                            if (importedImages.chatBg) {
+                                // ユーザー指定の背景画像がある場合は、全体を覆うように拡大 (Coverフィット)
+                                baseScale = Math.max(asset.width / img.width, asset.height / img.height);
+                                asset.x = 0;
+                                asset.y = 0;
+                            } else {
+                                // デフォルトはメインキャラの配置
+                                baseScale = (asset.height / img.height) * 0.45;
+                                asset.x = 0; // 左右中央
+                                asset.y = asset.height * 0.15; // 中央より少し下に配置
+                            }
+                        } else if (asset.role === 'main') {
+                            // メインサムネイル画像は余白なくぴったり合わせる(cover scale)
+                            baseScale = Math.max(asset.width / img.width, asset.height / img.height);
+                            asset.x = 0;
+                            asset.y = 0;
+                        } else if (asset.role === 'menuBg') {
+                            // 下部をぴったり合わせるため、高さで合わせる
+                            baseScale = asset.height / img.height;
+                            asset.x = 0;
+                            asset.y = 0;
+                        } else {
+                            baseScale = Math.min(asset.width / img.width, asset.height / img.height) * 0.8;
+                            asset.x = 0;
+                            asset.y = 0;
+                        }
+                        asset.scale = baseScale;
+                    }
+                }
+            });
+        }
+
+        // アセットに対応するインポート画像を取得する
+        function getImgForAsset(asset) {
+            if (asset.customImg) return asset.customImg; // 個別設定された画像を最優先
+            
+            // 個別にインポートされた画像がある場合はそれを優先
+            if (importedImages[asset.role]) return importedImages[asset.role];
+
+            // メニューとパスコードの個別設定がない場合は一括設定へフォールバック
+            if (asset.role.endsWith('Off') || asset.role === 'off' || asset.role === 'passOff') return importedImages.off || importedImages.main;
+            if (asset.role.endsWith('On') || asset.role === 'on' || asset.role === 'passOn') return importedImages.on || importedImages.main;
+
+            if (asset.role === 'main') return importedImages.main;
+            if (asset.role === 'profileGroup' || asset.role === 'profileSingle') return importedImages.main;
+            if (asset.role === 'chatBg') return importedImages.chatBg || importedImages.main;
+            if (asset.role === 'menuBg') return importedImages.main;
+            return null;
+        }
+
+        // アセットグリッドの描画
+        function renderAssetGrid() {
+            const container = document.getElementById('asset-grid-container');
+            container.innerHTML = '';
+
+            Object.values(themeAssets).forEach(asset => {
+                const card = document.createElement('div');
+                card.className = 'asset-card';
+                card.onclick = () => openEditor(asset.key);
+
+                const canvasWrap = document.createElement('div');
+                canvasWrap.className = 'asset-card-canvas-wrap';
+
+                const canvas = document.createElement('canvas');
+                canvas.id = `canvas-${asset.key}`;
+                canvas.width = asset.width;
+                canvas.height = asset.height;
+
+                canvasWrap.appendChild(canvas);
+                card.appendChild(canvasWrap);
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'asset-card-name';
+                nameDiv.innerText = asset.key;
+                card.appendChild(nameDiv);
+
+                const sizeDiv = document.createElement('div');
+                sizeDiv.className = 'asset-card-size';
+                sizeDiv.innerText = `${asset.width} x ${asset.height} px`;
+                card.appendChild(sizeDiv);
+
+                container.appendChild(card);
+                drawAssetOnCanvas(asset, canvas);
+            });
+        }
+
+        // アセットを指定のキャンバスに描画する
+        function drawAssetOnCanvas(asset, canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景塗り（透過でない場合、3色グラデーションを適用）
+            // ただし、画像が個別設定されている場合は背景を塗らない（ユーザーが背景ごと用意したと想定）
+            if (!asset.isTransparent && !asset.customImg) {
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, activeColor.color1);
+                grad.addColorStop(0.5, activeColor.color2);
+                grad.addColorStop(1, activeColor.color3);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            const img = getImgForAsset(asset);
+            if (img) {
+                ctx.save();
+                // 描画位置調整
+                const cx = canvas.width / 2 + asset.x;
+                const cy = canvas.height / 2 + asset.y;
+                const dw = img.width * asset.scale;
+                const dh = img.height * asset.scale;
+
+                if (asset.key === "i_11.png") {
+                    // 繰り返し描画
+                    const startX = (cx - dw / 2) % dw;
+                    let drawX = startX;
+                    if (drawX > 0) drawX -= dw;
+                    while (drawX < canvas.width) {
+                        ctx.drawImage(img, drawX, cy - dh / 2, dw, dh);
+                        drawX += dw;
+                    }
+                } else {
+                    ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+                }
+                ctx.restore();
+            } else {
+                // 画像がインポートされていない場合のプレースホルダー描画
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+                ctx.fillStyle = '#666';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('No Image', canvas.width / 2, canvas.height / 2);
+            }
+
+            // メニューボタンのON状態のデコレーション（自動ハイライト）
+            if (asset.role === 'on' && !img) {
+                ctx.strokeStyle = activeColor.primary;
+                ctx.lineWidth = 4;
+                ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+            }
+        }
+
+        // 全キャンバスのリフレッシュ
+        function refreshAllCanvases() {
+            Object.values(themeAssets).forEach(asset => {
+                const canvas = document.getElementById(`canvas-${asset.key}`);
+                if (canvas) {
+                    drawAssetOnCanvas(asset, canvas);
+                }
+            });
+        }
+
+        // テーマカラー更新
+        function updateThemeColors() {
+            refreshAllCanvases();
+            updatePreview();
+        }
+
+        // プレビュータブの切り替え
+        function switchPreviewTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.innerText.includes(tab === 'chat' ? 'トーク' : tab === 'menu' ? 'メニュー' : 'パスコード'));
+            if (activeBtn) activeBtn.classList.add('active');
+
+            updatePreview();
+        }
+
+        // シミュレータープレビューの更新
+        function updatePreview() {
+            const screen = document.getElementById('device-screen');
+            screen.innerHTML = '';
+            screen.style.background = `linear-gradient(135deg, ${activeColor.color1}, ${activeColor.color2}, ${activeColor.color3})`;
+            screen.style.color = activeColor.text;
+
+            if (activeTab === 'chat') {
+                const chatView = document.createElement('div');
+                chatView.className = 'chat-view';
+
+                const header = document.createElement('div');
+                header.className = 'chat-header';
+                header.style.background = `linear-gradient(135deg, ${activeColor.color1}, ${activeColor.color2})`;
+                header.style.color = activeColor.text;
+                header.innerText = 'キャラクターチャット';
+
+                const messages = document.createElement('div');
+                messages.className = 'chat-messages';
+                
+                // チャット背景画像の適用
+                const chatBgCanvas = document.getElementById('canvas-i_22.png');
+                if (chatBgCanvas) {
+                    messages.style.backgroundImage = `url(${chatBgCanvas.toDataURL()})`;
+                }
+
+                const bubble1 = document.createElement('div');
+                bubble1.className = 'chat-bubble incoming';
+                bubble1.innerText = 'こんにちは！着せ替えが完成したよ！';
+
+                const bubble2 = document.createElement('div');
+                bubble2.className = 'chat-bubble outgoing';
+                bubble2.style.background = `linear-gradient(135deg, ${activeColor.color1}, ${activeColor.color2})`;
+                bubble2.style.color = activeColor.text;
+                bubble2.innerText = 'うわぁ, かわいいデザインだね！';
+
+                messages.appendChild(bubble1);
+                messages.appendChild(bubble2);
+
+                const inputArea = document.createElement('div');
+                inputArea.className = 'chat-input-area';
+                inputArea.style.background = `linear-gradient(135deg, ${activeColor.color2}, ${activeColor.color3})`;
+                const inputMock = document.createElement('div');
+                inputMock.className = 'chat-input-mock';
+
+                inputArea.appendChild(inputMock);
+                chatView.appendChild(header);
+                chatView.appendChild(messages);
+                chatView.appendChild(inputArea);
+                screen.appendChild(chatView);
+
+            } else if (activeTab === 'menu') {
+                const menuView = document.createElement('div');
+                menuView.className = 'chat-view';
+                menuView.style.justifyContent = 'flex-end';
+
+                const dummyContent = document.createElement('div');
+                dummyContent.style.flex = '1';
+                dummyContent.style.display = 'flex';
+                dummyContent.style.alignItems = 'center';
+                dummyContent.style.justifyContent = 'center';
+                dummyContent.innerText = 'メニューバー表示中';
+
+                const bar = document.createElement('div');
+                bar.className = 'menu-bar';
+                
+                const menuBgCanvas = document.getElementById('canvas-i_11.png');
+                if (menuBgCanvas) {
+                    bar.style.backgroundImage = `url(${menuBgCanvas.toDataURL()})`;
+                } else {
+                    bar.style.backgroundColor = activeColor.primary;
+                }
+
+                // メニューアイテムを配置
+                const menuKeys = [
+                    { off: 'i_29.png', on: 'i_30.png' }, // ホーム
+                    { off: 'i_03.png', on: 'i_04.png' }, // トーク
+                    { off: 'i_33.png', on: 'i_34.png' }, // VOOM
+                    { off: 'i_07.png', on: 'i_08.png' }, // 通話
+                    { off: 'i_27.png', on: 'i_28.png' }  // ウォレット
+                ];
+                menuKeys.forEach((keys, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'menu-item-mock';
+                    
+                    const isSelected = (idx === 0);
+                    const btnKey = isSelected ? keys.on : keys.off;
+                    const btnCanvas = document.getElementById(`canvas-${btnKey}`);
+                    
+                    if (btnCanvas) {
+                        const img = document.createElement('img');
+                        img.src = btnCanvas.toDataURL();
+                        item.appendChild(img);
+                    }
+                    bar.appendChild(item);
+                });
+
+                menuView.appendChild(dummyContent);
+                menuView.appendChild(bar);
+                screen.appendChild(menuView);
+
+            } else if (activeTab === 'passcode') {
+                const passView = document.createElement('div');
+                passView.className = 'passcode-view';
+
+                const title = document.createElement('div');
+                title.className = 'passcode-title';
+                title.style.color = activeColor.text;
+                title.innerText = 'パスコードを入力';
+
+                const dots = document.createElement('div');
+                dots.className = 'passcode-dots';
+
+                const passcodeKeys = [
+                    { off: 'i_12.png', on: 'i_13.png' },
+                    { off: 'i_14.png', on: 'i_15.png' },
+                    { off: 'i_16.png', on: 'i_17.png' },
+                    { off: 'i_18.png', on: 'i_19.png' }
+                ];
+                passcodeKeys.forEach((keys, idx) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'passcode-dot-mock';
+                    
+                    const isFilled = (idx < 2);
+                    const passKey = isFilled ? keys.on : keys.off;
+                    const passCanvas = document.getElementById(`canvas-${passKey}`);
+                    
+                    if (passCanvas) {
+                        const img = document.createElement('img');
+                        img.src = passCanvas.toDataURL();
+                        dot.appendChild(img);
+                    }
+                    dots.appendChild(dot);
+                });
+
+                const keypad = document.createElement('div');
+                keypad.className = 'passcode-keypad';
+                for (let i = 1; i <= 9; i++) {
+                    const num = document.createElement('div');
+                    num.className = 'keypad-num';
+                    num.style.color = activeColor.text;
+                    num.innerText = i;
+                    keypad.appendChild(num);
+                }
+
+                passView.appendChild(title);
+                passView.appendChild(dots);
+                passView.appendChild(keypad);
+                screen.appendChild(passView);
+            }
+        }
+
+
+        // キャンバス編集エディタ機能
+        let editingAssetKey = null;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let assetStartPos = { x: 0, y: 0 };
+
+        function openEditor(key) {
+            editingAssetKey = key;
+            const asset = themeAssets[key];
+            document.getElementById('editor-asset-title').innerText = `${key} の配置調整`;
+
+            const modal = document.getElementById('editor-modal');
+            modal.style.display = 'flex';
+
+            const canvas = document.getElementById('editor-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // スライダー値を合わせる
+            const slider = document.getElementById('editor-scale-slider');
+            slider.value = asset.scale;
+            document.getElementById('editor-scale-text').innerText = Math.round(asset.scale * 100) + '%';
+
+            // エディタ用描画
+            drawEditorCanvas();
+
+            // スライダーイベント登録
+            slider.oninput = (e) => {
+                asset.scale = parseFloat(e.target.value);
+                document.getElementById('editor-scale-text').innerText = Math.round(asset.scale * 100) + '%';
+                drawEditorCanvas();
+            };
+
+            // マウスドラッグイベント登録
+            canvas.onmousedown = (e) => {
+                isDragging = true;
+                dragStart = { x: e.clientX, y: e.clientY };
+                assetStartPos = { x: asset.x, y: asset.y };
+            };
+
+            canvas.onmousemove = (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                
+                // キャンバススケール比率に合わせる
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = asset.width / rect.width;
+                const scaleY = asset.height / rect.height;
+
+                asset.x = assetStartPos.x + dx * scaleX;
+                asset.y = assetStartPos.y + dy * scaleY;
+                
+                drawEditorCanvas();
+            };
+
+            window.onmouseup = () => {
+                isDragging = false;
+            };
+
+            // 個別設定解除ボタンの表示制御
+            const clearRow = document.getElementById('editor-custom-clear-row');
+            if (asset.customImg) {
+                clearRow.style.display = 'flex';
+            } else {
+                clearRow.style.display = 'none';
+            }
+        }
+
+        function drawEditorCanvas() {
+            const canvas = document.getElementById('editor-canvas');
+            const asset = themeAssets[editingAssetKey];
+            canvas.width = asset.width;
+            canvas.height = asset.height;
+            drawAssetOnCanvas(asset, canvas);
+
+            // 境界線ガイド描画
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function closeEditor(save) {
+            const modal = document.getElementById('editor-modal');
+            modal.style.display = 'none';
+
+            if (save) {
+                // 保存
+                const canvas = document.getElementById(`canvas-${editingAssetKey}`);
+                if (canvas) {
+                    drawAssetOnCanvas(themeAssets[editingAssetKey], canvas);
+                }
+                updatePreview();
+            } else {
+                // キャンセル（アセットデータをリロードして再描画）
+                // 元の値に戻すためにリロードするか、今回はシンプルに再描画
+                refreshAllCanvases();
+            }
+            editingAssetKey = null;
+        }
+
+        // 一括ZIPエクスポート
+        document.getElementById('btn-export-zip').onclick = async () => {
+            const zip = new JSZip();
+            const exportButton = document.getElementById('btn-export-zip');
+            exportButton.disabled = true;
+            exportButton.innerText = "⏳ ZIP作成中...";
+
+            try {
+                for (const asset of Object.values(themeAssets)) {
+                    const canvas = document.getElementById(`canvas-${asset.key}`);
+                    if (canvas) {
+                        // データURLをBlobに変換してZIPに追加
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        zip.file(asset.key, blob);
+                    }
+                }
+
+                const content = await zip.generateAsync({ type: 'blob' });
+                
+                // ダウンロードトリガー
+                const link = document.createElement('a');
+                link.download = 'line_theme_package.zip';
+                link.href = URL.createObjectURL(content);
+                link.click();
+            } catch (err) {
+                console.error(err);
+                alert("ZIPファイルの生成に失敗しました。");
+            } finally {
+                exportButton.disabled = false;
+                exportButton.innerHTML = "<span>📦 一括ZIPダウンロード</span>";
+            }
+        };
+
+        // ==========================================
+        // 文字消し・修復エディタ機能の実装
+        // ==========================================
+        let cleanerActiveRole = null;
+        let isDrawingCleaner = false;
+        let currentCleanerTool = 'eraser'; // 'eraser' or 'brush' or 'pipette'
+        let cleanerBrushSize = 15;
+        let cleanerBrushColor = '#FFFFFF';
+        
+        let cleanerUndoHistory = [];
+        let cleanerRedoHistory = [];
+
+        const cleanerCanvas = document.getElementById('cleaner-canvas');
+        const cleanerCtx = cleanerCanvas.getContext('2d');
+
+        // 各ツールボタンの切り替え
+        document.getElementById('tool-eraser').onclick = () => setCleanerTool('eraser');
+        document.getElementById('tool-brush').onclick = () => setCleanerTool('brush');
+        document.getElementById('tool-pipette').onclick = () => setCleanerTool('pipette');
+        
+        document.getElementById('cleaner-brush-size').oninput = (e) => {
+            cleanerBrushSize = parseInt(e.target.value);
+            document.getElementById('cleaner-brush-size-text').innerText = cleanerBrushSize + 'px';
+        };
+        
+        document.getElementById('cleaner-color-picker').onchange = (e) => {
+            cleanerBrushColor = e.target.value;
+        };
+
+        document.getElementById('cleaner-zoom').oninput = (e) => {
+            const val = parseInt(e.target.value);
+            document.getElementById('cleaner-zoom-text').innerText = val + '%';
+            
+            const originalImg = importedImages[cleanerActiveRole];
+            if (originalImg) {
+                const baseWidth = originalImg.naturalWidth || originalImg.width;
+                const baseHeight = originalImg.naturalHeight || originalImg.height;
+                cleanerCanvas.style.width = (baseWidth * val / 100) + 'px';
+                cleanerCanvas.style.height = (baseHeight * val / 100) + 'px';
+            }
+        };
+
+        function setCleanerTool(tool) {
+            currentCleanerTool = tool;
+            document.getElementById('tool-eraser').className = 'btn btn-secondary';
+            document.getElementById('tool-brush').className = 'btn btn-secondary';
+            document.getElementById('tool-pipette').className = 'btn btn-secondary';
+            
+            const activeBtn = document.getElementById(`tool-${tool === 'pipette' ? 'pipette' : tool === 'brush' ? 'brush' : 'eraser'}`);
+            if (activeBtn) activeBtn.className = 'btn btn-primary';
+
+            // 色選択セクションの表示制御
+            const colorSection = document.getElementById('cleaner-color-section');
+            if (tool === 'brush' || tool === 'pipette') {
+                colorSection.style.display = 'block';
+            } else {
+                colorSection.style.display = 'none';
+            }
+        }
+
+        // 文字消しエディタを開く
+        function openCleaner(role) {
+            cleanerActiveRole = role;
+            const originalImg = importedImages[role];
+            if (!originalImg) return;
+
+            document.getElementById('cleaner-asset-title').innerText = `文字消し・修復エディタ (${role})`;
+            
+            // キャンバスサイズを元画像に合わせる
+            cleanerCanvas.width = originalImg.naturalWidth || originalImg.width;
+            cleanerCanvas.height = originalImg.naturalHeight || originalImg.height;
+            
+            cleanerCtx.clearRect(0, 0, cleanerCanvas.width, cleanerCanvas.height);
+            cleanerCtx.drawImage(originalImg, 0, 0);
+
+            // 履歴初期化
+            cleanerUndoHistory = [];
+            cleanerRedoHistory = [];
+            saveCleanerState();
+
+            // ズーム初期設定のリセット
+            const zoomSlider = document.getElementById('cleaner-zoom');
+            if (zoomSlider) {
+                zoomSlider.value = 100;
+                document.getElementById('cleaner-zoom-text').innerText = '100%';
+            }
+            cleanerCanvas.style.width = (originalImg.naturalWidth || originalImg.width) + 'px';
+            cleanerCanvas.style.height = (originalImg.naturalHeight || originalImg.height) + 'px';
+
+            // モーダル表示
+            document.getElementById('cleaner-modal').style.display = 'flex';
+            setCleanerTool('eraser');
+        }
+
+        // 状態保存 (Undo用)
+        function saveCleanerState() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cleanerCanvas.width;
+            tempCanvas.height = cleanerCanvas.height;
+            tempCanvas.getContext('2d').drawImage(cleanerCanvas, 0, 0);
+            cleanerUndoHistory.push(tempCanvas);
+            if (cleanerUndoHistory.length > 20) cleanerUndoHistory.shift();
+            cleanerRedoHistory = []; // 新しいアクション時はRedo履歴を消去
+        }
+
+        // Undo実行
+        document.getElementById('btn-cleaner-undo').onclick = () => {
+            if (cleanerUndoHistory.length <= 1) return; // 初期状態は残す
+            const current = cleanerUndoHistory.pop();
+            cleanerRedoHistory.push(current);
+            
+            const previous = cleanerUndoHistory[cleanerUndoHistory.length - 1];
+            cleanerCtx.clearRect(0, 0, cleanerCanvas.width, cleanerCanvas.height);
+            cleanerCtx.drawImage(previous, 0, 0);
+        };
+
+        // Redo実行
+        document.getElementById('btn-cleaner-redo').onclick = () => {
+            if (cleanerRedoHistory.length === 0) return;
+            const next = cleanerRedoHistory.pop();
+            cleanerUndoHistory.push(next);
+            
+            cleanerCtx.clearRect(0, 0, cleanerCanvas.width, cleanerCanvas.height);
+            cleanerCtx.drawImage(next, 0, 0);
+        };
+
+        // キャンバス上でのお絵描きイベント
+        cleanerCanvas.onmousedown = (e) => {
+            isDrawingCleaner = true;
+            drawCleanerStroke(e);
+        };
+
+        cleanerCanvas.onmousemove = (e) => {
+            if (!isDrawingCleaner) return;
+            drawCleanerStroke(e);
+        };
+
+        window.addEventListener('mouseup', () => {
+            if (isDrawingCleaner) {
+                isDrawingCleaner = false;
+                saveCleanerState();
+            }
+        });
+
+        function drawCleanerStroke(e) {
+            const rect = cleanerCanvas.getBoundingClientRect();
+            // 実際の画像解像度に対する描画座標を割り出す
+            const scaleX = cleanerCanvas.width / rect.width;
+            const scaleY = cleanerCanvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            if (currentCleanerTool === 'pipette') {
+                if (e.type === 'mousedown') {
+                    // ピクセル色を抽出
+                    try {
+                        const pixel = cleanerCtx.getImageData(x, y, 1, 1).data;
+                        const hex = "#" + ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1);
+                        cleanerBrushColor = hex;
+                        document.getElementById('cleaner-color-picker').value = hex;
+                        // スポイト後は自動的にブラシツールへ切り替え
+                        setCleanerTool('brush');
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+                return;
+            }
+
+            cleanerCtx.save();
+            cleanerCtx.lineCap = 'round';
+            cleanerCtx.lineJoin = 'round';
+            cleanerCtx.lineWidth = cleanerBrushSize;
+
+            if (currentCleanerTool === 'eraser') {
+                cleanerCtx.globalCompositeOperation = 'destination-out';
+            } else {
+                cleanerCtx.globalCompositeOperation = 'source-over';
+                cleanerCtx.strokeStyle = cleanerBrushColor;
+            }
+
+            if (e.type === 'mousedown') {
+                cleanerCtx.beginPath();
+                cleanerCtx.moveTo(x, y);
+                cleanerCtx.lineTo(x, y);
+                cleanerCtx.stroke();
+            } else {
+                cleanerCtx.beginPath();
+                cleanerCtx.arc(x, y, cleanerBrushSize / 2, 0, Math.PI * 2);
+                cleanerCtx.fillStyle = currentCleanerTool === 'eraser' ? 'rgba(0,0,0,1)' : cleanerBrushColor;
+                if (currentCleanerTool === 'eraser') {
+                    cleanerCtx.fill();
+                } else {
+                    cleanerCtx.fill();
+                }
+            }
+            cleanerCtx.restore();
+        }
+
+        function closeCleaner(save) {
+            document.getElementById('cleaner-modal').style.display = 'none';
+            const role = cleanerActiveRole; // 非同期実行前にロールを退避
+            if (save && role) {
+                // 編集結果のCanvasデータをImageオブジェクトに変換し、元のスロットとメモリに書き戻す
+                const dataUrl = cleanerCanvas.toDataURL('image/png');
+                const newImg = new Image();
+                newImg.onload = () => {
+                    importedImages[role] = newImg;
+                    
+                    // スロットプレビュー画像を更新
+                    const imgEl = document.getElementById(`img-slot-${role === 'passOff' ? 'pass-off' : role === 'passOn' ? 'pass-on' : role}`);
+                    if (imgEl) {
+                        imgEl.src = dataUrl;
+                    }
+
+                    // アセットの再生成・再描画
+                    autoFitAssetsForRole(role);
+                    refreshAllCanvases();
+                    updatePreview();
+                };
+                newImg.src = dataUrl;
+            }
+            cleanerActiveRole = null;
+        }
+
+        // アセット個別の画像アップロード設定
+        function setupEditorCustomUpload() {
+            const customFileInput = document.getElementById('editor-custom-file');
+            const clearBtn = document.getElementById('btn-editor-custom-clear');
+
+            customFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && editingAssetKey) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const newImg = new Image();
+                        newImg.onload = () => {
+                            const asset = themeAssets[editingAssetKey];
+                            asset.customImg = newImg;
+                            
+                            // スケール・位置の初期自動フィット
+                            asset.scale = Math.min(asset.width / newImg.width, asset.height / newImg.height) * 0.8;
+                            asset.x = 0;
+                            asset.y = 0;
+                            
+                            // スライダー値を更新
+                            const slider = document.getElementById('editor-scale-slider');
+                            slider.value = asset.scale;
+                            document.getElementById('editor-scale-text').innerText = Math.round(asset.scale * 100) + '%';
+                            
+                            document.getElementById('editor-custom-clear-row').style.display = 'flex';
+                            drawEditorCanvas();
+                        };
+                        newImg.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            clearBtn.onclick = () => {
+                if (editingAssetKey) {
+                    const asset = themeAssets[editingAssetKey];
+                    asset.customImg = null;
+                    
+                    // スケールをデフォルトフィットに戻す
+                    const defaultImg = getImgForAsset(asset);
+                    if (defaultImg) {
+                        asset.scale = Math.min(asset.width / defaultImg.width, asset.height / defaultImg.height) * 0.8;
+                    } else {
+                        asset.scale = 1.0;
+                    }
+                    asset.x = 0;
+                    asset.y = 0;
+                    
+                    // スライダー値を更新
+                    const slider = document.getElementById('editor-scale-slider');
+                    slider.value = asset.scale;
+                    document.getElementById('editor-scale-text').innerText = Math.round(asset.scale * 100) + '%';
+                    
+                    document.getElementById('editor-custom-clear-row').style.display = 'none';
+                    drawEditorCanvas();
+                }
+            };
+        }
+
+        // ==========================================
+        // 一括スタンプ文字消しユーティリティの実装
+        // ==========================================
+        let bulkFiles = []; // Array of { file, originalImg, processedCanvas }
+
+        // モーダルを開く
+        document.getElementById('btn-open-bulk-cleaner').onclick = () => {
+            document.getElementById('bulk-cleaner-modal').style.display = 'flex';
+            resetBulkCleaner();
+        };
+
+        function closeBulkCleaner() {
+            document.getElementById('bulk-cleaner-modal').style.display = 'none';
+        }
+
+        function resetBulkCleaner() {
+            bulkFiles = [];
+            document.getElementById('bulk-preview-count').innerText = '0';
+            document.getElementById('bulk-previews-container').innerHTML = '';
+            document.getElementById('btn-bulk-zip-download').style.display = 'none';
+            document.getElementById('bulk-input-files').value = '';
+        }
+
+        // オプション変更時のイベントハンドラ
+        document.getElementById('bulk-opt-range').oninput = (e) => {
+            document.getElementById('bulk-opt-range-text').innerText = e.target.value + '%';
+            renderBulkPreviews();
+        };
+        document.getElementById('bulk-opt-pos').onchange = () => {
+            renderBulkPreviews();
+        };
+        document.getElementById('bulk-opt-method').onchange = (e) => {
+            const colorRow = document.getElementById('bulk-opt-color-row');
+            if (e.target.value === 'fill') {
+                colorRow.style.display = 'block';
+            } else {
+                colorRow.style.display = 'none';
+            }
+            renderBulkPreviews();
+        };
+        document.getElementById('bulk-opt-color').oninput = () => {
+            renderBulkPreviews();
+        };
+
+        // 複数ファイルアップロード
+        document.getElementById('bulk-input-files').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            let loadedCount = 0;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        bulkFiles.push({
+                            file: file,
+                            originalImg: img,
+                            processedCanvas: null
+                        });
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            document.getElementById('bulk-preview-count').innerText = bulkFiles.length;
+                            renderBulkPreviews();
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // プレビューのレンダリング
+        function renderBulkPreviews() {
+            const container = document.getElementById('bulk-previews-container');
+            container.innerHTML = '';
+
+            const pos = document.getElementById('bulk-opt-pos').value;
+            const pct = parseInt(document.getElementById('bulk-opt-range').value) / 100;
+            const method = document.getElementById('bulk-opt-method').value;
+            const fillColor = document.getElementById('bulk-opt-color').value;
+
+            bulkFiles.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.style.backgroundColor = 'var(--card-bg)';
+                card.style.border = '1px solid var(--border)';
+                card.style.borderRadius = '10px';
+                card.style.padding = '10px';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.alignItems = 'center';
+                card.style.gap = '8px';
+
+                const canvasWrap = document.createElement('div');
+                canvasWrap.style.width = '100%';
+                canvasWrap.style.aspectRatio = '1';
+                canvasWrap.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                canvasWrap.style.borderRadius = '8px';
+                canvasWrap.style.overflow = 'hidden';
+                canvasWrap.style.display = 'flex';
+                canvasWrap.style.justifyContent = 'center';
+                canvasWrap.style.alignItems = 'center';
+                canvasWrap.style.backgroundImage = 'linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222)';
+                canvasWrap.style.backgroundSize = '10px 10px';
+                canvasWrap.style.backgroundPosition = '0 0, 5px 5px';
+
+                const canvas = document.createElement('canvas');
+                canvas.width = item.originalImg.width;
+                canvas.height = item.originalImg.height;
+                canvas.style.maxWidth = '100%';
+                canvas.style.maxHeight = '100%';
+                canvas.style.objectFit = 'contain';
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(item.originalImg, 0, 0);
+
+                if (item.processedCanvas) {
+                    // 処理済みの場合、処理結果を描画
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(item.processedCanvas, 0, 0);
+                } else {
+                    // 未処理の場合、消去対象エリアに赤マスクを描画
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // 半透明赤
+                    const h = canvas.height * pct;
+                    if (pos === 'bottom') {
+                        ctx.fillRect(0, canvas.height - h, canvas.width, h);
+                    } else {
+                        ctx.fillRect(0, 0, canvas.width, h);
+                    }
+                }
+
+                canvasWrap.appendChild(canvas);
+                card.appendChild(canvasWrap);
+
+                const nameEl = document.createElement('div');
+                nameEl.style.fontSize = '0.75rem';
+                nameEl.style.fontWeight = '600';
+                nameEl.style.width = '100%';
+                nameEl.style.textAlign = 'center';
+                nameEl.style.whiteSpace = 'nowrap';
+                nameEl.style.overflow = 'hidden';
+                nameEl.style.textOverflow = 'ellipsis';
+                nameEl.innerText = item.file.name;
+                card.appendChild(nameEl);
+
+                if (item.processedCanvas) {
+                    // スロット適用ボタンエリア
+                    const btnGrid = document.createElement('div');
+                    btnGrid.style.display = 'grid';
+                    btnGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                    btnGrid.style.gap = '4px';
+                    btnGrid.style.width = '100%';
+
+                    const slots = [
+                        { name: 'メイン', role: 'main' },
+                        { name: 'OFF', role: 'off' },
+                        { name: 'ON', role: 'on' },
+                        { name: 'パスOFF', role: 'passOff' },
+                        { name: 'パスON', role: 'passOn' }
+                    ];
+
+                    slots.forEach(s => {
+                        const btn = document.createElement('button');
+                        btn.style.padding = '4px';
+                        btn.style.fontSize = '0.65rem';
+                        btn.style.fontWeight = '600';
+                        btn.style.borderRadius = '4px';
+                        btn.style.border = 'none';
+                        btn.style.cursor = 'pointer';
+                        btn.style.backgroundColor = 'var(--primary)';
+                        btn.style.color = '#FFF';
+                        btn.innerText = s.name;
+                        btn.onclick = () => {
+                            applyProcessedToSlot(item.processedCanvas, s.role);
+                            btn.style.backgroundColor = 'var(--line-green)';
+                            btn.innerText = '✓ 適用済';
+                            setTimeout(() => {
+                                btn.style.backgroundColor = 'var(--primary)';
+                                btn.innerText = s.name;
+                            }, 1000);
+                        };
+                        btnGrid.appendChild(btn);
+                    });
+
+                    card.appendChild(btnGrid);
+                }
+
+                container.appendChild(card);
+            });
+        }
+
+        // 一括文字消し処理の実行
+        document.getElementById('btn-bulk-process-run').onclick = () => {
+            if (bulkFiles.length === 0) {
+                alert('画像が追加されていません。');
+                return;
+            }
+
+            const pos = document.getElementById('bulk-opt-pos').value;
+            const pct = parseInt(document.getElementById('bulk-opt-range').value) / 100;
+            const method = document.getElementById('bulk-opt-method').value;
+            const fillColor = document.getElementById('bulk-opt-color').value;
+
+            bulkFiles.forEach(item => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = item.originalImg.width;
+                tempCanvas.height = item.originalImg.height;
+
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(item.originalImg, 0, 0);
+
+                const h = tempCanvas.height * pct;
+                const y = (pos === 'bottom') ? tempCanvas.height - h : 0;
+
+                if (method === 'transparent') {
+                    tempCtx.clearRect(0, y, tempCanvas.width, h);
+                } else {
+                    tempCtx.fillStyle = fillColor;
+                    tempCtx.fillRect(0, y, tempCanvas.width, h);
+                }
+
+                item.processedCanvas = tempCanvas;
+            });
+
+            renderBulkPreviews();
+            document.getElementById('btn-bulk-zip-download').style.display = 'block';
+        };
+
+        // 一括ZIP保存の実行
+        document.getElementById('btn-bulk-zip-download').onclick = async () => {
+            const zip = new JSZip();
+            const btn = document.getElementById('btn-bulk-zip-download');
+            btn.disabled = true;
+            btn.innerText = '⏳ ZIP作成中...';
+
+            try {
+                for (const item of bulkFiles) {
+                    if (item.processedCanvas) {
+                        const blob = await new Promise(resolve => item.processedCanvas.toBlob(resolve, 'image/png'));
+                        zip.file(item.file.name.replace(/\.[^/.]+$/, "") + "_cleaned.png", blob);
+                    }
+                }
+                const content = await zip.generateAsync({ type: 'blob' });
+                const link = document.createElement('a');
+                link.download = 'stamps_cleaned.zip';
+                link.href = URL.createObjectURL(content);
+                link.click();
+            } catch (err) {
+                console.error(err);
+                alert('ZIPの保存に失敗しました。');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '📦 処理済み画像をZIP保存';
+            }
+        };
+
+        // 処理済み画像をインポートスロットに適用する
+        function applyProcessedToSlot(canvas, role) {
+            const dataUrl = canvas.toDataURL('image/png');
+            const newImg = new Image();
+            newImg.onload = () => {
+                importedImages[role] = newImg;
+                
+                // スロットプレビュー画像を更新
+                const imgEl = document.getElementById(`img-slot-${role === 'passOff' ? 'pass-off' : role === 'passOn' ? 'pass-on' : role}`);
+                if (imgEl) {
+                    imgEl.src = dataUrl;
+                    imgEl.style.display = 'block';
+                    
+                    const slotContainer = imgEl.parentElement;
+                    slotContainer.querySelector('.upload-slot-title').style.display = 'none';
+                    slotContainer.querySelector('.upload-slot-desc').style.display = 'none';
+                }
+
+                // 文字消しブラシボタンを表示
+                const cleanBtn = document.getElementById(`btn-clean-${role === 'passOff' ? 'pass-off' : role === 'passOn' ? 'pass-on' : role}`);
+                if (cleanBtn) {
+                    cleanBtn.style.display = 'block';
+                    cleanBtn.onclick = (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        openCleaner(role);
+                    };
+                }
+
+                // 各アセットの配置を自動フィット
+                autoFitAssetsForRole(role);
+                refreshAllCanvases();
+                updatePreview();
+            };
+            newImg.src = dataUrl;
+        }
+    </script>
+</body>
+</html>

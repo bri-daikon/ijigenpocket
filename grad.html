@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グラデーション＆ギザギザカットツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .checkerboard {
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-palette text-indigo-400 text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wide">Weby グラデーション＆ギザギザカットツール</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="undoBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-rotate-left"></i> 元に戻す
+            </button>
+            <button id="resetCanvasBtn" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+                <i class="fa-solid fa-arrows-rotate"></i> 再描画
+            </button>
+            <button id="downloadBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg transition">
+                <i class="fa-solid fa-download"></i> PNG保存
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <aside class="w-full lg:w-96 bg-slate-800 border-r border-slate-700 p-5 overflow-y-auto flex flex-col gap-6">
+            
+            <!-- 1. 画像サイズ設定 -->
+            <section class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/60">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-expand"></i> 1. キャンバスサイズ (px)
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">幅 (Width)</label>
+                        <input type="number" id="imgWidth" value="800" min="50" max="4000" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">高さ (Height)</label>
+                        <input type="number" id="imgHeight" value="600" min="50" max="4000" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <button id="applySizeBtn" class="w-full mt-3 bg-slate-700 hover:bg-slate-600 text-xs py-2 rounded-lg transition font-medium">
+                    サイズ変更を適用
+                </button>
+                <div class="mt-3 flex items-center gap-2 pt-2 border-t border-slate-700/60">
+                    <input type="checkbox" id="gridToggle" class="w-4 h-4 rounded accent-indigo-500 cursor-pointer">
+                    <label for="gridToggle" class="text-xs text-slate-300 cursor-pointer flex items-center gap-1.5 select-none">
+                        <i class="fa-solid fa-border-top-left text-indigo-400"></i> ガイドライン表示 (50px間隔)
+                    </label>
+                </div>
+            </section>
+
+            <!-- 2. グラデーション設定 -->
+            <section class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/60 flex flex-col gap-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> 2. グラデーション設定
+                </h2>
+                
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs text-slate-400">角度: <span id="angleVal" class="text-slate-200 font-mono">90°</span></label>
+                    </div>
+                    <input type="range" id="angleInput" min="0" max="360" value="90" class="w-full accent-indigo-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs text-slate-400">カラー分岐点</label>
+                        <button id="addColorBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> 色を追加
+                        </button>
+                    </div>
+                    <div id="colorStopsContainer" class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1"></div>
+                </div>
+            </section>
+
+            <!-- 3. ギザギザ・波線切り取りツール -->
+            <section class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/60 flex flex-col gap-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                    <i class="fa-solid fa-scissors"></i> 3. 切り取り線（ギザギザ・波線・直線）
+                </h2>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    画面上の作業エリア内でドラッグしてカットできます。直線・手書きカットは線の上側/右側領域を透明化します。
+                </p>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">カット形状</label>
+                        <select id="cutShape" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="zigzag">ギザギザ</option>
+                            <option value="wave">波線 (Wave)</option>
+                            <option value="straight">直線 (Straight)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">切り取りモード</label>
+                        <select id="cutMode" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="line">1. 直線カット（片側消去）</option>
+                            <option value="freehand">2. 手書きカット（片側消去）</option>
+                            <option value="polygon">3. 囲み領域カット（内側消去）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">振幅・深さ (px)</label>
+                        <input type="number" id="zigzagSize" value="20" min="0" max="100" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">周期・波長 (px)</label>
+                        <input type="number" id="zigzagFrequency" value="20" min="5" max="100" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div id="polygonActionArea" class="hidden flex gap-2">
+                    <button id="applyPolygonCutBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-medium transition">
+                        囲みを切り取り
+                    </button>
+                    <button id="clearPointsBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-3 py-2 rounded-lg transition">
+                        クリア
+                    </button>
+                </div>
+            </section>
+
+        </aside>
+
+        <!-- 作業用エリア：画像の外側からのドラッグを受けられるよう広いパディング付きコンテナを配置 -->
+        <main class="flex-1 p-6 bg-slate-950 flex flex-col items-center justify-center relative overflow-auto">
+            <div id="canvasContainer" class="p-16 border-2 border-dashed border-slate-700/80 rounded-2xl bg-slate-900/40 relative cursor-crosshair select-none flex items-center justify-center">
+                <div class="relative rounded-lg shadow-2xl overflow-hidden checkerboard flex items-center justify-center border border-slate-600">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+            </div>
+            <div id="statusNotice" class="mt-4 text-xs text-slate-400 bg-slate-800/80 px-4 py-2 rounded-full border border-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                <span id="statusText">作業エリア内でドラッグして切り取り線を引いてください。</span>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const state = {
+            width: 800,
+            height: 600,
+            angle: 90,
+            showGrid: false,
+            colorStops: [
+                { id: 1, color: "#6366f1", offset: 0 },
+                { id: 2, color: "#a855f7", offset: 0.5 },
+                { id: 3, color: "#ec4899", offset: 1 }
+            ],
+            history: [],
+            maxHistory: 20,
+            polygonPoints: [],
+            freehandPath: [],
+            isDragging: false,
+            dragStart: null,
+            dragCurrent: null
+        };
+
+        const canvas = document.getElementById('mainCanvas');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const ctx = canvas.getContext('2d');
+        
+        const imgWidthInput = document.getElementById('imgWidth');
+        const imgHeightInput = document.getElementById('imgHeight');
+        const applySizeBtn = document.getElementById('applySizeBtn');
+        const gridToggle = document.getElementById('gridToggle');
+        const angleInput = document.getElementById('angleInput');
+        const angleVal = document.getElementById('angleVal');
+        const colorStopsContainer = document.getElementById('colorStopsContainer');
+        const addColorBtn = document.getElementById('addColorBtn');
+        
+        const cutShapeSelect = document.getElementById('cutShape');
+        const cutModeSelect = document.getElementById('cutMode');
+        const zigzagSizeInput = document.getElementById('zigzagSize');
+        const zigzagFrequencyInput = document.getElementById('zigzagFrequency');
+        const polygonActionArea = document.getElementById('polygonActionArea');
+        const applyPolygonCutBtn = document.getElementById('applyPolygonCutBtn');
+        const clearPointsBtn = document.getElementById('clearPointsBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const resetCanvasBtn = document.getElementById('resetCanvasBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusText = document.getElementById('statusText');
+
+        function saveStateToHistory() {
+            if (state.history.length >= state.maxHistory) {
+                state.history.shift();
+            }
+            state.history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            updateUndoBtnState();
+        }
+
+        function undo() {
+            if (state.history.length > 1) {
+                state.history.pop();
+                const prevState = state.history[state.history.length - 1];
+                ctx.putImageData(prevState, 0, 0);
+            } else if (state.history.length === 1) {
+                drawBaseGradient(false);
+            }
+            updateUndoBtnState();
+        }
+
+        function updateUndoBtnState() {
+            if (undoBtn) {
+                undoBtn.disabled = state.history.length <= 1;
+            }
+        }
+
+        function drawBaseGradient(resetHistory = true) {
+            canvas.width = state.width;
+            canvas.height = state.height;
+
+            const rad = (state.angle * Math.PI) / 180;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const r = Math.hypot(canvas.width, canvas.height) / 2;
+
+            const x0 = cx - Math.cos(rad) * r;
+            const y0 = cy - Math.sin(rad) * r;
+            const x1 = cx + Math.cos(rad) * r;
+            const y1 = cy + Math.sin(rad) * r;
+
+            const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+            
+            const sortedStops = [...state.colorStops].sort((a, b) => a.offset - b.offset);
+            sortedStops.forEach(s => {
+                try {
+                    grad.addColorStop(s.offset, s.color);
+                } catch(e) {
+                    console.error("Invalid color stop:", s);
+                }
+            });
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (resetHistory) {
+                state.history = [];
+                saveStateToHistory();
+            }
+            renderOverlay();
+        }
+
+        function renderColorStopsUI() {
+            colorStopsContainer.innerHTML = '';
+            state.colorStops.sort((a, b) => a.offset - b.offset);
+
+            state.colorStops.forEach((stop) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700';
+
+                item.innerHTML = `
+                    <input type="color" value="${stop.color}" class="w-8 h-8 rounded border-0 cursor-pointer bg-transparent stop-color-input" data-id="${stop.id}">
+                    <div class="flex-1">
+                        <input type="range" min="0" max="1" step="0.01" value="${stop.offset}" class="w-full accent-indigo-500 stop-offset-input" data-id="${stop.id}">
+                    </div>
+                    <span class="text-xs text-slate-400 font-mono w-10 text-right">${Math.round(stop.offset * 100)}%</span>
+                    <button class="text-slate-400 hover:text-red-400 p-1 rounded transition remove-stop-btn ${state.colorStops.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}" data-id="${stop.id}" ${state.colorStops.length <= 2 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+
+                colorStopsContainer.appendChild(item);
+            });
+
+            colorStopsContainer.querySelectorAll('.stop-color-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    const stop = state.colorStops.find(s => s.id === id);
+                    if (stop) {
+                        stop.color = e.target.value;
+                        drawBaseGradient(true);
+                    }
+                });
+            });
+
+            colorStopsContainer.querySelectorAll('.stop-offset-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    const stop = state.colorStops.find(s => s.id === id);
+                    if (stop) {
+                        stop.offset = parseFloat(e.target.value);
+                        e.target.parentElement.nextElementSibling.textContent = `${Math.round(stop.offset * 100)}%`;
+                        drawBaseGradient(true);
+                    }
+                });
+            });
+
+            colorStopsContainer.querySelectorAll('.remove-stop-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (state.colorStops.length <= 2) return;
+                    const id = parseInt(btn.dataset.id);
+                    state.colorStops = state.colorStops.filter(s => s.id !== id);
+                    renderColorStopsUI();
+                    drawBaseGradient(true);
+                });
+            });
+        }
+
+        function createCutPathPoints(p1, p2, depth, freq, shape) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist === 0) return [p1];
+
+            if (shape === 'straight' || depth === 0) {
+                return [{ x: p1.x, y: p1.y }, { x: p2.x, y: p2.y }];
+            }
+
+            const nx = -dy / dist;
+            const ny = dx / dist;
+            const pathPoints = [];
+
+            if (shape === 'wave') {
+                const steps = Math.max(10, Math.floor(dist / 2));
+                const cycles = dist / freq;
+
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const angle = t * cycles * Math.PI * 2;
+                    const offset = Math.sin(angle) * depth;
+
+                    pathPoints.push({
+                        x: baseX + nx * offset,
+                        y: baseY + ny * offset
+                    });
+                }
+            } else { // zigzag
+                const steps = Math.max(2, Math.floor(dist / freq));
+                pathPoints.push({ x: p1.x, y: p1.y });
+
+                for (let i = 1; i < steps; i++) {
+                    const t = i / steps;
+                    const baseX = p1.x + dx * t;
+                    const baseY = p1.y + dy * t;
+                    const direction = (i % 2 === 1) ? 1 : -1;
+                    const offset = direction * depth;
+
+                    pathPoints.push({
+                        x: baseX + nx * offset,
+                        y: baseY + ny * offset
+                    });
+                }
+                pathPoints.push({ x: p2.x, y: p2.y });
+            }
+
+            return pathPoints;
+        }
+
+        // 線の上・右側領域を透明化する法線ベクトル計算
+        function getUpperRightNormal(start, end) {
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const len = Math.hypot(dx, dy);
+            if (len === 0) return { x: 0, y: -1 };
+
+            // 左から右(dx>0)なら上(ny<0)、下から上(dy<0)なら右(nx>0)になる法線ベクトル
+            let nx = dy / len;
+            let ny = -dx / len;
+
+            // 水平寄りの場合、上向き(-y)になるよう調整
+            if (Math.abs(dx) >= Math.abs(dy)) {
+                if (dx < 0) { nx = -nx; ny = -ny; }
+            } else {
+                // 垂直寄りの場合、右向き(+x)になるよう調整
+                if (dy > 0) { nx = -nx; ny = -ny; }
+            }
+
+            return { x: nx, y: ny };
+        }
+
+        function performLineCut(start, end) {
+            const depth = parseFloat(zigzagSizeInput.value) || 0;
+            const freq = parseFloat(zigzagFrequencyInput.value) || 20;
+            const shape = cutShapeSelect.value;
+
+            const cutPoints = createCutPathPoints(start, end, depth, freq, shape);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+
+            ctx.moveTo(cutPoints[0].x, cutPoints[0].y);
+            cutPoints.forEach(pt => ctx.lineTo(pt.x, pt.y));
+
+            const margin = Math.max(canvas.width, canvas.height) * 4;
+            const normal = getUpperRightNormal(start, end);
+            const unx = normal.x * margin;
+            const uny = normal.y * margin;
+
+            ctx.lineTo(end.x + unx, end.y + uny);
+            ctx.lineTo(start.x + unx, start.y + uny);
+            ctx.closePath();
+
+            ctx.fill();
+            ctx.restore();
+
+            saveStateToHistory();
+            renderOverlay();
+        }
+
+        function performFreehandCut(path) {
+            if (path.length < 2) return;
+
+            const depth = parseFloat(zigzagSizeInput.value) || 0;
+            const freq = parseFloat(zigzagFrequencyInput.value) || 20;
+            const shape = cutShapeSelect.value;
+
+            // フリーハンドの各セグメントを結合
+            let fullCutPath = [];
+            for (let i = 0; i < path.length - 1; i++) {
+                const seg = createCutPathPoints(path[i], path[i+1], depth, freq, shape);
+                if (i > 0) seg.shift();
+                fullCutPath = fullCutPath.concat(seg);
+            }
+
+            if (fullCutPath.length < 2) return;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+
+            ctx.moveTo(fullCutPath[0].x, fullCutPath[0].y);
+            fullCutPath.forEach(pt => ctx.lineTo(pt.x, pt.y));
+
+            const start = path[0];
+            const end = path[path.length - 1];
+            const margin = Math.max(canvas.width, canvas.height) * 4;
+            const normal = getUpperRightNormal(start, end);
+
+            // 手書きパス全体の外側に消去領域を膨らませる
+            ctx.lineTo(end.x + normal.x * margin, end.y + normal.y * margin);
+            ctx.lineTo(start.x + normal.x * margin, start.y + normal.y * margin);
+            ctx.closePath();
+
+            ctx.fill();
+            ctx.restore();
+
+            saveStateToHistory();
+            renderOverlay();
+        }
+
+        function performPolygonCut(points) {
+            if (points.length < 3) return;
+
+            const depth = parseFloat(zigzagSizeInput.value) || 20;
+            const freq = parseFloat(zigzagFrequencyInput.value) || 20;
+            const shape = cutShapeSelect.value;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+
+            let allCutPoints = [];
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                const segPoints = createCutPathPoints(p1, p2, depth, freq, shape);
+                if (i > 0) segPoints.shift();
+                allCutPoints = allCutPoints.concat(segPoints);
+            }
+
+            if (allCutPoints.length > 0) {
+                ctx.moveTo(allCutPoints[0].x, allCutPoints[0].y);
+                allCutPoints.forEach(pt => ctx.lineTo(pt.x, pt.y));
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            saveStateToHistory();
+            renderOverlay();
+        }
+
+        function renderOverlay() {
+            if (state.history.length > 0) {
+                const lastState = state.history[state.history.length - 1];
+                ctx.putImageData(lastState, 0, 0);
+            }
+
+            if (state.showGrid) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 2]);
+
+                for (let x = 50; x < canvas.width; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+
+                for (let y = 50; y < canvas.height; y += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            const mode = cutModeSelect.value;
+            const shape = cutShapeSelect.value;
+
+            if (mode === 'line' && state.isDragging && state.dragStart && state.dragCurrent) {
+                const depth = parseFloat(zigzagSizeInput.value) || 0;
+                const freq = parseFloat(zigzagFrequencyInput.value) || 20;
+                const pts = createCutPathPoints(state.dragStart, state.dragCurrent, depth, freq, shape);
+
+                ctx.save();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                if (pts.length > 0) {
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    pts.forEach(p => ctx.lineTo(p.p, p.y));
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (mode === 'freehand' && state.isDragging && state.freehandPath.length > 1) {
+                ctx.save();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                state.freehandPath.forEach((p, idx) => {
+                    if (idx === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (mode === 'polygon' && state.polygonPoints.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = '#3b82f6';
+                ctx.fillStyle = '#60a5fa';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                state.polygonPoints.forEach((p, idx) => {
+                    if (idx === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+
+                state.polygonPoints.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+            }
+        }
+
+        // 作業エリア基準の座標取得（キャンバス外側の負の値や領域超過座標も適切に取得）
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        // イベントリスナーを作業エリア（canvasContainer）全体に設定
+        canvasContainer.addEventListener('mousedown', (e) => {
+            const pos = getCanvasCoordinates(e);
+            const mode = cutModeSelect.value;
+
+            if (mode === 'line') {
+                state.isDragging = true;
+                state.dragStart = pos;
+                state.dragCurrent = pos;
+            } else if (mode === 'freehand') {
+                state.isDragging = true;
+                state.freehandPath = [pos];
+            } else if (mode === 'polygon') {
+                state.polygonPoints.push(pos);
+                renderOverlay();
+            }
+        });
+
+        canvasContainer.addEventListener('mousemove', (e) => {
+            if (!state.isDragging) return;
+            const pos = getCanvasCoordinates(e);
+            const mode = cutModeSelect.value;
+
+            if (mode === 'line') {
+                state.dragCurrent = pos;
+                renderOverlay();
+            } else if (mode === 'freehand') {
+                state.freehandPath.push(pos);
+                renderOverlay();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (state.isDragging) {
+                state.isDragging = false;
+                const mode = cutModeSelect.value;
+
+                if (mode === 'line' && state.dragStart && state.dragCurrent) {
+                    const dist = Math.hypot(state.dragCurrent.x - state.dragStart.x, state.dragCurrent.y - state.dragStart.y);
+                    if (dist > 5) {
+                        performLineCut(state.dragStart, state.dragCurrent);
+                    }
+                } else if (mode === 'freehand' && state.freehandPath.length > 1) {
+                    performFreehandCut(state.freehandPath);
+                    state.freehandPath = [];
+                }
+                state.dragStart = null;
+                state.dragCurrent = null;
+                renderOverlay();
+            }
+        });
+
+        // タッチ操作を作業エリア全体でサポート
+        canvasContainer.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const pos = getCanvasCoordinates(e);
+            const mode = cutModeSelect.value;
+
+            if (mode === 'line') {
+                state.isDragging = true;
+                state.dragStart = pos;
+                state.dragCurrent = pos;
+            } else if (mode === 'freehand') {
+                state.isDragging = true;
+                state.freehandPath = [pos];
+            } else if (mode === 'polygon') {
+                state.polygonPoints.push(pos);
+                renderOverlay();
+            }
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchmove', (e) => {
+            if (!state.isDragging) return;
+            e.preventDefault();
+            const pos = getCanvasCoordinates(e);
+            const mode = cutModeSelect.value;
+
+            if (mode === 'line') {
+                state.dragCurrent = pos;
+                renderOverlay();
+            } else if (mode === 'freehand') {
+                state.freehandPath.push(pos);
+                renderOverlay();
+            }
+        }, { passive: false });
+
+        canvasContainer.addEventListener('touchend', () => {
+            if (state.isDragging) {
+                state.isDragging = false;
+                const mode = cutModeSelect.value;
+
+                if (mode === 'line' && state.dragStart && state.dragCurrent) {
+                    const dist = Math.hypot(state.dragCurrent.x - state.dragStart.x, state.dragCurrent.y - state.dragStart.y);
+                    if (dist > 5) {
+                        performLineCut(state.dragStart, state.dragCurrent);
+                    }
+                } else if (mode === 'freehand' && state.freehandPath.length > 1) {
+                    performFreehandCut(state.freehandPath);
+                    state.freehandPath = [];
+                }
+                state.dragStart = null;
+                state.dragCurrent = null;
+                renderOverlay();
+            }
+        });
+
+        cutModeSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === 'polygon') {
+                polygonActionArea.classList.remove('hidden');
+                statusText.textContent = "キャンバス上をクリックして多角形の頂点を配置し、「囲みを切り取り」を押してください。";
+            } else if (val === 'freehand') {
+                polygonActionArea.classList.add('hidden');
+                state.polygonPoints = [];
+                statusText.textContent = "作業エリア内で手書きで線を引いてカットできます（線の上・右側を透明化）。";
+            } else {
+                polygonActionArea.classList.add('hidden');
+                state.polygonPoints = [];
+                statusText.textContent = "作業エリア内でドラッグして一直線にカットできます（線の上・右側を透明化）。";
+            }
+            renderOverlay();
+        });
+
+        // 1. キャンバスサイズ変更
+        applySizeBtn.addEventListener('click', () => {
+            let w = parseInt(imgWidthInput.value, 10) || 800;
+            let h = parseInt(imgHeightInput.value, 10) || 600;
+            
+            // 範囲制限（50px 〜 4000px）
+            w = Math.max(50, Math.min(4000, w));
+            h = Math.max(50, Math.min(4000, h));
+            
+            imgWidthInput.value = w;
+            imgHeightInput.value = h;
+            state.width = w;
+            state.height = h;
+            
+            drawBaseGradient(true);
+            statusText.textContent = `キャンバスサイズを ${w} × ${h} px に変更しました。`;
+        });
+
+        // 2. グラデーション角度変更
+        angleInput.addEventListener('input', (e) => {
+            state.angle = parseInt(e.target.value, 10) || 0;
+            angleVal.textContent = `${state.angle}°`;
+            drawBaseGradient(true);
+        });
+
+        // 3. カラーストップ（色）の追加
+        addColorBtn.addEventListener('click', () => {
+            const newId = state.colorStops.length > 0 
+                ? Math.max(...state.colorStops.map(s => s.id)) + 1 
+                : 1;
+            
+            // 新しい分岐点の位置（オフセット）を既存ストップの間に自動設定
+            let newOffset = 0.5;
+            if (state.colorStops.length >= 2) {
+                const sorted = [...state.colorStops].sort((a, b) => a.offset - b.offset);
+                newOffset = parseFloat(((sorted[sorted.length - 2].offset + sorted[sorted.length - 1].offset) / 2).toFixed(2));
+            }
+
+            // ランダムカラーの生成
+            const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+            state.colorStops.push({
+                id: newId,
+                color: randomColor,
+                offset: newOffset
+            });
+
+            renderColorStopsUI();
+            drawBaseGradient(true);
+            statusText.textContent = "新しい色を追加しました。カラーピッカーで好きな色に変更できます。";
+        });
+
+        // パラメータ変更時のプレビュー更新
+        zigzagSizeInput.addEventListener('input', renderOverlay);
+        zigzagFrequencyInput.addEventListener('input', renderOverlay);
+        cutShapeSelect.addEventListener('change', renderOverlay);
+
+        applyPolygonCutBtn.addEventListener('click', () => {
+            if (state.polygonPoints.length >= 3) {
+                performPolygonCut(state.polygonPoints);
+                state.polygonPoints = [];
+                renderOverlay();
+            }
+        });
+
+        clearPointsBtn.addEventListener('click', () => {
+            state.polygonPoints = [];
+            renderOverlay();
+        });
+
+        undoBtn.addEventListener('click', undo);
+
+        resetCanvasBtn.addEventListener('click', () => {
+            state.polygonPoints = [];
+            drawBaseGradient(true);
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (state.history.length > 0) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(state.history[state.history.length - 1], 0, 0);
+
+                const link = document.createElement('a');
+                link.download = `gradient-cut-${Date.now()}.png`;
+                link.href = tempCanvas.toDataURL('image/png');
+                link.click();
+            }
+        });
+
+        gridToggle.addEventListener('change', (e) => {
+            state.showGrid = e.target.checked;
+            renderOverlay();
+        });
+
+        window.onload = () => {
+            renderColorStopsUI();
+            drawBaseGradient(true);
+        };
+    </script>
+</body>
+</html>
