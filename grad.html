@@ -26,7 +26,7 @@
     <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md flex justify-between items-center">
         <div class="flex items-center gap-3">
             <i class="fa-solid fa-palette text-indigo-400 text-2xl"></i>
-            <h1 class="text-xl font-bold tracking-wide">Weby グラデーション＆ギザギザカットツール</h1>
+            <h1 class="text-xl font-bold tracking-wide">グラデーション＆ギザギザカットツール</h1>
         </div>
         <div class="flex items-center gap-3">
             <button id="undoBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
@@ -396,6 +396,9 @@
         }
 
         function performLineCut(start, end) {
+            if (state.history.length > 0) {
+                ctx.putImageData(state.history[state.history.length - 1], 0, 0);
+            }
             const depth = parseFloat(zigzagSizeInput.value) || 0;
             const freq = parseFloat(zigzagFrequencyInput.value) || 20;
             const shape = cutShapeSelect.value;
@@ -427,6 +430,9 @@
 
         function performFreehandCut(path) {
             if (path.length < 2) return;
+            if (state.history.length > 0) {
+                ctx.putImageData(state.history[state.history.length - 1], 0, 0);
+            }
 
             const depth = parseFloat(zigzagSizeInput.value) || 0;
             const freq = parseFloat(zigzagFrequencyInput.value) || 20;
@@ -468,6 +474,9 @@
 
         function performPolygonCut(points) {
             if (points.length < 3) return;
+            if (state.history.length > 0) {
+                ctx.putImageData(state.history[state.history.length - 1], 0, 0);
+            }
 
             const depth = parseFloat(zigzagSizeInput.value) || 20;
             const freq = parseFloat(zigzagFrequencyInput.value) || 20;
@@ -506,7 +515,7 @@
 
             if (state.showGrid) {
                 ctx.save();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([2, 2]);
 
@@ -542,7 +551,7 @@
                 ctx.beginPath();
                 if (pts.length > 0) {
                     ctx.moveTo(pts[0].x, pts[0].y);
-                    pts.forEach(p => ctx.lineTo(p.p, p.y));
+                    pts.forEach(p => ctx.lineTo(p.x, p.y));
                 }
                 ctx.stroke();
                 ctx.restore();
