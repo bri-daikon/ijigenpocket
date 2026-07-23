@@ -107,9 +107,16 @@
                     <div>
                         <label class="text-xs text-slate-400 block mb-1">カット形状</label>
                         <select id="cutShape" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
-                            <option value="zigzag">ギザギザ</option>
+                            <option value="zigzag">ギザギザ (Zigzag)</option>
                             <option value="wave">波線 (Wave)</option>
                             <option value="straight">直線 (Straight)</option>
+                            <option value="circle">丸 (Circle)</option>
+                            <option value="square">四角 (Square)</option>
+                            <option value="diamond">菱形/ダイヤ (Diamond)</option>
+                            <option value="star">星 (Star)</option>
+                            <option value="heart">ハート (Heart)</option>
+                            <option value="spade">スペード (Spade)</option>
+                            <option value="clover">クローバー (Clover)</option>
                         </select>
                     </div>
                     <div>
@@ -321,6 +328,59 @@
             });
         }
 
+        function getShapeLocalPoints(shape) {
+            const pts = [];
+            const steps = 20;
+            switch (shape) {
+                case 'zigzag':
+                case 'diamond':
+                case 'rhombus':
+                    return [[0,0], [0.25, 1], [0.75, -1], [1,0]];
+                case 'wave':
+                    for (let i = 0; i <= steps; i++) {
+                        let t = i / steps;
+                        pts.push([t, Math.sin(t * Math.PI * 2)]);
+                    }
+                    return pts;
+                case 'circle':
+                    for (let i = 0; i <= steps; i++) {
+                        let t = i / steps;
+                        let phase = t * 2;
+                        let sign = phase < 1 ? 1 : -1;
+                        let x = (phase % 1) * 2 - 1;
+                        let y = sign * Math.sqrt(Math.max(0, 1 - x*x));
+                        pts.push([t, y]);
+                    }
+                    return pts;
+                case 'square':
+                    return [[0,0], [0,1], [0.5,1], [0.5,-1], [1,-1], [1,0]];
+                case 'star':
+                    return [
+                        [0, 0], [0.1, 0.3], [0.2, 0.3], [0.3, 1],
+                        [0.4, 0.3], [0.5, 0.3], [0.6, -0.2],
+                        [0.7, -1], [0.8, -0.4], [0.9, -1], [1, 0]
+                    ];
+                case 'heart':
+                    return [
+                        [0, 0], [0.125, 1], [0.25, 0.2], [0.375, 1],
+                        [0.5, 0], [0.75, -1], [1, 0]
+                    ];
+                case 'spade':
+                    return [
+                        [0, 0], [0.1, -0.2], [0.2, 0], [0.5, 1],
+                        [0.8, 0], [0.9, -0.2], [0.95, -1], [1, 0]
+                    ];
+                case 'clover':
+                    return [
+                        [0, 0], [0.1, 0.6], [0.2, 0], [0.25, 1],
+                        [0.35, 1], [0.4, 0], [0.5, 0.6], [0.6, 0],
+                        [0.75, -1], [1, 0]
+                    ];
+                default:
+                    return [[0,0], [1,0]];
+            }
+        }
+
         function createCutPathPoints(p1, p2, depth, freq, shape) {
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
@@ -334,40 +394,26 @@
             const nx = -dy / dist;
             const ny = dx / dist;
             const pathPoints = [];
+            
+            const cycles = Math.max(1, Math.floor(dist / freq));
 
-            if (shape === 'wave') {
-                const steps = Math.max(10, Math.floor(dist / 2));
-                const cycles = dist / freq;
+            pathPoints.push({ x: p1.x, y: p1.y });
 
-                for (let i = 0; i <= steps; i++) {
-                    const t = i / steps;
-                    const baseX = p1.x + dx * t;
-                    const baseY = p1.y + dy * t;
-                    const angle = t * cycles * Math.PI * 2;
-                    const offset = Math.sin(angle) * depth;
+            for (let c = 0; c < cycles; c++) {
+                const cycleStartX = p1.x + dx * (c / cycles);
+                const cycleStartY = p1.y + dy * (c / cycles);
+                const cycleDX = dx / cycles;
+                const cycleDY = dy / cycles;
 
-                    pathPoints.push({
-                        x: baseX + nx * offset,
-                        y: baseY + ny * offset
-                    });
+                const localPts = getShapeLocalPoints(shape);
+                
+                for (let i = 1; i < localPts.length; i++) {
+                    const t = localPts[i][0];
+                    const localY = localPts[i][1];
+                    const ptX = cycleStartX + cycleDX * t + nx * localY * depth;
+                    const ptY = cycleStartY + cycleDY * t + ny * localY * depth;
+                    pathPoints.push({ x: ptX, y: ptY });
                 }
-            } else { // zigzag
-                const steps = Math.max(2, Math.floor(dist / freq));
-                pathPoints.push({ x: p1.x, y: p1.y });
-
-                for (let i = 1; i < steps; i++) {
-                    const t = i / steps;
-                    const baseX = p1.x + dx * t;
-                    const baseY = p1.y + dy * t;
-                    const direction = (i % 2 === 1) ? 1 : -1;
-                    const offset = direction * depth;
-
-                    pathPoints.push({
-                        x: baseX + nx * offset,
-                        y: baseY + ny * offset
-                    });
-                }
-                pathPoints.push({ x: p2.x, y: p2.y });
             }
 
             return pathPoints;
