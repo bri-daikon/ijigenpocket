@@ -79,6 +79,8 @@ document.addEventListener('paste', (e) => {
                 loadIconMakerFile(blob);
             } else if (activeTab === 'main-tab-texteditor') {
                 loadTextEditorFile(blob);
+            } else if (activeTab === 'main-tab-compressor') {
+                loadCompressorFile(blob);
             }
         }
     }
@@ -800,6 +802,184 @@ function updateTextEditorLayerList() {
         `;
         texteditorLayerList.appendChild(item);
     }
+}
+window.updateTextEditorLayerList = updateTextEditorLayerList;
+
+// --- Image Compressor Logic ---
+let compressorImage = new Image();
+let compressorOriginalFile = null;
+let compressorFormat = 'image/jpeg';
+let compressorQuality = 0.8;
+let compressorResultBlob = null;
+
+const compFileInput = document.getElementById('compressor-file-input');
+const compDropzone = document.getElementById('compressor-dropzone');
+const compQualitySlider = document.getElementById('compressor-quality-slider');
+const compQualityVal = document.getElementById('compressor-quality-val');
+const compResizeSelect = document.getElementById('compressor-resize-select');
+const compDownloadBtn = document.getElementById('compressor-download-btn');
+const compPlaceholder = document.getElementById('compressor-placeholder');
+const compPreviewContainer = document.getElementById('compressor-preview-container');
+const compOriginalSize = document.getElementById('compressor-original-size');
+const compNewSize = document.getElementById('compressor-new-size');
+const compRatio = document.getElementById('compressor-ratio');
+const compPreviewImg = document.getElementById('compressor-preview-img');
+const compCanvas = document.getElementById('compressor-canvas');
+const compCtx = compCanvas ? compCanvas.getContext('2d') : null;
+
+window.setCompressorFormat = function(format) {
+    compressorFormat = format;
+    // UI update
+    const btns = {
+        'image/jpeg': document.getElementById('compressor-fmt-jpeg'),
+        'image/webp': document.getElementById('compressor-fmt-webp'),
+        'image/png': document.getElementById('compressor-fmt-png')
+    };
+    
+    for (const [key, btn] of Object.entries(btns)) {
+        if (!btn) continue;
+        if (key === format) {
+            btn.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+        } else {
+            btn.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+        }
+    }
+    
+    const qWrapper = document.getElementById('compressor-quality-wrapper');
+    if (qWrapper) {
+        if (format === 'image/png') {
+            qWrapper.classList.add('opacity-50');
+            if(compQualitySlider) compQualitySlider.disabled = true;
+        } else {
+            qWrapper.classList.remove('opacity-50');
+            if(compQualitySlider) compQualitySlider.disabled = false;
+        }
+    }
+    
+    updateCompressorPreview();
+};
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 KB';
+    const k = 1024;
+    return (bytes / k).toFixed(2) + ' KB';
+}
+
+function loadCompressorFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    compressorOriginalFile = file;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        compressorImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+window.loadCompressorFile = loadCompressorFile;
+
+if (compressorImage) {
+    compressorImage.onload = () => {
+        if (compPlaceholder) compPlaceholder.classList.add('hidden');
+        if (compPreviewContainer) compPreviewContainer.classList.remove('hidden');
+        if (compDownloadBtn) compDownloadBtn.disabled = false;
+        
+        compOriginalSize.innerText = formatBytes(compressorOriginalFile.size);
+        updateCompressorPreview();
+    };
+}
+
+function updateCompressorPreview() {
+    if (!compressorImage.src || !compCanvas || !compCtx) return;
+    
+    let targetWidth = compressorImage.width;
+    let targetHeight = compressorImage.height;
+    
+    const resizeVal = compResizeSelect ? compResizeSelect.value : 'original';
+    if (resizeVal !== 'original') {
+        const maxW = parseInt(resizeVal);
+        if (compressorImage.width > maxW) {
+            targetWidth = maxW;
+            targetHeight = compressorImage.height * (maxW / compressorImage.width);
+        }
+    }
+    
+    compCanvas.width = targetWidth;
+    compCanvas.height = targetHeight;
+    compCtx.clearRect(0, 0, targetWidth, targetHeight);
+    compCtx.drawImage(compressorImage, 0, 0, targetWidth, targetHeight);
+    
+    compCanvas.toBlob((blob) => {
+        if (!blob) return;
+        compressorResultBlob = blob;
+        
+        const url = URL.createObjectURL(blob);
+        if (compPreviewImg) {
+            // Revoke old URL if exists to avoid memory leak
+            if (compPreviewImg.src && compPreviewImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL(compPreviewImg.src);
+            }
+            compPreviewImg.src = url;
+        }
+        
+        compNewSize.innerText = formatBytes(blob.size);
+        
+        const ratio = ((blob.size / compressorOriginalFile.size) * 100).toFixed(1);
+        if (blob.size < compressorOriginalFile.size) {
+            compRatio.innerText = `(-${(100 - ratio).toFixed(1)}%)`;
+            compRatio.className = "text-[10px] font-bold text-emerald-500 block";
+        } else {
+            compRatio.innerText = `(+${(ratio - 100).toFixed(1)}%)`;
+            compRatio.className = "text-[10px] font-bold text-red-500 block";
+        }
+        
+    }, compressorFormat, compressorQuality);
+}
+
+if (compFileInput) {
+    compFileInput.addEventListener('change', (e) => loadCompressorFile(e.target.files[0]));
+}
+
+if (compDropzone) {
+    compDropzone.addEventListener('dragover', (e) => { e.preventDefault(); compDropzone.classList.add('drop-active'); });
+    compDropzone.addEventListener('dragleave', () => compDropzone.classList.remove('drop-active'));
+    compDropzone.addEventListener('drop', (e) => { e.preventDefault(); compDropzone.classList.remove('drop-active'); loadCompressorFile(e.dataTransfer.files[0]); });
+}
+
+if (compQualitySlider) {
+    compQualitySlider.addEventListener('input', (e) => {
+        compressorQuality = parseInt(e.target.value) / 100;
+        if (compQualityVal) compQualityVal.innerText = `${e.target.value}%`;
+    });
+    // Use change for heavier update to avoid lag while dragging
+    compQualitySlider.addEventListener('change', () => {
+        updateCompressorPreview();
+    });
+}
+
+if (compResizeSelect) {
+    compResizeSelect.addEventListener('change', updateCompressorPreview);
+}
+
+if (compDownloadBtn) {
+    compDownloadBtn.addEventListener('click', () => {
+        if (!compressorResultBlob) return;
+        const a = document.createElement('a');
+        const ext = compressorFormat === 'image/jpeg' ? 'jpg' : (compressorFormat === 'image/webp' ? 'webp' : 'png');
+        const originalName = compressorOriginalFile.name.split('.')[0];
+        
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        
+        a.download = `${originalName}_min_${timestamp}.${ext}`;
+        a.href = URL.createObjectURL(compressorResultBlob);
+        a.click();
+    });
 }
 
 function selectTextLayer(index) {
