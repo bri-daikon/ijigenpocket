@@ -27,6 +27,7 @@
                     <button onclick="switchMainTab('color')" id="main-tab-color" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">カラーツール</button>
                     <button onclick="switchMainTab('iconmaker')" id="main-tab-iconmaker" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">丸形アイコン</button>
                     <button onclick="switchMainTab('texteditor')" id="main-tab-texteditor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">文字入れ・画像編集</button>
+                    <button onclick="switchMainTab('compressor')" id="main-tab-compressor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">画像圧縮</button>
                 </div>
             </header>
 
@@ -452,6 +453,100 @@
                                 <!-- 編集用Canvas -->
                                 <div class="relative max-w-full overflow-hidden rounded-2xl shadow-2xl hidden" id="texteditor-canvas-container">
                                     <canvas id="texteditor-canvas" class="max-w-full h-auto block cursor-move checkerboard-bg"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: IMAGE COMPRESSOR -->
+                <div id="view-compressor" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 圧縮したい画像を選択</label>
+                                    <div id="compressor-dropzone" class="relative h-28 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="compressor-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-sm">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. 圧縮設定 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. 保存設定</label>
+                                    
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-2">フォーマット:</span>
+                                        <div class="flex space-x-2">
+                                            <button id="compressor-fmt-jpeg" onclick="setCompressorFormat('image/jpeg')" class="flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all">JPEG</button>
+                                            <button id="compressor-fmt-webp" onclick="setCompressorFormat('image/webp')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">WebP</button>
+                                            <button id="compressor-fmt-png" onclick="setCompressorFormat('image/png')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">PNG</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="compressor-quality-wrapper">
+                                        <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                            <span>画質 (Quality)</span>
+                                            <span id="compressor-quality-val">80%</span>
+                                        </div>
+                                        <input type="range" id="compressor-quality-slider" min="1" max="100" value="80" class="w-full accent-blue-600">
+                                        <p class="text-[10px] text-slate-400 mt-1">※PNGの場合は画質設定は適用されません</p>
+                                    </div>
+
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-1">リサイズ (横幅):</span>
+                                        <select id="compressor-resize-select" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none text-sm font-bold text-slate-600">
+                                            <option value="original">元のサイズを維持</option>
+                                            <option value="1920">1920px (フルHD)</option>
+                                            <option value="1280">1280px (HD)</option>
+                                            <option value="1024">1024px</option>
+                                            <option value="800">800px</option>
+                                            <option value="400">400px</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- 3. ダウンロードボタン -->
+                                <div class="pt-4 border-t border-slate-200">
+                                    <button id="compressor-download-btn" class="w-full btn-hover bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        圧縮して保存する
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-center bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200">
+                                <div id="compressor-placeholder" class="text-center">
+                                    <p class="text-slate-400 text-sm font-bold">ここに圧縮プレビューが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に画像を選択してください</p>
+                                </div>
+
+                                <div id="compressor-preview-container" class="w-full hidden">
+                                    <!-- 圧縮結果情報 -->
+                                    <div class="flex flex-col gap-3 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm w-full">
+                                        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                                            <span class="text-xs font-bold text-slate-400">元画像サイズ:</span>
+                                            <span id="compressor-original-size" class="text-sm font-black text-slate-700">- KB</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-bold text-blue-500">圧縮後のサイズ:</span>
+                                            <div class="text-right">
+                                                <span id="compressor-new-size" class="text-lg font-black text-blue-600">- KB</span>
+                                                <span id="compressor-ratio" class="text-[10px] font-bold text-emerald-500 block">(-%)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- プレビュー画像 -->
+                                    <div class="relative w-full overflow-hidden rounded-xl shadow-lg border border-slate-200 checkerboard-bg flex justify-center items-center">
+                                        <img id="compressor-preview-img" src="" alt="プレビュー" class="max-w-full max-h-[300px] object-contain">
+                                    </div>
+                                    <!-- 隠しCanvas (処理用) -->
+                                    <canvas id="compressor-canvas" class="hidden"></canvas>
                                 </div>
                             </div>
                         </div>
