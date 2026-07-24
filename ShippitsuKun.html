@@ -484,6 +484,8 @@
       }
 
       // Event listeners
+      document.getElementById('btn-new').addEventListener('click', handleNewNote);
+      document.getElementById('btn-save').addEventListener('click', handleSaveNote);
       document.getElementById('btn-copy-notion').addEventListener('click', copyAsNotionMarkdownFormat);
       document.getElementById('btn-copy-plaintext').addEventListener('click', copyAsPlainText);
       document.getElementById('btn-download-md').addEventListener('click', downloadMarkdown);
@@ -540,14 +542,14 @@
         if (!customPrompt) return;
 
         let fullPrompt = "";
+        const currentBodyMd = convertPlainTextToMarkdown(textareaBody.value);
         if (hasActiveSelection) {
           const selectedText = textareaBody.value.substring(activeSelectionStart, activeSelectionEnd);
           // convert selected text to md context so AI understands structure
           const selectedTextMd = convertPlainTextToMarkdown(selectedText);
-          fullPrompt = `現在のシナリオ作品名：【${inputTitle.value}】\n\nエディタの中から「部分選択された箇所」：\n====================\n${selectedTextMd}\n====================\n\n上記の【選択部分】に対して、ユーザーからの追加の加筆・リライト指示：\n${customPrompt}`;
+          fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容全体】:\n${currentBodyMd}\n\n上記シナリオ全体を踏まえた上で、エディタの中から「部分選択された箇所」に注目してください：\n====================\n${selectedTextMd}\n====================\n\n上記の【選択部分】に対して、全体の文脈と矛盾しないよう追加の加筆・リライトを行ってください。指示：\n${customPrompt}`;
         } else {
-          const currentBodyMd = convertPlainTextToMarkdown(textareaBody.value);
-          fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容】:\n${currentBodyMd}\n\nユーザーからの追加執筆指示：\n${customPrompt}`;
+          fullPrompt = `現在のシナリオドラフト：\n【作品名】: ${inputTitle.value}\n【ジャンル・タグ】: ${inputTags.value}\n【内容全体】:\n${currentBodyMd}\n\nユーザーからの追加執筆指示：\n${customPrompt}`;
         }
         callGeminiAPI(fullPrompt);
       });
@@ -996,7 +998,7 @@
         }
         
         const selectedTextMd = convertPlainTextToMarkdown(selectedText);
-        promptText = `現在のクトゥルフ神話TRPGシナリオ名：【${inputTitle.value}】\n\nエディタ内のドラッグ選択した【指定箇所】:\n====================\n${selectedTextMd}\n====================\n\n上記の部分を対象に、TRPGシナリオとして魅力的なディテールや臨場感、探索技能チェックを交えて肉付け（ディテール加筆）・詳細化して展開してください。神話的な恐怖がにじむ表現を心がけ、Notionにすぐペースト可能な見出し構成で提案してください。`;
+        promptText = `現在のシナリオ全体像（文脈として参照してください）：\n${currentDraft}\n\n上記シナリオ全体を踏まえた上で、エディタ内のドラッグ選択した【指定箇所】:\n====================\n${selectedTextMd}\n====================\n\nこの【指定箇所】を対象に、全体の文脈と矛盾しないようTRPGシナリオとして魅力的なディテールや臨場感、探索技能チェックを交えて肉付け（ディテール加筆）・詳細化して展開してください。神話的な恐怖がにじむ表現を心がけ、Notionにすぐペースト可能な見出し構成で提案してください。出力は加筆した部分のみで構いません。`;
         
         textareaPrompt.value = `【自動実行】選択箇所の神話加筆中...`;
         callGeminiAPI(promptText);
