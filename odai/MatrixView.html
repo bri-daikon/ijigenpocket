@@ -141,7 +141,7 @@
                 <div class="flex flex-col sm:flex-row items-center gap-3">
                     <div class="flex items-center gap-2 bg-[#1a1511] px-3 py-1.5 rounded-lg border border-amber-900/50" title="全体ズーム">
                         <i data-lucide="zoom-in" class="w-4 h-4 text-amber-700"></i>
-                        <input type="range" id="zoomSlider" min="0.5" max="3" step="0.1" value="1" class="w-24 accent-amber-600">
+                        <input type="range" id="zoomSlider" min="0.1" max="3" step="0.05" value="1" class="w-24 accent-amber-600">
                         <span id="zoomValue" class="text-xs text-amber-500 font-mono w-8 text-right">100%</span>
                     </div>
 
@@ -294,9 +294,26 @@
                 
                 // 画像読み込み完了後にサイズ調整
                 bgImage.onload = () => {
-                    // 背景画像の大きさに合わせてコンテナを広げる（必要なら）
+                    // 背景画像の大きさに合わせてコンテナを広げる
                     dragContainer.style.minWidth = `${bgImage.naturalWidth}px`;
                     dragContainer.style.minHeight = `${bgImage.naturalHeight}px`;
+                    
+                    // 初期表示時に画面に収まるようにスケールを自動調整
+                    const areaWidth = matrixArea.clientWidth - 40;
+                    const areaHeight = matrixArea.clientHeight - 40;
+                    
+                    if (bgImage.naturalWidth > 0 && bgImage.naturalHeight > 0) {
+                        const scaleX = areaWidth / bgImage.naturalWidth;
+                        const scaleY = areaHeight / bgImage.naturalHeight;
+                        
+                        let fitScale = Math.min(scaleX, scaleY);
+                        // 上限は等倍(1.0)、下限はスライダー最小値(0.1)
+                        fitScale = Math.max(0.1, Math.min(fitScale, 1.0));
+                        
+                        scale = fitScale;
+                        zoomSlider.value = fitScale;
+                    }
+
                     updateZoom(); // ズーム適用
                 }
             };
