@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラウザ動画編集ツール</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid font-bold fa-film text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">Web Video Studio</h1>
+                <p class="text-xs text-slate-400">ブラウザで完結する簡単動画編集ツール</p>
+            </div>
+        </div>
+        <div id="fileInfo" class="hidden text-xs text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+            <i class="fa-solid fa-file-video mr-1.5 text-indigo-400"></i><span id="fileNameDisplay">video.mp4</span>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto w-full">
+
+        <!-- Left Column: Video Preview Player (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- File Upload Dropzone (When no video loaded) -->
+            <div id="uploadContainer" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 transition-colors rounded-2xl p-10 flex flex-col items-center justify-center bg-slate-900/50 min-h-[400px] text-center cursor-pointer group">
+                <input type="file" id="videoInput" accept="video/*" class="hidden">
+                <div class="w-16 h-16 bg-slate-800 group-hover:bg-indigo-600/20 text-slate-400 group-hover:text-indigo-400 rounded-full flex items-center justify-center transition-all mb-4">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                </div>
+                <h3 class="text-base font-semibold mb-1">動画ファイルを選択またはドラッグ＆ドロップ</h3>
+                <p class="text-xs text-slate-500 max-w-sm">MP4, WebM, MOV 等の形式に対応 (3分程度の短尺動画を推奨)</p>
+                <button onclick="document.getElementById('videoInput').click()" class="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all">
+                    ファイルを選択
+                </button>
+            </div>
+
+            <!-- Video Canvas Workspace (Hidden initially) -->
+            <div id="workspaceContainer" class="hidden flex-col gap-3">
+                <div class="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+                    <canvas id="previewCanvas" class="max-w-full max-h-full object-contain"></canvas>
+                    
+                    <!-- Hidden video element for processing -->
+                    <video id="sourceVideo" class="hidden" playsinline></video>
+                </div>
+
+                <!-- Playback & Timeline Controls -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+                    <!-- Progress Slider -->
+                    <div class="flex items-center gap-3">
+                        <span id="currentTimeText" class="text-xs font-mono text-slate-400 w-12 text-right">00:00</span>
+                        <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1" class="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        <span id="durationText" class="text-xs font-mono text-slate-400 w-12">00:00</span>
+                    </div>
+
+                    <!-- Transport Buttons -->
+                    <div class="flex items-center justify-between pt-1">
+                        <div class="flex items-center gap-2">
+                            <button id="playPauseBtn" class="w-10 h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl flex items-center justify-center transition-all shadow-md shadow-indigo-600/20">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button id="restartBtn" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                        <div class="text-xs text-slate-400 flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-lg">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>解像度: <strong id="resolutionDisplay" class="text-slate-200">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Editing Panel (5 cols) -->
+        <section id="editingPanel" class="lg:col-span-5 flex flex-col gap-4 opacity-50 pointer-events-none transition-all">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-6 shadow-xl">
+                
+                <!-- 1. Trimming Panel -->
+                <div>
+                    <div class="flex items-center gap-2 mb-3 text-indigo-400 font-semibold text-sm">
+                        <i class="fa-solid fa-scissors"></i>
+                        <span>1. トリミング（カット）設定</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">開始時間 (秒)</label>
+                            <div class="flex gap-1">
+                                <input type="number" id="trimStart" value="0" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-indigo-500">
+                                <button id="setStartBtn" title="現在の位置を開始に設定" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2.5 rounded-lg text-xs"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">終了時間 (秒)</label>
+                            <div class="flex gap-1">
+                                <input type="number" id="trimEnd" value="10" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-indigo-500">
+                                <button id="setEndBtn" title="現在の位置を終了に設定" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2.5 rounded-lg text-xs"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Text Overlay Panel -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+                            <i class="fa-solid fa-font"></i>
+                            <span>2. テキスト（文字）挿入</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="enableText" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div id="textControls" class="bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80 flex flex-col gap-3 opacity-50 pointer-events-none transition-all">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">表示テキスト</label>
+                            <input type="text" id="textInput" value="ここに文字を入力" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <!-- Timing -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">開始 (秒)</label>
+                                <input type="number" id="textStart" value="0" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-mono text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">終了 (秒)</label>
+                                <input type="number" id="textEnd" value="5" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-mono text-white">
+                            </div>
+                        </div>
+
+                        <!-- Style & Pos -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">サイズ</label>
+                                <input type="number" id="textSize" value="48" min="10" max="200" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">文字色</label>
+                                <input type="color" id="textColor" value="#ffffff" class="w-full h-8 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer p-0.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">位置 X/Y (%)</label>
+                                <div class="flex gap-1">
+                                    <input type="number" id="textX" value="50" min="0" max="100" class="w-1/2 bg-slate-800 border border-slate-700 rounded-lg px-1 py-1 text-xs text-white text-center">
+                                    <input type="number" id="textY" value="80" min="0" max="100" class="w-1/2 bg-slate-800 border border-slate-700 rounded-lg px-1 py-1 text-xs text-white text-center">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Mosaic Panel -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+                            <i class="fa-solid fa-border-none"></i>
+                            <span>3. モザイク処理</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="enableMosaic" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <div id="mosaicControls" class="bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80 flex flex-col gap-3 opacity-50 pointer-events-none transition-all">
+                        <!-- Drag Guide Notice -->
+                        <p class="text-[11px] text-indigo-300 bg-indigo-950/40 border border-indigo-800/50 rounded-lg p-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-hand-pointer text-indigo-400"></i>
+                            <span>画面上のモザイク領域を直接ドラッグして移動できます！</span>
+                        </p>
+
+                        <!-- Timing -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">開始 (秒)</label>
+                                <input type="number" id="mosaicStart" value="0" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-mono text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">終了 (秒)</label>
+                                <input type="number" id="mosaicEnd" value="5" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-mono text-white">
+                            </div>
+                        </div>
+
+                        <!-- Dimensions & Pos (%) -->
+                        <div class="grid grid-cols-4 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">位置 X (%)</label>
+                                <input type="number" id="mosaicX" value="35" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-1.5 py-1 text-xs text-white text-center">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">位置 Y (%)</label>
+                                <input type="number" id="mosaicY" value="35" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-1.5 py-1 text-xs text-white text-center">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">幅 (%)</label>
+                                <input type="number" id="mosaicW" value="30" min="1" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-1.5 py-1 text-xs text-white text-center">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">高さ (%)</label>
+                                <input type="number" id="mosaicH" value="30" min="1" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-1.5 py-1 text-xs text-white text-center">
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>モザイクの強さ</span>
+                                <span id="mosaicSizeValue">15 px</span>
+                            </div>
+                            <input type="range" id="mosaicSize" value="15" min="5" max="40" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Export Button Block -->
+                <div class="pt-2 border-t border-slate-800 flex flex-col gap-3">
+                    <button id="exportBtn" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all">
+                        <i class="fa-solid fa-file-export"></i>
+                        <span>編集した動画を書き出す</span>
+                    </button>
+
+                    <!-- Export Progress Indicator -->
+                    <div id="exportProgressContainer" class="hidden flex-col gap-2 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs">
+                            <span id="exportStatusText" class="text-slate-300 font-medium animate-pulse">動画を録画中...</span>
+                            <span id="exportPercentText" class="text-indigo-400 font-mono font-bold">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="exportProgressBar" class="h-full bg-indigo-500 transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Export Result Download Button -->
+                    <a id="downloadBtn" download="edited_video.webm" class="hidden w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 text-center items-center justify-center gap-2 transition-all">
+                        <i class="fa-solid fa-download"></i>
+                        <span>完成動画を保存（ダウンロード）</span>
+                    </a>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // DOM Elements
+        const videoInput = document.getElementById('videoInput');
+        const uploadContainer = document.getElementById('uploadContainer');
+        const workspaceContainer = document.getElementById('workspaceContainer');
+        const editingPanel = document.getElementById('editingPanel');
+        
+        const sourceVideo = document.getElementById('sourceVideo');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d');
+
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const seekBar = document.getElementById('seekBar');
+        const currentTimeText = document.getElementById('currentTimeText');
+        const durationText = document.getElementById('durationText');
+        const resolutionDisplay = document.getElementById('resolutionDisplay');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fileInfo = document.getElementById('fileInfo');
+
+        // Trimming Inputs
+        const trimStartInput = document.getElementById('trimStart');
+        const trimEndInput = document.getElementById('trimEnd');
+        const setStartBtn = document.getElementById('setStartBtn');
+        const setEndBtn = document.getElementById('setEndBtn');
+
+        // Text Overlay Controls
+        const enableText = document.getElementById('enableText');
+        const textControls = document.getElementById('textControls');
+        const textInput = document.getElementById('textInput');
+        const textStart = document.getElementById('textStart');
+        const textEnd = document.getElementById('textEnd');
+        const textSize = document.getElementById('textSize');
+        const textColor = document.getElementById('textColor');
+        const textX = document.getElementById('textX');
+        const textY = document.getElementById('textY');
+
+        // Mosaic Controls
+        const enableMosaic = document.getElementById('enableMosaic');
+        const mosaicControls = document.getElementById('mosaicControls');
+        const mosaicStart = document.getElementById('mosaicStart');
+        const mosaicEnd = document.getElementById('mosaicEnd');
+        const mosaicX = document.getElementById('mosaicX');
+        const mosaicY = document.getElementById('mosaicY');
+        const mosaicW = document.getElementById('mosaicW');
+        const mosaicH = document.getElementById('mosaicH');
+        const mosaicSize = document.getElementById('mosaicSize');
+        const mosaicSizeValue = document.getElementById('mosaicSizeValue');
+
+        // Export Controls
+        const exportBtn = document.getElementById('exportBtn');
+        const exportProgressContainer = document.getElementById('exportProgressContainer');
+        const exportProgressBar = document.getElementById('exportProgressBar');
+        const exportStatusText = document.getElementById('exportStatusText');
+        const exportPercentText = document.getElementById('exportPercentText');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // State Variables
+        let isPlaying = false;
+        let animationFrameId = null;
+        let isExporting = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        // Audio Context Global State (1回のみ生成して保持する)
+        let audioCtx = null;
+        let audioSourceNode = null;
+        let audioDestNode = null;
+
+        // Drag Mosaic State Variables
+        let isDraggingMosaic = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // Drag and drop handlers
+        uploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.add('border-indigo-500', 'bg-slate-900');
+        });
+        uploadContainer.addEventListener('dragleave', () => {
+            uploadContainer.classList.remove('border-indigo-500', 'bg-slate-900');
+        });
+        uploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.remove('border-indigo-500', 'bg-slate-900');
+            if (e.dataTransfer.files.length > 0) {
+                handleVideoFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        videoInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleVideoFile(e.target.files[0]);
+            }
+        });
+
+        function handleVideoFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('動画ファイルを選択してください。');
+                return;
+            }
+
+            const url = URL.createObjectURL(file);
+            sourceVideo.src = url;
+
+            fileNameDisplay.textContent = file.name;
+            fileInfo.classList.remove('hidden');
+
+            sourceVideo.onloadedmetadata = () => {
+                // Set canvas resolution to match source video
+                previewCanvas.width = sourceVideo.videoWidth;
+                previewCanvas.height = sourceVideo.videoHeight;
+
+                resolutionDisplay.textContent = `${sourceVideo.videoWidth} x ${sourceVideo.videoHeight}`;
+                durationText.textContent = formatTime(sourceVideo.duration);
+                seekBar.max = sourceVideo.duration;
+
+                // Default trim values
+                trimStartInput.value = "0";
+                trimEndInput.value = sourceVideo.duration.toFixed(1);
+                trimEndInput.max = sourceVideo.duration;
+
+                // Text & Mosaic default end times
+                textEnd.value = Math.min(5, sourceVideo.duration).toFixed(1);
+                mosaicEnd.value = Math.min(5, sourceVideo.duration).toFixed(1);
+
+                // Show UI elements
+                uploadContainer.classList.add('hidden');
+                workspaceContainer.classList.remove('hidden');
+                workspaceContainer.classList.add('flex');
+                editingPanel.classList.remove('opacity-50', 'pointer-events-none');
+
+                // Render initial frame
+                sourceVideo.currentTime = 0;
+                renderFrame();
+            };
+        }
+
+        // Playback Control Logic
+        playPauseBtn.addEventListener('click', togglePlay);
+        restartBtn.addEventListener('click', () => {
+            const startVal = parseFloat(trimStartInput.value) || 0;
+            sourceVideo.currentTime = startVal;
+            if (!isPlaying) renderFrame();
+        });
+
+        function togglePlay() {
+            if (isPlaying) {
+                pauseVideo();
+            } else {
+                playVideo();
+            }
+        }
+
+        function playVideo() {
+            const startVal = parseFloat(trimStartInput.value) || 0;
+            const endVal = parseFloat(trimEndInput.value) || sourceVideo.duration;
+
+            // Loop back if out of bounds
+            if (sourceVideo.currentTime >= endVal || sourceVideo.currentTime < startVal) {
+                sourceVideo.currentTime = startVal;
+            }
+
+            sourceVideo.play();
+            isPlaying = true;
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            renderLoop();
+        }
+
+        function pauseVideo() {
+            sourceVideo.pause();
+            isPlaying = false;
+            playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        }
+
+        // Seek Bar handling
+        seekBar.addEventListener('input', () => {
+            sourceVideo.currentTime = parseFloat(seekBar.value);
+            currentTimeText.textContent = formatTime(sourceVideo.currentTime);
+            if (!isPlaying) renderFrame();
+        });
+
+        sourceVideo.addEventListener('timeupdate', () => {
+            if (!isExporting) {
+                seekBar.value = sourceVideo.currentTime;
+                currentTimeText.textContent = formatTime(sourceVideo.currentTime);
+
+                // Check Trim End
+                const endVal = parseFloat(trimEndInput.value) || sourceVideo.duration;
+                if (sourceVideo.currentTime >= endVal && isPlaying) {
+                    pauseVideo();
+                    sourceVideo.currentTime = parseFloat(trimStartInput.value) || 0;
+                    renderFrame();
+                }
+            }
+        });
+
+        // Set Trim buttons
+        setStartBtn.addEventListener('click', () => {
+            trimStartInput.value = sourceVideo.currentTime.toFixed(1);
+        });
+        setEndBtn.addEventListener('click', () => {
+            trimEndInput.value = sourceVideo.currentTime.toFixed(1);
+        });
+
+        // Toggle Control panels
+        enableText.addEventListener('change', () => {
+            if (enableText.checked) {
+                textControls.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                textControls.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (!isPlaying) renderFrame();
+        });
+
+        enableMosaic.addEventListener('change', () => {
+            if (enableMosaic.checked) {
+                mosaicControls.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                mosaicControls.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (!isPlaying) renderFrame();
+        });
+
+        mosaicSize.addEventListener('input', () => {
+            mosaicSizeValue.textContent = `${mosaicSize.value} px`;
+            if (!isPlaying) renderFrame();
+        });
+
+        // Helper: Convert screen mouse/touch coordinates to canvas percentage
+        function getCanvasPoint(e) {
+            const rect = previewCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            // Scaled position within canvas element (0.0 to 1.0)
+            const scaleX = (clientX - rect.left) / rect.width;
+            const scaleY = (clientY - rect.top) / rect.height;
+
+            return {
+                xPercent: Math.max(0, Math.min(100, scaleX * 100)),
+                yPercent: Math.max(0, Math.min(100, scaleY * 100))
+            };
+        }
+
+        // Check if cursor point is inside mosaic region
+        function isPointInMosaic(point) {
+            if (!enableMosaic.checked) return false;
+            
+            const mX = parseFloat(mosaicX.value) || 0;
+            const mY = parseFloat(mosaicY.value) || 0;
+            const mW = parseFloat(mosaicW.value) || 0;
+            const mH = parseFloat(mosaicH.value) || 0;
+
+            return (
+                point.xPercent >= mX &&
+                point.xPercent <= mX + mW &&
+                point.yPercent >= mY &&
+                point.yPercent <= mY + mH
+            );
+        }
+
+        // Mouse & Touch Interaction Handlers for Dragging
+        function handleDragStart(e) {
+            if (!enableMosaic.checked || isExporting) return;
+
+            const point = getCanvasPoint(e);
+            if (isPointInMosaic(point)) {
+                isDraggingMosaic = true;
+                const mX = parseFloat(mosaicX.value) || 0;
+                const mY = parseFloat(mosaicY.value) || 0;
+
+                dragOffsetX = point.xPercent - mX;
+                dragOffsetY = point.yPercent - mY;
+                previewCanvas.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        }
+
+        function handleDragMove(e) {
+            if (!enableMosaic.checked || isExporting) return;
+
+            const point = getCanvasPoint(e);
+
+            // Update Cursor Style on Hover
+            if (!isDraggingMosaic) {
+                if (isPointInMosaic(point)) {
+                    previewCanvas.style.cursor = 'grab';
+                } else {
+                    previewCanvas.style.cursor = 'default';
+                }
+                return;
+            }
+
+            // Dragging behavior
+            e.preventDefault();
+            const mW = parseFloat(mosaicW.value) || 0;
+            const mH = parseFloat(mosaicH.value) || 0;
+
+            let newX = point.xPercent - dragOffsetX;
+            let newY = point.yPercent - dragOffsetY;
+
+            // Keep within video boundary (0 to 100%)
+            newX = Math.max(0, Math.min(100 - mW, newX));
+            newY = Math.max(0, Math.min(100 - mH, newY));
+
+            mosaicX.value = newX.toFixed(1);
+            mosaicY.value = newY.toFixed(1);
+
+            if (!isPlaying) {
+                renderFrame();
+            }
+        }
+
+        function handleDragEnd() {
+            if (isDraggingMosaic) {
+                isDraggingMosaic = false;
+                previewCanvas.style.cursor = 'grab';
+            }
+        }
+
+        // Attach Mouse Events
+        previewCanvas.addEventListener('mousedown', handleDragStart);
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+
+        // Attach Touch Events (Mobile/Tablet Support)
+        previewCanvas.addEventListener('touchstart', handleDragStart, { passive: false });
+        window.addEventListener('touchmove', handleDragMove, { passive: false });
+        window.addEventListener('touchend', handleDragEnd);
+
+        // Live input updates
+        [textInput, textStart, textEnd, textSize, textColor, textX, textY, 
+         mosaicStart, mosaicEnd, mosaicX, mosaicY, mosaicW, mosaicH].forEach(input => {
+            input.addEventListener('input', () => {
+                if (!isPlaying) renderFrame();
+            });
+        });
+
+        // Main Rendering Loop
+        function renderLoop() {
+            if (!isPlaying && !isExporting) return;
+            renderFrame();
+            animationFrameId = requestAnimationFrame(renderLoop);
+        }
+
+        function renderFrame() {
+            const width = previewCanvas.width;
+            const height = previewCanvas.height;
+            const curTime = sourceVideo.currentTime;
+
+            // 1. Draw Original Frame
+            ctx.drawImage(sourceVideo, 0, 0, width, height);
+
+            // 2. Render Mosaic Layer if enabled and within timestamp
+            if (enableMosaic.checked) {
+                const mStart = parseFloat(mosaicStart.value) || 0;
+                const mEnd = parseFloat(mosaicEnd.value) || 0;
+
+                if (curTime >= mStart && curTime <= mEnd) {
+                    drawMosaic(width, height);
+                }
+            }
+
+            // 3. Render Text Layer if enabled and within timestamp
+            if (enableText.checked) {
+                const tStart = parseFloat(textStart.value) || 0;
+                const tEnd = parseFloat(textEnd.value) || 0;
+
+                if (curTime >= tStart && curTime <= tEnd) {
+                    drawText(width, height);
+                }
+            }
+        }
+
+        // Draw Mosaic Effect
+        function drawMosaic(canvasWidth, canvasHeight) {
+            const mXPercent = parseFloat(mosaicX.value) / 100;
+            const mYPercent = parseFloat(mosaicY.value) / 100;
+            const mWPercent = parseFloat(mosaicW.value) / 100;
+            const mHPercent = parseFloat(mosaicH.value) / 100;
+
+            const x = Math.floor(mXPercent * canvasWidth);
+            const y = Math.floor(mYPercent * canvasHeight);
+            const w = Math.floor(mWPercent * canvasWidth);
+            const h = Math.floor(mHPercent * canvasHeight);
+
+            if (w <= 0 || h <= 0) return;
+
+            const tileSize = parseInt(mosaicSize.value) || 15;
+
+            // Offscreen canvas for pixelation
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d');
+            offCanvas.width = Math.max(1, Math.floor(w / tileSize));
+            offCanvas.height = Math.max(1, Math.floor(h / tileSize));
+
+            // Disable smooth scaling
+            offCtx.imageSmoothingEnabled = false;
+            ctx.imageSmoothingEnabled = false;
+
+            // Downsample and then upsample
+            offCtx.drawImage(previewCanvas, x, y, w, h, 0, 0, offCanvas.width, offCanvas.height);
+            ctx.drawImage(offCanvas, 0, 0, offCanvas.width, offCanvas.height, x, y, w, h);
+            ctx.imageSmoothingEnabled = true;
+
+            // Draw edit bounding box frame (only when paused and not exporting)
+            if (!isPlaying && !isExporting) {
+                ctx.save();
+                ctx.strokeStyle = '#6366f1'; // Indigo color
+                ctx.lineWidth = Math.max(2, Math.floor(canvasWidth / 400));
+                ctx.setLineDash([6, 4]); // Dashed line
+                ctx.strokeRect(x, y, w, h);
+                ctx.restore();
+            }
+        }
+
+        // Draw Text Layer
+        function drawText(canvasWidth, canvasHeight) {
+            const text = textInput.value;
+            if (!text) return;
+
+            const posX = (parseFloat(textX.value) / 100) * canvasWidth;
+            const posY = (parseFloat(textY.value) / 100) * canvasHeight;
+            const size = parseInt(textSize.value) || 48;
+
+            ctx.save();
+            ctx.font = `bold ${size}px sans-serif`;
+            ctx.fillStyle = textColor.value;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Text Outline for visibility
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = Math.max(2, size / 12);
+            ctx.strokeText(text, posX, posY);
+
+            // Fill Text
+            ctx.fillText(text, posX, posY);
+            ctx.restore();
+        }
+
+        // ブラウザがサポートする録画形式を自動選択するヘルパー関数 (X投稿用にAAC/MP4を優先)
+        function getSupportedMimeType() {
+            const types = [
+                'video/mp4;codecs=avc1,aac',
+                'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+                'video/mp4',
+                'video/webm;codecs=h264,aac',
+                'video/webm;codecs=vp9,opus',
+                'video/webm;codecs=vp8,opus',
+                'video/webm'
+            ];
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    return type;
+                }
+            }
+            return '';
+        }
+
+        // Export / Render Video Functionality
+        exportBtn.addEventListener('click', startExport);
+
+        async function startExport() {
+            if (isExporting) return;
+
+            pauseVideo();
+            isExporting = true;
+
+            const startVal = parseFloat(trimStartInput.value) || 0;
+            const endVal = parseFloat(trimEndInput.value) || sourceVideo.duration;
+            const durationToRecord = endVal - startVal;
+
+            if (durationToRecord <= 0) {
+                alert('開始時間は終了時間より前に設定してください。');
+                isExporting = false;
+                return;
+            }
+
+            // UI Adjustments
+            exportProgressContainer.classList.remove('hidden');
+            exportProgressContainer.classList.add('flex');
+            downloadBtn.classList.add('hidden');
+            exportBtn.disabled = true;
+            exportBtn.classList.add('opacity-50');
+            exportStatusText.textContent = '準備中...';
+            exportProgressBar.style.width = '0%';
+            exportPercentText.textContent = '0%';
+
+            try {
+                // Canvasからの映像ストリーム（30FPS）
+                const stream = previewCanvas.captureStream(30);
+
+                // 音声トラックのセットアップ（重複生成を回避）
+                try {
+                    if (!audioCtx) {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        audioSourceNode = audioCtx.createMediaElementSource(sourceVideo);
+                        audioDestNode = audioCtx.createMediaStreamDestination();
+                        audioSourceNode.connect(audioDestNode);
+                        audioSourceNode.connect(audioCtx.destination);
+                    }
+                    if (audioCtx.state === 'suspended') {
+                        await audioCtx.resume();
+                    }
+                    const audioTrack = audioDestNode.stream.getAudioTracks()[0];
+                    if (audioTrack && stream.getAudioTracks().length === 0) {
+                        stream.addTrack(audioTrack);
+                    }
+                } catch (audioErr) {
+                    console.warn("音声トラックのセットアップをスキップしました:", audioErr);
+                }
+
+                recordedChunks = [];
+                const mimeType = getSupportedMimeType();
+                const options = mimeType ? { mimeType } : {};
+
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const actualMimeType = mediaRecorder.mimeType || 'video/webm';
+                    const isMp4 = actualMimeType.includes('mp4');
+                    const blob = new Blob(recordedChunks, { type: actualMimeType });
+                    const videoURL = URL.createObjectURL(blob);
+                    
+                    downloadBtn.href = videoURL;
+                    downloadBtn.download = isMp4 ? 'edited_video.mp4' : 'edited_video.webm';
+                    downloadBtn.classList.remove('hidden');
+                    downloadBtn.classList.add('flex');
+
+                    exportStatusText.textContent = '書き出し完了！保存できます。';
+                    exportProgressBar.style.width = '100%';
+                    exportPercentText.textContent = '100%';
+
+                    exportBtn.disabled = false;
+                    exportBtn.classList.remove('opacity-50');
+                    isExporting = false;
+                };
+
+                // 再生位置をカット開始地点へ移動
+                sourceVideo.currentTime = startVal;
+                
+                // Seek完了を待機
+                await new Promise((resolve) => {
+                    const onSeeked = () => {
+                        sourceVideo.removeEventListener('seeked', onSeeked);
+                        resolve();
+                    };
+                    sourceVideo.addEventListener('seeked', onSeeked);
+                    // タイムアウト保護（万が一seekedが発火しない場合）
+                    setTimeout(resolve, 500);
+                });
+
+                exportStatusText.textContent = '動画を書き出し中...';
+
+                // 録画と再生を開始
+                mediaRecorder.start(100); // 100msごとにデータをキャプチャ
+                await sourceVideo.play();
+
+                const exportLoop = () => {
+                    if (!isExporting) return;
+
+                    renderFrame();
+
+                    const currentProgress = sourceVideo.currentTime - startVal;
+                    const percent = Math.min(100, Math.max(0, (currentProgress / durationToRecord) * 100));
+
+                    exportProgressBar.style.width = `${percent.toFixed(1)}%`;
+                    exportPercentText.textContent = `${Math.floor(percent)}%`;
+
+                    if (sourceVideo.currentTime >= endVal || sourceVideo.ended) {
+                        sourceVideo.pause();
+                        if (mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                        }
+                    } else {
+                        requestAnimationFrame(exportLoop);
+                    }
+                };
+
+                exportLoop();
+
+            } catch (err) {
+                console.error("書き出しエラー:", err);
+                exportStatusText.textContent = 'エラーが発生しました: ' + err.message;
+                exportBtn.disabled = false;
+                exportBtn.classList.remove('opacity-50');
+                isExporting = false;
+            }
+        }
+
+        // Helper: Format Seconds into MM:SS
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
+</html>
