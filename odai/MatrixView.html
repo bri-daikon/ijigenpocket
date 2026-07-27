@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔導書：マトリクス配置の儀 - Weby</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 視認性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705; /* 極めて深い古の闇 */
+            overflow: hidden; /* マトリクス画面なのでスクロールは内部で制御 */
+        }
+
+        .font-header {
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        /* 羊皮紙や古代石を思わせるスクロールバー */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #14100c; }
+        ::-webkit-scrollbar-thumb { background: #4a3728; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6e5039; }
+
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(217, 119, 6, 0.15);
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        /* マトリクスエリアのスタイル */
+        #matrixArea {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 180px);
+            background-color: #120e0a;
+            border-radius: 12px;
+            overflow: auto;
+            border: 1px solid rgba(120, 53, 15, 0.6); /* amber-950/60 */
+        }
+
+        #matrixBackground {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            user-select: none;
+            pointer-events: none; /* ドラッグの邪魔にならないように */
+        }
+
+        /* 探索者のドラッグ要素 */
+        :root {
+            --char-scale: 1;
+        }
+        .character-node {
+            position: absolute;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            background: rgba(20, 16, 12, 0.85);
+            border: 1px solid rgba(217, 119, 6, 0.5); /* amber-600 */
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            user-select: none;
+            backdrop-filter: blur(4px);
+            transition: box-shadow 0.2s, transform 0.1s;
+            z-index: 10;
+            transform: scale(var(--char-scale));
+            transform-origin: center center;
+        }
+
+        .character-node:active {
+            cursor: grabbing;
+            box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
+            transform: scale(calc(var(--char-scale) * 1.05));
+            z-index: 50;
+        }
+
+        .character-node img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #92400e; /* amber-800 */
+            pointer-events: none;
+        }
+
+        .character-node .char-name {
+            font-size: 11px;
+            color: #fcd34d; /* amber-300 */
+            font-weight: 700;
+            margin-top: 4px;
+            text-align: center;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+
+<body class="text-stone-200 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)] z-50 shrink-0">
+        <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-amber-700 to-amber-900 rounded-xl text-amber-100 shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+                    <i data-lucide="layout-grid" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-widest font-header text-amber-500 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
+                        探索者マトリクス配置の儀</h1>
+                    <p class="text-[11px] text-amber-700/80 tracking-widest font-header mt-0.5">MATRIX PLACEMENT RITUAL</p>
+                </div>
+            </div>
+
+            <!-- 操作系 -->
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <div class="flex items-center gap-2 bg-[#1a1511] px-3 py-1.5 rounded-lg border border-amber-900/50" title="全体ズーム">
+                        <i data-lucide="zoom-in" class="w-4 h-4 text-amber-700"></i>
+                        <input type="range" id="zoomSlider" min="0.5" max="3" step="0.1" value="1" class="w-24 accent-amber-600">
+                        <span id="zoomValue" class="text-xs text-amber-500 font-mono w-8 text-right">100%</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-[#1a1511] px-3 py-1.5 rounded-lg border border-amber-900/50" title="探索者アイコンサイズ">
+                        <i data-lucide="user" class="w-4 h-4 text-amber-700"></i>
+                        <input type="range" id="charSizeSlider" min="0.5" max="3" step="0.1" value="1" class="w-24 accent-amber-500">
+                    </div>
+                </div>
+
+                <button onclick="triggerImageUpload()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-md">
+                    <i data-lucide="image-plus" class="w-3.5 h-3.5 text-amber-500"></i> 背景図板を読込
+                </button>
+                <input type="file" id="bgImageUpload" class="hidden" accept="image/*" onchange="loadBackgroundImage(event)">
+
+                <button onclick="saveMatrixImage()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-900 hover:bg-amber-800 text-stone-100 rounded-lg transition-all border border-amber-700 shadow-md">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-stone-100"></i> 画像として保存
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow p-4 flex flex-col max-w-[1600px] mx-auto w-full gap-4">
+        
+        <!-- 配置エリア -->
+        <div id="matrixArea" class="magic-border shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+            <!-- キャプチャ対象となるコンテナ -->
+            <div id="captureContainer" style="position: relative; transform-origin: top left;">
+                <!-- 背景画像 -->
+                <img id="matrixBackground" src="" alt="" style="display: none;">
+                
+                <!-- ドラッグ用の内包コンテナ -->
+                <div id="dragContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                    <!-- キャラクターノードがここに配置される -->
+                </div>
+            </div>
+        </div>
+
+        <div class="text-xs text-stone-500 flex items-center justify-between px-2">
+            <div class="flex items-center gap-1.5">
+                <i data-lucide="info" class="w-4 h-4 text-amber-800"></i>
+                画像を読み込み、探索者をドラッグして自由に配置してください。
+            </div>
+            <div id="charCountDisplay" class="font-header text-amber-600/70">
+                配置対象: 0名
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let scale = 1;
+        let isDragging = false;
+        let currentDragNode = null;
+        let startX, startY, initialLeft, initialTop;
+
+        const matrixArea = document.getElementById('matrixArea');
+        const dragContainer = document.getElementById('dragContainer');
+        const bgImage = document.getElementById('matrixBackground');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        const charSizeSlider = document.getElementById('charSizeSlider');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadTargets();
+            setupZoom();
+            setupCharSize();
+        });
+
+        // --- ターゲットデータの読み込み ---
+        function loadTargets() {
+            const data = localStorage.getItem('weby_matrix_targets');
+            if (data) {
+                try {
+                    const targets = JSON.parse(data);
+                    document.getElementById('charCountDisplay').textContent = `配置対象: ${targets.length}名`;
+                    renderCharacters(targets);
+                } catch (e) {
+                    console.error("データの読み込みに失敗", e);
+                }
+            }
+        }
+
+        // --- キャラクターノードの生成 ---
+        function renderCharacters(targets) {
+            dragContainer.innerHTML = ''; // クリア
+            
+            // 初期配置位置をずらすための変数
+            let startOffsetX = 20;
+            let startOffsetY = 20;
+
+            targets.forEach((char, index) => {
+                const node = document.createElement('div');
+                node.className = 'character-node';
+                node.id = `char_node_${char.id}`;
+                
+                // 位置の決定 (重ならないように少しずつずらす)
+                node.style.left = `${startOffsetX + (index * 10 % 100)}px`;
+                node.style.top = `${startOffsetY + (index * 10 % 100)}px`;
+                startOffsetX += 60;
+                if (startOffsetX > 300) {
+                    startOffsetX = 20;
+                    startOffsetY += 80;
+                }
+
+                // アイコン画像（デフォルト画像フォールバック付き）
+                const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+                const imgUrl = char.iconUrl || defaultSvg;
+                
+                // 名前
+                const nameText = char.name || '名無しの探索者';
+
+                // 安全な要素生成
+                const imgEl = document.createElement('img');
+                imgEl.src = imgUrl;
+                imgEl.alt = nameText;
+                imgEl.onerror = function() { this.src = defaultSvg; };
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'char-name';
+                nameEl.title = nameText;
+                nameEl.textContent = nameText;
+
+                node.appendChild(imgEl);
+                node.appendChild(nameEl);
+
+                // ドラッグイベントの設定
+                node.addEventListener('mousedown', startDrag);
+                node.addEventListener('touchstart', startDrag, { passive: false });
+
+                dragContainer.appendChild(node);
+            });
+        }
+
+        // --- 背景画像アップロード ---
+        function triggerImageUpload() {
+            document.getElementById('bgImageUpload').click();
+        }
+
+        function loadBackgroundImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                bgImage.src = e.target.result;
+                bgImage.style.display = 'block';
+                
+                // 画像読み込み完了後にサイズ調整
+                bgImage.onload = () => {
+                    // 背景画像の大きさに合わせてコンテナを広げる（必要なら）
+                    dragContainer.style.minWidth = `${bgImage.naturalWidth}px`;
+                    dragContainer.style.minHeight = `${bgImage.naturalHeight}px`;
+                    updateZoom(); // ズーム適用
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- ズーム機能 ---
+        function setupZoom() {
+            zoomSlider.addEventListener('input', (e) => {
+                scale = parseFloat(e.target.value);
+                updateZoom();
+            });
+        }
+
+        function updateZoom() {
+            zoomValue.textContent = `${Math.round(scale * 100)}%`;
+            const captureContainer = document.getElementById('captureContainer');
+            captureContainer.style.transform = `scale(${scale})`;
+            
+            // スクロール領域の調整 (親のmatrixAreaに対する領域)
+            if (bgImage.style.display === 'block') {
+                const scaledWidth = bgImage.naturalWidth * scale;
+                const scaledHeight = bgImage.naturalHeight * scale;
+                // captureContainer自体のサイズは元画像のままで、スケールによって見た目と占有領域が変わる
+                captureContainer.style.width = `${bgImage.naturalWidth}px`;
+                captureContainer.style.height = `${bgImage.naturalHeight}px`;
+                
+                // ただしoverflow用に見かけのサイズを親に伝えるハック
+                captureContainer.style.marginBottom = `${scaledHeight - bgImage.naturalHeight}px`;
+                captureContainer.style.marginRight = `${scaledWidth - bgImage.naturalWidth}px`;
+            }
+        }
+
+        // --- 探索者サイズ変更機能 ---
+        function setupCharSize() {
+            charSizeSlider.addEventListener('input', (e) => {
+                document.documentElement.style.setProperty('--char-scale', e.target.value);
+            });
+        }
+
+        // --- 画像として保存機能 ---
+        function saveMatrixImage() {
+            if (bgImage.style.display === 'none' || !bgImage.src) {
+                alert('先に背景画像を読み込んでください。');
+                return;
+            }
+
+            const captureContainer = document.getElementById('captureContainer');
+            
+            // 一時的にズームをリセット
+            const currentScale = scale;
+            if (scale !== 1) {
+                scale = 1;
+                updateZoom();
+            }
+
+            // 少し待ってからキャプチャ（DOMの反映待ち）
+            setTimeout(() => {
+                html2canvas(captureContainer, {
+                    useCORS: true,
+                    backgroundColor: '#120e0a' // 背景が見える場合のデフォルト色
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `matrix_placement_${new Date().toISOString().slice(0, 10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }).catch(err => {
+                    console.error('画像保存エラー:', err);
+                    alert('画像の保存に失敗しました。');
+                }).finally(() => {
+                    // ズームを元に戻す
+                    if (currentScale !== 1) {
+                        scale = currentScale;
+                        updateZoom();
+                    }
+                });
+            }, 100);
+        }
+
+        // --- ドラッグ＆ドロップ機能 ---
+        function startDrag(e) {
+            if (e.target.closest('.character-node')) {
+                e.preventDefault(); // タッチスクロール防止
+                isDragging = true;
+                currentDragNode = e.target.closest('.character-node');
+                
+                // 最前面に移動
+                dragContainer.appendChild(currentDragNode);
+
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+                startX = clientX;
+                startY = clientY;
+                
+                initialLeft = parseFloat(currentDragNode.style.left || 0);
+                initialTop = parseFloat(currentDragNode.style.top || 0);
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag, { passive: false });
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging || !currentDragNode) return;
+            e.preventDefault();
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+            // ズーム倍率を考慮した移動量の計算
+            const dx = (clientX - startX) / scale;
+            const dy = (clientY - startY) / scale;
+
+            currentDragNode.style.left = `${initialLeft + dx}px`;
+            currentDragNode.style.top = `${initialTop + dy}px`;
+        }
+
+        function endDrag(e) {
+            isDragging = false;
+            currentDragNode = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchend', endDrag);
+        }
+    </script>
+</body>
+
+</html>
