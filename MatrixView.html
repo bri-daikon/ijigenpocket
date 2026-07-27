@@ -54,7 +54,7 @@
             border: 1px solid rgba(120, 53, 15, 0.6); /* amber-950/60 */
         }
 
-        #matrixBackground {
+        #matrixBackground, #generatedMatrix {
             position: absolute;
             top: 0;
             left: 0;
@@ -62,6 +62,59 @@
             user-select: none;
             pointer-events: none; /* ドラッグの邪魔にならないように */
         }
+
+        /* 生成マトリクス用スタイル */
+        #generatedMatrix {
+            width: 1200px;
+            height: 1200px;
+            background-color: #ffffff;
+            display: none; /* 初期は非表示 */
+            position: relative;
+        }
+        
+        .axis-line-h {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            right: 5%;
+            height: 4px;
+            background-color: #000000;
+            transform: translateY(-50%);
+        }
+        
+        .axis-line-v {
+            position: absolute;
+            left: 50%;
+            top: 5%;
+            bottom: 5%;
+            width: 4px;
+            background-color: #000000;
+            transform: translateX(-50%);
+        }
+        
+        .matrix-title {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #000;
+            white-space: nowrap;
+        }
+        
+        .matrix-label {
+            position: absolute;
+            font-size: 40px;
+            font-weight: bold;
+            color: #000;
+            white-space: nowrap;
+        }
+        
+        .label-top { top: 2%; left: 50%; transform: translateX(-50%); }
+        .label-bottom { bottom: 2%; left: 50%; transform: translateX(-50%); }
+        .label-left { top: 50%; left: 2%; transform: translateY(-50%); }
+        .label-right { top: 50%; right: 2%; transform: translateY(-50%); }
 
         /* 探索者のドラッグ要素 */
         :root {
@@ -151,7 +204,12 @@
                     </div>
                 </div>
 
-                <button onclick="triggerImageUpload()"
+                <button onclick="toggleGeneratorMode()" id="btnToggleGenerator"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-900 hover:bg-indigo-800 text-indigo-100 rounded-lg transition-all border border-indigo-700 shadow-md">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-100"></i> 表を作成
+                </button>
+
+                <button onclick="triggerImageUpload()" id="btnUploadImage"
                     class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-md">
                     <i data-lucide="image-plus" class="w-3.5 h-3.5 text-amber-500"></i> 背景図板を読込
                 </button>
@@ -166,15 +224,83 @@
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="flex-grow p-4 flex flex-col max-w-[1600px] mx-auto w-full gap-4">
+    <main class="flex-grow p-4 flex max-w-[1800px] mx-auto w-full gap-4 overflow-hidden">
         
+        <!-- サイドバー（ジェネレーター設定用） -->
+        <aside id="generatorSidebar" class="w-80 flex-shrink-0 bg-[#120e0a] border border-amber-900/50 rounded-xl p-4 flex-col gap-4 overflow-y-auto hidden">
+            <h2 class="text-sm font-bold text-amber-500 mb-2 border-b border-amber-900/50 pb-2">マトリクス設定</h2>
+            
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-stone-400 text-xs mb-1">タイトル</label>
+                    <input type="text" id="genTitle" value="体型教えて！" class="w-full bg-[#1a1511] border border-stone-700 rounded px-2 py-1 text-stone-200" oninput="updateGeneratedMatrix()">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">縦軸: 上</label>
+                        <input type="text" id="genTop" value="厚い" class="w-full bg-[#1a1511] border border-stone-700 rounded px-2 py-1 text-stone-200" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">縦軸: 下</label>
+                        <input type="text" id="genBottom" value="薄い" class="w-full bg-[#1a1511] border border-stone-700 rounded px-2 py-1 text-stone-200" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">横軸: 左</label>
+                        <input type="text" id="genLeft" value="硬い" class="w-full bg-[#1a1511] border border-stone-700 rounded px-2 py-1 text-stone-200" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">横軸: 右</label>
+                        <input type="text" id="genRight" value="柔らかい" class="w-full bg-[#1a1511] border border-stone-700 rounded px-2 py-1 text-stone-200" oninput="updateGeneratedMatrix()">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-stone-800">
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">背景色</label>
+                        <input type="color" id="genBgColor" value="#0f766e" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">内側背景色</label>
+                        <input type="color" id="genInnerColor" value="#ffffff" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">線・文字色</label>
+                        <input type="color" id="genTextColor" value="#ffffff" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 text-xs mb-1">内側線・文字色</label>
+                        <input type="color" id="genInnerTextColor" value="#000000" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
+                    </div>
+                </div>
+                
+                <button onclick="applyGeneratedMatrixSize()" class="w-full mt-4 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs py-2 rounded border border-stone-600">
+                    サイズを画面にフィットさせる
+                </button>
+            </div>
+        </aside>
+
         <!-- 配置エリア -->
-        <div id="matrixArea" class="magic-border shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+        <div id="matrixArea" class="flex-grow magic-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative">
             <!-- キャプチャ対象となるコンテナ -->
             <div id="captureContainer" style="position: relative; transform-origin: top left;">
                 <!-- 背景画像 -->
                 <img id="matrixBackground" src="" alt="" style="display: none;">
                 
+                <!-- ジェネレーター用マトリクス（HTML/CSS製） -->
+                <div id="generatedMatrix">
+                    <!-- 色分け用の内側コンテナ -->
+                    <div id="genInnerBox" style="position: absolute; top: 10%; bottom: 10%; left: 10%; right: 10%; background-color: #fff;">
+                        <div class="axis-line-h" id="genAxisH"></div>
+                        <div class="axis-line-v" id="genAxisV"></div>
+                        <div class="matrix-label label-top" id="lblTop">厚い</div>
+                        <div class="matrix-label label-bottom" id="lblBottom">薄い</div>
+                        <div class="matrix-label label-left" id="lblLeft">硬い</div>
+                        <div class="matrix-label label-right" id="lblRight">柔らかい</div>
+                    </div>
+                    <div class="matrix-title" id="lblTitle">体型教えて！</div>
+                </div>
+
                 <!-- ドラッグ用の内包コンテナ -->
                 <div id="dragContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                     <!-- キャラクターノードがここに配置される -->
@@ -195,6 +321,7 @@
 
     <script>
         let scale = 1;
+        let isGeneratorMode = false;
         let isDragging = false;
         let currentDragNode = null;
         let startX, startY, initialLeft, initialTop;
@@ -333,18 +460,121 @@
             const captureContainer = document.getElementById('captureContainer');
             captureContainer.style.transform = `scale(${scale})`;
             
-            // スクロール領域の調整 (親のmatrixAreaに対する領域)
-            if (bgImage.style.display === 'block') {
-                const scaledWidth = bgImage.naturalWidth * scale;
-                const scaledHeight = bgImage.naturalHeight * scale;
+            // ズーム対象のベースサイズを決定
+            let baseWidth = 0;
+            let baseHeight = 0;
+
+            if (isGeneratorMode) {
+                baseWidth = 1200;
+                baseHeight = 1200;
+            } else if (bgImage.style.display === 'block') {
+                baseWidth = bgImage.naturalWidth;
+                baseHeight = bgImage.naturalHeight;
+            }
+
+            // スクロール領域の調整
+            if (baseWidth > 0 && baseHeight > 0) {
+                const scaledWidth = baseWidth * scale;
+                const scaledHeight = baseHeight * scale;
+                
                 // captureContainer自体のサイズは元画像のままで、スケールによって見た目と占有領域が変わる
-                captureContainer.style.width = `${bgImage.naturalWidth}px`;
-                captureContainer.style.height = `${bgImage.naturalHeight}px`;
+                captureContainer.style.width = `${baseWidth}px`;
+                captureContainer.style.height = `${baseHeight}px`;
                 
                 // ただしoverflow用に見かけのサイズを親に伝えるハック
-                captureContainer.style.marginBottom = `${scaledHeight - bgImage.naturalHeight}px`;
-                captureContainer.style.marginRight = `${scaledWidth - bgImage.naturalWidth}px`;
+                captureContainer.style.marginBottom = `${scaledHeight - baseHeight}px`;
+                captureContainer.style.marginRight = `${scaledWidth - baseWidth}px`;
             }
+        }
+
+        // --- マトリクス生成機能 ---
+        function toggleGeneratorMode() {
+            isGeneratorMode = !isGeneratorMode;
+            const sidebar = document.getElementById('generatorSidebar');
+            const genMatrix = document.getElementById('generatedMatrix');
+            const btnUploadImage = document.getElementById('btnUploadImage');
+            const btnToggleGenerator = document.getElementById('btnToggleGenerator');
+
+            if (isGeneratorMode) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                genMatrix.style.display = 'block';
+                bgImage.style.display = 'none';
+                btnUploadImage.style.display = 'none';
+                btnToggleGenerator.innerHTML = '<i data-lucide="image" class="w-3.5 h-3.5 text-amber-500"></i> 画像読込モードに戻る';
+                btnToggleGenerator.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-md';
+                
+                updateGeneratedMatrix();
+                applyGeneratedMatrixSize(); // 初期サイズフィット
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+                genMatrix.style.display = 'none';
+                if (bgImage.src && bgImage.src !== window.location.href) {
+                    bgImage.style.display = 'block';
+                }
+                btnUploadImage.style.display = 'flex';
+                btnToggleGenerator.innerHTML = '<i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-100"></i> 表を作成';
+                btnToggleGenerator.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-900 hover:bg-indigo-800 text-indigo-100 rounded-lg transition-all border border-indigo-700 shadow-md';
+                
+                if (bgImage.style.display === 'block') {
+                    updateZoom();
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function updateGeneratedMatrix() {
+            // テキスト反映
+            document.getElementById('lblTitle').textContent = document.getElementById('genTitle').value;
+            document.getElementById('lblTop').textContent = document.getElementById('genTop').value;
+            document.getElementById('lblBottom').textContent = document.getElementById('genBottom').value;
+            document.getElementById('lblLeft').textContent = document.getElementById('genLeft').value;
+            document.getElementById('lblRight').textContent = document.getElementById('genRight').value;
+
+            // カラー反映
+            const genMatrix = document.getElementById('generatedMatrix');
+            const innerBox = document.getElementById('genInnerBox');
+            const axisH = document.getElementById('genAxisH');
+            const axisV = document.getElementById('genAxisV');
+            
+            genMatrix.style.backgroundColor = document.getElementById('genBgColor').value;
+            innerBox.style.backgroundColor = document.getElementById('genInnerColor').value;
+            
+            const textColor = document.getElementById('genTextColor').value;
+            const innerTextColor = document.getElementById('genInnerTextColor').value;
+            
+            document.getElementById('lblTitle').style.color = textColor;
+            
+            // 内側の文字色と線の色
+            document.getElementById('lblTop').style.color = innerTextColor;
+            document.getElementById('lblBottom').style.color = innerTextColor;
+            document.getElementById('lblLeft').style.color = innerTextColor;
+            document.getElementById('lblRight').style.color = innerTextColor;
+            axisH.style.backgroundColor = innerTextColor;
+            axisV.style.backgroundColor = innerTextColor;
+        }
+
+        function applyGeneratedMatrixSize() {
+            const genWidth = 1200;
+            const genHeight = 1200;
+
+            dragContainer.style.minWidth = `${genWidth}px`;
+            dragContainer.style.minHeight = `${genHeight}px`;
+            
+            const areaWidth = matrixArea.clientWidth - 40;
+            const areaHeight = matrixArea.clientHeight - 40;
+            
+            const scaleX = areaWidth / genWidth;
+            const scaleY = areaHeight / genHeight;
+            
+            let fitScale = Math.min(scaleX, scaleY);
+            fitScale = Math.max(0.1, Math.min(fitScale, 1.0));
+            
+            scale = fitScale;
+            zoomSlider.value = fitScale;
+            
+            updateZoom();
         }
 
         // --- 探索者サイズ変更機能 ---
@@ -356,8 +586,8 @@
 
         // --- 画像として保存機能 ---
         function saveMatrixImage() {
-            if (bgImage.style.display === 'none' || !bgImage.src) {
-                alert('先に背景画像を読み込んでください。');
+            if (!isGeneratorMode && (bgImage.style.display === 'none' || !bgImage.src)) {
+                alert('先に背景画像を読み込むか、表を作成してください。');
                 return;
             }
 
