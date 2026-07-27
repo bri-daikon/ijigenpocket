@@ -230,6 +230,11 @@
 
                         <!-- 簡易フィルター -->
                         <div class="flex items-center gap-2.5 text-xs">
+                            <button onclick="openMatrixView()"
+                                class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/50 hover:bg-amber-800 text-amber-300 rounded-lg border border-amber-700/50 transition-colors font-semibold shadow-sm font-header">
+                                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> マトリクス配置
+                            </button>
+                            <span class="text-amber-950">|</span>
                             <button onclick="selectAll(true)"
                                 class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
                             <span class="text-amber-950">|</span>
@@ -1871,6 +1876,20 @@
                 event.target.value = '';
             };
             reader.readAsText(file);
+        }
+
+        // --- マトリクス配置ビュー ---
+        function openMatrixView() {
+            if (selectedIds.size === 0) {
+                showToast("マトリクスに配置する探索者を選択してください", "error");
+                return;
+            }
+
+            const targets = characters.filter(c => selectedIds.has(c.id));
+            localStorage.setItem('weby_matrix_targets', JSON.stringify(targets));
+            
+            // 新しいタブでマトリクスビューを開く
+            window.open('MatrixView.html', '_blank');
         }
     </script>
 </body>
