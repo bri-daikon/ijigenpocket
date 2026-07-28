@@ -239,7 +239,7 @@ function renderSplitLines() {
   // 横線 (Y座標)
   appState.splitLinesY.forEach((posY, i) => {
     const line = document.createElement('div');
-    line.className = "absolute left-0 right-0 cursor-row-resize group z-10 flex flex-col items-center";
+    line.className = "absolute left-0 right-0 cursor-row-resize group z-10 flex flex-col items-center justify-center";
     line.style.top = `${posY * 100}%`;
     line.style.height = '10px';
     line.style.transform = 'translateY(-50%)';
