@@ -85,6 +85,11 @@
 
             <!-- 操作系（スクロール・羊皮紙） -->
             <div class="flex items-center gap-2 flex-wrap">
+                <a href="#compareSection"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-md">
+                    <i data-lucide="gem" class="w-3.5 h-3.5 text-amber-500"></i> 比較の儀へ
+                </a>
+                
                 <button onclick="triggerJsonImport()"
                     class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-md">
                     <i data-lucide="scroll" class="w-3.5 h-3.5 text-amber-500"></i> 巻物を読込
@@ -228,18 +233,20 @@
                                     class="text-amber-500 font-header">0</span>)</h2>
                         </div>
 
-                        <!-- 簡易フィルター -->
+                        <!-- 簡易フィルター & アクション -->
                         <div class="flex items-center gap-2.5 text-xs">
-                            <button onclick="openMatrixView()"
-                                class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/50 hover:bg-amber-800 text-amber-300 rounded-lg border border-amber-700/50 transition-colors font-semibold shadow-sm font-header">
-                                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> マトリクス配置
-                            </button>
-                            <span class="text-amber-950">|</span>
                             <button onclick="selectAll(true)"
                                 class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">全員を選択</button>
                             <span class="text-amber-950">|</span>
                             <button onclick="selectAll(false)"
                                 class="text-amber-600 hover:text-amber-400 transition-colors font-semibold">選択解除</button>
+                            
+                            <div class="w-px h-4 bg-amber-900/50 mx-1"></div>
+                            
+                            <button onclick="sendToMatrixView()"
+                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-900 hover:bg-indigo-800 text-indigo-100 rounded-lg transition-all border border-indigo-700 shadow-md">
+                                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> マトリクス配置へ
+                            </button>
                         </div>
                     </div>
 
@@ -860,11 +867,16 @@
         // --- 全選択/解除 ---
         function selectAll(select) {
             const searchQuery = document.getElementById('charSearchInput') ? document.getElementById('charSearchInput').value.toLowerCase().trim() : '';
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
             
             const filteredChars = characters.filter(char => {
                 // 1. 版フィルター
                 if (editionFilter !== 'all' && (char.edition || '6') !== editionFilter) return false;
-                // 2. 検索フィルター
+                // 2. タグフィルター
+                if (tagFilter && !(char.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (char.tags || []).includes(excludeTagFilter)) return false;
+                // 3. 検索フィルター
                 if (searchQuery && !char.name.toLowerCase().includes(searchQuery)) return false;
                 return true;
             });
@@ -876,6 +888,33 @@
             }
             renderCharacters();
             updateComparison();
+        }
+
+        // --- マトリクスビューへ送る ---
+        function sendToMatrixView() {
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
+            
+            const selectedChars = characters.filter(c => {
+                if (!selectedIds.has(c.id)) return false;
+                if (tagFilter && !(c.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (c.tags || []).includes(excludeTagFilter)) return false;
+                return true;
+            }).map(c => {
+                return {
+                    id: c.id,
+                    name: c.name,
+                    iconUrl: c.iconUrl || ''
+                };
+            });
+
+            if (selectedChars.length === 0) {
+                showToast("マトリクス表に送るキャラクターが選択されていません。", "error");
+                return;
+            }
+
+            localStorage.setItem('weby_matrix_targets', JSON.stringify(selectedChars));
+            window.open('MatrixView.html', '_blank');
         }
 
         // --- タグ編集 ---
@@ -1378,7 +1417,17 @@
         // --- 比較セクション全体の更新 ---
         function updateComparison() {
             const compareSection = document.getElementById('compareSection');
-            const allSelectedChars = characters.filter(c => selectedIds.has(c.id));
+            
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
+            
+            const allSelectedChars = characters.filter(c => {
+                if (!selectedIds.has(c.id)) return false;
+                // マトリクス表も現在のタグフィルター状態に連動させる
+                if (tagFilter && !(c.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (c.tags || []).includes(excludeTagFilter)) return false;
+                return true;
+            });
 
             if (allSelectedChars.length === 0) {
                 compareSection.classList.add('hidden');
@@ -1876,20 +1925,6 @@
                 event.target.value = '';
             };
             reader.readAsText(file);
-        }
-
-        // --- マトリクス配置ビュー ---
-        function openMatrixView() {
-            if (selectedIds.size === 0) {
-                showToast("マトリクスに配置する探索者を選択してください", "error");
-                return;
-            }
-
-            const targets = characters.filter(c => selectedIds.has(c.id));
-            localStorage.setItem('weby_matrix_targets', JSON.stringify(targets));
-            
-            // 新しいタブでマトリクスビューを開く
-            window.open('MatrixView.html', '_blank');
         }
     </script>
 </body>
