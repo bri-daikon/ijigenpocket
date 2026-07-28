@@ -855,11 +855,16 @@
         // --- 全選択/解除 ---
         function selectAll(select) {
             const searchQuery = document.getElementById('charSearchInput') ? document.getElementById('charSearchInput').value.toLowerCase().trim() : '';
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
             
             const filteredChars = characters.filter(char => {
                 // 1. 版フィルター
                 if (editionFilter !== 'all' && (char.edition || '6') !== editionFilter) return false;
-                // 2. 検索フィルター
+                // 2. タグフィルター
+                if (tagFilter && !(char.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (char.tags || []).includes(excludeTagFilter)) return false;
+                // 3. 検索フィルター
                 if (searchQuery && !char.name.toLowerCase().includes(searchQuery)) return false;
                 return true;
             });
@@ -1373,7 +1378,17 @@
         // --- 比較セクション全体の更新 ---
         function updateComparison() {
             const compareSection = document.getElementById('compareSection');
-            const allSelectedChars = characters.filter(c => selectedIds.has(c.id));
+            
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
+            
+            const allSelectedChars = characters.filter(c => {
+                if (!selectedIds.has(c.id)) return false;
+                // マトリクス表も現在のタグフィルター状態に連動させる
+                if (tagFilter && !(c.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (c.tags || []).includes(excludeTagFilter)) return false;
+                return true;
+            });
 
             if (allSelectedChars.length === 0) {
                 compareSection.classList.add('hidden');
