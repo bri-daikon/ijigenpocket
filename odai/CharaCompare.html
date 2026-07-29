@@ -247,6 +247,11 @@
                                 class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-900 hover:bg-indigo-800 text-indigo-100 rounded-lg transition-all border border-indigo-700 shadow-md">
                                 <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> マトリクス配置へ
                             </button>
+                            
+                            <button onclick="sendToProfileView()"
+                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-900 hover:bg-emerald-800 text-emerald-100 rounded-lg transition-all border border-emerald-700 shadow-md">
+                                <i data-lucide="user-square-2" class="w-3.5 h-3.5"></i> プロフィール編集へ
+                            </button>
                         </div>
                     </div>
 
@@ -915,6 +920,35 @@
 
             localStorage.setItem('weby_matrix_targets', JSON.stringify(selectedChars));
             window.open('MatrixView.html', '_blank');
+        }
+
+        // --- プロフィール編集ビューへ送る ---
+        function sendToProfileView() {
+            const tagFilter = document.getElementById('charTagFilter') ? document.getElementById('charTagFilter').value : '';
+            const excludeTagFilter = document.getElementById('charExcludeTagFilter') ? document.getElementById('charExcludeTagFilter').value : '';
+            
+            const selectedChars = characters.filter(c => {
+                if (!selectedIds.has(c.id)) return false;
+                if (tagFilter && !(c.tags || []).includes(tagFilter)) return false;
+                if (excludeTagFilter && (c.tags || []).includes(excludeTagFilter)) return false;
+                return true;
+            }).map(c => {
+                return {
+                    id: c.id,
+                    name: c.name,
+                    iconUrl: c.iconUrl || '',
+                    params: c.params || [],
+                    profile: c.profile || {}
+                };
+            });
+
+            if (selectedChars.length === 0) {
+                showToast("プロフィール編集へ送るキャラクターが選択されていません。", "error");
+                return;
+            }
+
+            localStorage.setItem('weby_profile_targets', JSON.stringify(selectedChars));
+            window.open('CharaProfile.html', '_blank');
         }
 
         // --- タグ編集 ---
