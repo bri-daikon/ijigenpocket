@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Prompt Generator Pro</title>
+    <!-- Tailwind CSS (デザインフレームワーク) の読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        
+        /* 選択ボタン（チップ）の基本スタイル */
+        .chip-btn {
+            transition: all 0.15s ease-in-out;
+        }
+        .chip-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            border-color: #6366f1;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen p-3 md:p-6">
+
+    <div class="max-w-7xl mx-auto bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- ヘッダー -->
+        <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 text-center shadow-lg">
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide">✨ AI Prompt Generator Pro</h1>
+            <p class="text-indigo-100 text-xs md:text-sm mt-1">ボタンを1つずつポチポチ選ぶだけでプロンプトを自動作成</p>
+        </header>
+
+        <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- 左側：1個ずつ選択できるエリア (8/12) -->
+            <div class="lg:col-span-7 xl:col-span-8 space-y-6 max-h-[82vh] overflow-y-auto pr-2 custom-scrollbar">
+                
+                <!-- 0. AIツール & モード & パラメータ設定 -->
+                <section class="bg-slate-700/50 p-4 rounded-xl border border-indigo-500/30 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🤖</span> 対象AIモデル
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="aiModel">
+                            <button type="button" data-value="sd" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">Stable Diffusion</button>
+                            <button type="button" data-value="mj" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">Midjourney (v6)</button>
+                            <button type="button" data-value="nai" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">NovelAI</button>
+                            <button type="button" data-value="dalle" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">DALL-E 3 / ChatGPT</button>
+                            <button type="button" data-value="nanobanana" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">Nano Banana (Gemini)</button>
+                        </div>
+                    </div>
+
+                    <!-- モード選択：新規作成 vs 画像参照/キャラ差分 -->
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🎯</span> 生成モード
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="genMode">
+                            <button type="button" data-value="new" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">✨ 新規キャラクター作成</button>
+                            <button type="button" data-value="ref" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 font-medium">🔄 元画像あり (キャラ同一性・差分・着せ替え)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>📐</span> アスペクト比
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="aspectRatio">
+                            <button type="button" data-value="1:1" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">1:1 (正方形)</button>
+                            <button type="button" data-value="9:16" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">9:16 (縦長/立ち絵)</button>
+                            <button type="button" data-value="16:9" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">16:9 (横長/風景)</button>
+                            <button type="button" data-value="4:3" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">4:3 (標準)</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. 人物・性別・年代・体型 -->
+                <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">👤 性別</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="gender">
+                            <button type="button" data-value="1girl, female" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">女性</button>
+                            <button type="button" data-value="1boy, male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">男性</button>
+                            <button type="button" data-value="gender neutral person" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">🎂 年代</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="age">
+                            <button type="button" data-value="teenager" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">10代</button>
+                            <button type="button" data-value="in 20s, young adult" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">20代</button>
+                            <button type="button" data-value="in 30s, mature adult" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">30代</button>
+                            <button type="button" data-value="in 40s, middle-aged" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">40代</button>
+                            <button type="button" data-value="elderly person" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">それ以上</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">💪 体型</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="bodyType">
+                            <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                            <button type="button" data-value="slender, slim body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">スリム</button>
+                            <button type="button" data-value="athletic, toned body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">スポーティ</button>
+                            <button type="button" data-value="muscular body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">筋肉質</button>
+                            <button type="button" data-value="curvy body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">グラマラス</button>
+                            <button type="button" data-value="petite body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">小柄</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. 髪型・髪色 -->
+                <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">💇‍♀️ 髪型</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="hairStyle">
+                            <!-- 女性向け / 共通 -->
+                            <button type="button" data-value="long straight hair" data-gender="female" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ストレートロング</button>
+                            <button type="button" data-value="short bob hair" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ショートボブ</button>
+                            <button type="button" data-value="medium wavy hair" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ミディアムウェーブ</button>
+                            <button type="button" data-value="ponytail" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ポニーテール</button>
+                            <button type="button" data-value="twin tails" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ツインテール</button>
+                            <button type="button" data-value="messy bun hair" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">おだんご</button>
+                            <button type="button" data-value="braided hair" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">三つ編み</button>
+                            <!-- 男性向け -->
+                            <button type="button" data-value="short cropped hair" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ベリーショート</button>
+                            <button type="button" data-value="undercut hairstyle" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ツーブロック</button>
+                            <button type="button" data-value="center-parted hair" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">センター分け</button>
+                            <button type="button" data-value="slicked-back hair" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">オールバック</button>
+                            <button type="button" data-value="wolf cut hair" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ウルフカット</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">🎨 髪の色</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="hairColor">
+                            <button type="button" data-value="black hair" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">黒髪</button>
+                            <button type="button" data-value="blonde hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">金髪</button>
+                            <button type="button" data-value="brown hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">茶髪</button>
+                            <button type="button" data-value="silver hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">銀髪・白髪</button>
+                            <button type="button" data-value="pink hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ピンク髪</button>
+                            <button type="button" data-value="blue hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">青髪</button>
+                            <button type="button" data-value="red hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">赤髪</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. 左右の目の色 (オッドアイ対応) -->
+                <section class="bg-indigo-950/40 p-4 rounded-xl border border-indigo-500/30 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2 flex items-center gap-2">
+                            👁️ 左目の色 (Left Eye)
+                        </h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="leftEyeColor">
+                            <button type="button" data-value="blue" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">青 (Blue)</button>
+                            <button type="button" data-value="brown" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">茶 (Brown)</button>
+                            <button type="button" data-value="green" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">緑 (Green)</button>
+                            <button type="button" data-value="red" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">赤 (Red)</button>
+                            <button type="button" data-value="amber" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">琥珀 (Amber)</button>
+                            <button type="button" data-value="purple" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">紫 (Purple)</button>
+                            <button type="button" data-value="yellow" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">金/黄 (Yellow)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2 flex items-center gap-2">
+                            👁️ 右目の色 (Right Eye)
+                        </h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="rightEyeColor">
+                            <button type="button" data-value="blue" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">青 (Blue)</button>
+                            <button type="button" data-value="brown" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">茶 (Brown)</button>
+                            <button type="button" data-value="green" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">緑 (Green)</button>
+                            <button type="button" data-value="red" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">赤 (Red)</button>
+                            <button type="button" data-value="amber" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">琥珀 (Amber)</button>
+                            <button type="button" data-value="purple" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">紫 (Purple)</button>
+                            <button type="button" data-value="yellow" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">金/黄 (Yellow)</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. 顔の特徴・表情・アクセサリー -->
+                <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">😊 表情</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="expression">
+                            <button type="button" data-value="gentle smile" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">優しい笑顔</button>
+                            <button type="button" data-value="cheerful laugh" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">明るい笑い顔</button>
+                            <button type="button" data-value="winking, cute smile" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ウィンク</button>
+                            <button type="button" data-value="sticking out tongue, mischievous smile" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">てへペロ・舌出し</button>
+                            <button type="button" data-value="smirk, confident smile" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ドヤ顔</button>
+                            <button type="button" data-value="pouting expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ふくれっ面</button>
+                            <button type="button" data-value="embarrassed, blushing" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">照れ顔</button>
+                            <button type="button" data-value="surprised expression, open mouth" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">驚き・びっくり</button>
+                            <button type="button" data-value="serious expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">真剣な顔</button>
+                            <button type="button" data-value="cool expression, calm" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">クール・無表情</button>
+                            <button type="button" data-value="crying, tears in eyes, sad expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">涙目・泣き顔</button>
+                            <button type="button" data-value="angry, frowning expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">怒り・おこ</button>
+                            <button type="button" data-value="sleepy expression, drowsy eyes" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">眠たげ・あくび</button>
+                            <button type="button" data-value="mischievous grin, playful expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">イタズラな企み顔</button>
+                            <button type="button" data-value="dreamy expression, mesmerized gaze" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">うっとり・恍惚</button>
+                            <button type="button" data-value="excited expression, sparkling eyes" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ワクワク・キラキラ目</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">✨ 装飾・アクセサリー</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="accessory">
+                            <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">なし</button>
+                            <button type="button" data-value="wearing glasses" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">メガネ</button>
+                            <button type="button" data-value="cat ears, nekomimi" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">猫耳</button>
+                            <button type="button" data-value="hair ribbon" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ヘアリボン</button>
+                            <button type="button" data-value="earrings" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ピアス</button>
+                            <button type="button" data-value="wearing a hat" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">帽子</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. 服装 & ポーズ -->
+                <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">👗 服装</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="outfit">
+                            <!-- 共通 -->
+                            <button type="button" data-value="casual clothes, t-shirt and jeans" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">カジュアル</button>
+                            <button type="button" data-value="stylish suit, formal wear" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">スーツ</button>
+                            <button type="button" data-value="fantasy knight armor" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">甲冑・騎士</button>
+                            <button type="button" data-value="japanese kimono" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">着物・和服</button>
+                            <!-- 女性向け -->
+                            <button type="button" data-value="school uniform, sailor suit" data-gender="female" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">セーラー服</button>
+                            <button type="button" data-value="one-piece dress" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ワンピース</button>
+                            <button type="button" data-value="summer swimsuit" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">水着</button>
+                            <button type="button" data-value="gothic lolita dress" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ゴスロリ</button>
+                            <!-- 男性用 -->
+                            <button type="button" data-value="japanese school uniform, gakuran" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">学ラン</button>
+                            <button type="button" data-value="tuxedo, elegant formal" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">タキシード</button>
+                            <button type="button" data-value="samurai armor, hakama" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">侍・袴</button>
+                            <button type="button" data-value="hoodie and cargo pants" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ストリート・パーカー</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">💃 ポーズ</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="pose">
+                            <!-- 共通 -->
+                            <button type="button" data-value="standing pose" data-gender="all" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">立っている</button>
+                            <button type="button" data-value="sitting on a chair" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">座っている</button>
+                            <button type="button" data-value="lying down relaxedly" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">寝そべっている</button>
+                            <button type="button" data-value="looking back over shoulder" data-gender="all" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">振り返る</button>
+                            <!-- 女性向け -->
+                            <button type="button" data-value="reaching hand towards viewer" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">手を伸ばす</button>
+                            <button type="button" data-value="looking up at viewer, cute pose" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">上目遣い</button>
+                            <button type="button" data-value="shy pose, touching her hair" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">髪に触れる</button>
+                            <!-- 男性用 -->
+                            <button type="button" data-value="hands in pockets" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ポケットに手を入れる</button>
+                            <button type="button" data-value="leaning against a wall" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">壁にもたれかかる</button>
+                            <button type="value="adjusting necktie" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ネクタイを緩める/整える</button>
+                            <button type="button" data-value="cool fighting stance" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">構え・ファイティングポーズ</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. 背景 & ライティング -->
+                <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                    <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">🌅 背景</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="background">
+                            <button type="button" data-value="simple background, white background" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">シンプル/背景なし</button>
+                            <button type="button" data-value="cozy indoor room with furniture" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">室内・部屋</button>
+                            <button type="button" data-value="modern city street" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">街中</button>
+                            <button type="button" data-value="beautiful nature, forest and trees" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">深い森</button>
+                            <button type="button" data-value="fantasy magical city background" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ファンタジー街</button>
+                            <button type="button" data-value="tropical beach with ocean waves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ビーチ</button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- 右側：プロンプト出力エリア (4/12) -->
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between space-y-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
+                
+                <div class="space-y-4">
+                    
+                    <!-- 日本語解説・プロンプト -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <h2 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                                <span>🇯🇵</span> 日本語解説・プロンプト
+                            </h2>
+                            <span class="text-[10px] bg-emerald-900/60 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/60 font-medium">
+                                日本語要約
+                            </span>
+                        </div>
+                        <div id="japanesePrompt" class="bg-slate-900 p-3 rounded-lg border border-slate-800 font-sans text-xs leading-relaxed text-emerald-100 min-h-[80px] break-words max-h-[160px] overflow-y-auto custom-scrollbar select-all">
+                        </div>
+                        <button onclick="copyToClipboard('japanesePrompt', 'jpToast')" class="mt-2 w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow">
+                            <span>📋</span> 日本語解説をコピー
+                        </button>
+                        <div id="jpToast" class="hidden text-center text-[11px] text-emerald-400 font-semibold mt-1">
+                            ✓ クリップボードにコピーしました！
+                        </div>
+                    </div>
+
+                    <!-- ポジティブプロンプト -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <h2 class="text-sm font-bold text-indigo-400 flex items-center gap-1.5">
+                                <span>📝</span> 肯定プロンプト (Prompt)
+                            </h2>
+                            <span id="modelTag" class="text-[10px] bg-indigo-900/80 text-indigo-200 px-2 py-0.5 rounded border border-indigo-700 font-mono">
+                                Stable Diffusion
+                            </span>
+                        </div>
+                        <div id="positivePrompt" class="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-xs leading-relaxed text-indigo-100 min-h-[120px] break-words max-h-[200px] overflow-y-auto custom-scrollbar select-all">
+                        </div>
+                        <button onclick="copyToClipboard('positivePrompt', 'posToast')" class="mt-2 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow">
+                            <span>📋</span> プロンプトをコピー
+                        </button>
+                        <div id="posToast" class="hidden text-center text-[11px] text-emerald-400 font-semibold mt-1">
+                            ✓ クリップボードにコピーしました！
+                        </div>
+                    </div>
+
+                    <!-- ネガティブプロンプト -->
+                    <div id="negativeContainer">
+                        <h2 class="text-sm font-bold text-rose-400 mb-1.5 flex items-center gap-1.5">
+                            <span>🚫</span> 除外プロンプト (Negative)
+                        </h2>
+                        <div id="negativePrompt" class="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-xs leading-relaxed text-rose-200/80 min-h-[100px] break-words max-h-[160px] overflow-y-auto custom-scrollbar select-all">
+                        </div>
+                        <button onclick="copyToClipboard('negativePrompt', 'negToast')" class="mt-2 w-full bg-rose-900/60 hover:bg-rose-800/80 border border-rose-700 text-rose-200 font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow">
+                            <span>📋</span> ネガティブプロンプトをコピー
+                        </button>
+                        <div id="negToast" class="hidden text-center text-[11px] text-emerald-400 font-semibold mt-1">
+                            ✓ クリップボードにコピーしました！
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ヒントカード -->
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800/80 text-[11px] text-slate-400 leading-normal">
+                    💡 <span class="font-semibold text-slate-300">オッドアイ機能:</span> 「左目の色」と「右目の色」を変えると、自動的に<code class="text-indigo-300">heterochromia</code>構文が組まれます。
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        // 選択された値を保持するステートオブジェクト
+        const state = {
+            aiModel: 'sd',
+            genMode: 'new',
+            aspectRatio: '1:1',
+            style: 'anime style',
+            quality: 'high',
+            gender: '1girl, female',
+            age: 'teenager',
+            bodyType: '',
+            hairStyle: 'long straight hair',
+            hairColor: 'black hair',
+            leftEyeColor: 'blue',
+            rightEyeColor: 'blue',
+            expression: 'gentle smile',
+            accessory: '',
+            outfit: 'school uniform, sailor suit',
+            pose: 'standing pose',
+            background: 'simple background, white background'
+        };
+
+        // 品質向上呪文
+        const qualityPresets = {
+            sd: { high: "masterpiece, best quality, highly detailed", ultra: "masterpiece, best quality, ultra-detailed, 8k wallpaper", none: "" },
+            nai: { high: "{masterpiece}, {best quality}, highly detailed", ultra: "{{masterpiece}}, {{best quality}}, ultra detailed", none: "" },
+            mj: { high: "photorealistic, highly detailed", ultra: "8k, hyperrealistic, extremely detailed", none: "" },
+            dalle: { high: "high quality, detailed illustration", ultra: "extremely detailed, masterpiece quality", none: "" },
+            nanobanana: { high: "high quality, highly detailed, sharp focus", ultra: "masterpiece quality, extremely detailed, 8k resolution", none: "" }
+        };
+
+        // ネガティブプロンプト
+        const negativePresets = {
+            sd: "worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, normal quality, jpeg artifacts, signature, watermark, username, blurry",
+            nai: "lowres, worst quality, low quality, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, jpeg artifacts",
+            mj: "blur, low quality, distorted, extra limbs, bad anatomy, watermark",
+            dalle: "Avoid blurry lines, bad anatomy, extra limbs, low resolution, or watermarks.",
+            nanobanana: "blurry, low quality, bad anatomy, distorted hands, extra fingers, text, watermark, cropped"
+        };
+
+        // プロンプト生成＆画面更新
+        function updatePrompts() {
+            const aiModel = state.aiModel;
+            const genMode = state.genMode;
+            const aspect = state.aspectRatio;
+            const qualityLevel = state.quality;
+
+            // AIモデルの表示更新
+            const modelNames = { 
+                sd: "Stable Diffusion", 
+                mj: "Midjourney v6", 
+                nai: "NovelAI", 
+                dalle: "DALL-E 3",
+                nanobanana: "Nano Banana (Gemini)"
+            };
+            document.getElementById('modelTag').innerText = modelNames[aiModel];
+
+            // 1. 各項目の選択値を集計 (英語)
+            let terms = [];
+
+            // クオリティ指定
+            const qTag = qualityPresets[aiModel][qualityLevel];
+            if (qTag) terms.push(qTag);
+
+            // 性別・年代・体型・画風
+            ['style', 'gender', 'age', 'bodyType', 'hairStyle', 'hairColor'].forEach(key => {
+                if (state[key] && state[key].trim() !== '') {
+                    terms.push(state[key].trim());
+                }
+            });
+
+            // 2. 左右の目の色 (オッドアイ判定) のロジック
+            const lEye = state.leftEyeColor;
+            const rEye = state.rightEyeColor;
+            if (lEye && rEye) {
+                if (lEye === rEye) {
+                    terms.push(`${lEye} eyes`);
+                } else {
+                    terms.push(`heterochromia, left eye ${lEye}, right eye ${rEye}`);
+                }
+            } else if (lEye) {
+                terms.push(`${lEye} eye`);
+            } else if (rEye) {
+                terms.push(`${rEye} eye`);
+            }
+
+            // 残りの特徴・ポーズ・背景など
+            ['expression', 'accessory', 'outfit', 'pose', 'background'].forEach(key => {
+                if (state[key] && state[key].trim() !== '') {
+                    terms.push(state[key].trim());
+                }
+            });
+
+            // 3. AIモデル ＆ モードごとの出力フォーマット調整
+            let finalPositive = "";
+
+            if (genMode === 'ref') {
+                // キャラ維持・着せ替えモード
+                if (aiModel === 'dalle' || aiModel === 'nanobanana') {
+                    finalPositive = `Keep the character design (facial features, hair) from the uploaded image unchanged. Change the outfit, pose, or expression to: ${terms.join(', ')}. Aspect ratio: ${aspect}.`;
+                } else if (aiModel === 'mj') {
+                    finalPositive = `${terms.join(', ')} --cref [YOUR_IMAGE_URL] --ar ${aspect} --v 6.0`;
+                } else {
+                    finalPositive = `[Image-to-Image / Reference Mode] Same character as reference image, ${terms.join(', ')}`;
+                }
+            } else {
+                // 新規作成モード
+                if (aiModel === 'mj') {
+                    finalPositive = terms.join(', ') + ` --ar ${aspect} --v 6.0`;
+                } else if (aiModel === 'dalle') {
+                    finalPositive = `A ${terms.join(', ')}. Format aspect ratio ${aspect}.`;
+                } else if (aiModel === 'nanobanana') {
+                    finalPositive = `Create an image of: ${terms.join(', ')}. Aspect ratio: ${aspect}.`;
+                } else {
+                    finalPositive = terms.join(', ');
+                }
+            }
+
+            document.getElementById('positivePrompt').innerText = finalPositive;
+            document.getElementById('negativePrompt').innerText = negativePresets[aiModel];
+
+            // 4. 日本語解説プロンプトの作成
+            const jpTerms = [];
+
+            if (genMode === 'ref') {
+                jpTerms.push(`【モード】🔄 元画像参照（キャラクター維持・着せ替え・差分）`);
+            }
+
+            // アクティブボタンのテキストを取得する関数
+            const getActiveBtnText = (groupName) => {
+                const group = document.querySelector(`[data-group="${groupName}"]`);
+                if (!group) return '';
+                const activeBtn = group.querySelector('.chip-btn.active');
+                if (!activeBtn || activeBtn.classList.contains('hidden')) return '';
+                return activeBtn.innerText.trim();
+            };
+
+            const styleJp = getActiveBtnText('style');
+            if (styleJp) jpTerms.push(`【画風】${styleJp}`);
+
+            const genderJp = getActiveBtnText('gender');
+            const ageJp = getActiveBtnText('age');
+            const bodyJp = getActiveBtnText('bodyType');
+            const personDetails = [genderJp, ageJp, bodyJp].filter(Boolean).join(' / ');
+            if (personDetails) jpTerms.push(`【人物】${personDetails}`);
+
+            const hairStyleJp = getActiveBtnText('hairStyle');
+            const hairColorJp = getActiveBtnText('hairColor');
+            if (hairStyleJp || hairColorJp) {
+                jpTerms.push(`【髪】${[hairColorJp, hairStyleJp].filter(Boolean).join(' ')}`);
+            }
+
+            const lEyeJp = getActiveBtnText('leftEyeColor');
+            const rEyeJp = getActiveBtnText('rightEyeColor');
+            if (lEyeJp && rEyeJp) {
+                if (lEyeJp === rEyeJp) {
+                    jpTerms.push(`【瞳】${lEyeJp}`);
+                } else {
+                    jpTerms.push(`【瞳】オッドアイ (左:${lEyeJp} / 右:${rEyeJp})`);
+                }
+            }
+
+            const expJp = getActiveBtnText('expression');
+            if (expJp) jpTerms.push(`【表情】${expJp}`);
+
+            const accJp = getActiveBtnText('accessory');
+            if (accJp && accJp !== 'なし') jpTerms.push(`【装飾】${accJp}`);
+
+            const outfitJp = getActiveBtnText('outfit');
+            if (outfitJp) jpTerms.push(`【服装】${outfitJp}`);
+
+            const poseJp = getActiveBtnText('pose');
+            if (poseJp) jpTerms.push(`【ポーズ】${poseJp}`);
+
+            const bgJp = getActiveBtnText('background');
+            if (bgJp) jpTerms.push(`【背景】${bgJp}`);
+
+            document.getElementById('japanesePrompt').innerText = jpTerms.join('、 ');
+        }
+
+        // コピー機能
+        function copyToClipboard(elementId, toastId) {
+            const text = document.getElementById(elementId).innerText;
+            if (!text) return;
+
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            const toast = document.getElementById(toastId);
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2000);
+        }
+
+        // 性別に応じてボタンの表示・非表示を切り替える関数
+        function updateGenderOptions() {
+            const currentGender = state.gender;
+            let targetGender = 'all';
+
+            if (currentGender.includes('female') || currentGender.includes('1girl')) {
+                targetGender = 'female';
+            } else if (currentGender.includes('male') || currentGender.includes('1boy')) {
+                targetGender = 'male';
+            }
+
+            // data-gender属性を持つすべてのボタンを判定
+            const genderSensitiveButtons = document.querySelectorAll('button[data-gender]');
+            genderSensitiveButtons.forEach(btn => {
+                const btnGender = btn.getAttribute('data-gender');
+                
+                // 表示条件：'all' または 選択中の性別と一致するか ('female'/'male')
+                if (btnGender === 'all' || targetGender === 'all' || btnGender === targetGender) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+
+                    // 非表示になったボタンが現在アクティブだった場合、表示中のボタンへ切り替え
+                    if (btn.classList.contains('active')) {
+                        btn.classList.remove('active');
+                        const group = btn.closest('[data-group]');
+                        const groupName = group.getAttribute('data-group');
+                        
+                        // グループ内で表示されている最初のボタンをアクティブにする
+                        const firstVisibleBtn = group.querySelector('button[data-gender]:not(.hidden), button:not([data-gender])');
+                        if (firstVisibleBtn) {
+                            firstVisibleBtn.classList.add('active');
+                            state[groupName] = firstVisibleBtn.getAttribute('data-value');
+                        }
+                    }
+                }
+            });
+        }
+
+        // ボタンのクリックイベント（グループごとのアクティブ切り替え）
+        window.onload = function() {
+            const buttonGroups = document.querySelectorAll('[data-group]');
+            
+            buttonGroups.forEach(group => {
+                const groupName = group.getAttribute('data-group');
+                const buttons = group.querySelectorAll('.chip-btn');
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        const val = btn.getAttribute('data-value');
+                        state[groupName] = val;
+
+                        // 性別が変更された場合は選択肢を更新
+                        if (groupName === 'gender') {
+                            updateGenderOptions();
+                        }
+
+                        updatePrompts();
+                    });
+                });
+            });
+
+            // 初回表示時のフィルタリング実行
+            updateGenderOptions();
+            updatePrompts();
+        };
+    </script>
+</body>
+</html>
