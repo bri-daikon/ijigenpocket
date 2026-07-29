@@ -776,8 +776,15 @@
             // 画面中央付近に少しランダムにずらして配置
             const offsetX = Math.random() * 100 - 50;
             const offsetY = Math.random() * 100 - 50;
-            node.style.left = `calc(50% + ${offsetX}px)`;
-            node.style.top = `calc(50% + ${offsetY}px)`;
+            const containerWidth = dragContainer.offsetWidth || window.innerWidth;
+            const containerHeight = dragContainer.offsetHeight || window.innerHeight;
+            
+            // ノードの中心が合うように少し調整 (-24pxはアイコンのおおよその半径)
+            const leftPx = (containerWidth / 2) + offsetX - 24;
+            const topPx = (containerHeight / 2) + offsetY - 24;
+            
+            node.style.left = `${leftPx}px`;
+            node.style.top = `${topPx}px`;
 
             const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
             const imgUrl = char.iconUrl || defaultSvg;
