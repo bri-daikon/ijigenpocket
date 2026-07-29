@@ -204,6 +204,11 @@
                     </div>
                 </div>
 
+                <button onclick="toggleCharacterManager()" id="btnManageCharacters"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-900 hover:bg-emerald-800 text-emerald-100 rounded-lg transition-all border border-emerald-700 shadow-md">
+                    <i data-lucide="users" class="w-3.5 h-3.5 text-emerald-100"></i> 探索者を管理
+                </button>
+
                 <button onclick="toggleGeneratorMode()" id="btnToggleGenerator"
                     class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-900 hover:bg-indigo-800 text-indigo-100 rounded-lg transition-all border border-indigo-700 shadow-md">
                     <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-100"></i> 表を作成
@@ -315,6 +320,32 @@
             </div>
             <div id="charCountDisplay" class="font-header text-amber-600/70">
                 配置対象: 0名
+            </div>
+        </div>
+
+        <!-- 探索者管理モーダル -->
+        <div id="characterManagerModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-[#16120e] border-2 border-amber-900/60 rounded-2xl p-6 max-w-2xl w-full h-[80vh] flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.9)] magic-border">
+                <div class="flex items-center justify-between mb-4 border-b border-amber-900/50 pb-3">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="users" class="w-6 h-6 text-amber-500"></i>
+                        <h2 class="text-xl font-bold font-header text-amber-400">探索者の管理</h2>
+                    </div>
+                    <button onclick="toggleCharacterManager()" class="text-stone-400 hover:text-stone-200 p-1">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-xs text-stone-400">※現在の配置状態を維持したまま、キャラの追加・削除ができます。</div>
+                    <button onclick="clearAllCharacters()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-all border border-rose-900/50 hover:border-rose-700 shadow-md">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 一括クリア
+                    </button>
+                </div>
+
+                <div id="characterManagerList" class="flex-grow overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 pr-2">
+                    <!-- リストがここに生成される -->
+                </div>
             </div>
         </div>
     </main>
@@ -671,6 +702,152 @@
             document.removeEventListener('touchmove', drag);
             document.removeEventListener('mouseup', endDrag);
             document.removeEventListener('touchend', endDrag);
+        }
+
+        // --- 探索者管理機能 ---
+        function toggleCharacterManager() {
+            const modal = document.getElementById('characterManagerModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                renderCharacterManagerList();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderCharacterManagerList() {
+            const listEl = document.getElementById('characterManagerList');
+            const data = localStorage.getItem('weby_trpg_characters');
+            let allChars = [];
+            if (data) {
+                try {
+                    allChars = JSON.parse(data);
+                } catch(e){}
+            }
+
+            const activeNodes = dragContainer.querySelectorAll('.character-node');
+            const activeIds = new Set();
+            activeNodes.forEach(node => {
+                const id = node.id.replace('char_node_', '');
+                activeIds.add(id);
+            });
+
+            if (allChars.length === 0) {
+                listEl.innerHTML = '<div class="col-span-full py-10 text-center text-stone-500 text-xs">登録されている探索者がいません。<br>「探索者比較の儀」から探索者を召喚してください。</div>';
+                return;
+            }
+
+            listEl.innerHTML = allChars.map(char => {
+                const isActive = activeIds.has(char.id);
+                const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+                const imgUrl = char.iconUrl || defaultSvg;
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-[#110d0a] border border-amber-900/30 rounded-xl">
+                        <div class="flex items-center gap-3">
+                            <img src="${imgUrl}" alt="${char.name}" class="w-10 h-10 rounded-full object-cover border border-amber-900/50" onerror="this.src='${defaultSvg}'">
+                            <div class="text-sm font-bold text-stone-200 font-header truncate max-w-[120px]" title="${char.name}">${char.name}</div>
+                        </div>
+                        <div>
+                            ${isActive 
+                                ? `<button onclick="removeCharacterFromBoard('${char.id}')" class="px-3 py-1.5 text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-300 rounded border border-stone-600 transition-colors">外す</button>`
+                                : `<button onclick="addCharacterToBoard('${char.id}')" class="px-3 py-1.5 text-xs font-semibold bg-amber-900 hover:bg-amber-800 text-amber-100 rounded border border-amber-700 transition-colors">追加</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function addCharacterToBoard(id) {
+            const data = localStorage.getItem('weby_trpg_characters');
+            if(!data) return;
+            const allChars = JSON.parse(data);
+            const char = allChars.find(c => c.id === id);
+            if(!char) return;
+
+            if (document.getElementById(`char_node_${char.id}`)) return;
+
+            const node = document.createElement('div');
+            node.className = 'character-node';
+            node.id = `char_node_${char.id}`;
+            
+            // 画面中央付近に少しランダムにずらして配置
+            const offsetX = Math.random() * 100 - 50;
+            const offsetY = Math.random() * 100 - 50;
+            node.style.left = `calc(50% + ${offsetX}px)`;
+            node.style.top = `calc(50% + ${offsetY}px)`;
+
+            const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+            const imgUrl = char.iconUrl || defaultSvg;
+            
+            const imgEl = document.createElement('img');
+            imgEl.src = imgUrl;
+            imgEl.alt = char.name;
+            imgEl.onerror = function() { this.src = defaultSvg; };
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'char-name';
+            nameEl.title = char.name;
+            nameEl.textContent = char.name;
+
+            node.appendChild(imgEl);
+            node.appendChild(nameEl);
+
+            node.addEventListener('mousedown', startDrag);
+            node.addEventListener('touchstart', startDrag, { passive: false });
+
+            dragContainer.appendChild(node);
+            
+            updateCharCountDisplay();
+            updateWebyMatrixTargets();
+            renderCharacterManagerList();
+        }
+
+        function removeCharacterFromBoard(id) {
+            const node = document.getElementById(`char_node_${id}`);
+            if (node) {
+                node.remove();
+                updateCharCountDisplay();
+                updateWebyMatrixTargets();
+                renderCharacterManagerList();
+            }
+        }
+
+        function clearAllCharacters() {
+            if(confirm("マトリクス上のすべての探索者をクリアしますか？")) {
+                dragContainer.innerHTML = '';
+                updateCharCountDisplay();
+                updateWebyMatrixTargets();
+                renderCharacterManagerList();
+            }
+        }
+
+        function updateCharCountDisplay() {
+            const count = dragContainer.querySelectorAll('.character-node').length;
+            document.getElementById('charCountDisplay').textContent = `配置対象: ${count}名`;
+        }
+
+        function updateWebyMatrixTargets() {
+            const activeNodes = dragContainer.querySelectorAll('.character-node');
+            const data = localStorage.getItem('weby_trpg_characters');
+            if(!data) return;
+            const allChars = JSON.parse(data);
+
+            const newTargets = [];
+            activeNodes.forEach(node => {
+                const id = node.id.replace('char_node_', '');
+                const char = allChars.find(c => c.id === id);
+                if (char) {
+                    newTargets.push({
+                        id: char.id,
+                        name: char.name,
+                        iconUrl: char.iconUrl || ''
+                    });
+                }
+            });
+            localStorage.setItem('weby_matrix_targets', JSON.stringify(newTargets));
         }
     </script>
 </body>
