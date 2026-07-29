@@ -74,8 +74,30 @@
                             <button type="button" data-value="4:3" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">4:3 (標準)</button>
                         </div>
                     </div>
+                    <div>
+                        <h2 class="font-bold text-indigo-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🎨</span> 画風・スタイル
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="style">
+                            <button type="button" data-value="" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                            <button type="button" data-value="anime style, 2D illustration" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">アニメ・2Dイラスト</button>
+                            <button type="button" data-value="realistic, photorealistic" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">リアル・写真風</button>
+                            <button type="button" data-value="watercolor painting style" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">水彩画風</button>
+                            <button type="button" data-value="oil painting style" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">油絵風</button>
+                            <button type="button" data-value="3D render, octane render" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">3D・CG風</button>
+                            <button type="button" data-value="pixel art" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ドット絵</button>
+                            <button type="button" data-value="chibi style, super deformed" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ちびキャラ(SD)</button>
+                        </div>
+                    </div>
                 </section>
 
+                <!-- タブ切り替えUI -->
+                <div class="flex gap-2 border-b border-slate-700 pb-2">
+                    <button type="button" id="tabBtnCharacter" onclick="switchTab('character')" class="px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors">👤 人物プロンプト</button>
+                    <button type="button" id="tabBtnBackground" onclick="switchTab('background')" class="px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors">🏞️ 背景プロンプト</button>
+                </div>
+
+                <div id="characterTabContent" class="space-y-6">
                 <!-- 2. 人物・性別・年代・体型 -->
                 <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
                     <div>
@@ -317,6 +339,18 @@
                         </div>
                     </div>
                     <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">📸 構図・カメラアングル</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="framing">
+                            <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                            <button type="button" data-value="full body shot" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">全身 (フルボディ)</button>
+                            <button type="button" data-value="cowboy shot, upper body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">腰より上 (カウボーイショット)</button>
+                            <button type="button" data-value="close-up on face" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">顔アップ (クローズアップ)</button>
+                            <button type="button" data-value="from above, high angle" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">俯瞰 (ハイアングル)</button>
+                            <button type="button" data-value="from below, low angle" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">あおり (ローアングル)</button>
+                            <button type="button" data-value="looking at viewer" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">カメラ目線</button>
+                        </div>
+                    </div>
+                    <div>
                         <h2 class="font-bold text-slate-200 text-sm mb-2">💃 ポーズ</h2>
                         <div class="flex flex-wrap gap-1.5" data-group="pose">
                             <!-- 共通 -->
@@ -359,6 +393,69 @@
                         </div>
                     </div>
                 </section>
+                </div> <!-- /characterTabContent -->
+
+                <div id="backgroundTabContent" class="space-y-6 hidden">
+                    <!-- 背景専用のセクション群 -->
+                    <section class="bg-slate-700/30 p-4 rounded-xl border border-slate-600 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">⏱️ 時間帯</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgTime">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                                <button type="button" data-value="morning, early morning, sunlight" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">朝・早朝</button>
+                                <button type="button" data-value="daytime, bright sunlight, clear sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">昼・日中</button>
+                                <button type="button" data-value="evening, golden hour, sunset" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">夕方・夕焼け</button>
+                                <button type="button" data-value="night, dark night, starry sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">夜・星空</button>
+                                <button type="button" data-value="midnight, late night" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">深夜</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">☁️ 天気</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgWeather">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                                <button type="button" data-value="sunny weather, beautiful clear sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">晴れ</button>
+                                <button type="button" data-value="cloudy weather, overcast" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">曇り</button>
+                                <button type="button" data-value="rainy weather, raining, wet" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">雨</button>
+                                <button type="button" data-value="snowing, snowy landscape, winter" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">雪</button>
+                                <button type="button" data-value="foggy, misty" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">霧・もや</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">💡 光源・ライティング</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgLighting">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                                <button type="button" data-value="cinematic lighting, dramatic lighting" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">シネマティック</button>
+                                <button type="button" data-value="neon lights, cyberpunk lighting" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ネオン</button>
+                                <button type="button" data-value="sunlight filtering through trees, komorebi" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">木漏れ日</button>
+                                <button type="button" data-value="moonlight, illuminated by the moon" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">月明かり</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🗺️ 場所・シチュエーション</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgSetting">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                                <button type="button" data-value="indoor room, cozy room interior" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">室内・部屋</button>
+                                <button type="button" data-value="modern city street, building landscape" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">現代都市・街並み</button>
+                                <button type="button" data-value="cyberpunk city, futuristic" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">サイバーパンク都市</button>
+                                <button type="button" data-value="fantasy magical city, medieval town" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ファンタジーの街</button>
+                                <button type="button" data-value="ancient ruins, overgrown ruins" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">古代遺跡</button>
+                                <button type="button" data-value="deep forest, magical forest, nature" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">深い森</button>
+                                <button type="button" data-value="beautiful ocean, tropical beach" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">海・ビーチ</button>
+                                <button type="button" data-value="outer space, galaxy, stars" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">宇宙・星雲</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🎥 画角・レンズ</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgCamera">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                                <button type="button" data-value="wide angle shot, sweeping view" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">広角(ワイド)</button>
+                                <button type="button" data-value="panorama, panoramic view" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">パノラマ</button>
+                                <button type="button" data-value="bird's-eye view, from high above" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">鳥瞰図(上空から)</button>
+                                <button type="button" data-value="macro photography, close-up details" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">マクロ(接写)</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
 
             </div>
 
@@ -439,6 +536,7 @@
     <script>
         // 選択された値を保持するステートオブジェクト
         const state = {
+            tabMode: 'character', // 'character' or 'background'
             aiModel: 'sd',
             genMode: 'new',
             aspectRatio: '1:1',
@@ -461,7 +559,12 @@
             bottoms: '',
             framing: '',
             pose: 'standing pose',
-            background: 'simple background, white background'
+            background: 'simple background, white background',
+            bgTime: '',
+            bgWeather: '',
+            bgLighting: '',
+            bgSetting: '',
+            bgCamera: ''
         };
 
         // 品質向上呪文
@@ -481,6 +584,31 @@
             dalle: "Avoid blurry lines, bad anatomy, extra limbs, low resolution, or watermarks.",
             nanobanana: "blurry, low quality, bad anatomy, distorted hands, extra fingers, text, watermark, cropped"
         };
+
+        // タブ切り替え
+        function switchTab(mode) {
+            state.tabMode = mode;
+            
+            const btnChar = document.getElementById('tabBtnCharacter');
+            const btnBg = document.getElementById('tabBtnBackground');
+            const contentChar = document.getElementById('characterTabContent');
+            const contentBg = document.getElementById('backgroundTabContent');
+            
+            if (mode === 'character') {
+                btnChar.className = "px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors";
+                btnBg.className = "px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors";
+                
+                contentChar.classList.remove('hidden');
+                contentBg.classList.add('hidden');
+            } else {
+                btnBg.className = "px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors";
+                btnChar.className = "px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors";
+                
+                contentBg.classList.remove('hidden');
+                contentChar.classList.add('hidden');
+            }
+            updatePrompts();
+        }
 
         // プロンプト生成＆画面更新
         function updatePrompts() {
@@ -506,34 +634,32 @@
             const qTag = qualityPresets[aiModel][qualityLevel];
             if (qTag) terms.push(qTag);
 
-            // 性別・年代・体型・画風・髪
-            ['style', 'gender', 'age', 'bodyType', 'hairLength', 'bangs', 'hairArrangement', 'hairColor', 'hairEffect'].forEach(key => {
-                if (state[key] && state[key].trim() !== '') {
-                    terms.push(state[key].trim());
-                }
-            });
+            // 画風 (共通)
+            if (state.style) terms.push(state.style);
 
-            // 2. 左右の目の色 (オッドアイ判定) のロジック
-            const lEye = state.leftEyeColor;
-            const rEye = state.rightEyeColor;
-            if (lEye && rEye) {
-                if (lEye === rEye) {
-                    terms.push(`${lEye} eyes`);
-                } else {
-                    terms.push(`heterochromia, left eye ${lEye}, right eye ${rEye}`);
-                }
-            } else if (lEye) {
-                terms.push(`${lEye} eye`);
-            } else if (rEye) {
-                terms.push(`${rEye} eye`);
+            if (state.tabMode === 'character') {
+                // 人物モード
+                ['gender', 'age', 'bodyType', 'hairLength', 'bangs', 'hairArrangement', 'hairColor', 'hairEffect'].forEach(key => {
+                    if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
+                });
+
+                const lEye = state.leftEyeColor;
+                const rEye = state.rightEyeColor;
+                if (lEye && rEye) {
+                    if (lEye === rEye) terms.push(`${lEye} eyes`);
+                    else terms.push(`heterochromia, left eye ${lEye}, right eye ${rEye}`);
+                } else if (lEye) terms.push(`${lEye} eye`);
+                else if (rEye) terms.push(`${rEye} eye`);
+
+                ['expression', 'accessory', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
+                    if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
+                });
+            } else {
+                // 背景モード
+                ['bgTime', 'bgWeather', 'bgLighting', 'bgSetting', 'bgCamera'].forEach(key => {
+                    if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
+                });
             }
-
-            // 残りの特徴・ポーズ・背景など
-            ['expression', 'accessory', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
-                if (state[key] && state[key].trim() !== '') {
-                    terms.push(state[key].trim());
-                }
-            });
 
             // 3. AIモデル ＆ モードごとの出力フォーマット調整
             let finalPositive = "";
@@ -582,55 +708,68 @@
             const styleJp = getActiveBtnText('style');
             if (styleJp) jpTerms.push(`【画風】${styleJp}`);
 
-            const genderJp = getActiveBtnText('gender');
-            const ageJp = getActiveBtnText('age');
-            const bodyJp = getActiveBtnText('bodyType');
-            const personDetails = [genderJp, ageJp, bodyJp].filter(Boolean).join(' / ');
-            if (personDetails) jpTerms.push(`【人物】${personDetails}`);
+            if (state.tabMode === 'character') {
+                const genderJp = getActiveBtnText('gender');
+                const ageJp = getActiveBtnText('age');
+                const bodyJp = getActiveBtnText('bodyType');
+                const personDetails = [genderJp, ageJp, bodyJp].filter(Boolean).join(' / ');
+                if (personDetails) jpTerms.push(`【人物】${personDetails}`);
 
-            const hairLengthJp = getActiveBtnText('hairLength');
-            const bangsJp = getActiveBtnText('bangs');
-            const arrJp = getActiveBtnText('hairArrangement');
-            const hairColorJp = getActiveBtnText('hairColor');
-            const hairEffectJp = getActiveBtnText('hairEffect');
-            
-            const hairParts = [hairColorJp, hairEffectJp, hairLengthJp, bangsJp, arrJp].filter(p => p && p !== '指定なし' && p !== 'なし');
-            if (hairParts.length > 0) {
-                jpTerms.push(`【髪】${hairParts.join(' / ')}`);
-            }
-
-            const lEyeJp = getActiveBtnText('leftEyeColor');
-            const rEyeJp = getActiveBtnText('rightEyeColor');
-            if (lEyeJp && rEyeJp) {
-                if (lEyeJp === rEyeJp) {
-                    jpTerms.push(`【瞳】${lEyeJp}`);
-                } else {
-                    jpTerms.push(`【瞳】オッドアイ (左:${lEyeJp} / 右:${rEyeJp})`);
+                const hairLengthJp = getActiveBtnText('hairLength');
+                const bangsJp = getActiveBtnText('bangs');
+                const arrJp = getActiveBtnText('hairArrangement');
+                const hairColorJp = getActiveBtnText('hairColor');
+                const hairEffectJp = getActiveBtnText('hairEffect');
+                
+                const hairParts = [hairColorJp, hairEffectJp, hairLengthJp, bangsJp, arrJp].filter(p => p && p !== '指定なし' && p !== 'なし');
+                if (hairParts.length > 0) {
+                    jpTerms.push(`【髪】${hairParts.join(' / ')}`);
                 }
+
+                const lEyeJp = getActiveBtnText('leftEyeColor');
+                const rEyeJp = getActiveBtnText('rightEyeColor');
+                if (lEyeJp && rEyeJp) {
+                    if (lEyeJp === rEyeJp) {
+                        jpTerms.push(`【瞳】${lEyeJp}`);
+                    } else {
+                        jpTerms.push(`【瞳】オッドアイ (左:${lEyeJp} / 右:${rEyeJp})`);
+                    }
+                }
+
+                const expJp = getActiveBtnText('expression');
+                if (expJp) jpTerms.push(`【表情】${expJp}`);
+
+                const accJp = getActiveBtnText('accessory');
+                if (accJp && accJp !== 'なし') jpTerms.push(`【装飾】${accJp}`);
+
+                const outfitJp = getActiveBtnText('outfit');
+                const topsJp = getActiveBtnText('tops');
+                const bottomsJp = getActiveBtnText('bottoms');
+                const outfitParts = [outfitJp, topsJp, bottomsJp].filter(p => p && p !== '指定なし');
+                if (outfitParts.length > 0) {
+                    jpTerms.push(`【服装】${outfitParts.join(' / ')}`);
+                }
+
+                const framingJp = getActiveBtnText('framing');
+                if (framingJp) jpTerms.push(`【構図】${framingJp}`);
+
+                const poseJp = getActiveBtnText('pose');
+                if (poseJp) jpTerms.push(`【ポーズ】${poseJp}`);
+
+                const bgJp = getActiveBtnText('background');
+                if (bgJp) jpTerms.push(`【背景】${bgJp}`);
+            } else {
+                const timeJp = getActiveBtnText('bgTime');
+                if (timeJp) jpTerms.push(`【時間帯】${timeJp}`);
+                const weatherJp = getActiveBtnText('bgWeather');
+                if (weatherJp) jpTerms.push(`【天気】${weatherJp}`);
+                const lightingJp = getActiveBtnText('bgLighting');
+                if (lightingJp) jpTerms.push(`【光源】${lightingJp}`);
+                const settingJp = getActiveBtnText('bgSetting');
+                if (settingJp) jpTerms.push(`【場所】${settingJp}`);
+                const camJp = getActiveBtnText('bgCamera');
+                if (camJp) jpTerms.push(`【画角】${camJp}`);
             }
-
-            const expJp = getActiveBtnText('expression');
-            if (expJp) jpTerms.push(`【表情】${expJp}`);
-
-            const accJp = getActiveBtnText('accessory');
-            if (accJp && accJp !== 'なし') jpTerms.push(`【装飾】${accJp}`);
-
-            const outfitJp = getActiveBtnText('outfit');
-            const topsJp = getActiveBtnText('tops');
-            const bottomsJp = getActiveBtnText('bottoms');
-            const outfitParts = [outfitJp, topsJp, bottomsJp].filter(p => p && p !== '指定なし');
-            if (outfitParts.length > 0) {
-                jpTerms.push(`【服装】${outfitParts.join(' / ')}`);
-            }
-
-            const framingJp = getActiveBtnText('framing');
-            if (framingJp) jpTerms.push(`【構図】${framingJp}`);
-
-            const poseJp = getActiveBtnText('pose');
-            if (poseJp) jpTerms.push(`【ポーズ】${poseJp}`);
-
-            const bgJp = getActiveBtnText('background');
-            if (bgJp) jpTerms.push(`【背景】${bgJp}`);
 
             document.getElementById('japanesePrompt').innerText = jpTerms.join('、 ');
         }
