@@ -313,6 +313,20 @@
             const char = targets.find(c => c.id === id);
             if (!char) return;
 
+            // 大元のデータから欠損しているプロパティ（skillsやstatusなど）を補完
+            try {
+                const globalData = localStorage.getItem('weby_trpg_characters');
+                if (globalData) {
+                    const allChars = JSON.parse(globalData);
+                    const globalChar = allChars.find(c => c.id === id);
+                    if (globalChar) {
+                        if (!char.skills && globalChar.skills) char.skills = globalChar.skills;
+                        if (!char.status && globalChar.status) char.status = globalChar.status;
+                        if (!char.params && globalChar.params) char.params = globalChar.params;
+                    }
+                }
+            } catch (e) {}
+
             document.getElementById('emptyFormState').classList.add('hidden');
             document.getElementById('profileForm').classList.remove('hidden');
             document.getElementById('profileForm').classList.add('flex');
