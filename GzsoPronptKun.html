@@ -459,6 +459,7 @@
             outfit: 'school uniform, sailor suit',
             tops: '',
             bottoms: '',
+            framing: '',
             pose: 'standing pose',
             background: 'simple background, white background'
         };
@@ -528,7 +529,7 @@
             }
 
             // 残りの特徴・ポーズ・背景など
-            ['expression', 'accessory', 'outfit', 'tops', 'bottoms', 'pose', 'background'].forEach(key => {
+            ['expression', 'accessory', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
                 if (state[key] && state[key].trim() !== '') {
                     terms.push(state[key].trim());
                 }
@@ -621,6 +622,9 @@
             if (outfitParts.length > 0) {
                 jpTerms.push(`【服装】${outfitParts.join(' / ')}`);
             }
+
+            const framingJp = getActiveBtnText('framing');
+            if (framingJp) jpTerms.push(`【構図】${framingJp}`);
 
             const poseJp = getActiveBtnText('pose');
             if (poseJp) jpTerms.push(`【ポーズ】${poseJp}`);
