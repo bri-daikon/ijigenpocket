@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔導書：探索者調書の儀 - Weby</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705;
+        }
+
+        .font-header {
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #14100c; }
+        ::-webkit-scrollbar-thumb { background: #4a3728; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6e5039; }
+
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(217, 119, 6, 0.15);
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        /* フォームの共通スタイル */
+        .form-input {
+            width: 100%;
+            background-color: #0a0806;
+            border: 1px solid rgba(120, 53, 15, 0.6); /* border-amber-950/60 */
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            color: #fde68a; /* amber-200 */
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #d97706; /* amber-600 */
+            box-shadow: 0 0 0 1px #d97706;
+        }
+    </style>
+</head>
+
+<body class="text-stone-200 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+        <div class="max-w-7xl mx-auto flex items-center gap-4">
+            <div class="p-3 bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-xl text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <i data-lucide="user-square-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-widest font-header text-emerald-500 bg-gradient-to-r from-emerald-400 via-green-200 to-emerald-500 bg-clip-text text-transparent">
+                    探索者調書の儀</h1>
+                <p class="text-[11px] text-emerald-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF CHARACTER PROFILE</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+        
+        <div id="toast" class="hidden fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300">
+            <div class="flex items-center gap-3 bg-[#1c1510] border border-amber-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <div id="toast-icon-wrapper" class="p-1 rounded-full"></div>
+                <p id="toast-message" class="text-sm font-semibold"></p>
+            </div>
+        </div>
+
+        <div id="noDataMessage" class="hidden flex flex-col items-center justify-center py-20 text-stone-500">
+            <i data-lucide="ghost" class="w-16 h-16 mb-4 opacity-50"></i>
+            <p class="font-header">対象の探索者が存在しません。</p>
+            <p class="text-xs mt-2">比較一覧からキャラクターを選択し、「プロフィール編集へ」を実行してください。</p>
+        </div>
+
+        <div id="contentGrid" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-140px)]">
+            
+            <!-- 左カラム：キャラクターリスト (4/12) -->
+            <section class="lg:col-span-4 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-amber-950/60 bg-[#1a1511]">
+                    <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i> 対象の探索者
+                    </h2>
+                </div>
+                <div id="characterList" class="flex-grow overflow-y-auto p-2 space-y-1">
+                    <!-- JSでキャラクターリストを生成 -->
+                </div>
+            </section>
+
+            <!-- 右カラム：プロフィール編集フォーム (8/12) -->
+            <section class="lg:col-span-8 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden relative">
+                
+                <div id="emptyFormState" class="absolute inset-0 flex flex-col items-center justify-center text-stone-600 bg-[#14100c] z-10">
+                    <i data-lucide="feather" class="w-12 h-12 mb-3 opacity-30"></i>
+                    <p class="text-sm font-header">左のリストから探索者を選択してください。</p>
+                </div>
+
+                <div id="profileForm" class="hidden flex-col h-full">
+                    <!-- ヘッダー部分（名前とアイコン） -->
+                    <div class="p-6 border-b border-amber-950/60 bg-gradient-to-b from-[#1a1511] to-[#14100c] flex items-center gap-4">
+                        <img id="formIcon" src="" alt="" class="w-16 h-16 rounded-full border-2 border-amber-800/50 object-cover shadow-lg">
+                        <div>
+                            <h2 id="formName" class="text-xl font-bold font-header text-amber-400 drop-shadow-md">キャラクター名</h2>
+                            <p id="formStats" class="text-xs text-stone-400 mt-1 font-mono"></p>
+                        </div>
+                    </div>
+
+                    <!-- 入力フォームエリア -->
+                    <div class="flex-grow overflow-y-auto p-6 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">年齢</label>
+                                <input type="text" id="inputAge" class="form-input" placeholder="例: 24">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">職業</label>
+                                <input type="text" id="inputJob" class="form-input" placeholder="例: 私立探偵, 医師">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">身長</label>
+                                <input type="text" id="inputHeight" class="form-input" placeholder="例: 175cm">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">体重</label>
+                                <input type="text" id="inputWeight" class="form-input" placeholder="例: 65kg">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">誕生日</label>
+                                <input type="text" id="inputBirthday" class="form-input" placeholder="例: 10月31日">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">血液型</label>
+                                <input type="text" id="inputBloodType" class="form-input" placeholder="例: A型">
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">備考・詳細設定</label>
+                            <textarea id="inputNotes" rows="6" class="form-input resize-y" placeholder="外見の特徴、性格、背景設定など..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- フッター（保存ボタン） -->
+                    <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end">
+                        <button onclick="saveProfile()" class="flex items-center gap-2 px-6 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-stone-100 font-bold rounded-lg shadow-lg border border-emerald-600 transition-all">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            調書を記録する
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        let targets = [];
+        let currentEditingId = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadTargets();
+        });
+
+        const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+
+        function loadTargets() {
+            const data = localStorage.getItem('weby_profile_targets');
+            if (data) {
+                try {
+                    targets = JSON.parse(data);
+                } catch (e) {
+                    console.error("データの読み込みに失敗", e);
+                }
+            }
+
+            if (targets.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                document.getElementById('contentGrid').classList.add('hidden');
+            } else {
+                document.getElementById('noDataMessage').classList.add('hidden');
+                document.getElementById('contentGrid').classList.remove('hidden');
+                renderList();
+            }
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('characterList');
+            listEl.innerHTML = '';
+
+            targets.forEach(char => {
+                const item = document.createElement('div');
+                item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-amber-950/40 border-amber-700/60' : 'bg-transparent border-transparent hover:bg-[#1a1511]'}`;
+                item.onclick = () => selectCharacter(char.id);
+
+                const imgUrl = char.iconUrl || defaultSvg;
+                
+                let statsStr = "";
+                if (char.params) {
+                    const getParam = (label) => {
+                        const p = char.params.find(x => x.label.toUpperCase() === label);
+                        return p ? p.value : '-';
+                    };
+                    statsStr = `STR:${getParam('STR')} CON:${getParam('CON')} SIZ:${getParam('SIZ')} DEX:${getParam('DEX')}`;
+                }
+
+                item.innerHTML = `
+                    <img src="${imgUrl}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover shrink-0">
+                    <div class="overflow-hidden">
+                        <div class="text-sm font-bold text-stone-200 truncate font-header">${char.name}</div>
+                        <div class="text-[10px] text-stone-500 font-mono truncate">${statsStr}</div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function selectCharacter(id) {
+            currentEditingId = id;
+            renderList(); // リストのハイライト更新
+            
+            const char = targets.find(c => c.id === id);
+            if (!char) return;
+
+            document.getElementById('emptyFormState').classList.add('hidden');
+            document.getElementById('profileForm').classList.remove('hidden');
+            document.getElementById('profileForm').classList.add('flex');
+
+            document.getElementById('formIcon').src = char.iconUrl || defaultSvg;
+            document.getElementById('formIcon').onerror = function() { this.src = defaultSvg; };
+            document.getElementById('formName').textContent = char.name;
+
+            let statsStr = "";
+            if (char.params) {
+                const getParam = (label) => {
+                    const p = char.params.find(x => x.label.toUpperCase() === label);
+                    return p ? p.value : '-';
+                };
+                statsStr = `STR:${getParam('STR')} / CON:${getParam('CON')} / SIZ:${getParam('SIZ')} / APP:${getParam('APP')} / INT:${getParam('INT')}`;
+            }
+            document.getElementById('formStats').textContent = statsStr;
+
+            const profile = char.profile || {};
+            document.getElementById('inputAge').value = profile.age || '';
+            document.getElementById('inputJob').value = profile.job || '';
+            document.getElementById('inputHeight').value = profile.height || '';
+            document.getElementById('inputWeight').value = profile.weight || '';
+            document.getElementById('inputBirthday').value = profile.birthday || '';
+            document.getElementById('inputBloodType').value = profile.bloodType || '';
+            document.getElementById('inputNotes').value = profile.notes || '';
+        }
+
+        function saveProfile() {
+            if (!currentEditingId) return;
+
+            // 大元のデータを読み込む
+            let allChars = [];
+            try {
+                const data = localStorage.getItem('weby_trpg_characters');
+                if (data) allChars = JSON.parse(data);
+            } catch (e) {
+                console.error("保存先のパースに失敗", e);
+            }
+
+            const targetGlobalChar = allChars.find(c => c.id === currentEditingId);
+            
+            // フォームから値を取得
+            const profileData = {
+                age: document.getElementById('inputAge').value.trim(),
+                job: document.getElementById('inputJob').value.trim(),
+                height: document.getElementById('inputHeight').value.trim(),
+                weight: document.getElementById('inputWeight').value.trim(),
+                birthday: document.getElementById('inputBirthday').value.trim(),
+                bloodType: document.getElementById('inputBloodType').value.trim(),
+                notes: document.getElementById('inputNotes').value.trim()
+            };
+
+            // targets (現在の画面のState) も更新しておく
+            const localChar = targets.find(c => c.id === currentEditingId);
+            if (localChar) {
+                localChar.profile = profileData;
+                localStorage.setItem('weby_profile_targets', JSON.stringify(targets));
+            }
+
+            if (targetGlobalChar) {
+                targetGlobalChar.profile = profileData;
+                localStorage.setItem('weby_trpg_characters', JSON.stringify(allChars));
+                showToast(`「${targetGlobalChar.name}」の調書を記録しました。`, "success");
+            } else {
+                showToast("保存先の大元データが見つかりません。削除された可能性があります。", "error");
+            }
+        }
+
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconWrapper = document.getElementById('toast-icon-wrapper');
+            
+            msgEl.textContent = message;
+            
+            if (type === "error") {
+                iconWrapper.className = "p-1 rounded-full bg-rose-950 text-rose-500";
+                iconWrapper.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
+                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-rose-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+            } else if (type === "success") {
+                iconWrapper.className = "p-1 rounded-full bg-emerald-950 text-emerald-500";
+                iconWrapper.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i>';
+                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-emerald-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+            } else {
+                iconWrapper.className = "p-1 rounded-full bg-amber-950 text-amber-500";
+                iconWrapper.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
+                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-amber-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+            }
+
+            lucide.createIcons();
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
