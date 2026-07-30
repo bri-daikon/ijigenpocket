@@ -119,6 +119,16 @@
                         </div>
                     </div>
                     <div>
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">📏 身長 (Height)</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="height">
+                            <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
+                            <button type="button" data-value="tall" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">高身長</button>
+                            <button type="button" data-value="short" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">低身長</button>
+                            <button type="button" data-value="chibi" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">ちびキャラ</button>
+                            <button type="button" data-value="giant" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">巨大</button>
+                        </div>
+                    </div>
+                    <div>
                         <h2 class="font-bold text-slate-200 text-sm mb-2">💪 体型</h2>
                         <div class="flex flex-wrap gap-1.5" data-group="bodyType">
                             <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">指定なし</button>
@@ -127,7 +137,8 @@
                             <button type="button" data-value="muscular body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">筋肉質</button>
                             <button type="button" data-value="petite body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">小柄</button>
                             <button type="button" data-value="slender, slim body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">スリム</button>
-                        </div>
+                                                    <button type="button" data-value="long legs" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700">足が長い</button>
+</div>
                     </div>
                 </section>
 
@@ -1459,6 +1470,7 @@
             quality: 'high',
             gender: '',
             age: '',
+            height: '',
             bodyType: '',
             hairLength: '',
             bangs: '',
@@ -1475,9 +1487,12 @@
             mole: '',
             accessory: '',
             nailColor: '',
+            clothingColor: '',
             outfit: '',
             tops: '',
             bottoms: '',
+            outerwear: '',
+            shoes: '',
             framing: '',
             pose: '',
             background: 'simple background, white background',
@@ -1565,11 +1580,11 @@
                 // 人物モード
                 // 差分・着せ替えモード(ref)の場合は、服装や髪型を除外する
                 if (genMode === 'ref') {
-                    ['gender', 'age', 'bodyType'].forEach(key => {
+                    ['gender', 'age', 'height', 'bodyType'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 } else {
-                    ['gender', 'age', 'bodyType', 'hairLength', 'bangs', 'sideBangs', 'hairArrangement', 'hairColor', 'hairColorLightness', 'hairTexture', 'hairEffect', 'hairEffectColor'].forEach(key => {
+                    ['gender', 'age', 'height', 'bodyType', 'hairLength', 'bangs', 'sideBangs', 'hairArrangement', 'hairColor', 'hairColorLightness', 'hairTexture', 'hairEffect', 'hairEffectColor'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 }
@@ -1591,7 +1606,7 @@
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 } else {
-                    ['facialHair', 'mole', 'expression', 'accessory', 'nailColor', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
+                    ['facialHair', 'mole', 'expression', 'accessory', 'nailColor', 'clothingColor', 'outfit', 'tops', 'outerwear', 'bottoms', 'shoes', 'framing', 'pose', 'background'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 }
@@ -1663,8 +1678,9 @@
             if (state.tabMode === 'character') {
                 const genderJp = getActiveBtnText('gender');
                 const ageJp = getActiveBtnText('age');
+                const heightJp = getActiveBtnText('height');
                 const bodyJp = getActiveBtnText('bodyType');
-                const personDetails = [genderJp, ageJp, bodyJp].filter(Boolean).join(' / ');
+                const personDetails = [genderJp, ageJp, heightJp, bodyJp].filter(Boolean).join(' / ');
                 if (personDetails) jpTerms.push(`【人物】${personDetails}`);
 
                 const hairLengthJp = getActiveBtnText('hairLength');
@@ -1709,10 +1725,13 @@
                     const nailJp = getActiveBtnText('nailColor');
                     if (nailJp && nailJp !== '指定なし') jpTerms.push(`【ネイル】${nailJp}`);
 
+                    const clothingColorJp = getActiveBtnText('clothingColor');
                     const outfitJp = getActiveBtnText('outfit');
                     const topsJp = getActiveBtnText('tops');
+                    const outerwearJp = getActiveBtnText('outerwear');
                     const bottomsJp = getActiveBtnText('bottoms');
-                    const outfitParts = [outfitJp, topsJp, bottomsJp].filter(p => p && p !== '指定なし');
+                    const shoesJp = getActiveBtnText('shoes');
+                    const outfitParts = [clothingColorJp, outfitJp, topsJp, outerwearJp, bottomsJp, shoesJp].filter(p => p && p !== '指定なし');
                     if (outfitParts.length > 0) {
                         jpTerms.push(`【服装】${outfitParts.join(' / ')}`);
                     }
