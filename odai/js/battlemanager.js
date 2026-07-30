@@ -52,6 +52,11 @@ function initThemes() {
 window.generateNameFields = () => {
     const container = document.getElementById('names-input-container');
     const count = parseInt(document.getElementById('input-num-people').value) || 1;
+    
+    const currentValues = [];
+    const existingInputs = container.querySelectorAll('input');
+    existingInputs.forEach(input => currentValues.push(input.value));
+
     container.innerHTML = '';
     for (let i = 0; i < count; i++) {
         const input = document.createElement('input');
@@ -59,6 +64,11 @@ window.generateNameFields = () => {
         input.placeholder = `PC/NPC ${i + 1} の名前`;
         input.id = `name-input-${i}`;
         input.className = "p-3 rounded-xl bg-white/5 border border-white/10 text-sm outline-none focus:ring-2 focus:ring-blue-500";
+        
+        if (i < currentValues.length) {
+            input.value = currentValues[i];
+        }
+        
         container.appendChild(input);
     }
 };
@@ -86,7 +96,7 @@ function renderManager() {
     const select = document.getElementById('action-person-select');
     if (!select) return; 
     
-    const currentSelectedPerson = select.value; // 現在の選択を保存
+    const currentSelectedPersons = Array.from(select.selectedOptions).map(opt => opt.value);
     
     select.innerHTML = '';
     const sortedCharacters = config.characters ? [...config.characters].sort((a, b) => (a.inactive === b.inactive ? 0 : a.inactive ? 1 : -1)) : [];
@@ -97,9 +107,12 @@ function renderManager() {
         select.appendChild(opt);
     });
     
-    // 選択を復元（存在する場合）
-    if (currentSelectedPerson !== "" && currentSelectedPerson !== null) {
-        select.value = currentSelectedPerson;
+    if (currentSelectedPersons.length > 0) {
+        Array.from(select.options).forEach(opt => {
+            if (currentSelectedPersons.includes(opt.value)) opt.selected = true;
+        });
+    } else if (select.options.length > 0) {
+        select.options[0].selected = true;
     }
 
     document.getElementById('action-start-round').value = config.currentRound;
@@ -187,7 +200,11 @@ function renderManager() {
 }
 
 window.applyAction = () => {
-    const pIdx = document.getElementById('action-person-select').value;
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedOptions.length === 0) return showMsg("対象者を選択してください", "error");
+
     const cat = document.querySelector('input[name="action-cat"]:checked').value;
     const start = parseInt(document.getElementById('action-start-round').value);
     const end = parseInt(document.getElementById('action-end-round').value);
@@ -199,17 +216,23 @@ window.applyAction = () => {
     if (editingEntryId) {
         const entry = statusEntries.find(e => e.id === editingEntryId);
         if (entry) {
-            entry.personIndex = pIdx;
+            entry.personIndex = selectedOptions[0];
             entry.category = cat;
             entry.startRound = start;
             entry.endRound = end;
             entry.content = content;
+            
+            for (let i = 1; i < selectedOptions.length; i++) {
+                statusEntries.push({ id: Date.now().toString() + "_" + i, personIndex: selectedOptions[i], category: cat, startRound: start, endRound: end, content });
+            }
         }
         cancelEdit();
         showMsg("更新しました");
     } else {
-        statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
-        statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+        selectedOptions.forEach((pIdx, idx) => {
+            statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+            statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+        });
         document.getElementById('action-content').value = '';
         showMsg("適用しました");
     }
@@ -429,11 +452,14 @@ window.removePreset = (id) => {
 };
 
 window.applyPreset = (preset) => {
-    const pIdx = document.getElementById('action-person-select').value;
-    if (!pIdx) return showMsg("対象者を選択してください", "error");
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    if (selectedOptions.length === 0) return showMsg("対象者を選択してください", "error");
     
     const r = config.currentRound;
-    statusEntries.push({ id: Date.now().toString(), personIndex: pIdx, category: preset.category, startRound: r, endRound: r, content: preset.content });
+    selectedOptions.forEach((pIdx, idx) => {
+        statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: preset.category, startRound: r, endRound: r, content: preset.content });
+    });
     
     const catRadio = document.querySelector(`input[name="action-cat"][value="${preset.category}"]`);
     if (catRadio) catRadio.checked = true;
