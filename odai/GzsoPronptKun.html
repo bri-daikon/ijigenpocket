@@ -1464,11 +1464,15 @@
             bangs: '',
             hairArrangement: '',
             hairColor: '',
+            hairColorLightness: '',
+            hairTexture: '',
             hairEffect: '',
             hairEffectColor: '',
             leftEyeColor: '',
             rightEyeColor: '',
             expression: '',
+            facialHair: '',
+            mole: '',
             accessory: '',
             nailColor: '',
             outfit: '',
@@ -1565,7 +1569,7 @@
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 } else {
-                    ['gender', 'age', 'bodyType', 'hairLength', 'bangs', 'sideBangs', 'hairArrangement', 'hairColor', 'hairEffect', 'hairEffectColor'].forEach(key => {
+                    ['gender', 'age', 'bodyType', 'hairLength', 'bangs', 'sideBangs', 'hairArrangement', 'hairColor', 'hairColorLightness', 'hairTexture', 'hairEffect', 'hairEffectColor'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 }
@@ -1587,7 +1591,7 @@
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 } else {
-                    ['expression', 'accessory', 'nailColor', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
+                    ['facialHair', 'mole', 'expression', 'accessory', 'nailColor', 'outfit', 'tops', 'bottoms', 'framing', 'pose', 'background'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 }
@@ -1668,16 +1672,22 @@
                 const sideBangsJp = getActiveBtnText('sideBangs');
                 const arrJp = getActiveBtnText('hairArrangement');
                 const hairColorJp = getActiveBtnText('hairColor');
+                const hairColorLightnessJp = getActiveBtnText('hairColorLightness');
+                const hairTextureJp = getActiveBtnText('hairTexture');
                 const hairEffectJp = getActiveBtnText('hairEffect');
                 const hairEffectColorJp = getActiveBtnText('hairEffectColor');
                 
-                const hairParts = [hairColorJp, hairEffectJp, hairEffectColorJp, hairLengthJp, bangsJp, sideBangsJp, arrJp].filter(p => p && p !== '指定なし' && p !== 'なし');
+                const hairParts = [hairColorLightnessJp, hairColorJp, hairTextureJp, hairEffectJp, hairEffectColorJp, hairLengthJp, bangsJp, sideBangsJp, arrJp].filter(p => p && p !== '指定なし' && p !== 'なし');
                 if (hairParts.length > 0 && genMode !== 'ref') {
                     jpTerms.push(`【髪】${hairParts.join(' / ')}`);
                 }
 
                 const eyebrowsJp = getActiveBtnText('eyebrows');
                 if (eyebrowsJp) jpTerms.push(`【眉】${eyebrowsJp}`);
+                const facialHairJp = getActiveBtnText('facialHair');
+                if (facialHairJp && facialHairJp !== 'なし') jpTerms.push(`【髭】${facialHairJp}`);
+                const moleJp = getActiveBtnText('mole');
+                if (moleJp && moleJp !== 'なし') jpTerms.push(`【ほくろ】${moleJp}`);
                 const eyeShapeJp = getActiveBtnText('eyeShape');
                 const lEyeJp = getActiveBtnText('leftEyeColor');
                 const rEyeJp = getActiveBtnText('rightEyeColor');
