@@ -1459,25 +1459,25 @@
             aspectRatio: '1:1',
             style: 'anime style',
             quality: 'high',
-            gender: '1girl, female',
-            age: 'teenager',
+            gender: '',
+            age: '',
             bodyType: '',
             hairLength: '',
             bangs: '',
             hairArrangement: '',
-            hairColor: 'black hair',
+            hairColor: '',
             hairEffect: '',
             hairEffectColor: '',
-            leftEyeColor: 'blue',
-            rightEyeColor: 'blue',
-            expression: 'gentle smile',
+            leftEyeColor: '',
+            rightEyeColor: '',
+            expression: '',
             accessory: '',
             nailColor: '',
-            outfit: 'school uniform, sailor suit',
+            outfit: '',
             tops: '',
             bottoms: '',
             framing: '',
-            pose: 'standing pose',
+            pose: '',
             background: 'simple background, white background',
             bgTime: '',
             bgWeather: '',
@@ -1785,6 +1785,25 @@
         // ボタンのクリックイベント（グループごとのアクティブ切り替え）
         window.onload = function() {
             const buttonGroups = document.querySelectorAll('[data-group]');
+            // DOMのアクティブなボタンからstateを初期化する
+            buttonGroups.forEach(group => {
+                const groupName = group.getAttribute('data-group');
+                const isMulti = group.getAttribute('data-multi') === 'true';
+                if (isMulti) {
+                    const activeVals = Array.from(group.querySelectorAll('.chip-btn.active'))
+                                            .map(b => b.getAttribute('data-value'))
+                                            .filter(v => v);
+                    state[groupName] = activeVals.join(', ');
+                } else {
+                    const activeBtn = group.querySelector('.chip-btn.active');
+                    if (activeBtn) {
+                        state[groupName] = activeBtn.getAttribute('data-value') || '';
+                    } else {
+                        state[groupName] = '';
+                    }
+                }
+            });
+
             
             buttonGroups.forEach(group => {
                 const groupName = group.getAttribute('data-group');
