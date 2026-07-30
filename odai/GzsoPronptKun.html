@@ -1302,7 +1302,7 @@
                         <h2 class="font-bold text-slate-200 text-sm mb-2">✏️ 自由追加入力 (日本語を入力して翻訳ボタンを押すと英語になります)</h2>
                         <div class="flex gap-2">
                             <input type="text" id="customInput" placeholder="例: 剣を持っている、空を飛んでいる" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" oninput="updatePrompts()">
-                            <button type="button" id="translateBtn" onclick="translateAndApply()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors whitespace-nowrap">
+                            <button type="button" id="translateBtn" onclick="translateAndApply('customInput', 'translateBtn')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors whitespace-nowrap">
                                 🔄 英語に翻訳
                             </button>
                         </div>
@@ -1619,7 +1619,8 @@
             }
 
             // 自由入力の追加
-            const customInput = document.getElementById('customInput');
+            let customInputId = state.tabMode === 'character' ? 'customInput' : 'bgCustomInput';
+            const customInput = document.getElementById(customInputId);
             if (customInput && customInput.value.trim() !== '') {
                 const val = customInput.value.trim();
                 const hasJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(val);
@@ -1767,9 +1768,9 @@
         }
 
         // 翻訳機能
-        async function translateAndApply() {
-            const inputEl = document.getElementById('customInput');
-            const btn = document.getElementById('translateBtn');
+        async function translateAndApply(inputId, btnId) {
+            const inputEl = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
             const text = inputEl.value.trim();
             if (!text) return;
             
