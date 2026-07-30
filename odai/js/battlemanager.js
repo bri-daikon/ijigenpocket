@@ -214,20 +214,31 @@ window.applyAction = () => {
     if (start > end) return showMsg("開始ラウンドが終了より後になっています", "error");
 
     if (editingEntryId) {
-        const entry = statusEntries.find(e => e.id === editingEntryId);
-        if (entry) {
-            entry.personIndex = selectedOptions[0];
-            entry.category = cat;
-            entry.startRound = start;
-            entry.endRound = end;
-            entry.content = content;
-            
-            for (let i = 1; i < selectedOptions.length; i++) {
-                statusEntries.push({ id: Date.now().toString() + "_" + i, personIndex: selectedOptions[i], category: cat, startRound: start, endRound: end, content });
+        const overwriteCheckbox = document.getElementById('action-overwrite');
+        const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
+
+        if (overwrite) {
+            const entry = statusEntries.find(e => e.id === editingEntryId);
+            if (entry) {
+                entry.personIndex = selectedOptions[0];
+                entry.category = cat;
+                entry.startRound = start;
+                entry.endRound = end;
+                entry.content = content;
+                
+                for (let i = 1; i < selectedOptions.length; i++) {
+                    statusEntries.push({ id: Date.now().toString() + "_" + i, personIndex: selectedOptions[i], category: cat, startRound: start, endRound: end, content });
+                }
             }
+            cancelEdit();
+            showMsg("更新しました");
+        } else {
+            selectedOptions.forEach((pIdx, idx) => {
+                statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+            });
+            cancelEdit();
+            showMsg("追加しました");
         }
-        cancelEdit();
-        showMsg("更新しました");
     } else {
         const overwriteCheckbox = document.getElementById('action-overwrite');
         const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
