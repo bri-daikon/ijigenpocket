@@ -229,8 +229,12 @@ window.applyAction = () => {
         cancelEdit();
         showMsg("更新しました");
     } else {
+        const overwriteCheckbox = document.getElementById('action-overwrite');
+        const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
         selectedOptions.forEach((pIdx, idx) => {
-            statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+            if (overwrite) {
+                statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+            }
             statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
         });
         document.getElementById('action-content').value = '';
@@ -457,7 +461,13 @@ window.applyPreset = (preset) => {
     if (selectedOptions.length === 0) return showMsg("対象者を選択してください", "error");
     
     const r = config.currentRound;
+    const overwriteCheckbox = document.getElementById('action-overwrite');
+    const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
+    
     selectedOptions.forEach((pIdx, idx) => {
+        if (overwrite) {
+            statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == preset.category && e.content === preset.content));
+        }
         statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: preset.category, startRound: r, endRound: r, content: preset.content });
     });
     
