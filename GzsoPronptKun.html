@@ -1583,7 +1583,11 @@
             // 自由入力の追加
             const customInput = document.getElementById('customInput');
             if (customInput && customInput.value.trim() !== '') {
-                terms.push(customInput.value.trim());
+                const val = customInput.value.trim();
+                const hasJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(val);
+                if (!hasJapanese) {
+                    terms.push(val);
+                }
             }
 
             // 3. AIモデル ＆ モードごとの出力フォーマット調整
