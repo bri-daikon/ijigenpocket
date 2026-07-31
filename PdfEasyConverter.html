@@ -387,6 +387,15 @@
         </div>
         <div class="flex items-center gap-2">
           <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件の項目</span>
+          <!-- モード切替 -->
+          <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1">
+            <button id="btn-mode-edit" onclick="setGlobalMode('edit')" class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1">
+              <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 編集/設定
+            </button>
+            <button id="btn-mode-copy" onclick="setGlobalMode('copy')" class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
+            </button>
+          </div>
           <button onclick="clearAllCopied()" title="すべてのコピー済みマークを消去" class="text-xs text-amber-500 hover:text-amber-700 font-bold flex items-center gap-1 transition-all ml-1">
             <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
             一括解除
@@ -418,6 +427,23 @@
 
       <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
       <div class="flex flex-col flex-grow overflow-hidden gap-1">
+        <!-- 一括操作ツールバー (選択時のみ表示) -->
+        <div id="bulk-action-bar" class="hidden flex-shrink-0 bg-teal-50 border border-teal-200 rounded-lg p-2 flex items-center justify-between shadow-sm">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-teal-800"><span id="selected-count">0</span>件選択中</span>
+            <button onclick="clearSelection()" class="text-[10px] text-teal-600 hover:text-teal-800 underline">選択解除</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="bulkMergeSelected()" class="bg-white text-teal-700 border border-teal-300 hover:bg-teal-100 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 transition-colors">
+              <i data-lucide="merge" class="w-3.5 h-3.5"></i> 一括結合
+            </button>
+            <div class="flex items-center bg-white border border-teal-300 rounded px-1.5 py-0.5 ml-1">
+              <input type="text" id="bulk-tab-input" placeholder="タブ名を入力..." class="bg-transparent text-xs w-28 outline-none text-slate-700">
+              <button onclick="bulkSetTab()" class="text-teal-700 hover:text-teal-900 px-1 font-bold text-xs border-l border-teal-200 ml-1 pl-2">設定</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ▲ 上スクロール（1カード戻る） -->
         <button onclick="scrollTextList(-1)"
           class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
@@ -651,6 +677,12 @@
     let furiganaQueue = [];       // 変換待ちキュー
     let isFuriganaConverting = false;
     let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
+
+    // モード管理と選択状態
+    let globalMode = 'edit'; // 'edit' or 'copy'
+    let selectedCardIds = new Set();
+    let lastSelectedId = null;
+    let draggedCardId = null;
 
     // カードのカラーパレット定義
     const cardColors = [
@@ -1530,11 +1562,24 @@
       processedItems.forEach(item => {
         const card = document.createElement('div');
         const colorObj = cardColors.find(c => c.id === (item.color || 'slate')) || cardColors[0];
-        const cardBg = item.isEditing ? 'bg-amber-50 border-amber-300' : `${colorObj.bg} ${colorObj.hoverBg} ${colorObj.border} ${colorObj.hoverBorder}`;
+        let isSelected = selectedCardIds.has(item.id);
+        const cardBg = item.isEditing ? 'bg-amber-50 border-amber-300' : 
+                       isSelected ? 'bg-teal-100 border-teal-400 outline outline-2 outline-teal-400' : 
+                       `${colorObj.bg} ${colorObj.hoverBg} ${colorObj.border} ${colorObj.hoverBorder}`;
         
         card.className = `group relative ${cardBg} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''}`;
         card.setAttribute('data-id', item.id);
         card.setAttribute('data-page', item.page);
+
+        // ドラッグ＆ドロップ設定 (編集モード時のみ)
+        if (globalMode === 'edit' && !item.isEditing) {
+          card.draggable = true;
+          card.ondragstart = (e) => handleDragStart(e, item.id);
+          card.ondragover = (e) => handleDragOver(e);
+          card.ondrop = (e) => handleDrop(e, item.id);
+          card.ondragenter = (e) => handleDragEnter(e, card);
+          card.ondragleave = (e) => handleDragLeave(e, card);
+        }
 
         // 表示時は常に話者名を残して表示する
         const displayText = item.text;
@@ -1551,6 +1596,11 @@
           <div class="flex justify-between items-start gap-4">
             <!-- ページバッジとタブ設定 -->
             <div class="flex items-center gap-2">
+              ${globalMode === 'edit' ? `
+                <div class="cursor-pointer p-0.5 rounded transition-all flex items-center justify-center ${isSelected ? 'bg-teal-500 text-white' : 'border border-slate-300 text-transparent hover:border-teal-400'} shadow-sm bg-white" onclick="toggleCardSelection(${item.id}, event)" style="width: 20px; height: 20px;" title="選択 (Shift+クリックで範囲選択)">
+                  <i data-lucide="check" class="w-3 h-3 ${isSelected ? 'text-white' : 'hidden group-hover:block text-teal-400'}"></i>
+                </div>
+              ` : ''}
               <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
                 P. ${item.page}
               </button>
@@ -1614,7 +1664,11 @@
               rows="${Math.max(3, (displayText.match(/\n/g) || []).length + 2)}"
             >${escapeHtml(displayText)}</textarea>
           ` : `
-            <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+            ${globalMode === 'copy' ? `
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+            ` : `
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed cursor-text outline-none focus:ring-1 focus:ring-teal-400 focus:bg-white rounded px-1 -mx-1" contenteditable="true" onkeydown="handleCardTextKeydown(event, ${item.id})" onblur="handleCardTextBlur(event, ${item.id})" title="クリックしてカーソルを置き、Enterキーで分割">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+            `}
           `}
 
           <!-- メモ入力エリア / 表示エリア -->
@@ -1646,14 +1700,29 @@
 
     // カードの色変更
     function changeCardColor(id, colorId) {
-      const item = processedItems.find(i => i.id === id);
-      if (item) {
-        item.color = colorId;
-        const mappedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === colorId);
-        if (mappedTab) {
-          item.tabName = mappedTab;
+      // 複数選択中で、操作したカードが選択対象に含まれる場合は一括変更する
+      const targetIds = (selectedCardIds.has(id)) ? Array.from(selectedCardIds) : [id];
+      
+      let changed = false;
+      targetIds.forEach(targetId => {
+        const item = processedItems.find(i => i.id === targetId);
+        if (item) {
+          item.color = colorId;
+          const mappedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === colorId);
+          if (mappedTab) {
+            item.tabName = mappedTab;
+          }
+          changed = true;
         }
-        renderList();
+      });
+      
+      if (changed) {
+        if (targetIds.length > 1) {
+          clearSelection(); // 複数変更した場合は選択状態を解除
+          showToast('タブ一括設定', '選択したカードの色とタブを一括変更しました。', 'success');
+        } else {
+          renderList();
+        }
         saveToLocalStorage();
       }
     }
@@ -2390,6 +2459,246 @@
       if (idx >= 0) {
         processedItems.splice(idx, 1);
         renderList();
+        saveToLocalStorage();
+      }
+    }
+
+    // --- 新機能（モード切替・複数選択・一括操作・ドラッグ＆ドロップ） ---
+
+    function setGlobalMode(mode) {
+      globalMode = mode;
+      
+      const btnEdit = document.getElementById('btn-mode-edit');
+      const btnCopy = document.getElementById('btn-mode-copy');
+      
+      if (mode === 'edit') {
+        btnEdit.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";
+        btnCopy.className = "px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";
+      } else {
+        btnCopy.className = "px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";
+        btnEdit.className = "px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";
+      }
+      
+      clearSelection();
+    }
+
+    function toggleCardSelection(id, event) {
+      if (globalMode !== 'edit') return;
+      
+      const itemIndex = processedItems.findIndex(i => i.id === id);
+      if (itemIndex === -1) return;
+
+      if (event.shiftKey && lastSelectedId !== null) {
+        const lastIndex = processedItems.findIndex(i => i.id === lastSelectedId);
+        if (lastIndex !== -1) {
+          const start = Math.min(itemIndex, lastIndex);
+          const end = Math.max(itemIndex, lastIndex);
+          
+          const isSelecting = !selectedCardIds.has(id);
+          
+          for (let i = start; i <= end; i++) {
+            if (isSelecting) {
+              selectedCardIds.add(processedItems[i].id);
+            } else {
+              selectedCardIds.delete(processedItems[i].id);
+            }
+          }
+        }
+      } else {
+        if (selectedCardIds.has(id)) {
+          selectedCardIds.delete(id);
+        } else {
+          selectedCardIds.add(id);
+        }
+      }
+      
+      lastSelectedId = id;
+      updateBulkActionBar();
+      renderList();
+    }
+
+    function clearSelection() {
+      selectedCardIds.clear();
+      lastSelectedId = null;
+      updateBulkActionBar();
+      renderList();
+    }
+
+    function updateBulkActionBar() {
+      const bar = document.getElementById('bulk-action-bar');
+      const count = document.getElementById('selected-count');
+      if (selectedCardIds.size > 0) {
+        bar.classList.remove('hidden');
+        count.innerText = selectedCardIds.size;
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    function bulkMergeSelected() {
+      if (selectedCardIds.size < 2) {
+        showToast('結合エラー', '結合するには2つ以上のカードを選択してください。', 'error');
+        return;
+      }
+      
+      const selectedItems = processedItems.filter(item => selectedCardIds.has(item.id));
+      const firstItem = selectedItems[0];
+      const mergedText = selectedItems.map(item => item.text).join('\n');
+      
+      firstItem.text = mergedText;
+      firstItem.furiganaHtml = undefined;
+      
+      const idsToRemove = new Set(selectedItems.map(item => item.id).slice(1));
+      processedItems = processedItems.filter(item => !idsToRemove.has(item.id));
+      
+      clearSelection();
+      saveToLocalStorage();
+      showToast('一括結合', `${selectedItems.length}個のカードを結合しました。`, 'success');
+    }
+
+    function bulkSetTab() {
+      const tabName = document.getElementById('bulk-tab-input').value.trim();
+      if (!tabName) {
+        showToast('エラー', 'タブ名を入力してください。', 'error');
+        return;
+      }
+      
+      if (selectedCardIds.size === 0) return;
+      
+      processedItems.forEach(item => {
+        if (selectedCardIds.has(item.id)) {
+          item.tabName = tabName;
+          if (tabColorMapping[tabName]) {
+            item.color = tabColorMapping[tabName];
+          }
+        }
+      });
+      
+      clearSelection();
+      saveToLocalStorage();
+      showToast('タブ一括設定', '選択したカードにタブを設定しました。', 'success');
+    }
+
+    // --- ドラッグ＆ドロップ関連 ---
+    function handleDragStart(e, id) {
+      draggedCardId = id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+      setTimeout(() => {
+        const card = document.querySelector(`[data-id="${id}"]`);
+        if (card) card.classList.add('opacity-50');
+      }, 0);
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDragEnter(e, card) {
+      e.preventDefault();
+      if (draggedCardId && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
+        card.classList.add('border-indigo-400', 'bg-indigo-50');
+      }
+    }
+
+    function handleDragLeave(e, card) {
+      card.classList.remove('border-indigo-400', 'bg-indigo-50');
+    }
+
+    function handleDrop(e, targetId) {
+      e.preventDefault();
+      const card = document.querySelector(`[data-id="${targetId}"]`);
+      if (card) card.classList.remove('border-indigo-400', 'bg-indigo-50');
+      
+      const sourceId = draggedCardId;
+      draggedCardId = null;
+      
+      const draggedCardEl = document.querySelector(`[data-id="${sourceId}"]`);
+      if (draggedCardEl) draggedCardEl.classList.remove('opacity-50');
+
+      if (!sourceId || sourceId === targetId) return;
+
+      const sourceIndex = processedItems.findIndex(i => i.id === sourceId);
+      const targetIndex = processedItems.findIndex(i => i.id === targetId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return;
+
+      const sourceItem = processedItems[sourceIndex];
+      const targetItem = processedItems[targetIndex];
+      
+      const mergedText = sourceIndex < targetIndex 
+        ? sourceItem.text + '\n' + targetItem.text 
+        : targetItem.text + '\n' + sourceItem.text;
+        
+      targetItem.text = mergedText;
+      targetItem.furiganaHtml = undefined;
+      
+      processedItems.splice(sourceIndex, 1);
+      
+      renderList();
+      saveToLocalStorage();
+      showToast('結合完了', 'カードをドラッグして結合しました。', 'success');
+    }
+
+    // --- エンターキーでのクイック分割 ---
+    function handleCardTextKeydown(e, id) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); // デフォルトの改行を防ぐ
+        e.currentTarget.dataset.ignoreBlur = 'true';
+        
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        const range = selection.getRangeAt(0);
+        const textElement = e.currentTarget;
+        
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(textElement);
+        preRange.setEnd(range.startContainer, range.startOffset);
+        
+        const beforeText = preRange.toString();
+        const fullText = textElement.innerText;
+        const afterText = fullText.substring(beforeText.length);
+        
+        if (!beforeText.trim() || !afterText.trim()) {
+          showToast('分割不可', 'カーソルをテキストの中間に置いてください。', 'error');
+          return;
+        }
+
+        const itemIndex = processedItems.findIndex(i => i.id === id);
+        if (itemIndex === -1) return;
+        
+        const item = processedItems[itemIndex];
+        item.text = beforeText.trimEnd();
+        item.furiganaHtml = undefined;
+        
+        const newItem = {
+          id: globalId++,
+          original: afterText.trimStart(),
+          text: afterText.trimStart(),
+          bookmarked: false,
+          note: '',
+          page: item.page,
+          isEditing: false
+        };
+        
+        processedItems.splice(itemIndex + 1, 0, newItem);
+        renderList();
+        saveToLocalStorage();
+        showToast('分割完了', 'Enterキーでカードを分割しました。', 'success');
+      }
+    }
+    
+    function handleCardTextBlur(e, id) {
+      const textElement = e.currentTarget;
+      if (textElement.dataset.ignoreBlur) return;
+      
+      const newText = textElement.innerText;
+      const item = processedItems.find(i => i.id === id);
+      if (item && item.text !== newText) {
+        item.text = newText;
+        item.furiganaHtml = undefined;
         saveToLocalStorage();
       }
     }
