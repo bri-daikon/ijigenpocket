@@ -387,6 +387,10 @@
         </div>
         <div class="flex items-center gap-2">
           <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件の項目</span>
+          <button onclick="clearAllCopied()" title="すべてのコピー済みマークを消去" class="text-xs text-amber-500 hover:text-amber-700 font-bold flex items-center gap-1 transition-all ml-1">
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+            一括解除
+          </button>
           <!-- 保存・読み込みボタン -->
           <button onclick="downloadProjectFile()" title="編集データを .pec ファイルとして保存"
             class="text-xs text-teal-600 hover:text-teal-800 font-bold flex items-center gap-1 transition-all">
@@ -410,16 +414,6 @@
             ツールを隠す
           </button>
         </div>
-      </div>
-
-      <!-- コピーツールチップ案内 -->
-      <div
-        class="bg-teal-50 text-teal-800 text-xs p-2.5 rounded-lg mb-3 flex items-start gap-1.5 border border-teal-100 flex-shrink-0">
-        <i data-lucide="info" class="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5"></i>
-        <p class="leading-tight">
-          <span class="font-bold">💡 双方向連携 ＆ 編集機能:</span>
-          ページ番号クリックでPDFプレビューを切り替え。✏️ アイコンでカード内テキストを編集・分割・結合できます！
-        </p>
       </div>
 
       <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
@@ -448,6 +442,16 @@
 
     <!-- 右ペイン：TRPG {}変換 ＆ しおり・付箋 -->
     <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 transition-all duration-300">
+
+      <!-- コピーツールチップ案内 -->
+      <div
+        class="bg-teal-50 text-teal-800 text-xs p-2.5 rounded-xl flex items-start gap-1.5 border border-teal-200 flex-shrink-0 shadow-sm">
+        <i data-lucide="info" class="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5"></i>
+        <p class="leading-tight text-teal-900">
+          <span class="font-bold">💡 双方向連携 ＆ 編集機能:</span>
+          ページ番号クリックでPDFプレビューを切り替え。✏️ アイコンでカード内テキストを編集・分割・結合できます！
+        </p>
+      </div>
 
       <!-- 2. テキスト設定 (常に固定) -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -557,7 +561,7 @@
           <span class="text-teal-600 font-bold mt-1 inline-block">⚙️設定:</span> ココフォリア画面右下の「⚙️」ボタンから、キャラ指定がない場合（地の文など）のデフォルト名（KP、GM、空白など）を設定できます。
         </p>
         <div class="flex justify-center">
-          <a href="javascript:(function(){var c=document.createElement('div');c.style.cssText='position:fixed;bottom:20px;left:20px;z-index:9999;display:flex;gap:10px;';async function processPaste(send){try{var t=await navigator.clipboard.readText();if(!t)return;var charName=null,text=t;var m=t.match(/^([^「」『』\n]{1,12}?)([「『][\s\S]*?[」』][。\s]*)$/);if(m){charName=m[1].trim();text=m[2];}else{var def=localStorage.getItem('ccfolia_default_char');charName=(def!==null)?def:'';}var ta=document.querySelector('textarea');if(!ta)return;var doPaste=function(){var setTA=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;setTA.call(ta,text);ta.dispatchEvent(new Event('input',{bubbles:true}));if(send){setTimeout(function(){var btn=document.evaluate('//button[contains(.,\'送信\')]',document,null,9,null).singleNodeValue;if(btn)btn.click();else{var o={key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true};ta.dispatchEvent(new KeyboardEvent('keydown',o));ta.dispatchEvent(new KeyboardEvent('keypress',o));ta.dispatchEvent(new KeyboardEvent('keyup',o));}},100);}};if(charName!==null){var container=ta.closest('form')||ta.parentElement.parentElement.parentElement;var inputs=container?container.querySelectorAll('input:not([type=&quot;hidden&quot;]):not([type=&quot;file&quot;])'):[];var nameInput=inputs.length>0?inputs[0]:null;if(nameInput){var setIN=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setIN.call(nameInput,charName);nameInput.dispatchEvent(new Event('input',{bubbles:true}));nameInput.dispatchEvent(new Event('change',{bubbles:true}));nameInput.dispatchEvent(new Event('blur',{bubbles:true}));setTimeout(doPaste,100);}else{doPaste();}}else{doPaste();}}catch(e){alert('許可が必要です: '+e.message);}}var b1=document.createElement('button');b1.textContent='📋 貼付のみ';b1.style.cssText='padding:10px 15px;background:#0284c7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b1.onclick=function(){processPaste(false);};var b2=document.createElement('button');b2.textContent='🚀 貼付＆送信';b2.style.cssText='padding:10px 15px;background:#0d9488;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b2.onclick=function(){processPaste(true);};var b3=document.createElement('button');b3.textContent='⚙️';b3.title='地の文のデフォルト名前設定';b3.style.cssText='padding:10px;background:#475569;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b3.onclick=function(){var cur=localStorage.getItem('ccfolia_default_char');if(cur===null)cur='';var res=prompt('【地の文ペースト時のデフォルト名前】 KPやGMなどを入力してください。空欄にすると「名前なし」になります。（キャンセルで変更取消）',cur);if(res!==null){localStorage.setItem('ccfolia_default_char',res);alert('地の文のデフォルト名前を「'+res+'」に設定しました！');}};c.appendChild(b1);c.appendChild(b2);c.appendChild(b3);document.body.appendChild(c);alert('ボタンを追加・更新しました。\\n右端の⚙️アイコンから地の文用の名前を設定できます！');})();" 
+          <a href="javascript:(function(){var c=document.createElement('div');c.style.cssText='position:fixed;bottom:20px;left:20px;z-index:9999;display:flex;gap:10px;';async function processPaste(send){try{var t=await navigator.clipboard.readText();if(!t)return;var tabName=null;var matchTab=t.match(/^__CCFOLIA_TAB:(.*?)__\r?\n/);if(matchTab){tabName=matchTab[1];t=t.substring(matchTab[0].length);}if(tabName===null){tabName='';}if(tabName===null)return;if(tabName!==''){localStorage.setItem('ccfolia_last_tab',tabName);var targetTab=null;var candidates=document.querySelectorAll('button, [role=&quot;tab&quot;], [role=&quot;button&quot;], .MuiTab-root');for(var i=0;i<candidates.length;i++){var t_ext=candidates[i].textContent.trim();if(t_ext===tabName||t_ext.startsWith(tabName)){targetTab=candidates[i];break;}}if(!targetTab){for(var i=0;i<candidates.length;i++){if(candidates[i].textContent.includes(tabName)){targetTab=candidates[i];break;}}}if(!targetTab){var allEls=document.querySelectorAll('*');for(var i=0;i<allEls.length;i++){if(allEls[i].children.length===0&&allEls[i].textContent.trim()===tabName){targetTab=allEls[i];break;}}}if(!targetTab){alert('指定されたタブ「'+tabName+'」が見つかりませんでした。');return;}var clickEl=function(el){if(window.PointerEvent){el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));}el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));el.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));el.click();};clickEl(targetTab);var parentBtn=targetTab.closest('button, [role=&quot;tab&quot;]');if(parentBtn&&parentBtn!==targetTab){clickEl(parentBtn);}await new Promise(r=>setTimeout(r,300));}var charName=null,text=t;var m=t.match(/^([^「」『』\n]{1,12}?)([「『][\s\S]*?[」』][。\s]*)$/);if(m){charName=m[1].trim();text=m[2];}else{var def=localStorage.getItem('ccfolia_default_char');charName=(def!==null)?def:'';}var ta=document.querySelector('textarea');if(!ta)return;var doPaste=function(){var setTA=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;setTA.call(ta,text);ta.dispatchEvent(new Event('input',{bubbles:true}));if(send){setTimeout(function(){var btns=document.querySelectorAll('button');var btn=null;for(var i=0;i<btns.length;i++){if(btns[i].textContent.includes('送信')){btn=btns[i];break;}}if(btn)btn.click();else{var o={key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true,cancelable:true};ta.dispatchEvent(new KeyboardEvent('keydown',o));ta.dispatchEvent(new KeyboardEvent('keypress',o));ta.dispatchEvent(new KeyboardEvent('keyup',o));}},100);}};if(charName!==null){var container=ta.closest('form')||ta.parentElement.parentElement.parentElement;var inputs=container?container.querySelectorAll('input:not([type=&quot;hidden&quot;]):not([type=&quot;file&quot;])'):[];var nameInput=inputs.length>0?inputs[0]:null;if(nameInput){var setIN=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;setIN.call(nameInput,charName);nameInput.dispatchEvent(new Event('input',{bubbles:true}));nameInput.dispatchEvent(new Event('change',{bubbles:true}));nameInput.dispatchEvent(new Event('blur',{bubbles:true}));setTimeout(doPaste,100);}else{doPaste();}}else{doPaste();}}catch(e){alert('許可が必要です: '+e.message);}}var b1=document.createElement('button');b1.textContent='📋 貼付のみ';b1.style.cssText='padding:10px 15px;background:#0284c7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b1.onclick=function(){processPaste(false);};var b2=document.createElement('button');b2.textContent='🚀 貼付＆送信';b2.style.cssText='padding:10px 15px;background:#0d9488;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b2.onclick=function(){processPaste(true);};var b3=document.createElement('button');b3.textContent='⚙️';b3.title='地の文のデフォルト名前設定';b3.style.cssText='padding:10px;background:#475569;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.2);';b3.onclick=function(){var cur=localStorage.getItem('ccfolia_default_char');if(cur===null)cur='';var res=prompt('【地の文ペースト時のデフォルト名前】 KPやGMなどを入力してください。空欄にすると「名前なし」になります。（キャンセルで変更取消）',cur);if(res!==null){localStorage.setItem('ccfolia_default_char',res);alert('地の文のデフォルト名前を「'+res+'」に設定しました！');}};c.appendChild(b1);c.appendChild(b2);c.appendChild(b3);document.body.appendChild(c);alert('ボタンを追加・更新しました。\\n右端の⚙️アイコンから地の文用の名前を設定できます！\\nコピー時にタブ名が設定されている場合は、自動でそのタブに切り替わります！');})();""
              class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing w-full justify-center"
              title="このボタンをブックマークバーにドラッグ＆ドロップ！">
             <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
@@ -586,6 +590,28 @@
         </button>
       </div>
 
+
+      <!-- 6. タブ・カラー連携設定 -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><i data-lucide="palette" class="w-4 h-4 text-teal-600"></i>6. タブ・カラー連携設定</span>
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">カードの色とココフォリア送信先タブの自動連携設定</p>
+        
+        <div id="tab-color-settings-list" class="space-y-1.5 mb-2.5">
+          <!-- JSでレンダリング -->
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="saveTabColorMapping()" class="flex-grow bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            保存
+          </button>
+          <button onclick="resetTabColorMapping()" class="bg-slate-200 hover:bg-slate-300 text-slate-600 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center" title="初期値に戻す">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+          </button>
+        </div>
+      </div>
 
 
     </div>
@@ -625,6 +651,92 @@
     let furiganaQueue = [];       // 変換待ちキュー
     let isFuriganaConverting = false;
     let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
+
+    // カードのカラーパレット定義
+    const cardColors = [
+      { id: 'slate', name: '標準', bg: 'bg-slate-50', border: 'border-slate-200', hoverBg: 'hover:bg-slate-100', hoverBorder: 'hover:border-slate-300' },
+      { id: 'red', name: '赤 (秘匿など)', bg: 'bg-red-50', border: 'border-red-200', hoverBg: 'hover:bg-red-100', hoverBorder: 'hover:border-red-300' },
+      { id: 'orange', name: 'オレンジ', bg: 'bg-orange-50', border: 'border-orange-200', hoverBg: 'hover:bg-orange-100', hoverBorder: 'hover:border-orange-300' },
+      { id: 'amber', name: '黄 (情報)', bg: 'bg-amber-50', border: 'border-amber-200', hoverBg: 'hover:bg-amber-100', hoverBorder: 'hover:border-amber-300' },
+      { id: 'green', name: '緑', bg: 'bg-green-50', border: 'border-green-200', hoverBg: 'hover:bg-green-100', hoverBorder: 'hover:border-green-300' },
+      { id: 'teal', name: '青緑 (KP用)', bg: 'bg-teal-50', border: 'border-teal-200', hoverBg: 'hover:bg-teal-100', hoverBorder: 'hover:border-teal-300' },
+      { id: 'blue', name: '青 (セリフ)', bg: 'bg-blue-50', border: 'border-blue-200', hoverBg: 'hover:bg-blue-100', hoverBorder: 'hover:border-blue-300' },
+      { id: 'indigo', name: '藍色', bg: 'bg-indigo-50', border: 'border-indigo-200', hoverBg: 'hover:bg-indigo-100', hoverBorder: 'hover:border-indigo-300' },
+      { id: 'purple', name: '紫', bg: 'bg-purple-50', border: 'border-purple-200', hoverBg: 'hover:bg-purple-100', hoverBorder: 'hover:border-purple-300' },
+      { id: 'pink', name: 'ピンク', bg: 'bg-pink-50', border: 'border-pink-200', hoverBg: 'hover:bg-pink-100', hoverBorder: 'hover:border-pink-300' }
+    ];
+
+
+
+    // タブ名とカラーの相互変換用マッピング
+    let tabColorMapping = {
+      '情報': 'green',
+      '秘匿': 'red',
+      '描写': 'orange',
+      '注意': 'amber',
+      'メイン': 'blue',
+      '雑談': 'slate'
+    };
+
+    function loadTabColorMapping() {
+      const saved = localStorage.getItem('pdf_tool_tab_colors');
+      if (saved) {
+        try {
+          tabColorMapping = JSON.parse(saved);
+        } catch(e) {}
+      }
+    }
+    loadTabColorMapping();
+
+    function saveTabColorMapping() {
+      const inputs = document.querySelectorAll('.tab-color-input');
+      const newMapping = {};
+      inputs.forEach(input => {
+        const color = input.dataset.color;
+        const val = input.value.trim();
+        if (val) {
+          newMapping[val] = color;
+        }
+      });
+      tabColorMapping = newMapping;
+      localStorage.setItem('pdf_tool_tab_colors', JSON.stringify(tabColorMapping));
+      showToast('設定保存', 'タブとカラーの連携設定を保存しました。', 'success');
+    }
+    
+    function resetTabColorMapping() {
+      if (!confirm('タブとカラーの連携設定を初期値に戻しますか？')) return;
+      localStorage.removeItem('pdf_tool_tab_colors');
+      tabColorMapping = {
+        '情報': 'green',
+        '秘匿': 'red',
+        '描写': 'orange',
+        '注意': 'amber',
+        'メイン': 'blue',
+        '雑談': 'slate'
+      };
+      renderTabColorSettings();
+      showToast('リセット', '初期設定に戻しました。', 'info');
+    }
+
+    function renderTabColorSettings() {
+      const container = document.getElementById('tab-color-settings-list');
+      if (!container) return;
+      
+      let html = '';
+      cardColors.forEach(c => {
+        const mappedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === c.id) || '';
+        html += `
+          <div class="flex items-center gap-2">
+            <div class="${c.bg} border ${c.border} w-4 h-4 rounded-full flex-shrink-0 shadow-sm" title="${c.name}"></div>
+            <input type="text" value="${escapeHtml(mappedTab)}" data-color="${c.id}" placeholder="${c.name}に紐づくタブ名" class="tab-color-input w-full text-xs px-2 py-1 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+
+
 
     // テーマ管理
     function initTheme() {
@@ -1001,13 +1113,30 @@
       if (!currentFileName || processedItems.length === 0) return;
 
       const saveData = processedItems
-        .filter(item => item.bookmarked || item.note || item.furiganaHtml)
-        .map(item => ({
-          original: item.original,
-          bookmarked: item.bookmarked,
-          note: item.note,
-          furiganaHtml: item.furiganaHtml
-        }));
+        .filter(item => item.bookmarked || item.note || item.furiganaHtml || item.tabName || item.isCommand || item.isCopied)
+        .map((item, index) => {
+          let prevOriginal = null;
+          if (item.isCommand) {
+            for (let i = index - 1; i >= 0; i--) {
+              if (processedItems[i] && !processedItems[i].isCommand) {
+                prevOriginal = processedItems[i].original;
+                break;
+              }
+            }
+          }
+          return {
+            original: item.original,
+            bookmarked: item.bookmarked,
+            note: item.note,
+            furiganaHtml: item.furiganaHtml,
+            color: item.color,
+            tabName: item.tabName,
+            isCommand: item.isCommand,
+            isCopied: item.isCopied,
+            text: item.isCommand ? item.text : undefined, // コマンドカードの場合はテキストも保存
+            insertAfterOriginal: item.isCommand ? prevOriginal : undefined
+          };
+        });
 
       localStorage.setItem('pdf_tool_save_' + currentFileName, JSON.stringify(saveData));
     }
@@ -1238,10 +1367,16 @@
           let isBookmarked = false;
           let noteText = "";
           let savedFurigana = undefined;
+          let savedColor = 'slate';
+          let savedTabName = undefined;
+          let savedIsCopied = false;
 
           if (existingItem) {
             isBookmarked = existingItem.bookmarked;
             noteText = existingItem.note;
+            savedColor = existingItem.color || 'slate';
+            savedTabName = existingItem.tabName;
+            savedIsCopied = existingItem.isCopied || false;
             if (existingItem.text === cleanedText) {
               savedFurigana = existingItem.furiganaHtml;
             }
@@ -1249,6 +1384,9 @@
             isBookmarked = savedItem.bookmarked;
             noteText = savedItem.note;
             savedFurigana = savedItem.furiganaHtml;
+            savedColor = savedItem.color || 'slate';
+            savedTabName = savedItem.tabName;
+            savedIsCopied = savedItem.isCopied || false;
           }
 
           tempItems.push({
@@ -1259,13 +1397,39 @@
             note: noteText,
             page: block.page,
             isEditing: false,
-            furiganaHtml: savedFurigana
+            furiganaHtml: savedFurigana,
+            color: savedColor,
+            tabName: savedTabName,
+            isCopied: savedIsCopied
           });
         });
         // globalIdはグローバルスコープで宣言済み
       });
 
       processedItems = tempItems;
+
+      // コマンドカード（isCommand）の復元処理
+      if (savedData && savedData.length > 0) {
+        const commandItems = savedData.filter(d => d.isCommand);
+        commandItems.forEach(cmd => {
+          let insertIdx = 0;
+          if (cmd.insertAfterOriginal) {
+            const foundIdx = processedItems.findIndex(p => p.original === cmd.insertAfterOriginal);
+            if (foundIdx !== -1) insertIdx = foundIdx + 1;
+          }
+          
+          processedItems.splice(insertIdx, 0, {
+            id: Date.now() + Math.floor(Math.random() * 1000), // unique ID
+            page: processedItems[insertIdx > 0 ? insertIdx - 1 : 0]?.page || 1,
+            text: cmd.text,
+            color: cmd.color || 'slate',
+            isCommand: true,
+            tabName: cmd.tabName,
+            isCopied: cmd.isCopied || false
+          });
+        });
+      }
+
       renderList();
 
       if (kuroshiroEnabled) {
@@ -1273,7 +1437,7 @@
       }
 
       if (isNewFileLoad && savedData.length > 0) {
-        showToast('データを復元しました', `このPDF用に保存されていた しおり: ${savedData.filter(d => d.bookmarked).length}件 / メモ: ${savedData.filter(d => d.note).length}件 を復元しました。`, 'success');
+        showToast('データを復元しました', `このPDF用に保存されていた しおり/メモ/コマンド などを復元しました。`, 'success');
       }
     }
 
@@ -1365,7 +1529,10 @@
 
       processedItems.forEach(item => {
         const card = document.createElement('div');
-        card.className = `group relative ${item.isEditing ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 hover:bg-teal-50/20 border-slate-200 hover:border-teal-300'} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm`;
+        const colorObj = cardColors.find(c => c.id === (item.color || 'slate')) || cardColors[0];
+        const cardBg = item.isEditing ? 'bg-amber-50 border-amber-300' : `${colorObj.bg} ${colorObj.hoverBg} ${colorObj.border} ${colorObj.hoverBorder}`;
+        
+        card.className = `group relative ${cardBg} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''}`;
         card.setAttribute('data-id', item.id);
         card.setAttribute('data-page', item.page);
 
@@ -1373,11 +1540,25 @@
         const displayText = item.text;
 
         card.innerHTML = `
+          ${item.isCopied ? `
+            <div class="absolute -top-2 -right-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 z-10">
+              <i data-lucide="check-circle-2" class="w-3 h-3"></i> コピー済み
+              <button onclick="event.stopPropagation(); removeCopiedMark(${item.id})" class="ml-1 hover:text-teal-200 transition-colors" title="コピー済みマークを消す">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>
+            </div>
+          ` : ''}
           <div class="flex justify-between items-start gap-4">
-            <!-- ページバッジ（クリックで左側のPDFプレビューをジャンプさせる！） -->
-            <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
-              P. ${item.page}
-            </button>
+            <!-- ページバッジとタブ設定 -->
+            <div class="flex items-center gap-2">
+              <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
+                P. ${item.page}
+              </button>
+              <div class="flex items-center bg-white/60 border border-slate-200 rounded px-1.5 py-0.5 shadow-sm hover:border-teal-400 transition-colors" title="このカードの送信先タブ（ココフォリア連携用）" onclick="event.stopPropagation()">
+                <i data-lucide="send" class="w-3 h-3 text-teal-600 mr-1"></i>
+                <input type="text" value="${escapeHtml(item.tabName || '')}" onchange="updateCardTab(${item.id}, this.value)" placeholder="タブ指定..." class="bg-transparent text-[10px] w-20 outline-none text-slate-700 placeholder-slate-400" />
+              </div>
+            </div>
             <!-- アクションボタン群 -->
             <div class="flex items-center gap-1" onclick="event.stopPropagation()">
               ${item.isEditing ? `
@@ -1396,6 +1577,16 @@
                 </button>
               ` : `
                 <!-- 通常モードボタン -->
+                <div class="relative inline-block" title="カードの色を変更">
+                  <button onclick="toggleColorPalette(${item.id}, event)" class="text-slate-400 hover:text-indigo-500 p-0.5 rounded transition-all">
+                    <i data-lucide="palette" class="w-4 h-4"></i>
+                  </button>
+                  <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg p-2 hidden gap-1.5 z-10 w-[160px] flex-wrap">
+                    ${cardColors.map(c => `
+                      <button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${c.name}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.bg}"></button>
+                    `).join('')}
+                  </div>
+                </div>
                 <button onclick="startEditCard(${item.id})" class="text-slate-400 hover:text-amber-600 p-0.5 rounded transition-all" title="テキストを編集">
                   <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
@@ -1407,6 +1598,10 @@
                 </button>
                 <button onclick="deleteCard(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-all" title="このカードを削除">
                   <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <div class="w-px h-4 bg-slate-200 mx-1"></div>
+                <button onclick="insertSceneCommandBelow(${item.id})" class="text-slate-400 hover:text-indigo-600 p-0.5 rounded transition-all" title="直下にシーン変更コマンドを挿入">
+                  <i data-lucide="list-plus" class="w-4 h-4"></i>
                 </button>
               `}
             </div>
@@ -1447,6 +1642,20 @@
 
       lucide.createIcons();
       updateBookmarkAndNoteLists();
+    }
+
+    // カードの色変更
+    function changeCardColor(id, colorId) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        item.color = colorId;
+        const mappedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === colorId);
+        if (mappedTab) {
+          item.tabName = mappedTab;
+        }
+        renderList();
+        saveToLocalStorage();
+      }
     }
 
     // しおりのON/OFF切り替え
@@ -1581,11 +1790,65 @@
       lucide.createIcons();
     }
 
+    // カードのタブ設定を更新
+    function updateCardTab(id, tabName) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        item.tabName = tabName;
+        if (tabColorMapping[tabName]) {
+          item.color = tabColorMapping[tabName];
+        }
+        saveToLocalStorage();
+        renderList();
+      }
+    }
+
+    // シーンコマンドを直下に挿入
+    function insertSceneCommandBelow(id) {
+      const index = processedItems.findIndex(i => i.id === id);
+      if (index !== -1) {
+        const withoutBgm = confirm('BGMなしのシーン変更にしますか？\n（OKでBGMなし、キャンセルで通常）');
+        const sceneName = prompt('シーン名を入力してください:');
+        if (sceneName !== null) {
+          const commandText = withoutBgm ? `/scene-without-bgm ${sceneName}` : `/scene ${sceneName}`;
+          const newItem = {
+            id: Date.now(),
+            page: processedItems[index].page,
+            text: commandText,
+            color: 'slate',
+            isCommand: true
+          };
+          processedItems.splice(index + 1, 0, newItem);
+          saveToLocalStorage();
+          renderList();
+          
+          setTimeout(() => {
+            const targetCard = document.querySelector(`[data-id="${newItem.id}"]`);
+            if (targetCard) {
+              targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              targetCard.classList.add('bg-teal-50', 'border-teal-400');
+              setTimeout(() => {
+                targetCard.classList.remove('bg-teal-50', 'border-teal-400');
+              }, 1500);
+            }
+          }, 50);
+        }
+      }
+    }
+
     // リストアイテムのコピー
     function copyItemText(id) {
       const item = processedItems.find(i => i.id === id);
       if (item) {
-        copyText(item.text, 'テキスト');
+        let textToCopy = item.text;
+        if (item.tabName) {
+          textToCopy = `__CCFOLIA_TAB:${item.tabName}__\n` + textToCopy;
+        }
+        copyText(textToCopy, 'テキスト');
+
+        item.isCopied = true;
+        saveToLocalStorage();
+        renderList();
 
         const card = document.querySelector(`[data-id="${id}"]`);
         if (card) {
@@ -1593,6 +1856,33 @@
           setTimeout(() => {
             card.classList.remove('bg-teal-100/30', 'border-teal-500');
           }, 400);
+        }
+      }
+    }
+
+    // コピー済みマークの個別削除
+    function removeCopiedMark(id) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        item.isCopied = false;
+        saveToLocalStorage();
+        renderList();
+      }
+    }
+
+    // 全てのコピー済みマークを消去
+    function clearAllCopied() {
+      if (confirm('すべてのコピー済みマークを消去しますか？')) {
+        let changed = false;
+        processedItems.forEach(item => {
+          if (item.isCopied) {
+            item.isCopied = false;
+            changed = true;
+          }
+        });
+        if (changed) {
+          saveToLocalStorage();
+          renderList();
         }
       }
     }
@@ -2429,6 +2719,46 @@
       }
     }
 
+    // カラーパレットのトグル
+    let openPaletteId = null;
+
+    function toggleColorPalette(id, event) {
+      if (event) event.stopPropagation();
+      const popup = document.getElementById(`palette-popup-${id}`);
+      
+      if (openPaletteId !== null && openPaletteId !== id) {
+        const oldPopup = document.getElementById(`palette-popup-${openPaletteId}`);
+        if (oldPopup) {
+          oldPopup.classList.add('hidden');
+          oldPopup.classList.remove('flex');
+        }
+      }
+
+      if (popup) {
+        if (popup.classList.contains('hidden')) {
+          popup.classList.remove('hidden');
+          popup.classList.add('flex');
+          openPaletteId = id;
+        } else {
+          popup.classList.add('hidden');
+          popup.classList.remove('flex');
+          openPaletteId = null;
+        }
+      }
+    }
+
+    // 外側クリックでパレットを閉じる
+    document.addEventListener('click', (e) => {
+      if (openPaletteId !== null) {
+        const popup = document.getElementById(`palette-popup-${openPaletteId}`);
+        if (popup && !popup.contains(e.target)) {
+          popup.classList.add('hidden');
+          popup.classList.remove('flex');
+          openPaletteId = null;
+        }
+      }
+    });
+
     // HTMLエスケープ
     function escapeHtml(str) {
       if (!str) return '';
@@ -2457,6 +2787,7 @@
     // 初期化
     window.onload = function () {
       initTheme();
+      renderTabColorSettings();
       lucide.createIcons();
     }
   </script>
