@@ -508,13 +508,37 @@
     <!-- 中央ペイン：テキストカードリスト -->
     <div
       class="flex-grow flex flex-col bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-slate-200 lg:h-full overflow-hidden">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3 flex-shrink-0">
-        <div class="flex items-center gap-2">
-          <i data-lucide="align-left" class="text-teal-600 w-5 h-5"></i>
-          <h2 class="font-bold text-slate-800 text-sm sm:text-base">抽出されたテキスト一覧</h2>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件の項目</span>
+      <div class="flex flex-col border-b border-slate-100 pb-3 mb-3 flex-shrink-0">
+  <div class="flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <i data-lucide="align-left" class="text-teal-600 w-5 h-5"></i>
+      <h2 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+        抽出されたテキスト一覧
+        <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">0件</span>
+      </h2>
+    </div>
+    <div class="flex items-center gap-4">
+      <!-- ズーム機能 -->
+      <div class="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200" title="カードの表示サイズ">
+        <i data-lucide="zoom-out" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600" onclick="changeCardZoom(-0.1)"></i>
+        <span id="card-zoom-level" class="text-[10px] font-bold w-8 text-center select-none">100%</span>
+        <i data-lucide="zoom-in" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600" onclick="changeCardZoom(0.1)"></i>
+      </div>
+      <!-- 折りたたみトグル -->
+      <button onclick="toggleCardToolbar()" class="text-slate-400 hover:text-teal-600 transition-colors p-1 bg-slate-50 rounded-lg border border-slate-200" title="ツールバーの開閉">
+        <i id="icon-chevron-up" data-lucide="chevron-up" class="w-4 h-4"></i>
+        <i id="icon-chevron-down" data-lucide="chevron-down" class="w-4 h-4 hidden"></i>
+
+      </button>
+      <button id="btn-toggle-right" onclick="toggleRightPane()" class="text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all ml-1 pl-3 border-l border-slate-200 h-6">
+        <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+        ツールを隠す
+      </button>
+    </div>
+  </div>
+  
+  <div id="card-toolbar" class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-50 transition-all duration-300">
+    
           <!-- モード切替 -->
           <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1">
             <button id="btn-mode-edit" onclick="setGlobalMode('edit')" class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1">
@@ -550,19 +574,12 @@
             読込
             <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
           </label>
-          <button onclick="clearText()"
-            class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            全クリア
-          </button>
-          <div class="w-px h-4 bg-slate-200 mx-1"></div>
-          <button onclick="toggleRightPane()" id="btn-toggle-right"
-            class="text-xs text-indigo-500 hover:text-indigo-700 font-bold flex items-center gap-1 transition-all">
-            <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
-            ツールを隠す
-          </button>
-        </div>
-      </div>
+          
+    <button onclick="clearText()" class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
+      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全クリア
+    </button>
+  </div>
+</div>
 
       <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
       <div class="flex flex-col flex-grow overflow-hidden gap-1">
@@ -840,6 +857,38 @@
     let pdfOutline = []; // PDFのしおりツリー
     
     // ドラッグ＆ドロップのモード（'move' または 'merge'）
+    
+    // ツールバーの折りたたみとズーム機能
+    let isCardToolbarOpen = true;
+    function toggleCardToolbar() {
+      isCardToolbarOpen = !isCardToolbarOpen;
+      const tb = document.getElementById('card-toolbar');
+      if (isCardToolbarOpen) {
+        tb.style.display = 'flex';
+        document.getElementById('icon-chevron-up').classList.remove('hidden');
+        document.getElementById('icon-chevron-down').classList.add('hidden');
+      } else {
+        tb.style.display = 'none';
+        document.getElementById('icon-chevron-up').classList.add('hidden');
+        document.getElementById('icon-chevron-down').classList.remove('hidden');
+      }
+    }
+
+    let cardZoom = 1.0;
+    function changeCardZoom(delta) {
+      cardZoom += delta;
+      if (cardZoom < 0.3) cardZoom = 0.3;
+      if (cardZoom > 2.0) cardZoom = 2.0;
+      document.getElementById('card-zoom-level').innerText = Math.round(cardZoom * 100) + '%';
+      
+      const container = document.getElementById('text-list');
+      container.style.zoom = cardZoom;
+      // zoomは非標準だが主要ブラウザで動作。Firefox用にtransformもフォールバックで当てておく
+      container.style.transform = `scale(${cardZoom})`;
+      container.style.transformOrigin = 'top left';
+      container.style.width = `${100 / cardZoom}%`; 
+    }
+
     let dragMode = 'move';
 
     function setDragMode(mode) {
@@ -1892,7 +1941,7 @@
         return;
       }
 
-      countBadge.innerText = `${processedItems.length}件の項目`;
+      countBadge.innerText = `${processedItems.length}件`;
       container.innerHTML = '';
       const fragment = document.createDocumentFragment();
 
