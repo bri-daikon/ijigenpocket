@@ -804,16 +804,16 @@
 
     // カードのカラーパレット定義
     const cardColors = [
-      { id: 'slate', name: '標準', bg: 'bg-slate-50', border: 'border-slate-200', hoverBg: 'hover:bg-slate-100', hoverBorder: 'hover:border-slate-300' },
-      { id: 'red', name: '赤', bg: 'bg-red-50', border: 'border-red-200', hoverBg: 'hover:bg-red-100', hoverBorder: 'hover:border-red-300' },
-      { id: 'orange', name: 'オレンジ', bg: 'bg-orange-50', border: 'border-orange-200', hoverBg: 'hover:bg-orange-100', hoverBorder: 'hover:border-orange-300' },
-      { id: 'amber', name: '黄', bg: 'bg-amber-50', border: 'border-amber-200', hoverBg: 'hover:bg-amber-100', hoverBorder: 'hover:border-amber-300' },
-      { id: 'green', name: '緑', bg: 'bg-green-50', border: 'border-green-200', hoverBg: 'hover:bg-green-100', hoverBorder: 'hover:border-green-300' },
-      { id: 'teal', name: '青緑', bg: 'bg-teal-50', border: 'border-teal-200', hoverBg: 'hover:bg-teal-100', hoverBorder: 'hover:border-teal-300' },
-      { id: 'blue', name: '青', bg: 'bg-blue-50', border: 'border-blue-200', hoverBg: 'hover:bg-blue-100', hoverBorder: 'hover:border-blue-300' },
-      { id: 'indigo', name: '藍色', bg: 'bg-indigo-50', border: 'border-indigo-200', hoverBg: 'hover:bg-indigo-100', hoverBorder: 'hover:border-indigo-300' },
-      { id: 'purple', name: '紫', bg: 'bg-purple-50', border: 'border-purple-200', hoverBg: 'hover:bg-purple-100', hoverBorder: 'hover:border-purple-300' },
-      { id: 'pink', name: 'ピンク', bg: 'bg-pink-50', border: 'border-pink-200', hoverBg: 'hover:bg-pink-100', hoverBorder: 'hover:border-pink-300' }
+      { id: 'slate', name: '標準', bg: 'bg-slate-50', pickerBg: 'bg-slate-400', border: 'border-slate-200', hoverBg: 'hover:bg-slate-100', hoverBorder: 'hover:border-slate-300' },
+      { id: 'red', name: '赤', bg: 'bg-red-50', pickerBg: 'bg-red-400', border: 'border-red-200', hoverBg: 'hover:bg-red-100', hoverBorder: 'hover:border-red-300' },
+      { id: 'orange', name: 'オレンジ', bg: 'bg-orange-50', pickerBg: 'bg-orange-400', border: 'border-orange-200', hoverBg: 'hover:bg-orange-100', hoverBorder: 'hover:border-orange-300' },
+      { id: 'amber', name: '黄', bg: 'bg-amber-50', pickerBg: 'bg-amber-400', border: 'border-amber-200', hoverBg: 'hover:bg-amber-100', hoverBorder: 'hover:border-amber-300' },
+      { id: 'green', name: '緑', bg: 'bg-green-50', pickerBg: 'bg-green-400', border: 'border-green-200', hoverBg: 'hover:bg-green-100', hoverBorder: 'hover:border-green-300' },
+      { id: 'teal', name: '青緑', bg: 'bg-teal-50', pickerBg: 'bg-teal-400', border: 'border-teal-200', hoverBg: 'hover:bg-teal-100', hoverBorder: 'hover:border-teal-300' },
+      { id: 'blue', name: '青', bg: 'bg-blue-50', pickerBg: 'bg-blue-400', border: 'border-blue-200', hoverBg: 'hover:bg-blue-100', hoverBorder: 'hover:border-blue-300' },
+      { id: 'indigo', name: '藍色', bg: 'bg-indigo-50', pickerBg: 'bg-indigo-400', border: 'border-indigo-200', hoverBg: 'hover:bg-indigo-100', hoverBorder: 'hover:border-indigo-300' },
+      { id: 'purple', name: '紫', bg: 'bg-purple-50', pickerBg: 'bg-purple-400', border: 'border-purple-200', hoverBg: 'hover:bg-purple-100', hoverBorder: 'hover:border-purple-300' },
+      { id: 'pink', name: 'ピンク', bg: 'bg-pink-50', pickerBg: 'bg-pink-400', border: 'border-pink-200', hoverBg: 'hover:bg-pink-100', hoverBorder: 'hover:border-pink-300' }
     ];
 
     function getColorObj(colorId) {
@@ -1900,7 +1900,7 @@
                   </button>
                   <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg p-2 hidden gap-1.5 z-10 w-[160px] flex-wrap">
                     ${cardColors.map(c => `
-                      <button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${c.name}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.bg}"></button>
+                      <button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${c.name}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>
                     `).join('')}
                     ${customColors.map(hex => `
                       <button onclick="changeCardColor(${item.id}, '${hex}'); toggleColorPalette(${item.id}, event)" title="カスタム (${hex})" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform" style="background-color: ${hex}40; border-color: ${hex}"></button>
@@ -2971,7 +2971,7 @@
       const container = document.getElementById('bulk-color-palette');
       if (!container) return;
       container.innerHTML = cardColors.map(c => `
-        <button onclick="changeCardColorSelected('${c.id}')" title="${c.name}" class="w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.bg}"></button>
+        <button onclick="changeCardColorSelected('${c.id}')" title="${c.name}" class="w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>
       `).join('') + customColors.map(hex => `
         <button onclick="changeCardColorSelected('${hex}')" title="カスタム (${hex})" class="w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform" style="background-color: ${hex}40; border-color: ${hex}"></button>
       `).join('') + `
