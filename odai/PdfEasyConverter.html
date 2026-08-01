@@ -1759,7 +1759,31 @@
       countBadge.innerText = `${processedItems.length}件の項目`;
       container.innerHTML = '';
 
-      processedItems.forEach(item => {
+      
+      let collapseThreshold = Infinity;
+      let currentTocLevel = 0;
+
+      processedItems.forEach((item, index) => {
+        if (item.isToc) {
+          if (!item.tocLevel) item.tocLevel = 1;
+          currentTocLevel = item.tocLevel;
+          item._renderIndent = item.tocLevel - 1;
+          
+          if (item.tocLevel <= collapseThreshold) {
+            collapseThreshold = Infinity;
+          }
+        } else {
+          item._renderIndent = currentTocLevel;
+        }
+
+        const isHidden = collapseThreshold !== Infinity;
+
+        if (item.isToc && item.isCollapsed && collapseThreshold === Infinity) {
+          collapseThreshold = item.tocLevel;
+        }
+
+        if (isHidden) return;
+
         const card = document.createElement('div');
         const colorObj = getColorObj(item.color || 'slate');
         let isSelected = selectedCardIds.has(item.id);
@@ -1780,6 +1804,7 @@
         }
         
         card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''}`;
+        if (item._renderIndent) { card.style.marginLeft = (item._renderIndent * 24) + 'px'; }
         if (cardBgStyle) {
           card.setAttribute('style', cardBgStyle);
         }
@@ -1819,6 +1844,24 @@
               <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
                 P. ${item.page}
               </button>
+              ${item.isToc ? `
+                <div class="flex items-center bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5" title="目次階層と折りたたみ" onclick="event.stopPropagation()">
+                  <button onclick="event.stopPropagation(); toggleCollapse(${item.id})" class="text-indigo-600 hover:bg-indigo-100 p-0.5 rounded mr-1">
+                    <i data-lucide="${item.isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-3 h-3"></i>
+                  </button>
+                  <span class="text-indigo-700 text-[10px] font-bold flex items-center">
+                    目次 H${item.tocLevel || 1}
+                  </span>
+                  <div class="flex items-center ml-2 border-l border-indigo-200 pl-1">
+                    <button onclick="event.stopPropagation(); changeTocLevel(${item.id}, -1)" class="text-indigo-500 hover:text-indigo-700 p-0.5" title="階層を上げる">
+                      <i data-lucide="chevron-left" class="w-3 h-3"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); changeTocLevel(${item.id}, 1)" class="text-indigo-500 hover:text-indigo-700 p-0.5" title="階層を下げる">
+                      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
               <div class="flex items-center bg-white/60 border border-slate-200 rounded px-1.5 py-0.5 shadow-sm hover:border-teal-400 transition-colors" title="このカードの送信先タブ（ココフォリア連携用）" onclick="event.stopPropagation()">
                 <i data-lucide="send" class="w-3 h-3 text-teal-600 mr-1"></i>
                 <input type="text" value="${escapeHtml(item.tabName || '')}" onchange="updateCardTab(${item.id}, this.value)" placeholder="タブ指定..." class="bg-transparent text-[10px] w-20 outline-none text-slate-700 placeholder-slate-400" />
@@ -2064,6 +2107,7 @@
       // 2. 目次 (TOC)
       if (tList) {
         const tocs = processedItems.filter(i => i.isToc);
+  tocs.forEach(t => { if (!t.tocLevel) t.tocLevel = 1; });
         tCount.innerText = tocs.length;
         if (tocs.length === 0) {
           tList.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-6">目次に追加するとここにリスト化されます</p>`;
@@ -2071,7 +2115,9 @@
           tList.innerHTML = '';
           tocs.forEach(item => {
             const div = document.createElement('div');
+            const tocLevel = item.tocLevel || 1;
             div.className = "p-2 bg-indigo-50/50 hover:bg-indigo-100/40 border border-indigo-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";
+            div.style.marginLeft = `${(tocLevel - 1) * 12}px`;
             div.setAttribute('title', 'クリックで該当箇所にジャンプ');
             div.onclick = () => {
               const targetCard = document.querySelector(`[data-id="${item.id}"]`);
@@ -2124,7 +2170,7 @@
                 ${escapeHtml(item.note)}
               </span>
               <div class="flex items-center gap-1">
-                <button onclick="event.stopPropagation(); copyText('${escapeHtml((item.note || '').replace(/'/g, "\\'"))}', 'メモ（付箋）の内容')" class="text-slate-400 hover:text-teal-600 p-0.5" title="メモをコピー">
+                <button onclick="event.stopPropagation(); copyText('${escapeHtml((item.note || '').replace(/'/g, "\'"))}', 'メモ（付箋）の内容')" class="text-slate-400 hover:text-teal-600 p-0.5" title="メモをコピー">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="event.stopPropagation(); deleteNote(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5" title="付箋を剥がす">
@@ -2962,25 +3008,32 @@
       if (!sourceId || sourceId === targetId) return;
 
       const sourceIndex = processedItems.findIndex(i => i.id === sourceId);
-      const targetIndex = processedItems.findIndex(i => i.id === targetId);
+      if (sourceIndex === -1) return;
       
-      if (sourceIndex === -1 || targetIndex === -1) return;
-
       const sourceItem = processedItems[sourceIndex];
-      const targetItem = processedItems[targetIndex];
+      let itemsToMoveCount = 1;
+
+      if (sourceItem.isToc && sourceItem.isCollapsed) {
+        for (let i = sourceIndex + 1; i < processedItems.length; i++) {
+          const child = processedItems[i];
+          if (child.isToc && (child.tocLevel || 1) <= (sourceItem.tocLevel || 1)) break;
+          itemsToMoveCount++;
+        }
+      }
+
+      const removed = processedItems.splice(sourceIndex, itemsToMoveCount);
       
-      const mergedText = sourceIndex < targetIndex 
-        ? sourceItem.text + '\n' + targetItem.text 
-        : targetItem.text + '\n' + sourceItem.text;
-        
-      targetItem.text = mergedText;
-      targetItem.furiganaHtml = undefined;
+      const targetIndex = processedItems.findIndex(i => i.id === targetId);
+      if (targetIndex === -1) {
+          processedItems.splice(sourceIndex, 0, ...removed);
+          return;
+      }
       
-      processedItems.splice(sourceIndex, 1);
+      processedItems.splice(targetIndex, 0, ...removed);
       
       renderList();
       saveToLocalStorage();
-      showToast('結合完了', 'カードをドラッグして結合しました。', 'success');
+      showToast('移動完了', 'カードを移動しました。', 'success');
     }
 
     // --- エンターキーでのクイック分割 ---
@@ -3056,6 +3109,27 @@
       renderList();
       updateBookmarkAndNoteLists();
     }
+    function toggleCollapse(id) {
+      const item = processedItems.find(i => i.id === id);
+      if (item && item.isToc) {
+        item.isCollapsed = !item.isCollapsed;
+        saveToLocalStorage();
+        renderList();
+      }
+    }
+
+    function changeTocLevel(id, delta) {
+      const item = processedItems.find(i => i.id === id);
+      if (item && item.isToc) {
+        item.tocLevel = (item.tocLevel || 1) + delta;
+        if (item.tocLevel < 1) item.tocLevel = 1;
+        if (item.tocLevel > 6) item.tocLevel = 6;
+        saveToLocalStorage();
+        renderList();
+        renderToc();
+      }
+    }
+
 
     function bulkDeselectCardsBySearch() {
       const searchText = document.getElementById('bulk-select-search').value.toLowerCase();
@@ -3131,6 +3205,8 @@
           tabName: item.tabName,
           isCommand: item.isCommand,
           isToc: item.isToc,
+          tocLevel: item.tocLevel,
+          isCollapsed: item.isCollapsed,
           isCopied: item.isCopied
         }))
       };
@@ -3187,6 +3263,8 @@
             tabName: item.tabName,
             isCommand: item.isCommand,
             isToc: !!item.isToc,
+            tocLevel: item.tocLevel || 1,
+            isCollapsed: !!item.isCollapsed,
             isCopied: item.isCopied
           }));
           // globalIdを更新してID重複を防ぐ
