@@ -1758,6 +1758,7 @@
 
       countBadge.innerText = `${processedItems.length}件の項目`;
       container.innerHTML = '';
+      const fragment = document.createDocumentFragment();
 
       
       let collapseThreshold = Infinity;
@@ -1962,10 +1963,11 @@
             </div>
           </div>
         `;
-        container.appendChild(card);
+        fragment.appendChild(card);
       });
 
-      lucide.createIcons();
+      container.appendChild(fragment);
+      lucide.createIcons({ root: container });
       updateBookmarkAndNoteLists();
     }
 
@@ -2078,6 +2080,7 @@
         bList.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-6">しおりのある項目はありません</p>`;
       } else {
         bList.innerHTML = '';
+        const bFrag = document.createDocumentFragment();
         bookmarks.forEach(item => {
           const div = document.createElement('div');
           div.className = "p-2 bg-amber-50/50 hover:bg-amber-100/40 border border-amber-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";
@@ -2113,6 +2116,7 @@
           tList.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-6">目次に追加するとここにリスト化されます</p>`;
         } else {
           tList.innerHTML = '';
+          const tFrag = document.createDocumentFragment();
           tocs.forEach(item => {
             const div = document.createElement('div');
             const tocLevel = item.tocLevel || 1;
@@ -2135,8 +2139,9 @@
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
               </button>
             `;
-            tList.appendChild(div);
+            tFrag.appendChild(div);
           });
+          tList.appendChild(tFrag);
         }
       }
 
@@ -2147,6 +2152,7 @@
         nList.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-6">メモ付きのカードがありません</p>`;
       } else {
         nList.innerHTML = '';
+        const nFrag = document.createDocumentFragment();
         notes.forEach(item => {
           const div = document.createElement('div');
           div.className = "p-2.5 bg-emerald-50/50 hover:bg-emerald-100/40 border border-emerald-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex flex-col gap-1";
