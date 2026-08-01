@@ -115,26 +115,104 @@
     body[data-theme="dark"] div.bg-purple-50 { background-color: rgba(147, 51, 234, 0.15) !important; }
     body[data-theme="dark"] div.bg-pink-50 { background-color: rgba(219, 39, 119, 0.15) !important; }
     
-    /* 選択中カード（bg-teal-100）は背景を明るく保ち、中の文字を暗くする */
+    /* 選択中カード（bg-teal-100）と編集中カード（bg-amber-50）は強制的に明るいテーマにする */
     body[data-theme="dark"] div.bg-teal-100 {
       background-color: #ccfbf1 !important;
     }
-    body[data-theme="dark"] div.bg-teal-100 .text-slate-800,
-    body[data-theme="dark"] div.bg-teal-100 .text-slate-700 {
-      color: #0f172a !important; 
+    body[data-theme="dark"] div.bg-teal-100,
+    body[data-theme="dark"] div.bg-teal-100 *,
+    body[data-theme="dark"] div.bg-teal-100 .text-slate-700,
+    body[data-theme="dark"] div.bg-teal-100 .text-slate-800 {
+      color: #0f172a !important;
     }
-    body[data-theme="dark"] div.bg-teal-100 .text-slate-600,
-    body[data-theme="dark"] div.bg-teal-100 .text-slate-500 {
-      color: #334155 !important;
+    body[data-theme="dark"] div.bg-amber-50 {
+      background-color: #fffbeb !important;
     }
-    body[data-theme="dark"] div.bg-teal-100 .text-slate-400 {
-      color: #475569 !important;
+    body[data-theme="dark"] div.bg-amber-50,
+    body[data-theme="dark"] div.bg-amber-50 *,
+    body[data-theme="dark"] div.bg-amber-50 .text-slate-700,
+    body[data-theme="dark"] div.bg-amber-50 .text-slate-800 {
+      color: #0f172a !important;
+    }
+    /* それらのカード内のテキストエリアなどの背景は白に戻す */
+    body[data-theme="dark"] div.bg-teal-100 .bg-white,
+    body[data-theme="dark"] div.bg-teal-100 textarea,
+    body[data-theme="dark"] div.bg-teal-100 [contenteditable="true"]:focus,
+    body[data-theme="dark"] div.bg-amber-50 .bg-white,
+    body[data-theme="dark"] div.bg-amber-50 textarea,
+    body[data-theme="dark"] div.bg-amber-50 [contenteditable="true"]:focus {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    /* タブ設定の入力欄 */
+    body[data-theme="dark"] .tab-name-input,
+    body[data-theme="dark"] .tab-color-select {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+      border-color: #334155 !important;
     }
     body[data-theme="dark"] .text-teal-800, body[data-theme="dark"] .text-teal-700 {
       color: #5eead4 !important;
     }
     body[data-theme="dark"] #canvas-container {
       background-color: #1e293b !important;
+    }
+
+    
+    /* focus:bg-white をダークモードに対応させる */
+    body[data-theme="dark"] .focus\:bg-white:focus {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+      border-color: #334155 !important;
+    }
+    
+    /* 選択中（bg-teal-100）や編集中（bg-amber-50）の場合の例外（これらは明るいテーマ） */
+    body[data-theme="dark"] div.bg-teal-100 .focus\:bg-white:focus,
+    body[data-theme="dark"] div.bg-amber-50 .focus\:bg-white:focus {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    
+    /* 目次H1などの青文字のダークモード対応 */
+    body[data-theme="dark"] .text-indigo-700 {
+      color: #a5b4fc !important;
+    }
+    /* 選択中・編集中カード内の青文字は暗い青にする */
+    body[data-theme="dark"] div.bg-teal-100 .text-indigo-700,
+    body[data-theme="dark"] div.bg-amber-50 .text-indigo-700 {
+      color: #3730a3 !important;
+    }
+    
+    /* 選択中・編集中カード内の目次ボタンの背景を明るく維持する */
+    body[data-theme="dark"] div.bg-teal-100 div.bg-indigo-50,
+    body[data-theme="dark"] div.bg-amber-50 div.bg-indigo-50 {
+      background-color: #e0e7ff !important;
+      border-color: #c7d2fe !important;
+    }
+
+    /* タブ設定（bg-white/60）のダークモード対応 */
+    body[data-theme="dark"] .bg-white\/60 {
+      background-color: rgba(30, 41, 59, 0.8) !important;
+      border-color: #334155 !important;
+    }
+    
+    /* 選択中・編集中カード内のタブ設定（bg-white/60）は明るく維持する */
+    body[data-theme="dark"] div.bg-teal-100 .bg-white\/60,
+    body[data-theme="dark"] div.bg-amber-50 .bg-white\/60 {
+      background-color: rgba(255, 255, 255, 0.7) !important;
+      border-color: #cbd5e1 !important;
+    }
+    
+    /* ツールバーなどのテキスト（text-indigo-600）も対応 */
+    body[data-theme="dark"] .text-indigo-600 {
+      color: #818cf8 !important;
+    }
+    body[data-theme="dark"] div.bg-teal-100 .text-indigo-600,
+    body[data-theme="dark"] div.bg-amber-50 .text-indigo-600 {
+      color: #4f46e5 !important;
     }
 
     /* ベージュモード */
@@ -450,6 +528,17 @@
             <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
             一括解除
           </button>
+          
+          <!-- ドラッグ動作切替 -->
+          <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1 ml-2" title="カードをドラッグした時の動作">
+            <button id="btn-drag-move" onclick="setDragMode('move')" class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1">
+              <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i> 移動
+            </button>
+            <button id="btn-drag-merge" onclick="setDragMode('merge')" class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
+              <i data-lucide="combine" class="w-3.5 h-3.5"></i> 結合
+            </button>
+          </div>
+
           <!-- 保存・読み込みボタン -->
           <button onclick="downloadProjectFile()" title="編集データを .pec ファイルとして保存"
             class="text-xs text-teal-600 hover:text-teal-800 font-bold flex items-center gap-1 transition-all">
@@ -580,6 +669,12 @@
               class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
               onchange="processAndDisplay()">
             <span class="text-xs font-bold text-slate-700">目次・リーダー線を除外</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-indent-toc" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="renderList()">
+            <span class="text-xs font-bold text-slate-700">目次レベルに応じてカードを字下げする</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="chk-convert-alphanum" checked
@@ -743,6 +838,23 @@
     let currentPreviewPage = 1; // 現在プレビュー表示中のページ
     let previewScale = 0.55; // プレビューの拡大率倍率（初期は横幅が収まる55%）
     let pdfOutline = []; // PDFのしおりツリー
+    
+    // ドラッグ＆ドロップのモード（'move' または 'merge'）
+    let dragMode = 'move';
+
+    function setDragMode(mode) {
+      dragMode = mode;
+      const btnMove = document.getElementById('btn-drag-move');
+      const btnMerge = document.getElementById('btn-drag-merge');
+      if (mode === 'move') {
+        btnMove.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1';
+        btnMerge.className = 'px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1';
+      } else {
+        btnMerge.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-white text-rose-600 shadow-sm transition-all flex items-center gap-1';
+        btnMove.className = 'px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1';
+      }
+    }
+
     let isOutlineOpen = false; // 目次パネルが開いているかどうか
     let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
     let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
@@ -952,7 +1064,7 @@
             ${options}
             <option value="custom" ${isCustom && !customColors.includes(colorId) ? 'selected' : ''}>新規カスタム...</option>
           </select>
-          <input type="text" value="${escapeHtml(tabName)}" placeholder="タブ名" class="tab-name-input flex-grow text-xs px-2 py-1 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 outline-none">
+          <input type="text" value="${escapeHtml(tabName)}" placeholder="タブ名" class="tab-name-input flex-grow text-xs px-2 py-1 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 outline-none bg-white text-slate-800">
           <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-rose-500 flex-shrink-0"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
         </div>
       `;
@@ -1829,7 +1941,8 @@
         }
         
         card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''}`;
-        if (item._renderIndent) { card.style.marginLeft = (item._renderIndent * 24) + 'px'; }
+        const indentEnabled = document.getElementById('chk-indent-toc') ? document.getElementById('chk-indent-toc').checked : true;
+        if (item._renderIndent && indentEnabled) { card.style.marginLeft = (item._renderIndent * 24) + 'px'; }
         if (cardBgStyle) {
           card.setAttribute('style', cardBgStyle);
         }
@@ -3016,18 +3129,22 @@
     function handleDragEnter(e, card) {
       e.preventDefault();
       if (draggedCardId && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
-        card.classList.add('border-indigo-400', 'bg-indigo-50');
+        if (dragMode === 'move') {
+          card.classList.add('border-indigo-400', 'bg-indigo-50');
+        } else {
+          card.classList.add('border-rose-400', 'bg-rose-50');
+        }
       }
     }
 
     function handleDragLeave(e, card) {
-      card.classList.remove('border-indigo-400', 'bg-indigo-50');
+      card.classList.remove('border-indigo-400', 'bg-indigo-50', 'border-rose-400', 'bg-rose-50');
     }
 
     function handleDrop(e, targetId) {
       e.preventDefault();
       const card = document.querySelector(`[data-id="${targetId}"]`);
-      if (card) card.classList.remove('border-indigo-400', 'bg-indigo-50');
+      if (card) card.classList.remove('border-indigo-400', 'bg-indigo-50', 'border-rose-400', 'bg-rose-50');
       
       const sourceId = draggedCardId;
       draggedCardId = null;
@@ -3038,9 +3155,24 @@
       if (!sourceId || sourceId === targetId) return;
 
       const sourceIndex = processedItems.findIndex(i => i.id === sourceId);
-      if (sourceIndex === -1) return;
+      const targetIndex = processedItems.findIndex(i => i.id === targetId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return;
       
       const sourceItem = processedItems[sourceIndex];
+      const targetItem = processedItems[targetIndex];
+
+      if (dragMode === 'merge') {
+        // 結合モードの処理
+        targetItem.text = targetItem.text + '\n' + sourceItem.text;
+        processedItems.splice(sourceIndex, 1);
+        renderList();
+        saveToLocalStorage();
+        showToast('結合完了', 'カードを結合しました。', 'success');
+        return;
+      }
+
+      // 以下の処理は移動モードの場合
       let itemsToMoveCount = 1;
 
       if (sourceItem.isToc && sourceItem.isCollapsed) {
@@ -3053,13 +3185,13 @@
 
       const removed = processedItems.splice(sourceIndex, itemsToMoveCount);
       
-      const targetIndex = processedItems.findIndex(i => i.id === targetId);
-      if (targetIndex === -1) {
+      const newTargetIndex = processedItems.findIndex(i => i.id === targetId);
+      if (newTargetIndex === -1) {
           processedItems.splice(sourceIndex, 0, ...removed);
           return;
       }
       
-      processedItems.splice(targetIndex, 0, ...removed);
+      processedItems.splice(newTargetIndex, 0, ...removed);
       
       renderList();
       saveToLocalStorage();
