@@ -15,6 +15,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <!-- Kuroshiro (日本語ふりがな変換) は Web Worker 内で読み込むためメインスレッドからは削除 -->
   <style>
+    body.dragging-active .card-container * {
+      pointer-events: none;
+    }
     body {
       font-family: 'Noto Sans JP', sans-serif;
     }
@@ -336,10 +339,10 @@
 
   <!-- メインコンテンツ (デスクトップ時は100%画面に収まる個別スクロールレイアウト) -->
   <main
-    class="flex-grow max-w-[1800px] w-full mx-auto p-4 flex flex-col lg:flex-row gap-5 overflow-y-auto lg:overflow-hidden lg:h-[calc(100vh-68px)]">
+    class="flex-grow max-w-[1800px] w-full mx-auto p-4 flex flex-col lg:flex-row gap-3 overflow-y-auto lg:overflow-hidden lg:h-[calc(100vh-68px)]">
 
     <!-- 左ペイン：設定 ＆ PDFプレビュー画面 -->
-    <div class="w-full lg:w-[480px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1">
+    <div id="left-pane" class="w-full lg:w-[480px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 transition-none">
 
       <!-- 1. PDF読み込み (常に固定) -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -504,6 +507,9 @@
       </div>
 
     </div>
+
+    <!-- リサイザー（ドラッグで幅変更） -->
+    <div id="pane-resizer" class="hidden lg:block w-2 bg-slate-200 hover:bg-teal-400 cursor-col-resize transition-colors flex-shrink-0 rounded-full my-4 shadow-inner" title="ドラッグして幅を調整"></div>
 
     <!-- 中央ペイン：テキストカードリスト -->
     <div
@@ -882,11 +888,9 @@
       document.getElementById('card-zoom-level').innerText = Math.round(cardZoom * 100) + '%';
       
       const container = document.getElementById('text-list');
-      container.style.zoom = cardZoom;
-      // zoomは非標準だが主要ブラウザで動作。Firefox用にtransformもフォールバックで当てておく
-      container.style.transform = `scale(${cardZoom})`;
-      container.style.transformOrigin = 'top left';
-      container.style.width = `${100 / cardZoom}%`; 
+      if (container) {
+        container.style.zoom = cardZoom;
+      }
     }
 
     let dragMode = 'move';
@@ -1007,8 +1011,22 @@
       return cardColors.find(c => c.id === colorId) || cardColors[0];
     }
 
-
-
+    function getSortedPaletteColors() {
+      const sortedIds = [];
+      // 1. タブで使われている色を優先して追加
+      Object.values(tabColorMapping).forEach(cId => {
+        if (cId && cId !== 'slate' && !sortedIds.includes(cId)) {
+          sortedIds.push(cId);
+        }
+      });
+      // 2. 残りの標準色を追加
+      cardColors.forEach(c => {
+        if (!sortedIds.includes(c.id)) {
+          sortedIds.push(c.id);
+        }
+      });
+      return sortedIds.map(cId => getColorObj(cId));
+    }
     // タブ名とカラーの相互変換用マッピング
     let tabColorMapping = {
       '': 'slate',
@@ -1989,31 +2007,39 @@
           }
         }
         
-        card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''}`;
+        card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''} card-container`;
+        if (cardBgStyle) card.style = cardBgStyle;
         const indentEnabled = document.getElementById('chk-indent-toc') ? document.getElementById('chk-indent-toc').checked : true;
-        if (item._renderIndent && indentEnabled) { card.style.marginLeft = (item._renderIndent * 24) + 'px'; }
-        if (cardBgStyle) {
-          card.setAttribute('style', cardBgStyle);
-        }
+        if (item._renderIndent && indentEnabled) { card.style.marginLeft = (item._renderIndent * 20) + 'px'; }
+        
         card.setAttribute('data-id', item.id);
-        card.setAttribute('data-page', item.page);
-
-        // ドラッグ＆ドロップ設定 (編集モード時のみ)
         if (globalMode === 'edit' && !item.isEditing) {
-          card.draggable = true;
+          card.setAttribute('draggable', 'true');
           card.ondragstart = (e) => handleDragStart(e, item.id);
-          card.ondragover = (e) => handleDragOver(e);
-          card.ondrop = (e) => handleDrop(e, item.id);
+          card.ondragover = handleDragOver;
           card.ondragenter = (e) => handleDragEnter(e, card);
           card.ondragleave = (e) => handleDragLeave(e, card);
+          card.ondragend = (e) => handleDragEnd(e, card);
+          card.ondrop = (e) => handleDrop(e, item.id);
         }
+        card.onclick = (e) => {
+          if (!e.target.closest('button, input, textarea, [contenteditable], .lucide')) {
+            jumpToPreviewPage(item.page);
+          }
+        };
 
-        // 表示時は常に話者名を残して表示する
         const displayText = item.text;
 
         card.innerHTML = `
+          ${item.isCommand ? `
+            <div class="absolute -top-2 -right-2 z-10">
+              <button onclick="deleteCard(${item.id})" class="bg-white rounded-full p-0.5 shadow-sm border border-slate-200 text-slate-400 hover:text-rose-500" title="コマンドカードを削除">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>
+            </div>
+          ` : ''}
           ${item.isCopied ? `
-            <div class="absolute -top-2 -right-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 z-10">
+            <div class="copied-badge absolute -top-2 -right-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 z-10">
               <i data-lucide="check-circle-2" class="w-3 h-3"></i> コピー済み
               <button onclick="event.stopPropagation(); removeCopiedMark(${item.id})" class="ml-1 hover:text-teal-200 transition-colors" title="コピー済みマークを消す">
                 <i data-lucide="x" class="w-3 h-3"></i>
@@ -2077,7 +2103,7 @@
                     <i data-lucide="palette" class="w-4 h-4"></i>
                   </button>
                   <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg p-2 hidden gap-1.5 z-10 w-[160px] flex-wrap">
-                    ${cardColors.map(c => `
+                    ${getSortedPaletteColors().map(c => c.isCustom ? '' : `
                       <button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${c.name}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>
                     `).join('')}
                     ${customColors.map(hex => `
@@ -2120,12 +2146,13 @@
             <textarea id="edit-textarea-${item.id}"
               class="w-full text-sm text-slate-800 leading-relaxed border border-amber-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-amber-400 outline-none bg-white min-h-[80px]"
               rows="${Math.max(3, (displayText.match(/\n/g) || []).length + 2)}"
+              onfocus="jumpToPreviewPage(${item.page})"
             >${escapeHtml(displayText)}</textarea>
           ` : `
             ${globalMode === 'copy' ? `
-              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" onfocus="jumpToPreviewPage(${item.page})" tabindex="0" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
             ` : `
-              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed cursor-text outline-none focus:ring-1 focus:ring-teal-400 focus:bg-white rounded px-1 -mx-1" contenteditable="true" onkeydown="handleCardTextKeydown(event, ${item.id})" onblur="handleCardTextBlur(event, ${item.id})" title="クリックしてカーソルを置き、Enterキーで分割">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed cursor-text outline-none focus:ring-1 focus:ring-teal-400 focus:bg-white rounded px-1 -mx-1" contenteditable="true" onkeydown="handleCardTextKeydown(event, ${item.id})" onblur="handleCardTextBlur(event, ${item.id})" onfocus="jumpToPreviewPage(${item.page})" title="クリックしてカーソルを置き、Enterキーで分割">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
             `}
           `}
 
@@ -2250,6 +2277,20 @@
       }
     }
 
+    // 目次名の変更
+    function editTocName(id) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        const newName = prompt('目次の表示名を入力してください:', item.tocName || item.text);
+        if (newName !== null) {
+          item.tocName = newName.trim() || undefined;
+          saveToLocalStorage();
+          updateBookmarkAndNoteLists();
+          showToast('目次名を変更', '目次の表示名を更新しました。', 'success');
+        }
+      }
+    }
+
     // 右側サイドバー（しおり・目次・付箋）の更新
     function updateBookmarkAndNoteLists() {
       const bList = document.getElementById('bookmark-list');
@@ -2320,10 +2361,15 @@
               }
             };
             div.innerHTML = `
-              <span class="truncate flex-grow font-semibold text-indigo-800">${escapeHtml(item.text)}</span>
-              <button onclick="event.stopPropagation(); toggleToc(${item.id})" class="text-indigo-400 hover:text-rose-500 p-0.5" title="目次から削除">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-              </button>
+              <span class="truncate flex-grow font-semibold text-indigo-800">${escapeHtml(item.tocName || item.text)}</span>
+              <div class="flex items-center gap-1">
+                <button onclick="event.stopPropagation(); editTocName(${item.id})" class="text-indigo-400 hover:text-teal-600 p-0.5" title="目次名を変更">
+                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="event.stopPropagation(); toggleToc(${item.id})" class="text-indigo-400 hover:text-rose-500 p-0.5" title="目次から削除">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             `;
             tFrag.appendChild(div);
           });
@@ -2375,8 +2421,11 @@
           nList.appendChild(div);
         });
       }
-
-      lucide.createIcons();
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons({ root: document.getElementById('text-list') });
+        lucide.createIcons({ root: document.getElementById('bookmark-list') });
+        lucide.createIcons({ root: document.getElementById('note-list') });
+      }
     }
 
     // カードのタブ設定を更新
@@ -2437,10 +2486,23 @@
 
         item.isCopied = true;
         saveToLocalStorage();
-        renderList();
-
-        const card = document.querySelector(`[data-id="${id}"]`);
+        
+        const card = document.querySelector(`.card-container[data-id="${id}"]`);
         if (card) {
+          card.classList.add('border-l-4', 'border-l-teal-500');
+          if (!card.querySelector('.copied-badge')) {
+            const badge = document.createElement('div');
+            badge.className = 'copied-badge absolute -top-2 -right-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 z-10';
+            badge.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3"></i> コピー済み
+              <button onclick="event.stopPropagation(); removeCopiedMark(${item.id})" class="ml-1 hover:text-teal-200 transition-colors" title="コピー済みマークを消す">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>`;
+            card.appendChild(badge);
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+              lucide.createIcons({ root: badge });
+            }
+          }
+          
           card.classList.add('bg-teal-100/30', 'border-teal-500');
           setTimeout(() => {
             card.classList.remove('bg-teal-100/30', 'border-teal-500');
@@ -2455,7 +2517,13 @@
       if (item) {
         item.isCopied = false;
         saveToLocalStorage();
-        renderList();
+        
+        const card = document.querySelector(`.card-container[data-id="${id}"]`);
+        if (card) {
+          card.classList.remove('border-l-4', 'border-l-teal-500');
+          const badge = card.querySelector('.copied-badge');
+          if (badge) badge.remove();
+        }
       }
     }
 
@@ -2465,7 +2533,23 @@
         copyText(item.text, 'テキスト（タブなし）');
         item.isCopied = true;
         saveToLocalStorage();
-        renderList();
+        
+        const card = document.querySelector(`.card-container[data-id="${id}"]`);
+        if (card) {
+          card.classList.add('border-l-4', 'border-l-teal-500');
+          if (!card.querySelector('.copied-badge')) {
+            const badge = document.createElement('div');
+            badge.className = 'copied-badge absolute -top-2 -right-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 z-10';
+            badge.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3"></i> コピー済み
+              <button onclick="event.stopPropagation(); removeCopiedMark(${item.id})" class="ml-1 hover:text-teal-200 transition-colors" title="コピー済みマークを消す">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>`;
+            card.appendChild(badge);
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+              lucide.createIcons({ root: badge });
+            }
+          }
+        }
       }
     }
 
@@ -2477,11 +2561,17 @@
           if (item.isCopied) {
             item.isCopied = false;
             changed = true;
+            
+            const card = document.querySelector(`.card-container[data-id="${item.id}"]`);
+            if (card) {
+              card.classList.remove('border-l-4', 'border-l-teal-500');
+              const badge = card.querySelector('.copied-badge');
+              if (badge) badge.remove();
+            }
           }
         });
         if (changed) {
           saveToLocalStorage();
-          renderList();
         }
       }
     }
@@ -3030,6 +3120,7 @@
     // --- 新機能（モード切替・複数選択・一括操作・ドラッグ＆ドロップ） ---
 
     function setGlobalMode(mode) {
+      if (globalMode === mode) return; // モードが変わらない場合は何もしない
       globalMode = mode;
       
       const btnEdit = document.getElementById('btn-mode-edit');
@@ -3044,6 +3135,7 @@
       }
       
       clearSelection();
+      renderList(); // モード切替時は必ずカードの再構築が必要（HTML構造が変わるため）
     }
 
     function toggleCardSelection(id, event) {
@@ -3078,14 +3170,90 @@
       
       lastSelectedId = id;
       updateBulkActionBar();
-      renderList();
+      
+      // DOMを直接更新して高速化（renderListは重いため）
+      processedItems.forEach(item => {
+        const card = document.querySelector(`.card-container[data-id="${item.id}"]`);
+        if (!card) return;
+        
+        const isSelected = selectedCardIds.has(item.id);
+        let cardBgClass = '';
+        let cardBgStyle = '';
+        const colorObj = getColorObj(item.color || 'slate');
+        
+        if (item.isEditing) {
+          cardBgClass = 'bg-amber-50 border-amber-300';
+        } else if (isSelected) {
+          cardBgClass = 'bg-teal-100 border-teal-400 outline outline-2 outline-teal-400';
+        } else {
+          if (colorObj.isCustom) {
+            cardBgClass = 'border hover:bg-slate-50'; 
+            cardBgStyle = `background-color: ${colorObj.hex}15; border-color: ${colorObj.hex};`;
+          } else {
+            cardBgClass = `${colorObj.bg} ${colorObj.hoverBg} ${colorObj.border} ${colorObj.hoverBorder}`;
+          }
+        }
+
+        card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''} card-container`;
+        if (cardBgStyle) card.style.backgroundColor = cardBgStyle.split(';')[0].split(':')[1].trim();
+        else card.style.backgroundColor = '';
+
+        const checkBtn = card.querySelector('.cursor-pointer[onclick^="toggleCardSelection"]');
+        if (checkBtn) {
+          checkBtn.className = `cursor-pointer p-0.5 rounded transition-all flex items-center justify-center ${isSelected ? 'bg-teal-500 text-white' : 'border border-slate-300 text-transparent hover:border-teal-400'} shadow-sm bg-white`;
+          const icon = checkBtn.querySelector('svg');
+          if (icon) {
+            if (isSelected) {
+              icon.classList.remove('hidden', 'group-hover:block', 'text-teal-400');
+              icon.classList.add('text-white');
+            } else {
+              icon.classList.remove('text-white');
+              icon.classList.add('hidden', 'group-hover:block', 'text-teal-400');
+            }
+          }
+        }
+      });
     }
 
     function clearSelection() {
       selectedCardIds.clear();
       lastSelectedId = null;
       updateBulkActionBar();
-      renderList();
+      
+      // DOMを直接更新して高速化
+      processedItems.forEach(item => {
+        const card = document.querySelector(`.card-container[data-id="${item.id}"]`);
+        if (!card) return;
+        
+        let cardBgClass = '';
+        let cardBgStyle = '';
+        const colorObj = getColorObj(item.color || 'slate');
+        
+        if (item.isEditing) {
+          cardBgClass = 'bg-amber-50 border-amber-300';
+        } else {
+          if (colorObj.isCustom) {
+            cardBgClass = 'border hover:bg-slate-50'; 
+            cardBgStyle = `background-color: ${colorObj.hex}15; border-color: ${colorObj.hex};`;
+          } else {
+            cardBgClass = `${colorObj.bg} ${colorObj.hoverBg} ${colorObj.border} ${colorObj.hoverBorder}`;
+          }
+        }
+
+        card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''} card-container`;
+        if (cardBgStyle) card.style.backgroundColor = cardBgStyle.split(';')[0].split(':')[1].trim();
+        else card.style.backgroundColor = '';
+
+        const checkBtn = card.querySelector('.cursor-pointer[onclick^="toggleCardSelection"]');
+        if (checkBtn) {
+          checkBtn.className = `cursor-pointer p-0.5 rounded transition-all flex items-center justify-center border border-slate-300 text-transparent hover:border-teal-400 shadow-sm bg-white`;
+          const icon = checkBtn.querySelector('svg');
+          if (icon) {
+            icon.classList.remove('text-white');
+            icon.classList.add('hidden', 'group-hover:block', 'text-teal-400');
+          }
+        }
+      });
     }
 
     function updateBulkActionBar() {
@@ -3148,7 +3316,7 @@
     function renderBulkColorPalette() {
       const container = document.getElementById('bulk-color-palette');
       if (!container) return;
-      container.innerHTML = cardColors.map(c => `
+      container.innerHTML = getSortedPaletteColors().map(c => c.isCustom ? '' : `
         <button onclick="changeCardColorSelected('${c.id}')" title="${c.name}" class="w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>
       `).join('') + customColors.map(hex => `
         <button onclick="changeCardColorSelected('${hex}')" title="カスタム (${hex})" class="w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform" style="background-color: ${hex}40; border-color: ${hex}"></button>
@@ -3162,12 +3330,22 @@
     // --- ドラッグ＆ドロップ関連 ---
     function handleDragStart(e, id) {
       draggedCardId = id;
+      document.body.classList.add('dragging-active');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', id);
       setTimeout(() => {
         const card = document.querySelector(`[data-id="${id}"]`);
-        if (card) card.classList.add('opacity-50');
+        if (card) card.classList.add('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
       }, 0);
+    }
+
+    function handleDragEnd(e, card) {
+      document.body.classList.remove('dragging-active');
+      if (draggedCardId) {
+        const draggedCardEl = document.querySelector(`[data-id="${draggedCardId}"]`);
+        if (draggedCardEl) draggedCardEl.classList.remove('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
+      }
+      draggedCardId = null;
     }
 
     function handleDragOver(e) {
@@ -3179,27 +3357,28 @@
       e.preventDefault();
       if (draggedCardId && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
         if (dragMode === 'move') {
-          card.classList.add('border-indigo-400', 'bg-indigo-50');
+          card.classList.add('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md');
         } else {
-          card.classList.add('border-rose-400', 'bg-rose-50');
+          card.classList.add('border-rose-500', 'bg-rose-100', 'outline', 'outline-2', 'outline-rose-500', 'shadow-md');
         }
       }
     }
 
     function handleDragLeave(e, card) {
-      card.classList.remove('border-indigo-400', 'bg-indigo-50', 'border-rose-400', 'bg-rose-50');
+      card.classList.remove('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md', 'border-rose-500', 'bg-rose-100', 'outline-rose-500');
     }
 
     function handleDrop(e, targetId) {
       e.preventDefault();
+      document.body.classList.remove('dragging-active');
       const card = document.querySelector(`[data-id="${targetId}"]`);
-      if (card) card.classList.remove('border-indigo-400', 'bg-indigo-50', 'border-rose-400', 'bg-rose-50');
+      if (card) card.classList.remove('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md', 'border-rose-500', 'bg-rose-100', 'outline-rose-500');
       
       const sourceId = draggedCardId;
       draggedCardId = null;
       
       const draggedCardEl = document.querySelector(`[data-id="${sourceId}"]`);
-      if (draggedCardEl) draggedCardEl.classList.remove('opacity-50');
+      if (draggedCardEl) draggedCardEl.classList.remove('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
 
       if (!sourceId || sourceId === targetId) return;
 
@@ -3212,8 +3391,15 @@
       const targetItem = processedItems[targetIndex];
 
       if (dragMode === 'merge') {
-        // 結合モードの処理
-        targetItem.text = targetItem.text + '\n' + sourceItem.text;
+        // 結合モードの処理（上から下へ結合した場合は、元のテキストの順序を維持する）
+        if (sourceIndex < targetIndex) {
+          targetItem.text = sourceItem.text + '\n' + targetItem.text;
+          targetItem.original = sourceItem.original + '\n' + targetItem.original;
+        } else {
+          targetItem.text = targetItem.text + '\n' + sourceItem.text;
+          targetItem.original = targetItem.original + '\n' + sourceItem.original;
+        }
+        targetItem.furiganaHtml = undefined;
         processedItems.splice(sourceIndex, 1);
         renderList();
         saveToLocalStorage();
@@ -3802,11 +3988,45 @@
       lucide.createIcons();
     }
 
+    // リサイザー機能
+    function initResizer() {
+      const resizer = document.getElementById('pane-resizer');
+      const leftPane = document.getElementById('left-pane');
+      if (!resizer || !leftPane) return;
+
+      let isResizing = false;
+
+      resizer.addEventListener('mousedown', function (e) {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        // テキスト選択などを防ぐ
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        if (!isResizing) return;
+        const newWidth = e.clientX - leftPane.getBoundingClientRect().left;
+        // 最小幅300px、最大幅は画面幅の80%程度に制限
+        if (newWidth > 300 && newWidth < window.innerWidth * 0.8) {
+          leftPane.style.width = `${newWidth}px`;
+          leftPane.classList.remove('lg:w-[480px]'); // 初期クラスを取り除く
+        }
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (isResizing) {
+          isResizing = false;
+          document.body.style.cursor = '';
+        }
+      });
+    }
+
     // 初期化
     window.onload = function () {
       initTheme();
       renderTabColorSettings();
       if (typeof renderBulkColorPalette === 'function') renderBulkColorPalette();
+      initResizer();
       lucide.createIcons();
     }
   </script>
