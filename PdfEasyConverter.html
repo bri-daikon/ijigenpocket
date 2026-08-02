@@ -886,11 +886,17 @@
       if (cardZoom < 0.3) cardZoom = 0.3;
       if (cardZoom > 2.0) cardZoom = 2.0;
       document.getElementById('card-zoom-level').innerText = Math.round(cardZoom * 100) + '%';
-      
-      const container = document.getElementById('text-list');
-      if (container) {
-        container.style.zoom = cardZoom;
+      let styleTag = document.getElementById('dynamic-zoom-style');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'dynamic-zoom-style';
+        document.head.appendChild(styleTag);
       }
+      styleTag.innerHTML = `
+        #text-list .card-container {
+          zoom: ${cardZoom};
+        }
+      `;
     }
 
     let dragMode = 'move';
@@ -1548,7 +1554,7 @@
       if (!currentFileName || processedItems.length === 0) return;
 
       const saveData = processedItems
-        .filter(item => item.bookmarked || item.note || item.furiganaHtml || item.tabName || item.isCommand || item.isCopied)
+        .filter(item => item.bookmarked || item.note || item.furiganaHtml || item.tabName || item.isCommand || item.isCopied || item.isToc)
         .map((item, index) => {
           let prevOriginal = null;
           if (item.isCommand) {
@@ -1568,6 +1574,10 @@
             tabName: item.tabName,
             isCommand: item.isCommand,
             isCopied: item.isCopied,
+            isToc: item.isToc,
+            tocLevel: item.tocLevel,
+            tocName: item.tocName,
+            isCollapsed: item.isCollapsed,
             text: item.isCommand ? item.text : undefined, // コマンドカードの場合はテキストも保存
             insertAfterOriginal: item.isCommand ? prevOriginal : undefined
           };
@@ -1805,6 +1815,10 @@
           let savedColor = 'slate';
           let savedTabName = undefined;
           let savedIsCopied = false;
+          let savedIsToc = false;
+          let savedTocLevel = undefined;
+          let savedTocName = undefined;
+          let savedIsCollapsed = false;
 
           if (existingItem) {
             isBookmarked = existingItem.bookmarked;
@@ -1812,6 +1826,10 @@
             savedColor = existingItem.color || 'slate';
             savedTabName = existingItem.tabName;
             savedIsCopied = existingItem.isCopied || false;
+            savedIsToc = existingItem.isToc || false;
+            savedTocLevel = existingItem.tocLevel;
+            savedTocName = existingItem.tocName;
+            savedIsCollapsed = existingItem.isCollapsed || false;
             if (existingItem.text === cleanedText) {
               savedFurigana = existingItem.furiganaHtml;
             }
@@ -1822,6 +1840,10 @@
             savedColor = savedItem.color || 'slate';
             savedTabName = savedItem.tabName;
             savedIsCopied = savedItem.isCopied || false;
+            savedIsToc = savedItem.isToc || false;
+            savedTocLevel = savedItem.tocLevel;
+            savedTocName = savedItem.tocName;
+            savedIsCollapsed = savedItem.isCollapsed || false;
           }
 
           tempItems.push({
@@ -1835,7 +1857,11 @@
             furiganaHtml: savedFurigana,
             color: savedColor,
             tabName: savedTabName,
-            isCopied: savedIsCopied
+            isCopied: savedIsCopied,
+            isToc: savedIsToc,
+            tocLevel: savedTocLevel,
+            tocName: savedTocName,
+            isCollapsed: savedIsCollapsed
           });
         });
         // globalIdはグローバルスコープで宣言済み
@@ -2086,6 +2112,9 @@
                 <!-- 編集モード中ボタン -->
                 <button onclick="splitCardAtCursor(${item.id})" class="text-slate-400 hover:text-violet-600 p-0.5 rounded transition-all" title="カーソル位置で分割">
                   <i data-lucide="split" class="w-4 h-4"></i>
+                </button>
+                <button onclick="mergeCardWithPrev(${item.id})" class="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-all" title="前のカードと結合">
+                  <i data-lucide="arrow-up-to-line" class="w-4 h-4"></i>
                 </button>
                 <button onclick="mergeCardWithNext(${item.id})" class="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-all" title="次のカードと結合">
                   <i data-lucide="merge" class="w-4 h-4"></i>
@@ -2422,7 +2451,6 @@
         });
       }
       if (typeof lucide !== 'undefined' && lucide.createIcons) {
-        lucide.createIcons({ root: document.getElementById('text-list') });
         lucide.createIcons({ root: document.getElementById('bookmark-list') });
         lucide.createIcons({ root: document.getElementById('note-list') });
       }
@@ -3103,7 +3131,37 @@
       renderList();
       const newTa = document.getElementById(`edit-textarea-${id}`);
       if (newTa) newTa.focus();
-      showToast('結合完了', '次のカードと結合しました。「戻す」で天克復元できます。', 'success');
+      showToast('結合完了', '次のカードと結合しました。「戻す」で復元できます。', 'success');
+    }
+
+    // 前のカードと結合する
+    function mergeCardWithPrev(id) {
+      const idx = processedItems.findIndex(i => i.id === id);
+      if (idx <= 0) {
+        showToast('結合不可', '前のカードがありません。', 'error');
+        return;
+      }
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      const item = processedItems[idx];
+      const prevItem = processedItems[idx - 1];
+
+      saveHistoryState();
+      const currentText = ta ? ta.value : item.text;
+
+      if (prevItem._editOriginal === undefined) prevItem._editOriginal = prevItem.text;
+      if (prevItem._editOriginalFurigana === undefined) prevItem._editOriginalFurigana = prevItem.furiganaHtml;
+      prevItem._mergedNextItem = { ...item };
+      prevItem._mergedNextInsertIdx = idx;
+
+      prevItem.text = prevItem.text + '\n' + currentText;
+      prevItem.furiganaHtml = undefined;
+      prevItem.isEditing = true;
+
+      processedItems.splice(idx, 1);
+      renderList();
+      const newTa = document.getElementById(`edit-textarea-${prevItem.id}`);
+      if (newTa) newTa.focus();
+      showToast('結合完了', '前のカードと結合しました。', 'success');
     }
 
     // カードを削除する
@@ -3286,6 +3344,7 @@
       
       clearSelection();
       saveToLocalStorage();
+      renderList();
       showToast('一括結合', `${selectedItems.length}個のカードを結合しました。`, 'success');
     }
 
@@ -3310,6 +3369,7 @@
       
       clearSelection();
       saveToLocalStorage();
+      renderList();
       showToast('タブ一括設定', '選択したカードにタブを設定しました。', 'success');
     }
 
@@ -3335,7 +3395,7 @@
       e.dataTransfer.setData('text/plain', id);
       setTimeout(() => {
         const card = document.querySelector(`[data-id="${id}"]`);
-        if (card) card.classList.add('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
+        if (card) card.classList.add('opacity-30', 'ring-4', 'ring-teal-400', 'scale-95', 'shadow-inner');
       }, 0);
     }
 
@@ -3343,7 +3403,7 @@
       document.body.classList.remove('dragging-active');
       if (draggedCardId) {
         const draggedCardEl = document.querySelector(`[data-id="${draggedCardId}"]`);
-        if (draggedCardEl) draggedCardEl.classList.remove('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
+        if (draggedCardEl) draggedCardEl.classList.remove('opacity-30', 'ring-4', 'ring-teal-400', 'scale-95', 'shadow-inner');
       }
       draggedCardId = null;
     }
@@ -3357,28 +3417,28 @@
       e.preventDefault();
       if (draggedCardId && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
         if (dragMode === 'move') {
-          card.classList.add('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md');
+          card.classList.add('border-indigo-500', 'bg-indigo-100', 'ring-4', 'ring-indigo-300', 'shadow-xl', 'scale-[1.03]', 'z-10');
         } else {
-          card.classList.add('border-rose-500', 'bg-rose-100', 'outline', 'outline-2', 'outline-rose-500', 'shadow-md');
+          card.classList.add('border-rose-500', 'bg-rose-100', 'ring-4', 'ring-rose-300', 'shadow-xl', 'scale-[1.03]', 'z-10');
         }
       }
     }
 
     function handleDragLeave(e, card) {
-      card.classList.remove('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md', 'border-rose-500', 'bg-rose-100', 'outline-rose-500');
+      card.classList.remove('border-indigo-500', 'bg-indigo-100', 'ring-4', 'ring-indigo-300', 'shadow-xl', 'scale-[1.03]', 'z-10', 'border-rose-500', 'bg-rose-100', 'ring-rose-300');
     }
 
     function handleDrop(e, targetId) {
       e.preventDefault();
       document.body.classList.remove('dragging-active');
       const card = document.querySelector(`[data-id="${targetId}"]`);
-      if (card) card.classList.remove('border-indigo-500', 'bg-indigo-100', 'outline', 'outline-2', 'outline-indigo-500', 'shadow-md', 'border-rose-500', 'bg-rose-100', 'outline-rose-500');
+      if (card) card.classList.remove('border-indigo-500', 'bg-indigo-100', 'ring-4', 'ring-indigo-300', 'shadow-xl', 'scale-[1.03]', 'z-10', 'border-rose-500', 'bg-rose-100', 'ring-rose-300');
       
       const sourceId = draggedCardId;
       draggedCardId = null;
       
       const draggedCardEl = document.querySelector(`[data-id="${sourceId}"]`);
-      if (draggedCardEl) draggedCardEl.classList.remove('opacity-40', 'ring-2', 'ring-teal-500', 'scale-[0.98]');
+      if (draggedCardEl) draggedCardEl.classList.remove('opacity-30', 'ring-4', 'ring-teal-400', 'scale-95', 'shadow-inner');
 
       if (!sourceId || sourceId === targetId) return;
 
@@ -3504,7 +3564,6 @@
       item.isToc = !item.isToc;
       saveToLocalStorage();
       renderList();
-      updateBookmarkAndNoteLists();
     }
     function toggleCollapse(id) {
       const item = processedItems.find(i => i.id === id);
@@ -3574,6 +3633,7 @@
       });
       clearSelection();
       saveToLocalStorage();
+      renderList();
       showToast('カラー一括設定', changed + '枚のカードの色を変更しました。', 'success');
     }
 
@@ -3603,6 +3663,7 @@
           isCommand: item.isCommand,
           isToc: item.isToc,
           tocLevel: item.tocLevel,
+          tocName: item.tocName,
           isCollapsed: item.isCollapsed,
           isCopied: item.isCopied
         }))
@@ -3661,6 +3722,7 @@
             isCommand: item.isCommand,
             isToc: !!item.isToc,
             tocLevel: item.tocLevel || 1,
+            tocName: item.tocName,
             isCollapsed: !!item.isCollapsed,
             isCopied: item.isCopied
           }));
