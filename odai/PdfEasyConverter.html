@@ -3401,7 +3401,7 @@
 
     function handleDragEnd(e, card) {
       document.body.classList.remove('dragging-active');
-      if (draggedCardId) {
+      if (draggedCardId !== null) {
         const draggedCardEl = document.querySelector(`[data-id="${draggedCardId}"]`);
         if (draggedCardEl) draggedCardEl.classList.remove('opacity-30', 'ring-4', 'ring-teal-400', 'scale-95', 'shadow-inner');
       }
@@ -3415,7 +3415,7 @@
 
     function handleDragEnter(e, card) {
       e.preventDefault();
-      if (draggedCardId && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
+      if (draggedCardId !== null && draggedCardId !== parseInt(card.getAttribute('data-id'))) {
         if (dragMode === 'move') {
           card.classList.add('border-indigo-500', 'bg-indigo-100', 'ring-4', 'ring-indigo-300', 'shadow-xl', 'scale-[1.03]', 'z-10');
         } else {
@@ -3440,7 +3440,7 @@
       const draggedCardEl = document.querySelector(`[data-id="${sourceId}"]`);
       if (draggedCardEl) draggedCardEl.classList.remove('opacity-30', 'ring-4', 'ring-teal-400', 'scale-95', 'shadow-inner');
 
-      if (!sourceId || sourceId === targetId) return;
+      if (sourceId === null || sourceId === targetId) return;
 
       const sourceIndex = processedItems.findIndex(i => i.id === sourceId);
       const targetIndex = processedItems.findIndex(i => i.id === targetId);
@@ -3451,6 +3451,7 @@
       const targetItem = processedItems[targetIndex];
 
       if (dragMode === 'merge') {
+        saveHistoryState();
         // 結合モードの処理（上から下へ結合した場合は、元のテキストの順序を維持する）
         if (sourceIndex < targetIndex) {
           targetItem.text = sourceItem.text + '\n' + targetItem.text;
@@ -3478,6 +3479,7 @@
         }
       }
 
+      saveHistoryState();
       const removed = processedItems.splice(sourceIndex, itemsToMoveCount);
       
       const newTargetIndex = processedItems.findIndex(i => i.id === targetId);
