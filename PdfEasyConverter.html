@@ -1986,12 +1986,24 @@
       }
 
       countBadge.innerText = `${processedItems.length}件`;
-      container.innerHTML = '';
-      const fragment = document.createDocumentFragment();
 
-      
+      // 既存のカード要素をマップに保存
+      const existingCardsMap = new Map();
+      Array.from(container.children).forEach(child => {
+        const id = child.getAttribute('data-id');
+        if (id !== null) {
+          existingCardsMap.set(id, child);
+        }
+      });
+
+      // プレースホルダーなど不要な要素を事前に削除
+      if (container.firstElementChild && !container.firstElementChild.hasAttribute('data-id')) {
+        container.removeChild(container.firstElementChild);
+      }
+
       let collapseThreshold = Infinity;
       let currentTocLevel = 0;
+      let currentChild = container.firstElementChild;
 
       processedItems.forEach((item, index) => {
         if (item.isToc) {
@@ -2014,7 +2026,6 @@
 
         if (isHidden) return;
 
-        const card = document.createElement('div');
         const colorObj = getColorObj(item.color || 'slate');
         let isSelected = selectedCardIds.has(item.id);
         
@@ -2033,30 +2044,13 @@
           }
         }
         
-        card.className = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''} card-container`;
-        if (cardBgStyle) card.style = cardBgStyle;
-        const indentEnabled = document.getElementById('chk-indent-toc') ? document.getElementById('chk-indent-toc').checked : true;
-        if (item._renderIndent && indentEnabled) { card.style.marginLeft = (item._renderIndent * 20) + 'px'; }
+        const expectedClassName = `group relative ${cardBgClass} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied ? 'border-l-4 border-l-teal-500' : ''} card-container`;
         
-        card.setAttribute('data-id', item.id);
-        if (globalMode === 'edit' && !item.isEditing) {
-          card.setAttribute('draggable', 'true');
-          card.ondragstart = (e) => handleDragStart(e, item.id);
-          card.ondragover = handleDragOver;
-          card.ondragenter = (e) => handleDragEnter(e, card);
-          card.ondragleave = (e) => handleDragLeave(e, card);
-          card.ondragend = (e) => handleDragEnd(e, card);
-          card.ondrop = (e) => handleDrop(e, item.id);
-        }
-        card.onclick = (e) => {
-          if (!e.target.closest('button, input, textarea, [contenteditable], .lucide')) {
-            jumpToPreviewPage(item.page);
-          }
-        };
+        const indentEnabled = document.getElementById('chk-indent-toc') ? document.getElementById('chk-indent-toc').checked : true;
+        const expectedMarginLeft = (item._renderIndent && indentEnabled) ? (item._renderIndent * 20) + 'px' : '';
 
         const displayText = item.text;
-
-        card.innerHTML = `
+        const expectedHTML = `
           ${item.isCommand ? `
             <div class="absolute -top-2 -right-2 z-10">
               <button onclick="deleteCard(${item.id})" class="bg-white rounded-full p-0.5 shadow-sm border border-slate-200 text-slate-400 hover:text-rose-500" title="コマンドカードを削除">
@@ -2205,11 +2199,68 @@
             </div>
           </div>
         `;
-        fragment.appendChild(card);
+
+        let card = existingCardsMap.get(String(item.id));
+        
+        if (!card) {
+          card = document.createElement('div');
+          card.setAttribute('data-id', item.id);
+          card.onclick = (e) => {
+            if (!e.target.closest('button, input, textarea, [contenteditable], .lucide')) {
+              jumpToPreviewPage(item.page);
+            }
+          };
+        } else {
+          existingCardsMap.delete(String(item.id));
+        }
+
+        if (card.className !== expectedClassName) card.className = expectedClassName;
+        if (cardBgStyle && card.style.cssText !== cardBgStyle) card.style.cssText = cardBgStyle;
+        if (card.style.marginLeft !== expectedMarginLeft) card.style.marginLeft = expectedMarginLeft;
+
+        // イベントリスナーの再設定
+        if (globalMode === 'edit' && !item.isEditing) {
+          if (card.getAttribute('draggable') !== 'true') card.setAttribute('draggable', 'true');
+          card.ondragstart = (e) => handleDragStart(e, item.id);
+          card.ondragover = handleDragOver;
+          card.ondragenter = (e) => handleDragEnter(e, card);
+          card.ondragleave = (e) => handleDragLeave(e, card);
+          card.ondragend = (e) => handleDragEnd(e, card);
+          card.ondrop = (e) => handleDrop(e, item.id);
+        } else {
+          if (card.hasAttribute('draggable')) card.removeAttribute('draggable');
+          card.ondragstart = null;
+          card.ondragover = null;
+          card.ondragenter = null;
+          card.ondragleave = null;
+          card.ondragend = null;
+          card.ondrop = null;
+        }
+
+        // 内容が変更されている場合のみ再描画
+        if (card._cachedHTML !== expectedHTML) {
+          card.innerHTML = expectedHTML;
+          card._cachedHTML = expectedHTML;
+          lucide.createIcons({ root: card });
+        }
+
+        // DOMツリーの順番を調整
+        if (card !== currentChild) {
+          container.insertBefore(card, currentChild);
+        } else {
+          currentChild = currentChild.nextElementSibling;
+        }
       });
 
-      container.appendChild(fragment);
-      lucide.createIcons({ root: container });
+      // 余った古いカードを削除
+      while (currentChild) {
+        let next = currentChild.nextElementSibling;
+        if (currentChild.getAttribute('data-id') !== null) {
+          container.removeChild(currentChild);
+        }
+        currentChild = next;
+      }
+
       updateBookmarkAndNoteLists();
     }
 
