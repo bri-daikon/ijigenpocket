@@ -193,6 +193,13 @@
                 <!-- タブ2: 手動編集 -->
                 <div id="tab-content-editor" class="hidden space-y-6">
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">公開設定</label>
+                        <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="true">公開する（トップ画面の選択肢に表示）</option>
+                            <option value="false">非公開（URL直リンクまたは作成者のみアクセス可）</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">判定方式</label>
                         <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" onchange="changeScoringMode(this.value)">
                             <option value="sum">合計スコア方式（旧）</option>
@@ -613,13 +620,19 @@
             // ドロップダウンセレクター生成
             const selector = document.getElementById("quiz-selector");
             selector.innerHTML = "";
+            let visibleCount = 0;
             quizList.forEach(q => {
-                const opt = document.createElement("option");
-                opt.value = q.id;
-                opt.textContent = q.title;
-                if (q.id === currentQuizId) opt.selected = true;
-                selector.appendChild(opt);
+                // 公開されているか、現在選択中の診断のみ表示
+                if (q.published !== false || q.id === currentQuizId || (currentUser && q.ownerId === currentUser.uid)) {
+                    const opt = document.createElement("option");
+                    opt.value = q.id;
+                    opt.textContent = q.title + (q.published === false ? " (非公開)" : "");
+                    if (q.id === currentQuizId) opt.selected = true;
+                    selector.appendChild(opt);
+                    visibleCount++;
+                }
             });
+            document.getElementById("quiz-total-count").textContent = `全${visibleCount}件`;
         }
 
         // 診断の切り替え（トップ画面セレクター）
@@ -649,6 +662,7 @@
                 id: newId,
                 title: `新しい診断 (${quizList.length + 1})`,
                 description: "新しい診断の説明文をここに入力してください。",
+                published: false,
                 scoringMode: "target",
                 sheetsQUrl: "",
                 sheetsRUrl: "",
@@ -857,6 +871,7 @@
                  return;
             }
             renderQuizManagerList();
+            document.getElementById("input-app-published").value = currentQuiz.published !== false ? "true" : "false";
             document.getElementById("input-app-scoringMode").value = currentQuiz.scoringMode || "sum";
             document.getElementById("input-app-title").value = currentQuiz.title;
             document.getElementById("input-app-desc").value = currentQuiz.description || "";
@@ -884,6 +899,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
                             ${isCurrent ? '<span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
+                            ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非公開</span>' : ''}
                             <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHtml(q.title)}</h4>
                         </div>
                         <p class="text-xs text-slate-500 truncate">${q.questions.length}問の質問 / ${q.results.length}個の診断結果</p>
@@ -917,6 +933,7 @@
             const newQuiz = JSON.parse(JSON.stringify(target));
             newQuiz.id = "quiz-" + Date.now();
             newQuiz.title = `${target.title} (コピー)`;
+            newQuiz.published = false;
             newQuiz.ownerId = currentUser.uid;
 
             quizList.push(newQuiz);
@@ -1446,6 +1463,7 @@
         }
 
         async function saveManualEditor() {
+            currentQuiz.published = document.getElementById("input-app-published").value === "true";
             currentQuiz.scoringMode = document.getElementById("input-app-scoringMode").value;
             currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("input-app-desc").value.trim();
