@@ -774,21 +774,30 @@
 
         function shareX() {
             if (!currentResult) return;
-            const text = `【${currentQuiz.title}】の診断結果は…\n${currentResult.title}\n（スコア: ${userScore}点）\n\n#診断メーカー #Web診断\n`;
+            let text = `【${currentQuiz.title}】の診断結果は…\n${currentResult.title}\n（スコア: ${userScore}点）\n\n#診断メーカー #Web診断\n`;
+            if (currentResult.image && currentResult.image.trim() !== "") {
+                text += `\n${currentResult.image.trim()}`;
+            }
             const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`;
             window.open(twitterUrl, '_blank');
         }
 
         function shareLine() {
             if (!currentResult) return;
-            const text = `【${currentQuiz.title}】診断結果: ${currentResult.title}`;
+            let text = `【${currentQuiz.title}】診断結果: ${currentResult.title}`;
+            if (currentResult.image && currentResult.image.trim() !== "") {
+                text += `\n${currentResult.image.trim()}`;
+            }
             const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`;
             window.open(lineUrl, '_blank');
         }
 
         function copyResultText() {
             if (!currentResult) return;
-            const text = `【${currentQuiz.title}】\n診断結果: ${currentResult.title}\n${currentResult.description}\n${getShareUrl()}`;
+            let text = `【${currentQuiz.title}】\n診断結果: ${currentResult.title}\n${currentResult.description}\n${getShareUrl()}`;
+            if (currentResult.image && currentResult.image.trim() !== "") {
+                text += `\n${currentResult.image.trim()}`;
+            }
 
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(text).then(() => {
