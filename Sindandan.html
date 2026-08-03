@@ -491,6 +491,9 @@
             
             if (!currentQuiz.ownerId) {
                 currentQuiz.ownerId = currentUser.uid;
+            } else if (currentQuiz.ownerId !== currentUser.uid) {
+                showToast("この診断を編集する権限がありません", "error");
+                return;
             }
 
             try {
@@ -848,14 +851,14 @@
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${!isCurrent ? `
-                            <button onclick="switchQuiz('${q.id}'); initSettingsView();" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                            <button onclick="switchQuiz('${q.id}'); if(currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) { showView('home-view'); showToast('編集権限がないためトップ画面に戻りました', 'error'); } else { initSettingsView(); }" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
                                 選択
                             </button>
                         ` : ''}
                         <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="この診断を複製">
                             <i class="fa-regular fa-copy"></i>
                         </button>
-                        ${quizList.length > 1 ? `
+                        ${(quizList.length > 1 && (!q.ownerId || (currentUser && q.ownerId === currentUser.uid))) ? `
                             <button onclick="deleteQuiz('${q.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-lg text-xs transition" title="削除">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
@@ -896,6 +899,12 @@
         async function deleteQuiz(id) {
             if (quizList.length <= 1) {
                 showToast("最低1つの診断が必要です", "error");
+                return;
+            }
+
+            const target = quizList.find(q => q.id === id);
+            if (target && target.ownerId && (!currentUser || target.ownerId !== currentUser.uid)) {
+                showToast("この診断を削除する権限がありません", "error");
                 return;
             }
 
@@ -1164,6 +1173,7 @@
                             <input type="text" value="${escapeHtml(opt.text)}" onchange="updateOptionText(${qIndex}, ${oIndex}, this.value)" placeholder="選択肢" class="flex-1 p-1.5 border rounded outline-none">
                             <input type="number" value="${opt.score}" onchange="updateOptionScore(${qIndex}, ${oIndex}, this.value)" class="w-14 p-1.5 border rounded text-center outline-none" title="配点">
                             <span class="text-slate-400">点</span>
+                            ${q.options.length > 2 ? `<button onclick="removeOptionEditor(${qIndex}, ${oIndex})" class="text-slate-400 hover:text-rose-500 transition px-1" title="選択肢を削除"><i class="fa-solid fa-xmark"></i></button>` : `<span class="w-4"></span>`}
                         </div>
                     `;
                 });
@@ -1179,6 +1189,9 @@
                     <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任意: https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
                     <div class="space-y-1.5 pl-2 border-l-2 border-indigo-200 mt-2">
                         ${optionsHtml}
+                        <button onclick="addOptionEditor(${qIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-plus"></i> 選択肢を追加
+                        </button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -1287,6 +1300,16 @@
 
         function removeQuestion(qIndex) {
             currentQuiz.questions.splice(qIndex, 1);
+            renderEditorQuestions();
+        }
+
+        function addOptionEditor(qIndex) {
+            currentQuiz.questions[qIndex].options.push({ text: "新しい選択肢", score: 0 });
+            renderEditorQuestions();
+        }
+
+        function removeOptionEditor(qIndex, oIndex) {
+            currentQuiz.questions[qIndex].options.splice(oIndex, 1);
             renderEditorQuestions();
         }
 
