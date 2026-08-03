@@ -342,8 +342,6 @@
         const provider = new GoogleAuthProvider();
 
         window.firebaseApp = { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, deleteDoc };
-
-        if (window.onFirebaseLoaded) window.onFirebaseLoaded();
     </script>
 
     <script>
@@ -411,19 +409,24 @@
 
         // 初期化処理
         window.addEventListener("DOMContentLoaded", () => {
-            window.onFirebaseLoaded = () => {
-                if (window.firebaseApp) {
-                    window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
-                        currentUser = user;
-                        updateAuthUI();
-                        await loadAllQuizData();
-                        checkUrlParameter();
-                        renderHeader();
-                        renderHome();
-                        updateSettingsVisibility();
-                    });
-                }
-            };
+            if (window.firebaseApp) {
+                window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
+                    currentUser = user;
+                    updateAuthUI();
+                    await loadAllQuizData();
+                    checkUrlParameter();
+                    renderHeader();
+                    renderHome();
+                    updateSettingsVisibility();
+                });
+            } else {
+                // Firebaseが読み込めなかった場合のフォールバック
+                loadAllQuizData().then(() => {
+                    checkUrlParameter();
+                    renderHeader();
+                    renderHome();
+                });
+            }
         });
 
         // データの読み込み・クラウドからの取得
