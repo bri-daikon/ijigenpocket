@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web診断メーカー</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
+
+    <!-- メインコンテナ -->
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden my-auto border border-slate-200">
+        
+        <!-- ヘッダー -->
+        <header class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-6 text-center relative">
+            <div class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-2 font-medium">
+                <i class="fa-solid fa-list-check mr-1"></i> Web診断ポータル
+            </div>
+            <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなたの性格タイプ診断</h1>
+            <p id="app-desc" class="text-indigo-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！</p>
+            <button id="btn-open-settings" onclick="showView('settings-view')" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定・管理">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </header>
+
+        <!-- メインコンテンツ領域 -->
+        <main class="p-6 md:p-8">
+
+            <!-- 1. トップ画面（診断選択・開始） -->
+            <section id="home-view" class="space-y-6 text-center py-2">
+                
+                <!-- 診断選択セレクター -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                        <span><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i> 診断を選択する</span>
+                        <span id="quiz-total-count" class="text-indigo-600 font-normal">全1件</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
+                            <!-- JSで動的生成 -->
+                        </select>
+                        <button onclick="createNewQuiz()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
+                            <i class="fa-solid fa-plus"></i> 新規作成
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 診断開始カード -->
+                <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
+                    <i class="fa-solid fa-clipboard-question text-5xl text-indigo-500 mb-4"></i>
+                    <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
+                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-indigo-600">10</span>問の質問（5択）に回答していきます。</p>
+                    <button onclick="startQuiz()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition text-lg transform active:scale-95">
+                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
+                    </button>
+                </div>
+
+                <div class="pt-2 flex justify-center gap-4 text-xs text-slate-500">
+                    <button onclick="showView('settings-view')" class="hover:text-indigo-600 underline flex items-center gap-1">
+                        <i class="fa-solid fa-sliders"></i> この診断を編集・CSV連動
+                    </button>
+                </div>
+            </section>
+
+            <!-- 2. 質問プレイ画面 -->
+            <section id="quiz-view" class="hidden space-y-6">
+                <!-- プログレスバー -->
+                <div>
+                    <div class="flex justify-between text-xs font-semibold text-slate-500 mb-2">
+                        <span>PROGRESS</span>
+                        <span><span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- 質問カード -->
+                <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-sm">
+                    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                        Q<span id="q-number-badge">1</span>
+                    </span>
+                    <!-- 質問画像エリア -->
+                    <div id="question-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-slate-200 max-h-64 bg-slate-100 flex items-center justify-center">
+                        <img id="question-image" src="" alt="質問画像" class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                    </div>
+                    <h3 id="question-text" class="text-lg md:text-xl font-bold text-slate-800 leading-relaxed">
+                        ここに質問文が表示されます
+                    </h3>
+                </div>
+
+                <!-- 選択肢リスト (5択) -->
+                <div id="options-container" class="space-y-3">
+                    <!-- JSで動的生成 -->
+                </div>
+            </section>
+
+            <!-- 3. 結果画面 -->
+            <section id="result-view" class="hidden text-center space-y-6 py-2">
+                <div class="inline-block bg-yellow-100 text-yellow-800 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">
+                    診断結果
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-6 md:p-8 rounded-2xl shadow-inner">
+                    <p class="text-xs text-indigo-500 font-bold mb-1">獲得スコア: <span id="result-score" class="text-base font-extrabold">0</span> 点</p>
+                    <h2 id="result-title" class="text-2xl md:text-3xl font-extrabold text-indigo-950 mb-4">
+                        結果タイトル
+                    </h2>
+                    <div class="w-12 h-1 bg-indigo-400 mx-auto rounded-full mb-4"></div>
+                    <p id="result-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base text-left">
+                        ここに詳細な説明が表示されます。
+                    </p>
+                </div>
+
+                <!-- SNS共有エリア -->
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">この結果をシェアする</p>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <!-- X (旧Twitter) -->
+                        <button onclick="shareX()" class="flex-1 min-w-[120px] bg-black hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                            <i class="fa-brands fa-x-twitter text-sm"></i> Xで投稿
+                        </button>
+                        <!-- LINE -->
+                        <button onclick="shareLine()" class="flex-1 min-w-[120px] bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                            <i class="fa-brands fa-line text-sm"></i> LINEで送る
+                        </button>
+                        <!-- コピー -->
+                        <button onclick="copyResultText()" class="flex-1 min-w-[120px] bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                            <i class="fa-regular fa-copy text-sm"></i> リンク付き結果コピー
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 再挑戦ボタン -->
+                <button onclick="showView('home-view')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm">
+                    <i class="fa-solid fa-rotate-left mr-2"></i> もう一度診断する
+                </button>
+            </section>
+
+            <!-- 4. 設定・管理画面 -->
+            <section id="settings-view" class="hidden space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-600"></i> 設定・診断管理
+                    </h2>
+                    <button onclick="showView('home-view')" class="text-slate-400 hover:text-slate-600 text-sm">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- タブ切り替え -->
+                <div class="flex border-b border-slate-200 text-xs md:text-sm font-bold">
+                    <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
+                        <i class="fa-solid fa-folder-open"></i> 診断一覧・管理
+                    </button>
+                    <button id="tab-btn-editor" onclick="switchTab('editor')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> 手動編集
+                    </button>
+                    <button id="tab-btn-csv" onclick="switchTab('csv')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv"></i> CSV / スプレッドシート
+                    </button>
+                </div>
+
+                <!-- タブ1: 診断一覧・管理 -->
+                <div id="tab-content-manager" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-500">作成した診断の切り替え・複製・削除が行えます。</p>
+                        <button onclick="createNewQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> 新しい診断を作成
+                        </button>
+                    </div>
+
+                    <div id="quiz-list-container" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+
+                <!-- タブ2: 手動編集 -->
+                <div id="tab-content-editor" class="hidden space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
+                        <input type="text" id="input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
+                        <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                    </div>
+
+                    <!-- 質問リスト表示 -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 text-sm">質問一覧 (<span id="editor-q-count">0</span>問)</h3>
+                            <button onclick="addQuestionEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                                + 質問を追加
+                            </button>
+                        </div>
+                        <div id="questions-editor-list" class="space-y-4 max-h-96 overflow-y-auto pr-1">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+
+                    <button onclick="saveManualEditor()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存する
+                    </button>
+                </div>
+
+                <!-- タブ3: CSV / スプレッドシート連携 -->
+                <div id="tab-content-csv" class="hidden space-y-6">
+                    
+                    <!-- Googleスプレッドシート連携 -->
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                        <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-link text-indigo-600"></i> Googleスプレッドシートから読み込む
+                        </h3>
+                        <p class="text-xs text-indigo-700 leading-relaxed">
+                            Googleスプレッドシートで「ファイル」→「共有」→「Webに公開」を選択し、形式を「カンマ区切り値 (.csv)」にして発行したURLを入力します。
+                        </p>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">質問CSVのWeb公開URL</label>
+                                <input type="text" id="sheets-q-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-600 block mb-1">診断結果CSVのWeb公開URL</label>
+                                <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <button onclick="loadFromGoogleSheets()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
+                                <i class="fa-solid fa-cloud-arrow-down mr-1"></i> スプレッドシートからデータを取得・更新
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ファイルインポート / エクスポート -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- CSV読み込み -->
+                        <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-file-import text-emerald-600"></i> CSVファイルを取り込む
+                            </h3>
+                            <div>
+                                <label class="text-xs text-slate-600 block mb-1">質問CSVファイル</label>
+                                <input type="file" id="input-file-q" accept=".csv" class="text-xs w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-600 block mb-1">結果CSVファイル</label>
+                                <input type="file" id="input-file-r" accept=".csv" class="text-xs w-full text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                            </div>
+                            <button onclick="importCsvFiles()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition">
+                                <i class="fa-solid fa-upload mr-1"></i> 選択したCSVを適用
+                            </button>
+                        </div>
+
+                        <!-- CSV出力 & サンプル -->
+                        <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-file-export text-blue-600"></i> CSV出力 & ひな形
+                            </h3>
+                            <p class="text-xs text-slate-500">現在の設定をCSVとして保存、またはスプレッドシート作成用のひな形をダウンロードします。</p>
+                            <div class="space-y-2 pt-1">
+                                <button onclick="exportCurrentCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
+                                    <span><i class="fa-solid fa-download mr-1"></i> 現在の設定をCSV出力</span>
+                                    <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                                </button>
+                                <button onclick="downloadSampleCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
+                                    <span><i class="fa-solid fa-file-lines mr-1"></i> サンプルCSV（ひな形）を取得</span>
+                                    <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- フォーマット説明 -->
+                    <div class="bg-slate-50 border p-4 rounded-xl text-xs space-y-2 text-slate-600">
+                        <p class="font-bold text-slate-800">💡 CSVファイルの書き方（カラム構造）</p>
+                        <p><strong>質問CSV:</strong> <code>質問文, 画像URL(任意), 選択肢1, 点数1, 選択肢2, 点数2, 選択肢3, 点数3, 選択肢4, 点数4, 選択肢5, 点数5</code></p>
+                        <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配分可能です。画像が無い場合は画像URL列を空にしてください。</p>
+                        <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文</code></p>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- 通知トースト -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 z-50">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">メッセージ</span>
+    </div>
+
+    <script>
+        // デフォルトサンプルデータ
+        const DEFAULT_QUIZ = {
+            id: "default-1",
+            title: "あなたの性格タイプ診断",
+            description: "直感で質問に答えて、あなたの隠されたタイプをチェックしよう！",
+            sheetsQUrl: "",
+            sheetsRUrl: "",
+            questions: [
+                {
+                    text: "休日、予定がない日はどう過ごすことが多い？",
+                    image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=60",
+                    options: [
+                        { text: "1日中家でゆっくり読書や映画鑑賞", score: 3 },
+                        { text: "趣味の制作や勉強に没頭する", score: 2 },
+                        { text: "気分次第で近所を散歩する", score: 1 },
+                        { text: "友達に連絡して出かける", score: 0 },
+                        { text: "イベントやパーティーを自分で企画する", score: 0 }
+                    ]
+                },
+                {
+                    text: "直感で惹かれる場所はどこ？",
+                    image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&auto=format&fit=crop&q=60",
+                    options: [
+                        { text: "静寂な森の中のライブラリー", score: 3 },
+                        { text: "最先端テクノロジーのラボ", score: 2 },
+                        { text: "波音が聞こえる静かなビーチ", score: 1 },
+                        { text: "賑やかな夜のテーマパーク", score: 0 },
+                        { text: "みんなが集まるフェスティバル", score: 0 }
+                    ]
+                }
+            ],
+            results: [
+                {
+                    minScore: 0,
+                    maxScore: 2,
+                    title: "【情熱のアクティビスト】",
+                    description: "高い行動力とエネルギーを持つタイプ。考えるよりもまず行動を起こし、周りをポジティブな風で巻き込んでいきます。"
+                },
+                {
+                    minScore: 3,
+                    maxScore: 4,
+                    title: "【バランス重視のナビゲーター】",
+                    description: "状況に合わせて柔軟に対応できるバランス派。周囲の意見を優しく聴き入れる頼れる存在です。"
+                },
+                {
+                    minScore: 5,
+                    maxScore: 6,
+                    title: "【静かな思索家（アナリスト）】",
+                    description: "深い洞察力と豊かな内面世界を持つタイプ。一人で集中して物事を探求することで真価を発揮します。"
+                }
+            ]
+        };
+
+        // アプリ状態管理
+        let quizList = [];
+        let currentQuizId = "";
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+        let userScore = 0;
+        let currentResult = null;
+
+        // 初期化処理
+        window.addEventListener("DOMContentLoaded", () => {
+            loadAllQuizData();
+            checkUrlParameter();
+            renderHeader();
+            renderHome();
+        });
+
+        // データの読み込み・過去データのマイグレーション処理
+        function loadAllQuizData() {
+            const savedList = localStorage.getItem("shindan_maker_quiz_list");
+            const oldData = localStorage.getItem("shindan_maker_data");
+
+            if (savedList) {
+                try {
+                    quizList = JSON.parse(savedList);
+                } catch (e) {
+                    quizList = [];
+                }
+            }
+
+            // 旧1件データを引き継ぐための自動互換処理
+            if (quizList.length === 0) {
+                if (oldData) {
+                    try {
+                        const parsedOld = JSON.parse(oldData);
+                        quizList = [{
+                            id: "quiz-" + Date.now(),
+                            title: parsedOld.title || "マイ診断 1",
+                            description: parsedOld.description || "",
+                            questions: parsedOld.questions || [],
+                            results: parsedOld.results || [],
+                            sheetsQUrl: "",
+                            sheetsRUrl: ""
+                        }];
+                    } catch (e) {
+                        quizList = [JSON.parse(JSON.stringify(DEFAULT_QUIZ))];
+                    }
+                } else {
+                    quizList = [JSON.parse(JSON.stringify(DEFAULT_QUIZ))];
+                }
+                saveAllQuizData();
+            }
+
+            // カレントIDの設定
+            const savedCurrentId = localStorage.getItem("shindan_maker_current_id");
+            if (savedCurrentId && quizList.some(q => q.id === savedCurrentId)) {
+                currentQuizId = savedCurrentId;
+            } else {
+                currentQuizId = quizList[0].id;
+            }
+
+            currentQuiz = quizList.find(q => q.id === currentQuizId) || quizList[0];
+        }
+
+        function saveAllQuizData() {
+            localStorage.setItem("shindan_maker_quiz_list", JSON.stringify(quizList));
+            localStorage.setItem("shindan_maker_current_id", currentQuizId);
+        }
+
+        // URLパラメータ(?id=xxx)で指定診断を開く機能
+        function checkUrlParameter() {
+            const params = new URLSearchParams(window.location.search);
+            const targetId = params.get('id');
+            if (targetId && quizList.some(q => q.id === targetId)) {
+                currentQuizId = targetId;
+                currentQuiz = quizList.find(q => q.id === currentQuizId);
+                saveAllQuizData();
+            }
+        }
+
+        // 画面切り替え
+        function showView(viewId) {
+            ["home-view", "quiz-view", "result-view", "settings-view"].forEach(id => {
+                document.getElementById(id).classList.add("hidden");
+            });
+            document.getElementById(viewId).classList.remove("hidden");
+
+            if (viewId === "settings-view") {
+                initSettingsView();
+            }
+        }
+
+        // ヘッダー・ホーム画面の描画
+        function renderHeader() {
+            document.getElementById("app-title").textContent = currentQuiz.title;
+            document.getElementById("app-desc").textContent = currentQuiz.description || "直感で質問に答えてチェック！";
+        }
+
+        function renderHome() {
+            document.getElementById("home-quiz-title").textContent = currentQuiz.title;
+            document.getElementById("question-count-badge").textContent = currentQuiz.questions.length;
+            document.getElementById("quiz-total-count").textContent = `全${quizList.length}件`;
+
+            // ドロップダウンセレクター生成
+            const selector = document.getElementById("quiz-selector");
+            selector.innerHTML = "";
+            quizList.forEach(q => {
+                const opt = document.createElement("option");
+                opt.value = q.id;
+                opt.textContent = q.title;
+                if (q.id === currentQuizId) opt.selected = true;
+                selector.appendChild(opt);
+            });
+        }
+
+        // 診断の切り替え（トップ画面セレクター）
+        function switchQuiz(id) {
+            currentQuizId = id;
+            currentQuiz = quizList.find(q => q.id === id);
+            saveAllQuizData();
+            
+            // URLパラメータを書き換え (履歴を残さずURLを更新)
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + id;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+            renderHeader();
+            renderHome();
+            showToast(`「${currentQuiz.title}」に切り替えました`);
+        }
+
+        // 新規診断の作成
+        function createNewQuiz() {
+            const newId = "quiz-" + Date.now();
+            const newQuiz = {
+                id: newId,
+                title: `新しい診断 (${quizList.length + 1})`,
+                description: "新しい診断の説明文をここに入力してください。",
+                sheetsQUrl: "",
+                sheetsRUrl: "",
+                questions: [
+                    {
+                        text: "質問文をここに入力してください",
+                        image: "",
+                        options: [
+                            { text: "選択肢 1", score: 3 },
+                            { text: "選択肢 2", score: 2 },
+                            { text: "選択肢 3", score: 1 },
+                            { text: "選択肢 4", score: 0 },
+                            { text: "選択肢 5", score: 0 }
+                        ]
+                    }
+                ],
+                results: [
+                    { minScore: 0, maxScore: 2, title: "タイプ A", description: "説明 A" },
+                    { minScore: 3, maxScore: 5, title: "タイプ B", description: "説明 B" }
+                ]
+            };
+
+            quizList.push(newQuiz);
+            switchQuiz(newId);
+            showToast("新しい診断を作成しました！設定画面で編集できます。");
+        }
+
+        // 診断プレイ処理
+        function startQuiz() {
+            if (!currentQuiz.questions || currentQuiz.questions.length === 0) {
+                showToast("質問が登録されていません。設定から追加してください。", "error");
+                return;
+            }
+            currentQuestionIndex = 0;
+            userScore = 0;
+            showView("quiz-view");
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const q = currentQuiz.questions[currentQuestionIndex];
+            const total = currentQuiz.questions.length;
+
+            document.getElementById("current-q-num").textContent = currentQuestionIndex + 1;
+            document.getElementById("total-q-num").textContent = total;
+            document.getElementById("q-number-badge").textContent = currentQuestionIndex + 1;
+            document.getElementById("question-text").textContent = q.text;
+
+            // 質問画像表示の制御
+            const imgContainer = document.getElementById("question-image-container");
+            const imgEl = document.getElementById("question-image");
+            if (q.image && q.image.trim() !== "") {
+                imgEl.src = q.image.trim();
+                imgContainer.classList.remove("hidden");
+            } else {
+                imgContainer.classList.add("hidden");
+                imgEl.src = "";
+            }
+
+            // プログレスバー
+            const progress = (currentQuestionIndex / total) * 100;
+            document.getElementById("progress-bar").style.width = `${progress}%`;
+
+            // 選択肢生成
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+
+            q.options.forEach((opt) => {
+                const btn = document.createElement("button");
+                btn.className = "w-full text-left p-4 bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-xl transition font-medium text-sm md:text-base text-slate-700 flex items-center justify-between group active:scale-[0.99]";
+                btn.innerHTML = `
+                    <span>${escapeHtml(opt.text)}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 text-xs transition"></i>
+                `;
+                btn.onclick = () => selectOption(opt.score);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectOption(score) {
+            userScore += score;
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < currentQuiz.questions.length) {
+                displayQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            document.getElementById("progress-bar").style.width = `100%`;
+
+            currentResult = currentQuiz.results.find(r => userScore >= r.minScore && userScore <= r.maxScore);
+
+            if (!currentResult) {
+                currentResult = currentQuiz.results[0] || {
+                    title: "診断完了",
+                    description: `あなたの合計スコアは ${userScore} 点でした！`
+                };
+            }
+
+            document.getElementById("result-score").textContent = userScore;
+            document.getElementById("result-title").textContent = currentResult.title;
+            document.getElementById("result-desc").textContent = currentResult.description;
+
+            showView("result-view");
+        }
+
+        // SNS共有 (URLパラメータを含めた共有リンクを生成)
+        function getShareUrl() {
+            const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            return `${baseUrl}?id=${currentQuizId}`;
+        }
+
+        function shareX() {
+            if (!currentResult) return;
+            const text = `【${currentQuiz.title}】の診断結果は…\n${currentResult.title}\n（スコア: ${userScore}点）\n\n#診断メーカー #Web診断\n`;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`;
+            window.open(twitterUrl, '_blank');
+        }
+
+        function shareLine() {
+            if (!currentResult) return;
+            const text = `【${currentQuiz.title}】診断結果: ${currentResult.title}`;
+            const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`;
+            window.open(lineUrl, '_blank');
+        }
+
+        function copyResultText() {
+            if (!currentResult) return;
+            const text = `【${currentQuiz.title}】\n診断結果: ${currentResult.title}\n${currentResult.description}\n${getShareUrl()}`;
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("共有URL付きで結果をコピーしました！");
+                });
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast("共有URL付きで結果をコピーしました！");
+            }
+        }
+
+        // 管理・設定画面機能
+        function initSettingsView() {
+            renderQuizManagerList();
+            document.getElementById("input-app-title").value = currentQuiz.title;
+            document.getElementById("input-app-desc").value = currentQuiz.description || "";
+            document.getElementById("sheets-q-url").value = currentQuiz.sheetsQUrl || "";
+            document.getElementById("sheets-r-url").value = currentQuiz.sheetsRUrl || "";
+            renderEditorQuestions();
+        }
+
+        // タブ1: 診断一覧・管理リストの生成
+        function renderQuizManagerList() {
+            const container = document.getElementById("quiz-list-container");
+            container.innerHTML = "";
+
+            quizList.forEach((q, index) => {
+                const isCurrent = q.id === currentQuizId;
+                const card = document.createElement("div");
+                card.className = `p-4 border rounded-xl flex items-center justify-between gap-3 transition ${isCurrent ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300' : 'bg-white border-slate-200'}`;
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            ${isCurrent ? '<span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
+                            <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHtml(q.title)}</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 truncate">${q.questions.length}問の質問 / ${q.results.length}個の診断結果</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${!isCurrent ? `
+                            <button onclick="switchQuiz('${q.id}'); initSettingsView();" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                                選択
+                            </button>
+                        ` : ''}
+                        <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="この診断を複製">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                        ${quizList.length > 1 ? `
+                            <button onclick="deleteQuiz('${q.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-lg text-xs transition" title="削除">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 診断の複製
+        function duplicateQuiz(id) {
+            const target = quizList.find(q => q.id === id);
+            if (!target) return;
+
+            const newQuiz = JSON.parse(JSON.stringify(target));
+            newQuiz.id = "quiz-" + Date.now();
+            newQuiz.title = `${target.title} (コピー)`;
+
+            quizList.push(newQuiz);
+            switchQuiz(newQuiz.id);
+            initSettingsView();
+            showToast("診断を複製しました！");
+        }
+
+        // 診断の削除
+        function deleteQuiz(id) {
+            if (quizList.length <= 1) {
+                showToast("最低1つの診断が必要です", "error");
+                return;
+            }
+
+            if (!confirm("この診断を削除してもよろしいですか？")) return;
+
+            quizList = quizList.filter(q => q.id !== id);
+            if (currentQuizId === id) {
+                currentQuizId = quizList[0].id;
+                currentQuiz = quizList[0];
+            }
+            saveAllQuizData();
+            renderHeader();
+            renderHome();
+            initSettingsView();
+            showToast("診断を削除しました");
+        }
+
+        // CSV & スプレッドシート連携機能
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/);
+            const result = [];
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                const row = [];
+                let insideQuote = false;
+                let entry = '';
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        insideQuote = !insideQuote;
+                    } else if (char === ',' && !insideQuote) {
+                        row.push(entry.trim());
+                        entry = '';
+                    } else {
+                        entry += char;
+                    }
+                }
+                row.push(entry.trim());
+                result.push(row);
+            }
+            return result;
+        }
+
+        async function loadFromGoogleSheets() {
+            const qUrl = document.getElementById("sheets-q-url").value.trim();
+            const rUrl = document.getElementById("sheets-r-url").value.trim();
+
+            if (!qUrl) {
+                showToast("質問CSVのWeb公開URLを入力してください", "error");
+                return;
+            }
+
+            try {
+                const resQ = await fetch(qUrl);
+                if (!resQ.ok) throw new Error("質問データの取得に失敗しました");
+                const textQ = await resQ.text();
+                const questions = parseQuestionsCSV(textQ);
+
+                let results = currentQuiz.results;
+                if (rUrl) {
+                    const resR = await fetch(rUrl);
+                    if (resR.ok) {
+                        const textR = await resR.text();
+                        results = parseResultsCSV(textR);
+                    }
+                }
+
+                if (questions.length === 0) {
+                    showToast("有効な質問データが見つかりませんでした", "error");
+                    return;
+                }
+
+                currentQuiz.questions = questions;
+                currentQuiz.results = results;
+                currentQuiz.sheetsQUrl = qUrl;
+                currentQuiz.sheetsRUrl = rUrl;
+
+                saveAllQuizData();
+                renderHome();
+                showToast(`質問${questions.length}問を取り込み更新しました！`);
+                showView("home-view");
+
+            } catch (err) {
+                console.error(err);
+                showToast("読み込み失敗: URLまたは共有設定を確認してください", "error");
+            }
+        }
+
+        function importCsvFiles() {
+            const fileQ = document.getElementById("input-file-q").files[0];
+            const fileR = document.getElementById("input-file-r").files[0];
+
+            if (!fileQ && !fileR) {
+                showToast("読み込むCSVファイルを選択してください", "error");
+                return;
+            }
+
+            const promises = [];
+
+            if (fileQ) {
+                promises.push(new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const qList = parseQuestionsCSV(e.target.result);
+                        if (qList.length > 0) currentQuiz.questions = qList;
+                        resolve();
+                    };
+                    reader.readAsText(fileQ);
+                }));
+            }
+
+            if (fileR) {
+                promises.push(new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const rList = parseResultsCSV(e.target.result);
+                        if (rList.length > 0) currentQuiz.results = rList;
+                        resolve();
+                    };
+                    reader.readAsText(fileR);
+                }));
+            }
+
+            Promise.all(promises).then(() => {
+                saveAllQuizData();
+                renderHome();
+                showToast("CSVファイルを適用しました！");
+                showView("home-view");
+            });
+        }
+
+        function parseQuestionsCSV(text) {
+            const rows = parseCSV(text);
+            const questions = [];
+            const startIdx = (rows[0] && rows[0][0].includes("質問")) ? 1 : 0;
+
+            for (let i = startIdx; i < rows.length; i++) {
+                const r = rows[i];
+                if (r.length < 3) continue;
+
+                const qText = r[0];
+                let qImage = "";
+                let startOptIdx = 1;
+
+                if (r.length >= 4 && (!isNaN(parseInt(r[3])) || r[3] === "" || r[3] === "0")) {
+                    qImage = r[1];
+                    startOptIdx = 2;
+                }
+
+                const options = [];
+                for (let j = startOptIdx; j < r.length; j += 2) {
+                    if (r[j] && r[j].trim() !== "") {
+                        const rawScore = parseInt(r[j + 1]);
+                        options.push({
+                            text: r[j],
+                            score: isNaN(rawScore) ? 0 : rawScore
+                        });
+                    }
+                }
+
+                if (qText && options.length > 0) {
+                    questions.push({ text: qText, image: qImage, options: options });
+                }
+            }
+            return questions;
+        }
+
+        function parseResultsCSV(text) {
+            const rows = parseCSV(text);
+            const results = [];
+            const startIdx = (rows[0] && (rows[0][0].includes("最小") || rows[0][2].includes("タイトル"))) ? 1 : 0;
+
+            for (let i = startIdx; i < rows.length; i++) {
+                const r = rows[i];
+                if (r.length < 4) continue;
+
+                results.push({
+                    minScore: parseInt(r[0]) || 0,
+                    maxScore: parseInt(r[1]) || 999,
+                    title: r[2],
+                    description: r[3]
+                });
+            }
+            return results;
+        }
+
+        function exportCurrentCsv() {
+            let qCsv = "質問文,画像URL,選択肢1,点数1,選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n";
+            currentQuiz.questions.forEach(q => {
+                let row = [
+                    `"${q.text.replace(/"/g, '""')}"`,
+                    `"${(q.image || '').replace(/"/g, '""')}"`
+                ];
+                q.options.forEach(opt => {
+                    row.push(`"${opt.text.replace(/"/g, '""')}"`);
+                    row.push(opt.score !== undefined ? opt.score : 0);
+                });
+                qCsv += row.join(",") + "\n";
+            });
+            downloadFile(qCsv, `${currentQuiz.title}_questions.csv`);
+
+            let rCsv = "最小点数,最大点数,診断結果タイトル,診断結果説明文\n";
+            currentQuiz.results.forEach(r => {
+                rCsv += `${r.minScore},${r.maxScore},"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}"\n`;
+            });
+            downloadFile(rCsv, `${currentQuiz.title}_results.csv`);
+
+            showToast("CSVをダウンロードしました！");
+        }
+
+        function downloadSampleCsv() {
+            const sampleQ = "質問文,画像URL,選択肢1,点数1,選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n" +
+                "休日どう過ごす？,https://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制作,2,近所を散歩,1,友達と外出,0,イベント企画,0\n" +
+                "直感で選ぶ場所は？,https://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,最先端のラボ,2,波音の聞こえる海,1,夜のテーマパーク,0,フェスティバル,0";
+            const sampleR = "最小点数,最大点数,診断結果タイトル,診断結果説明文\n0,2,【アクティブタイプ】,行動力バツグンのアクティブ派です！\n3,4,【バランスタイプ】,状況に合わせて柔軟に対応できるバランス派です。\n5,6,【インドア・集中タイプ】,自分の世界を大切にする知的で集中力の高いタイプです。";
+
+            downloadFile(sampleQ, "sample_questions.csv");
+            downloadFile(sampleR, "sample_results.csv");
+            showToast("サンプルCSVをダウンロードしました！");
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // 手動編集画面機能
+        function renderEditorQuestions() {
+            const container = document.getElementById("questions-editor-list");
+            document.getElementById("editor-q-count").textContent = currentQuiz.questions.length;
+            container.innerHTML = "";
+
+            currentQuiz.questions.forEach((q, qIndex) => {
+                const card = document.createElement("div");
+                card.className = "p-4 bg-slate-50 border rounded-xl space-y-3 relative";
+
+                let optionsHtml = "";
+                q.options.forEach((opt, oIndex) => {
+                    optionsHtml += `
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-slate-400">${oIndex + 1}.</span>
+                            <input type="text" value="${escapeHtml(opt.text)}" onchange="updateOptionText(${qIndex}, ${oIndex}, this.value)" placeholder="選択肢" class="flex-1 p-1.5 border rounded outline-none">
+                            <input type="number" value="${opt.score}" onchange="updateOptionScore(${qIndex}, ${oIndex}, this.value)" class="w-14 p-1.5 border rounded text-center outline-none" title="配点">
+                            <span class="text-slate-400">点</span>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-bold text-xs text-indigo-600">Q${qIndex + 1}</span>
+                        <button onclick="removeQuestion(${qIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
+                            <i class="fa-solid fa-trash"></i> 削除
+                        </button>
+                    </div>
+                    <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文を入力" class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
+                    <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任意: https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
+                    <div class="space-y-1.5 pl-2 border-l-2 border-indigo-200 mt-2">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function addQuestionEditor() {
+            currentQuiz.questions.push({
+                text: "新しい質問",
+                image: "",
+                options: [
+                    { text: "選択肢 1", score: 3 },
+                    { text: "選択肢 2", score: 2 },
+                    { text: "選択肢 3", score: 1 },
+                    { text: "選択肢 4", score: 0 },
+                    { text: "選択肢 5", score: 0 }
+                ]
+            });
+            renderEditorQuestions();
+        }
+
+        function updateQuestionText(qIndex, val) {
+            currentQuiz.questions[qIndex].text = val;
+        }
+
+        function updateQuestionImage(qIndex, val) {
+            currentQuiz.questions[qIndex].image = val.trim();
+        }
+
+        function updateOptionText(qIndex, oIndex, val) {
+            currentQuiz.questions[qIndex].options[oIndex].text = val;
+        }
+
+        function updateOptionScore(qIndex, oIndex, val) {
+            const scoreNum = parseInt(val);
+            currentQuiz.questions[qIndex].options[oIndex].score = isNaN(scoreNum) ? 0 : scoreNum;
+        }
+
+        function removeQuestion(qIndex) {
+            currentQuiz.questions.splice(qIndex, 1);
+            renderEditorQuestions();
+        }
+
+        function saveManualEditor() {
+            currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
+            currentQuiz.description = document.getElementById("input-app-desc").value.trim();
+            saveAllQuizData();
+            renderHeader();
+            renderHome();
+            showToast("現在の診断設定を保存しました！");
+            showView("home-view");
+        }
+
+        function switchTab(tab) {
+            ["manager", "editor", "csv"].forEach(t => {
+                document.getElementById(`tab-content-${t}`).classList.add("hidden");
+                document.getElementById(`tab-btn-${t}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5";
+            });
+
+            document.getElementById(`tab-content-${tab}`).classList.remove("hidden");
+            document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5";
+        }
+
+        // ユーティリティ
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toast-message");
+            const toastIcon = document.getElementById("toast-icon");
+
+            toastMsg.textContent = message;
+            if (type === "error") {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            }
+
+            toast.classList.remove("opacity-0", "pointer-events-none");
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "pointer-events-none");
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
