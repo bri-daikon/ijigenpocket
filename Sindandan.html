@@ -1,4 +1,4 @@
-?<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -6,10 +6,6 @@
     <title>Web診断メーカー</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Theme Configuration -->
     <script>
         tailwind.config = {
             theme: {
@@ -25,27 +21,29 @@
                             600: 'var(--color-primary-600)',
                             700: 'var(--color-primary-700)',
                             800: 'var(--color-primary-800)',
-                            900: 'var(--color-primary-900)'
+                            900: 'var(--color-primary-900)',
                         }
                     }
                 }
             }
         }
     </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
 
-    <!-- メインコンテナ�� -->
+    <!-- メインコンチE -->
     <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden my-auto border border-slate-200">
         
-        <!-- ヘッ�?ー -->
+        <!-- ヘッダー -->
         <header class="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 text-center relative">
             <div class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-2 font-medium">
-                <i class="fa-solid fa-list-check mr-1"></i> Web診断ポ�Eタル
+                <i class="fa-solid fa-list-check mr-1"></i> Web診断ポEタル
             </div>
-            <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなた�E性格タイプ診断</h1>
-            <p id="app-desc" class="text-primary-100 text-sm mt-2">直感で質問に答えて、あなた�E�?されたタイプをチェチE��しよぁE��</p>
-            <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定�E管琁E>
+            <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなたの性格タイプ診断</h1>
+            <p id="app-desc" class="text-primary-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！/p>
+            <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定E管琁E>
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
             <button id="btn-auth" onclick="toggleAuth()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="ログイン">
@@ -53,24 +51,24 @@
             </button>
         </header>
 
-        <!-- メインコンテナ��チE?�域 -->
+        <!-- メインコンチEチE域 -->
         <main class="p-6 md:p-8">
 
-            <!-- 1. トップ画面�E�診断選択�E開始！E-->
+            <!-- 1. トップ画面E診断選択E開始！E-->
             <section id="home-view" class="space-y-6 text-center py-2">
                 
                 <!-- 診断選択セレクター -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択する</span>
+                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択すめE/span>
                         <span id="quiz-total-count" class="text-primary-600 font-normal">全1件</span>
                     </label>
                     <div class="flex gap-2">
                         <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer">
-                            <!-- JSで動的生�E -->
+                            <!-- JSで動的生E -->
                         </select>
-                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作�E">
-                            <i class="fa-solid fa-plus"></i> 新規作�E
+                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作E">
+                            <i class="fa-solid fa-plus"></i> 新規作E
                         </button>
                     </div>
                 </div>
@@ -78,27 +76,26 @@
                 <!-- 診断開始カーチE-->
                 <div class="bg-primary-50 rounded-2xl p-6 border border-primary-100">
                     <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-primary-200 bg-white flex items-center justify-center">
-                        <img id="home-quiz-image" src="" alt="トップ画像" class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                        <img id="home-quiz-image" src="" alt="トップ画僁E class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
                     <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-primary-500 mb-4"></i>
                     <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
-                    <p id="home-quiz-desc" class="text-sm text-slate-700 mb-4 whitespace-pre-wrap"></p>
-                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-primary-600">10</span>問�E質問！E択）に回答してぁE��ます�?�</p>
+                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-primary-600">10</span>問E質問（2択）に回答してぁEます、E/p>
                     <button onclick="startQuiz()" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-200 hover:shadow-primary-300 transition text-lg transform active:scale-95">
-                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
+                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！E
                     </button>
                 </div>
 
                 <div id="settings-link-footer" class="hidden pt-2 flex justify-center gap-4 text-xs text-slate-500">
                     <button onclick="showView('settings-view')" class="hover:text-primary-600 underline flex items-center gap-1">
-                        <i class="fa-solid fa-sliders"></i> こ�E診断を編雁E�ECSV連勁E
+                        <i class="fa-solid fa-sliders"></i> こE診断を編雁EECSV連勁E
                     </button>
                 </div>
             </section>
 
-            <!-- 2. 質問�Eレイ画面 -->
+            <!-- 2. 質問Eレイ画面 -->
             <section id="quiz-view" class="hidden space-y-6">
-                <!-- プログレスバ�E -->
+                <!-- プログレスバE -->
                 <div>
                     <div class="flex justify-between text-xs font-semibold text-slate-500 mb-2">
                         <span>PROGRESS</span>
@@ -125,7 +122,7 @@
 
                 <!-- 選択肢リスチE(5抁E -->
                 <div id="options-container" class="space-y-3">
-                    <!-- JSで動的生�E -->
+                    <!-- JSで動的生E -->
                 </div>
             </section>
 
@@ -148,13 +145,13 @@
 
                     <div class="w-12 h-1 bg-primary-400 mx-auto rounded-full mb-4"></div>
                     <p id="result-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base text-left">
-                        ここに詳細な説明が表示されます�?�E
+                        ここに詳細な説明が表示されます、E
                     </p>
                 </div>
 
                 <!-- SNS共有エリア -->
                 <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">こ�E結果をシェアする</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">こE結果をシェアする</p>
                     <div class="flex flex-wrap justify-center gap-3">
                         <!-- X (旧Twitter) -->
                         <button onclick="shareX()" class="flex-1 min-w-[120px] bg-black hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
@@ -164,87 +161,71 @@
                         <button onclick="shareLine()" class="flex-1 min-w-[120px] bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
                             <i class="fa-brands fa-line text-sm"></i> LINEで送る
                         </button>
-                        <!-- コピ�E -->
+                        <!-- コピE -->
                         <button onclick="copyResultText()" class="flex-1 min-w-[120px] bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
-                            <i class="fa-regular fa-copy text-sm"></i> リンク付き結果コピ�E
+                            <i class="fa-regular fa-copy text-sm"></i> リンク付き結果コピE
                         </button>
                     </div>
                 </div>
 
                 <!-- 再挑戦ボタン -->
                 <button onclick="showView('home-view')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm">
-                    <i class="fa-solid fa-rotate-left mr-2"></i> もう�?度診断する
+                    <i class="fa-solid fa-rotate-left mr-2"></i> もう一度診断する
                 </button>
             </section>
 
-            <!-- 4. 設定�E管琁E��面 -->
+            <!-- 4. 設定E管琁E面 -->
             <section id="settings-view" class="hidden space-y-6">
                 <div class="flex justify-between items-center border-b pb-4">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-primary-600"></i> 設定�E診断管琁E
+                        <i class="fa-solid fa-sliders text-primary-600"></i> 設定E診断管琁E
                     </h2>
                     <button onclick="showView('home-view')" class="text-slate-400 hover:text-slate-600 text-sm">
                         <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
 
-                <!-- タブ�Eり替ぁE-->
+                <!-- タブEり替ぁE-->
                 <div class="flex border-b border-slate-200 text-xs md:text-sm font-bold">
                     <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5">
-                        <i class="fa-solid fa-folder-open"></i> 診断�?覧・管琁E
+                        <i class="fa-solid fa-folder-open"></i> 診断一覧・管琁E
                     </button>
                     <button id="tab-btn-editor" onclick="switchTab('editor')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
                         <i class="fa-solid fa-pen-to-square"></i> 手動編雁E
                     </button>
                     <button id="tab-btn-csv" onclick="switchTab('csv')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
-                        <i class="fa-solid fa-file-csv"></i> CSV / スプレチE��シーチE
-                        <i class="fa-solid fa-file-csv"></i> CSV / スプレッドシート
+                        <i class="fa-solid fa-file-csv"></i> CSV / スプレチEシーチE
                     </button>
                 </div>
 
-                <!-- タブ: 診断一覧・管理 -->
+                <!-- タチE: 診断一覧・管琁E-->
                 <div id="tab-content-manager" class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">作成した診断の切り替え・編集・削除が行えます。</p>
+                        <p class="text-xs text-slate-500">作Eした診断の刁E替えE褁E・削除が行えます、E/p>
                         <button onclick="createNewQuiz()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
-                            <i class="fa-solid fa-plus"></i> 新しい診断を作成
+                            <i class="fa-solid fa-plus"></i> 新しい診断を作E
                         </button>
                     </div>
 
                     <div id="quiz-list-container" class="space-y-3 max-h-96 overflow-y-auto pr-1">
-                        <!-- JSで動的生成 -->
+                        <!-- JSで動的生E -->
                     </div>
                 </div>
 
-                <!-- タブ: 手動編集 -->
+                <!-- タチE: 手動編雁E-->
                 <div id="tab-content-editor" class="hidden space-y-6">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">公開設定</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">公開設宁E/label>
                         <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
-                            <option value="true">公開する（トップ画面の選択肢に表示）</option>
-                            <option value="false">非公開（URL直リンクまたは作成者のみアクセス可）</option>
+                            <option value="true">公開する（トチEE画面の選択肢に表示EE/option>
+                            <option value="false">非E開！ERL直リンクまたE作E老EEみアクセス可EE/option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">テーマカラー</label>
-                        <select id="input-app-theme" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none" onchange="previewTheme(this.value)">
-                            <option value="indigo">インディゴ（青紫）</option>
-                            <option value="rose">ローズ（ピンク）</option>
-                            <option value="emerald">エメラルド（緑）</option>
-                            <option value="amber">アンバー（黄・オレンジ）</option>
-                            <option value="sky">スカイ（水色）</option>
-                            <option value="violet">バイオレット（紫）</option>
-                            <option value="fuchsia">フクシア（赤紫）</option>
-                            <option value="teal">ティール（青緑）</option>
-                            <option value="orange">オレンジ</option>
-                            <option value="slate">スレート（グレー）</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">判定方式</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">判定方弁E/label>
                         <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none" onchange="changeScoringMode(this.value)">
-                            <option value="sum">合計スコア方式</option>
-                            <option value="target">ターゲット計算方式</option>
+                            <option value="sum">合計スコア方式（旧EE/option>
+                            <option value="target">ターゲチE加算方式（新EE/option>
                         </select>
                     </div>
                     <div>
@@ -256,20 +237,20 @@
                         <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL (任意)</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URLE任意！E/label>
                         <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
                     </div>
 
                     <!-- 質問リスト表示 -->
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 text-sm">質問一覧 (<span id="editor-q-count">0</span>問)</h3>
+                            <h3 class="font-bold text-slate-800 text-sm">質問一覧 (<span id="editor-q-count">0</span>啁E</h3>
                             <button onclick="addQuestionEditor()" class="bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold px-3 py-1 rounded-lg text-xs transition">
                                 + 質問を追加
                             </button>
                         </div>
                         <div id="questions-editor-list" class="space-y-4 max-h-96 overflow-y-auto pr-1">
-                            <!-- 動的生成 -->
+                            <!-- 動的生E -->
                         </div>
                     </div>
 
@@ -282,22 +263,22 @@
                             </button>
                         </div>
                         <div id="results-editor-list" class="space-y-4 max-h-96 overflow-y-auto pr-1">
-                            <!-- 動的生成 -->
+                            <!-- 動的生E -->
                         </div>
                     </div>
 
                     <button onclick="saveManualEditor()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
-                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存する
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存すめE
                     </button>
                 </div>
 
-                <!-- タブ: CSV / スプレッドシート連携 -->
+                <!-- タチE: CSV / スプレチEシート連携 -->
                 <div id="tab-content-csv" class="hidden space-y-6">
                     
-                    <!-- 診断基本情報 -->
+                    <!-- 診断基本惁EEESV用EE-->
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                         <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-pen text-slate-500"></i> 基本設定
+                            <i class="fa-solid fa-pen text-slate-500"></i> 基本設宁E
                         </h3>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
@@ -308,18 +289,18 @@
                             <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL (任意)</label>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URLE任意！E/label>
                             <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
                         </div>
                     </div>
 
-                    <!-- Googleスプレッドシート連携 -->
+                    <!-- GoogleスプレチEシート連携 -->
                     <div class="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
                         <h3 class="font-bold text-primary-900 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-link text-primary-600"></i> Googleスプレッドシートから読み込み
+                            <i class="fa-solid fa-link text-primary-600"></i> GoogleスプレチEシートから読み込む
                         </h3>
                         <p class="text-xs text-primary-700 leading-relaxed">
-                            Googleスプレッドシートで「ファイル」→「共有」→「Webに公開」を選択し、形式を「カンマ区切り値 (.csv)」にして発行したURLを入力します。
+                            GoogleスプレチEシートで「ファイル」E「E有」E「Webに公開」を選択し、形式を「カンマ区刁E値 (.csv)」にして発行したURLをE力します、E
                         </p>
                         <div class="space-y-2">
                             <div>
@@ -331,17 +312,17 @@
                                 <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
                             </div>
                             <button onclick="loadFromGoogleSheets()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
-                                <i class="fa-solid fa-cloud-arrow-down mr-1"></i> スプレッドシートからデータを取得・更新
+                                <i class="fa-solid fa-cloud-arrow-down mr-1"></i> スプレチEシートからデータを取得E更新
                             </button>
                         </div>
                     </div>
 
-                    <!-- ファイルインポート/ エクスポート -->
+                    <!-- ファイルインポEチE/ エクスポEチE-->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- CSV読み込み -->
                         <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
-                                <i class="fa-solid fa-file-import text-emerald-600"></i> CSVファイルを取り込み
+                                <i class="fa-solid fa-file-import text-emerald-600"></i> CSVファイルを取り込む
                             </h3>
                             <div>
                                 <label class="text-xs text-slate-600 block mb-1">質問CSVファイル</label>
@@ -356,35 +337,35 @@
                             </button>
                         </div>
 
-                        <!-- CSV出力 & サンプル -->
+                        <!-- CSV出劁E& サンプル -->
                         <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
-                                <i class="fa-solid fa-file-export text-blue-600"></i> CSV出力 & ひな形
+                                <i class="fa-solid fa-file-export text-blue-600"></i> CSV出劁E& ひな形
                             </h3>
-                            <p class="text-xs text-slate-500">現在の設定をCSVとして保存。またスプレッドシート作成用のひな形をダウンロードします。</p>
+                            <p class="text-xs text-slate-500">現在の設定をCSVとして保存、またEスプレチEシート作E用のひな形をダウンロードします、E/p>
                             <div class="space-y-2 pt-1">
                                 <button onclick="exportCurrentCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
-                                    <span><i class="fa-solid fa-download mr-1"></i> 現在の設定をCSV出力</span>
+                                    <span><i class="fa-solid fa-download mr-1"></i> 現在の設定をCSV出劁E/span>
                                     <i class="fa-solid fa-chevron-right text-slate-400"></i>
                                 </button>
                                 <button onclick="downloadSampleCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
-                                    <span><i class="fa-solid fa-file-lines mr-1"></i> サンプルCSVのひな形を取得</span>
+                                    <span><i class="fa-solid fa-file-lines mr-1"></i> サンプルCSVEEな形Eを取征E/span>
                                     <i class="fa-solid fa-chevron-right text-slate-400"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- フォーマット説明 -->
+                    <!-- フォーマット説昁E-->
                     <div class="bg-slate-50 border p-4 rounded-xl text-xs space-y-2 text-slate-600">
-                        <p class="font-bold text-slate-800">CSVファイルの書き方・データ構造</p>
-                        <p><strong>質問CSV:</strong> <code>質問文, 画像URL(任意), 選択肢1, 点数1, 選択肢2, 点数2, 選択肢3, 点数3, 選択肢4, 点数4, 選択肢5, 点数5</code></p>
-                        <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配分可能です。画像がない場合は画像URL列を空にしてください。</p>
-                        <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文, 画像URL(任意)</code></p>
+                        <p class="font-bold text-slate-800">💡 CSVファイルの書き方Eカラム構造EE/p>
+                        <p><strong>質問CSV:</strong> <code>質問文, 画像URL(任愁E, 選択肢1, 点数1, 選択肢2, 点数2, 選択肢3, 点数3, 選択肢4, 点数4, 選択肢5, 点数5</code></p>
+                        <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配E可能です。画像が無ぁE合E画像URL列を空にしてください、E/p>
+                        <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文, 画像URL(任愁E</code></p>
                     </div>
 
                     <button onclick="saveCsvSettings()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
-                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の設定を保存する
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の設定を保存すめE
                     </button>
                 </div>
 
@@ -393,10 +374,10 @@
         </main>
     </div>
 
-    <!-- 通知トースト -->
+    <!-- 通知トEスチE-->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 z-50">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toast-message">メッセージ</span>
+        <span id="toast-message">メチEージ</span>
     </div>
 
     <!-- Firebase SDK -->
@@ -424,7 +405,8 @@
     </script>
 
     <script>
-        // カラーテーマ定義
+        // チEォルトサンプルチEEタ
+        
         const colorThemes = {
             indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
             rose: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337' },
@@ -439,64 +421,50 @@
         };
 
         function applyColorTheme(themeName) {
-            const theme = colorThemes[themeName] || colorThemes['indigo'];
+            const theme = colorThemes[themeName] || colorThemes.indigo;
             const root = document.documentElement;
-            for (const [key, value] of Object.entries(theme)) {
-                root.style.setProperty(`--color-primary-${key}`, value);
+            for (const [weight, color] of Object.entries(theme)) {
+                root.style.setProperty(`--color-primary-${weight}`, color);
             }
         }
 
         function formatImageUrl(url) {
-            if (!url) return "";
-            const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
-            const match = url.match(driveRegex);
-            if (match && match[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            if (!url) return '';
+            const gdriveMatch = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
+            if (gdriveMatch) {
+                return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
             }
             return url;
         }
 
-        // 画像URLフォーマッター (Google Drive対応)
-        function formatImageUrl(url) {
-            if (!url) return "";
-            // Google Driveの共有リンクを画像リンクに変換
-            const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
-            const match = url.match(driveRegex);
-            if (match && match[1]) {
-                // サムネイル用URL。※ファイルの共有設定が「リンクを知っている全員」になっている必要があります
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-            }
-            return url;
-        }
-
-        // デフォルトサンプルデータ
         const DEFAULT_QUIZ = {
             id: "default-1",
             title: "あなたの性格タイプ診断",
-            description: "直感で質問に答えて、あなたの隠されたタイプをチェックしよう！",
+            description: "直感で質問に答えて、あなたの隠されたタイプをチェックしよう！,
             scoringMode: "sum",
-            themeColor: "indigo",
+            sheetsQUrl: "",
+            sheetsRUrl: "",
             questions: [
                 {
-                    text: "休日、予定がないときはどう過ごすことが多い？",
+                    text: "休日、予定がなぁEはどぁEごすことが多いEE,
                     image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=60",
                     options: [
-                        { text: "1日中家でゆっくり読書・動画鑑賞", score: 3 },
+                        { text: "1日中家でめEくり読書めE画鑑賁E, score: 3 },
                         { text: "趣味の制作や勉強に没頭する", score: 2 },
-                        { text: "気まぐれで近所を散歩する", score: 1 },
-                        { text: "友達に連絡して出かける", score: 0 },
-                        { text: "イベントやパーティーを自分で企画する", score: 0 }
+                        { text: "気E次第で近所を散歩する", score: 1 },
+                        { text: "友達に連絡して出かけめE, score: 0 },
+                        { text: "イベントやパEチEーをE刁E企画する", score: 0 }
                     ]
                 },
                 {
-                    text: "直感で惹かれる場所はどこ？",
+                    text: "直感で惹かれる場所はどこ！E,
                     image: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&auto=format&fit=crop&q=60",
                     options: [
                         { text: "静寂な森の中のライブラリー", score: 3 },
-                        { text: "最先端テクノロジーのラボ", score: 2 },
-                        { text: "波音が聞こえる静かなビーチ", score: 1 },
-                        { text: "賑やかな夜のテーマパーク", score: 0 },
-                        { text: "みんなが集まるフェスティバル", score: 0 }
+                        { text: "最先端チEノロジーのラチE, score: 2 },
+                        { text: "波音が聞こえる静かなビEチE, score: 1 },
+                        { text: "賑やかな夜EチEEマパーク", score: 0 },
+                        { text: "みんなが集まるフェスチEバル", score: 0 }
                     ]
                 }
             ],
@@ -504,25 +472,25 @@
                 {
                     minScore: 0,
                     maxScore: 2,
-                    title: "【情熱のアクティビスト】",
-                    description: "高い行動力とエネルギーを持つタイプ。考えるよりもまず行動を起こし、周りをポジティブな風で巻き込んでいきます。"
+                    title: "【情熱のアクチEビスト、E,
+                    description: "高い行動力とエネルギーを持つタイプ。老Eるよりもまず行動を起こし、周りをポジチEブな風で巻き込んでぁEます、E
                 },
                 {
                     minScore: 3,
                     maxScore: 4,
-                    title: "【バランス重視のナビゲーター】",
-                    description: "状況に合わせて柔軟に対応できるバランス派。周囲の意見を優しく聴き入れる頼れる存在です。"
+                    title: "【バランス重視Eナビゲーター、E,
+                    description: "状況に合わせて柔軟に対応できるバランス派。周囲の意見を優しく聴きEれる頼れる存在です、E
                 },
                 {
                     minScore: 5,
                     maxScore: 6,
-                    title: "【静かな思索家（アナリスト）】",
-                    description: "深い観察力と豊かな内心世界を持つタイプ。一人で静かに物事を探求することで真価を発揮します。"
+                    title: "【静かな思索家Eアナリスト）、E,
+                    description: "深ぁE察力と豊かな冁E世界を持つタイプ。一人で雁Eして物事を探求することで真価を発揮します、E
                 }
             ]
         };
 
-        // アプリ状態管理
+        // アプリ状態管琁E
         let quizList = [];
         let currentQuizId = "";
         let currentQuiz = null;
@@ -532,7 +500,7 @@
         let currentResult = null;
         let currentUser = null;
 
-        // 初期化処理
+        // 初期化E琁E
         window.addEventListener("DOMContentLoaded", () => {
             if (window.firebaseApp) {
                 window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
@@ -545,7 +513,7 @@
                     updateSettingsVisibility();
                 });
             } else {
-                // Firebaseが読み込めなかった場合フォールバック
+                // Firebaseが読み込めなかった場合Eフォールバック
                 loadAllQuizData().then(() => {
                     checkUrlParameter();
                     renderHeader();
@@ -554,7 +522,7 @@
             }
         });
 
-        // データの読み込み・クラウドから取得
+        // チEEタの読み込み・クラウドからE取征E
         async function loadAllQuizData() {
             if (!window.firebaseApp) return;
             const { db, collection, getDocs } = window.firebaseApp;
@@ -584,7 +552,6 @@
             }
 
             currentQuiz = quizList.find(q => q.id === currentQuizId) || quizList[0];
-            applyColorTheme(currentQuiz.themeColor || "indigo");
         }
 
         async function saveCurrentQuiz() {
@@ -594,7 +561,7 @@
             if (!currentQuiz.ownerId) {
                 currentQuiz.ownerId = currentUser.uid;
             } else if (currentQuiz.ownerId !== currentUser.uid) {
-                showToast("この診断を編集する権限がありません", "error");
+                showToast("こE診断を編雁Eる権限がありません", "error");
                 return;
             }
 
@@ -613,7 +580,7 @@
             if (currentUser) {
                 signOut(auth).then(() => showToast("ログアウトしました")).catch(err => console.error(err));
             } else {
-                signInWithPopup(auth, provider).then(() => showToast("ログインしました")).catch(err => {
+                signInWithPopup(auth, provider).then(() => showToast("ログインしましたEE)).catch(err => {
                     console.error(err);
                     showToast("ログインに失敗しました", "error");
                 });
@@ -626,7 +593,7 @@
             if (!btnAuth) return;
             if (currentUser) {
                 authIcon.className = "fa-solid fa-sign-out-alt text-lg";
-                btnAuth.title = "ログアウト";
+                btnAuth.title = "ログアウチE;
             } else {
                 authIcon.className = "fa-solid fa-user text-lg";
                 btnAuth.title = "ログイン";
@@ -656,7 +623,7 @@
             }
         }
 
-        // URLパラメータ(?id=xxx)で指定診断を開く機能
+        // URLパラメータ(?id=xxx)で持E診断を開く機E
         function checkUrlParameter() {
             const params = new URLSearchParams(window.location.search);
             const targetId = params.get('id');
@@ -664,11 +631,10 @@
                 currentQuizId = targetId;
                 currentQuiz = quizList.find(q => q.id === currentQuizId);
                 localStorage.setItem("shindan_maker_current_id", currentQuizId);
-                applyColorTheme(currentQuiz.themeColor || "indigo");
             }
         }
 
-        // 画面切り替え
+        // 画面刁E替ぁE
         function showView(viewId) {
             ["home-view", "quiz-view", "result-view", "settings-view"].forEach(id => {
                 document.getElementById(id).classList.add("hidden");
@@ -680,16 +646,16 @@
             }
         }
 
-        // ヘッダー・ホーム画面の描画
+        // ヘッダー・ホEム画面の描画
         function renderHeader() {
             document.getElementById("app-title").textContent = currentQuiz.title;
-            document.getElementById("app-desc").textContent = currentQuiz.description || "直感で質問に答えてチェックしよう！";
+            document.getElementById("app-desc").textContent = currentQuiz.description || "直感で質問に答えてチェチEEE;
         }
 
         function renderHome() {
             document.getElementById("home-quiz-title").textContent = currentQuiz.title;
-            const descEl = document.getElementById("home-quiz-desc");
-            if (descEl) descEl.textContent = currentQuiz.description || "";
+            document.getElementById("home-quiz-desc").textContent = currentQuiz.description || "";
+            applyColorTheme(currentQuiz.themeColor || "indigo");
             document.getElementById("question-count-badge").textContent = currentQuiz.questions.length;
             document.getElementById("quiz-total-count").textContent = `全${quizList.length}件`;
 
@@ -697,7 +663,7 @@
             const homeImgEl = document.getElementById("home-quiz-image");
             const homeIcon = document.getElementById("home-quiz-icon");
             if (currentQuiz.image && currentQuiz.image.trim() !== "") {
-                homeImgEl.src = currentQuiz.image.trim();
+                homeImgEl.src = formatImageUrl(currentQuiz.image.trim());
                 homeImgContainer.classList.remove("hidden");
                 if (homeIcon) homeIcon.classList.add("hidden");
             } else {
@@ -706,16 +672,16 @@
                 if (homeIcon) homeIcon.classList.remove("hidden");
             }
 
-            // ドロチE�E�?ウンセレクター生�E
+            // ドロチEEダウンセレクター生E
             const selector = document.getElementById("quiz-selector");
             selector.innerHTML = "";
             let visibleCount = 0;
             quizList.forEach(q => {
-                // 公開されてぁE��か�?�現在選択中の診断のみ表示
+                // 公開されてぁEか、現在選択中の診断のみ表示
                 if (q.published !== false || q.id === currentQuizId || (currentUser && q.ownerId === currentUser.uid)) {
                     const opt = document.createElement("option");
                     opt.value = q.id;
-                    opt.textContent = q.title + (q.published === false ? " (非�E閁E" : "");
+                    opt.textContent = q.title + (q.published === false ? " (非E閁E" : "");
                     if (q.id === currentQuizId) opt.selected = true;
                     selector.appendChild(opt);
                     visibleCount++;
@@ -724,7 +690,7 @@
             document.getElementById("quiz-total-count").textContent = `全${visibleCount}件`;
         }
 
-        // 診断の刁E��替え（トチE�E画面セレクター�E�E
+        // 診断の刁E替え（トチEE画面セレクターEE
         function switchQuiz(id) {
             currentQuizId = id;
             currentQuiz = quizList.find(q => q.id === id);
@@ -737,13 +703,13 @@
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast(`、E{currentQuiz.title}」に刁E��替えました`);
+            showToast(`、E{currentQuiz.title}」に刁E替えました`);
         }
 
-        // 新規診断の作�E
+        // 新規診断の作E
         async function createNewQuiz() {
             if (!currentUser) {
-                showToast("診断を作�Eするにはログインしてください", "error");
+                showToast("診断を作Eするにはログインしてください", "error");
                 return;
             }
             const newId = "quiz-" + Date.now();
@@ -784,13 +750,13 @@
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast("新しい診断を作�Eしました�E�設定画面で編雁E��きます�?�E);
+            showToast("新しい診断を作EしましたE設定画面で編雁Eきます、E);
         }
 
         // 診断プレイ処琁E
         function startQuiz() {
             if (!currentQuiz.questions || currentQuiz.questions.length === 0) {
-                showToast("質問が登録されてぁE��せん。設定から追�?してください、E, "error");
+                showToast("質問が登録されてぁEせん。設定から追加してください、E, "error");
                 return;
             }
             currentQuestionIndex = 0;
@@ -813,18 +779,18 @@
             const imgContainer = document.getElementById("question-image-container");
             const imgEl = document.getElementById("question-image");
             if (q.image && q.image.trim() !== "") {
-                imgEl.src = q.image.trim();
+                imgEl.src = formatImageUrl(q.image.trim());
                 imgContainer.classList.remove("hidden");
             } else {
                 imgContainer.classList.add("hidden");
                 imgEl.src = "";
             }
 
-            // プログレスバ�E
+            // プログレスバE
             const progress = (currentQuestionIndex / total) * 100;
             document.getElementById("progress-bar").style.width = `${progress}%`;
 
-            // 選択肢生�E
+            // 選択肢生E
             const container = document.getElementById("options-container");
             container.innerHTML = "";
 
@@ -891,7 +857,7 @@
             document.getElementById("result-title").textContent = currentResult.title;
             document.getElementById("result-desc").textContent = currentResult.description;
 
-            // 結果画像�E表示制御
+            // 結果画像E表示制御
             const resImgContainer = document.getElementById("result-image-container");
             const resImgEl = document.getElementById("result-image");
             if (currentResult.image && currentResult.image.trim() !== "") {
@@ -913,7 +879,7 @@
 
         function shareX() {
             if (!currentResult) return;
-            let text = `、E{currentQuiz.title}】�E診断結果は…\n${currentResult.title}\n�E�スコア: ${userScore}点�E�\n\n#診断メーカー #Web診断\n`;
+            let text = `、E{currentQuiz.title}】E診断結果は…\n${currentResult.title}\nEスコア: ${userScore}点E\n\n#診断メーカー #Web診断\n`;
             if (currentResult.image && currentResult.image.trim() !== "") {
                 text += `\n${currentResult.image.trim()}`;
             }
@@ -940,7 +906,7 @@
 
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(text).then(() => {
-                    showToast("共有URL付きで結果をコピ�Eしました�E�E);
+                    showToast("共有URL付きで結果をコピEしましたEE);
                 });
             } else {
                 const textarea = document.createElement("textarea");
@@ -949,19 +915,18 @@
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                showToast("共有URL付きで結果をコピ�Eしました�E�E);
+                showToast("共有URL付きで結果をコピEしましたEE);
             }
         }
 
         function initSettingsView() {
             if (currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) {
                  showView('home-view');
-                 showToast("こ�E診断の編雁E��限がありません", "error");
+                 showToast("こE診断の編雁E限がありません", "error");
                  return;
             }
             renderQuizManagerList();
             document.getElementById("input-app-published").value = currentQuiz.published !== false ? "true" : "false";
-            document.getElementById("input-app-theme").value = currentQuiz.themeColor || "indigo";
             document.getElementById("input-app-scoringMode").value = currentQuiz.scoringMode || "sum";
             document.getElementById("input-app-title").value = currentQuiz.title;
             document.getElementById("input-app-desc").value = currentQuiz.description || "";
@@ -975,7 +940,7 @@
             renderEditorResults();
         }
 
-        // タチE: 診断�?覧・管琁E��スト�E生�E
+        // タチE: 診断一覧・管琁EストE生E
         function renderQuizManagerList() {
             const container = document.getElementById("quiz-list-container");
             container.innerHTML = "";
@@ -989,18 +954,18 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
                             ${isCurrent ? '<span class="bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
-                            ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非�E閁</span>' : ''}
+                            ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非E閁E/span>' : ''}
                             <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHtml(q.title)}</h4>
                         </div>
-                        <p class="text-xs text-slate-500 truncate">${q.questions.length}問�E質啁E/ ${q.results.length}個�E診断結果</p>
+                        <p class="text-xs text-slate-500 truncate">${q.questions.length}問E質啁E/ ${q.results.length}個E診断結果</p>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${!isCurrent ? `
-                            <button onclick="switchQuiz('${q.id}'); if(currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) { showView('home-view'); showToast('編雁E��限がなぁE��めトチE�E画面に戻りました', 'error'); } else { initSettingsView(); }" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                            <button onclick="switchQuiz('${q.id}'); if(currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) { showView('home-view'); showToast('編雁E限がなぁEめトチEE画面に戻りました', 'error'); } else { initSettingsView(); }" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
                                 選抁E
                             </button>
                         ` : ''}
-                        <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="こ�E診断を褁E��">
+                        <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="こE診断を褁E">
                             <i class="fa-regular fa-copy"></i>
                         </button>
                         ${(quizList.length > 1 && (!q.ownerId || (currentUser && q.ownerId === currentUser.uid))) ? `
@@ -1014,7 +979,7 @@
             });
         }
 
-        // 診断の褁E��
+        // 診断の褁E
         async function duplicateQuiz(id) {
             if (!currentUser) return;
             const target = quizList.find(q => q.id === id);
@@ -1022,7 +987,7 @@
 
             const newQuiz = JSON.parse(JSON.stringify(target));
             newQuiz.id = "quiz-" + Date.now();
-            newQuiz.title = `${target.title} (コピ�E)`;
+            newQuiz.title = `${target.title} (コピE)`;
             newQuiz.published = false;
             newQuiz.ownerId = currentUser.uid;
 
@@ -1038,23 +1003,23 @@
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast("診断を褁E��しました�E�E);
+            showToast("診断を褁EしましたEE);
         }
 
         // 診断の削除
         async function deleteQuiz(id) {
             if (quizList.length <= 1) {
-                showToast("�?佁Eつの診断が忁E��でぁE, "error");
+                showToast("最佁Eつの診断が忁EでぁE, "error");
                 return;
             }
 
             const target = quizList.find(q => q.id === id);
             if (target && target.ownerId && (!currentUser || target.ownerId !== currentUser.uid)) {
-                showToast("こ�E診断を削除する権限がありません", "error");
+                showToast("こE診断を削除する権限がありません", "error");
                 return;
             }
 
-            if (!confirm("こ�E診断を削除してもよろしぁE��すか�E�E)) return;
+            if (!confirm("こE診断を削除してもよろしぁEすかEE)) return;
 
             if (window.firebaseApp) {
                 const { db, doc, deleteDoc } = window.firebaseApp;
@@ -1080,7 +1045,7 @@
             showToast("診断を削除しました");
         }
 
-        // CSV & スプレチE��シート�?�携機�E
+        // CSV & スプレチEシート連携機E
         function parseCSV(text) {
             const lines = text.split(/\r\n|\n/);
             const result = [];
@@ -1111,7 +1076,7 @@
             const rUrl = document.getElementById("sheets-r-url").value.trim();
 
             if (!qUrl) {
-                showToast("質問CSVのWeb公開URLを�E力してください", "error");
+                showToast("質問CSVのWeb公開URLをE力してください", "error");
                 return;
             }
 
@@ -1146,12 +1111,12 @@
                 await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
-                showToast(`質啁E{questions.length}問を取り込み更新しました�E?);
+                showToast(`質啁E{questions.length}問を取り込み更新しましたE`);
                 showView("home-view");
 
             } catch (err) {
                 console.error(err);
-                showToast("読み込み失敁E URLまた�E共有設定を確認してください", "error");
+                showToast("読み込み失敁E URLまたE共有設定を確認してください", "error");
             }
         }
 
@@ -1160,7 +1125,7 @@
             const fileR = document.getElementById("input-file-r").files[0];
 
             if (!fileQ && !fileR) {
-                showToast("読み込�?CSVファイルを選択してください", "error");
+                showToast("読み込むCSVファイルを選択してください", "error");
                 return;
             }
 
@@ -1197,7 +1162,7 @@
                 await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
-                showToast("CSVファイルを適用しました�E�E);
+                showToast("CSVファイルを適用しましたEE);
                 showView("home-view");
             });
         }
@@ -1259,7 +1224,7 @@
         function parseResultsCSV(text) {
             const rows = parseCSV(text);
             const results = [];
-            const startIdx = (rows[0] && (rows[0][0].includes("�?封E) || rows[0][2].includes("タイトル"))) ? 1 : 0;
+            const startIdx = (rows[0] && (rows[0][0].includes("最封E) || rows[0][2].includes("タイトル"))) ? 1 : 0;
 
             for (let i = startIdx; i < rows.length; i++) {
                 const r = rows[i];
@@ -1277,7 +1242,7 @@
         }
 
         function exportCurrentCsv() {
-            let qCsv = "質問文,画像URL,選択肢1,点数(また�EターゲチE��配�E),選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n";
+            let qCsv = "質問文,画像URL,選択肢1,点数(またEターゲチE配E),選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n";
             currentQuiz.questions.forEach(q => {
                 let row = [
                     `"${q.text.replace(/"/g, '""')}"`,
@@ -1296,32 +1261,32 @@
             });
             downloadFile(qCsv, `${currentQuiz.title}_questions.csv`);
 
-            let rCsv = "�?小点数,�?大点数,診断結果タイトル,診断結果説明文,画像URL\n";
+            let rCsv = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n";
             currentQuiz.results.forEach(r => {
                 rCsv += `${r.minScore},${r.maxScore},"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}","${(r.image || '').replace(/"/g, '""')}"\n`;
             });
             downloadFile(rCsv, `${currentQuiz.title}_results.csv`);
 
-            showToast("CSVをダウンロードしました�E�E);
+            showToast("CSVをダウンロードしましたEE);
         }
 
         function downloadSampleCsv() {
             if (currentQuiz.scoringMode === "target") {
-                const sampleQ = "質問文,画像URL,選択肢1,配�E(結果番号:点数),選択肢2,配�E2,選択肢3,配�E3\n" +
-                    "休日の過ごし方は�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,アクチE��ブに出か�?めE0:3|1:1,家で読書,1:3|0:1,近所を散歩,0:1|1:1";
-                const sampleR = "�?小点数(無要E,�?大点数(無要E,診断結果タイトル,診断結果説明文,画像URL\n0,0,【アクチE��ブタイプ�?�E行動力バチE��ンのアクチE��ブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n0,0,【インドア・雁E��タイプ�?�E自刁E�E世界を大刁E��する知皁E��雁E��力�E高いタイプです�?�Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
+                const sampleQ = "質問文,画像URL,選択肢1,配E(結果番号:点数),選択肢2,配E2,選択肢3,配E3\n" +
+                    "休日の過ごし方はEEhttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,アクチEブに出かけめE0:3|1:1,家で読書,1:3|0:1,近所を散歩,0:1|1:1";
+                const sampleR = "最小点数(無要E,最大点数(無要E,診断結果タイトル,診断結果説明文,画像URL\n0,0,【アクチEブタイプ、E行動力バチEンのアクチEブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n0,0,【インドア・雁Eタイプ、E自刁EE世界を大刁Eする知皁E雁E力E高いタイプです、Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
                 downloadFile(sampleQ, "sample_questions.csv");
                 downloadFile(sampleR, "sample_results.csv");
             } else {
                 const sampleQ = "質問文,画像URL,選択肢1,点数1,選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n" +
-                    "休日どぁE��ごす�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制佁E2,近所を散歩,1,友達と外�E,0,イベント企画,0\n" +
-                    "直感で選ぶ場�?は�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,�?先端のラチE2,波音の聞こえる海,1,夜�EチE�Eマパーク,0,フェスチE��バル,0";
-                const sampleR = "�?小点数,�?大点数,診断結果タイトル,診断結果説明文,画像URL\n0,2,【アクチE��ブタイプ�?�E行動力バチE��ンのアクチE��ブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n3,4,【バランスタイプ�?�E状況に合わせて柔軟に対応できるバランス派です�?�Ehttps://placehold.co/600x400/dbeafe/1e40af?text=Balance\n5,6,【インドア・雁E��タイプ�?�E自刁E�E世界を大刁E��する知皁E��雁E��力�E高いタイプです�?�Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
+                    "休日どぁEごすEEhttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制佁E2,近所を散歩,1,友達と外E,0,イベント企画,0\n" +
+                    "直感で選ぶ場所はEEhttps://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,最先端のラチE2,波音の聞こえる海,1,夜EチEEマパーク,0,フェスチEバル,0";
+                const sampleR = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n0,2,【アクチEブタイプ、E行動力バチEンのアクチEブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n3,4,【バランスタイプ、E状況に合わせて柔軟に対応できるバランス派です、Ehttps://placehold.co/600x400/dbeafe/1e40af?text=Balance\n5,6,【インドア・雁Eタイプ、E自刁EE世界を大刁Eする知皁E雁E力E高いタイプです、Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
 
                 downloadFile(sampleQ, "sample_questions.csv");
                 downloadFile(sampleR, "sample_results.csv");
             }
-            showToast("サンプルCSVをダウンロードしました�E�E);
+            showToast("サンプルCSVをダウンロードしましたEE);
         }
 
         function downloadFile(content, filename) {
@@ -1332,7 +1297,7 @@
             link.click();
         }
 
-        // 手動編雁E��面機�E
+        // 手動編雁E面機E
         function renderEditorQuestions() {
             const container = document.getElementById("questions-editor-list");
             document.getElementById("editor-q-count").textContent = currentQuiz.questions.length;
@@ -1356,7 +1321,7 @@
                             
                             targetsHtml += `
                                 <div class="flex items-center gap-1 mt-1 ml-4 bg-white p-1 rounded border shadow-sm">
-                                    <span class="text-slate-400 text-[10px] whitespace-nowrap">�?算�E:</span>
+                                    <span class="text-slate-400 text-[10px] whitespace-nowrap">加算E:</span>
                                     ${selectHtml}
                                     <input type="number" value="${ts.points}" onchange="updateTargetPoints(${qIndex}, ${oIndex}, ${tsIndex}, this.value)" class="w-10 p-1 border rounded text-center text-[10px] outline-none">
                                     <span class="text-slate-400 text-[10px]">点</span>
@@ -1366,7 +1331,7 @@
                         });
                         targetsHtml += `
                             <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
-                                + ターゲチE���?算を追�?
+                                + ターゲチE加算を追加
                             </button>
                         `;
                     }
@@ -1394,12 +1359,12 @@
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
-                    <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文を�E劁E class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
+                    <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文をE劁E class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
                     <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任愁E https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
                     <div class="space-y-1.5 pl-2 border-l-2 border-primary-200 mt-2">
                         ${optionsHtml}
                         <button onclick="addOptionEditor(${qIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
-                            <i class="fa-solid fa-plus"></i> 選択肢を追�?
+                            <i class="fa-solid fa-plus"></i> 選択肢を追加
                         </button>
                     </div>
                 `;
@@ -1440,9 +1405,9 @@
                     </div>
                     ${currentQuiz.scoringMode !== "target" ? `
                     <div class="flex gap-2 items-center text-xs text-slate-600 mb-1">
-                        <span>スコア篁E��:</span>
+                        <span>スコア篁E:</span>
                         <input type="number" value="${r.minScore}" onchange="updateResultMinScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
-                        <span>、</span>
+                        <span>、E/span>
                         <input type="number" value="${r.maxScore}" onchange="updateResultMaxScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
                     </div>
                     ` : ''}
@@ -1552,13 +1517,8 @@
             renderEditorResults();
         }
 
-        function previewTheme(themeName) {
-            applyColorTheme(themeName);
-        }
-
         async function saveManualEditor() {
             currentQuiz.published = document.getElementById("input-app-published").value === "true";
-            currentQuiz.themeColor = document.getElementById("input-app-theme").value;
             currentQuiz.scoringMode = document.getElementById("input-app-scoringMode").value;
             currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("input-app-desc").value.trim();
@@ -1566,7 +1526,7 @@
             await saveCurrentQuiz();
             renderHeader();
             renderHome();
-            showToast("現在の診断設定を保存しました�E�E);
+            showToast("現在の診断設定を保存しましたEE);
             showView("home-view");
         }
 
@@ -1579,7 +1539,7 @@
             await saveCurrentQuiz();
             renderHeader();
             renderHome();
-            showToast("基本設定とURLを保存しました�E�E);
+            showToast("基本設定とURLを保存しましたEE);
             showView("home-view");
         }
 
@@ -1593,7 +1553,7 @@
             document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5";
         }
 
-        // ユーチE��リチE��
+        // ユーチEリチE
         function escapeHtml(str) {
             return String(str)
                 .replace(/&/g, "&amp;")
