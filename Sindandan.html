@@ -53,7 +53,10 @@
 
                 <!-- 診断開始カード -->
                 <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
-                    <i class="fa-solid fa-clipboard-question text-5xl text-indigo-500 mb-4"></i>
+                    <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-indigo-200 bg-white flex items-center justify-center">
+                        <img id="home-quiz-image" src="" alt="トップ画像" class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                    </div>
+                    <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-indigo-500 mb-4"></i>
                     <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
                     <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-indigo-600">10</span>問の質問（5択）に回答していきます。</p>
                     <button onclick="startQuiz()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition text-lg transform active:scale-95">
@@ -197,6 +200,10 @@
                         <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
                         <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
+                        <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                    </div>
 
                     <!-- 質問リスト表示 -->
                     <div class="space-y-3">
@@ -244,6 +251,10 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
                             <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
+                            <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
                         </div>
                     </div>
 
@@ -574,6 +585,19 @@
             document.getElementById("question-count-badge").textContent = currentQuiz.questions.length;
             document.getElementById("quiz-total-count").textContent = `全${quizList.length}件`;
 
+            const homeImgContainer = document.getElementById("home-quiz-image-container");
+            const homeImgEl = document.getElementById("home-quiz-image");
+            const homeIcon = document.getElementById("home-quiz-icon");
+            if (currentQuiz.image && currentQuiz.image.trim() !== "") {
+                homeImgEl.src = currentQuiz.image.trim();
+                homeImgContainer.classList.remove("hidden");
+                if (homeIcon) homeIcon.classList.add("hidden");
+            } else {
+                homeImgContainer.classList.add("hidden");
+                homeImgEl.src = "";
+                if (homeIcon) homeIcon.classList.remove("hidden");
+            }
+
             // ドロップダウンセレクター生成
             const selector = document.getElementById("quiz-selector");
             selector.innerHTML = "";
@@ -781,13 +805,14 @@
             }
         }
 
-        // 管理・設定画面機能
         function initSettingsView() {
             renderQuizManagerList();
             document.getElementById("input-app-title").value = currentQuiz.title;
             document.getElementById("input-app-desc").value = currentQuiz.description || "";
+            document.getElementById("input-app-image").value = currentQuiz.image || "";
             document.getElementById("csv-input-app-title").value = currentQuiz.title;
             document.getElementById("csv-input-app-desc").value = currentQuiz.description || "";
+            document.getElementById("csv-input-app-image").value = currentQuiz.image || "";
             document.getElementById("sheets-q-url").value = currentQuiz.sheetsQUrl || "";
             document.getElementById("sheets-r-url").value = currentQuiz.sheetsRUrl || "";
             renderEditorQuestions();
@@ -952,6 +977,7 @@
                 currentQuiz.sheetsRUrl = rUrl;
                 currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
                 currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
+                currentQuiz.image = document.getElementById("csv-input-app-image").value.trim();
 
                 await saveCurrentQuiz();
                 renderHeader();
@@ -1003,6 +1029,7 @@
             Promise.all(promises).then(async () => {
                 currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
                 currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
+                currentQuiz.image = document.getElementById("csv-input-app-image").value.trim();
                 await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
@@ -1257,6 +1284,7 @@
         async function saveManualEditor() {
             currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("input-app-desc").value.trim();
+            currentQuiz.image = document.getElementById("input-app-image").value.trim();
             await saveCurrentQuiz();
             renderHeader();
             renderHome();
@@ -1267,6 +1295,7 @@
         async function saveCsvSettings() {
             currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
+            currentQuiz.image = document.getElementById("csv-input-app-image").value.trim();
             currentQuiz.sheetsQUrl = document.getElementById("sheets-q-url").value.trim();
             currentQuiz.sheetsRUrl = document.getElementById("sheets-r-url").value.trim();
             await saveCurrentQuiz();
