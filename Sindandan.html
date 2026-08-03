@@ -9,22 +9,7 @@
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: 'rgb(var(--color-primary-50) / <alpha-value>)',
-                            100: 'rgb(var(--color-primary-100) / <alpha-value>)',
-                            200: 'rgb(var(--color-primary-200) / <alpha-value>)',
-                            300: 'rgb(var(--color-primary-300) / <alpha-value>)',
-                            400: 'rgb(var(--color-primary-400) / <alpha-value>)',
-                            500: 'rgb(var(--color-primary-500) / <alpha-value>)',
-                            600: 'rgb(var(--color-primary-600) / <alpha-value>)',
-                            700: 'rgb(var(--color-primary-700) / <alpha-value>)',
-                            800: 'rgb(var(--color-primary-800) / <alpha-value>)',
-                            900: 'rgb(var(--color-primary-900) / <alpha-value>)',
-                        }
-                    }
-                }
+                extend: {}
             }
         }
     </script>
@@ -37,12 +22,12 @@
     <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden my-auto border border-slate-200">
         
         <!-- ヘッダー -->
-        <header class="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 text-center relative">
+        <header class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-6 text-center relative">
             <div class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-2 font-medium">
                 <i class="fa-solid fa-list-check mr-1"></i> Web診断ポータル
             </div>
             <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなたの性格タイプ診断</h1>
-            <p id="app-desc" class="text-primary-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！/p>
+            <p id="app-desc" class="text-indigo-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！/p>
             <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定・管理">
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
@@ -60,34 +45,34 @@
                 <!-- 診断選択セレクター -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択する</span>
-                        <span id="quiz-total-count" class="text-primary-600 font-normal">全1件</span>
+                        <span><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i> 診断を選択する</span>
+                        <span id="quiz-total-count" class="text-indigo-600 font-normal">全1件</span>
                     </label>
                     <div class="flex gap-2">
-                        <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer">
+                        <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
                             <!-- JSで動的生成 -->
                         </select>
-                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
+                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
                             <i class="fa-solid fa-plus"></i> 新規作成
                         </button>
                     </div>
                 </div>
 
                 <!-- 診断開始カード -->
-                <div class="bg-primary-50 rounded-2xl p-6 border border-primary-100">
-                    <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-primary-200 bg-white flex items-center justify-center">
+                <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
+                    <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-indigo-200 bg-white flex items-center justify-center">
                         <img id="home-quiz-image" src="" alt="トップ画像" class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
-                    <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-primary-500 mb-4"></i>
+                    <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-indigo-500 mb-4"></i>
                     <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
-                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-primary-600">10</span>問の質問（2択）に回答していただきます。</p>
-                    <button onclick="startQuiz()" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-200 hover:shadow-primary-300 transition text-lg transform active:scale-95">
+                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-indigo-600">10</span>問の質問（2択）に回答していただきます。</p>
+                    <button onclick="startQuiz()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition text-lg transform active:scale-95">
                         <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
                     </button>
                 </div>
 
                 <div id="settings-link-footer" class="hidden pt-2 flex justify-center gap-4 text-xs text-slate-500">
-                    <button onclick="showView('settings-view')" class="hover:text-primary-600 underline flex items-center gap-1">
+                    <button onclick="showView('settings-view')" class="hover:text-indigo-600 underline flex items-center gap-1">
                         <i class="fa-solid fa-sliders"></i> この診断を編集・CSV連携
                     </button>
                 </div>
@@ -102,13 +87,13 @@
                         <span><span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
                     </div>
                     <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="bg-primary-600 h-full w-0 transition-all duration-300"></div>
+                        <div id="progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
                     </div>
                 </div>
 
                 <!-- 質問カード -->
                 <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-sm">
-                    <span class="inline-block bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
                         Q<span id="q-number-badge">1</span>
                     </span>
                     <!-- 質問画像エリア -->
@@ -132,18 +117,18 @@
                     診断結果
                 </div>
 
-                <div class="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-100 p-6 md:p-8 rounded-2xl shadow-inner">
-                    <p class="text-xs text-primary-500 font-bold mb-1">獲得スコア: <span id="result-score" class="text-base font-extrabold">0</span> 点</p>
+                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-6 md:p-8 rounded-2xl shadow-inner">
+                    <p class="text-xs text-indigo-500 font-bold mb-1">獲得スコア: <span id="result-score" class="text-base font-extrabold">0</span> 点</p>
                     <h2 id="result-title" class="text-2xl md:text-3xl font-extrabold text-primary-950 mb-4">
                         結果タイトル
                     </h2>
                     
                     <!-- 結果画像エリア -->
-                    <div id="result-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-primary-200 flex items-center justify-center">
+                    <div id="result-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-indigo-200 flex items-center justify-center">
                         <img id="result-image" src="" alt="結果画像" class="w-full h-auto object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
 
-                    <div class="w-12 h-1 bg-primary-400 mx-auto rounded-full mb-4"></div>
+                    <div class="w-12 h-1 bg-indigo-400 mx-auto rounded-full mb-4"></div>
                     <p id="result-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base text-left">
                         ここに詳細な説明が表示されます。
                     </p>
@@ -178,7 +163,7 @@
             <section id="settings-view" class="hidden space-y-6">
                 <div class="flex justify-between items-center border-b pb-4">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-primary-600"></i> 設定・診断管理
+                        <i class="fa-solid fa-sliders text-indigo-600"></i> 設定・診断管理
                     </h2>
                     <button onclick="showView('home-view')" class="text-slate-400 hover:text-slate-600 text-sm">
                         <i class="fa-solid fa-xmark text-xl"></i>
@@ -187,7 +172,7 @@
 
                 <!-- タブ切り替え -->
                 <div class="flex border-b border-slate-200 text-xs md:text-sm font-bold">
-                    <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5">
+                    <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
                         <i class="fa-solid fa-folder-open"></i> 診断一覧・管理
                     </button>
                     <button id="tab-btn-editor" onclick="switchTab('editor')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
@@ -202,7 +187,7 @@
                 <div id="tab-content-manager" class="space-y-4">
                     <div class="flex justify-between items-center">
                         <p class="text-xs text-slate-500">作成した診断の切り替え・複製・削除が行えます。</p>
-                        <button onclick="createNewQuiz()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
+                        <button onclick="createNewQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
                             <i class="fa-solid fa-plus"></i> 新しい診断を作成
                         </button>
                     </div>
@@ -216,36 +201,36 @@
                 <div id="tab-content-editor" class="hidden space-y-6">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">公開設定</label>
-                        <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
+                        <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
                             <option value="true">公開する（トップ画面の選択肢に表示）</option>
                             <option value="false">非公開（URL直リンクまたは作成者のみアクセス可能）</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">判定方式</label>
-                        <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none" onchange="changeScoringMode(this.value)">
+                        <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" onchange="changeScoringMode(this.value)">
                             <option value="sum">合計スコア方式（旧）</option>
                             <option value="target">ターゲット加算方式（新）</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
-                        <input type="text" id="input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
+                        <input type="text" id="input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
-                        <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
+                        <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
-                        <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
+                        <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
                     </div>
 
                     <!-- 質問リスト表示 -->
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 text-sm">質問一覧 (<span id="editor-q-count">0</span>問)</h3>
-                            <button onclick="addQuestionEditor()" class="bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                            <button onclick="addQuestionEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
                                 + 質問を追加
                             </button>
                         </div>
@@ -258,7 +243,7 @@
                     <div class="space-y-3 pt-4 border-t border-slate-200">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 text-sm">診断結果一覧 (<span id="editor-r-count">0</span>種)</h3>
-                            <button onclick="addResultEditor()" class="bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                            <button onclick="addResultEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
                                 + 結果を追加
                             </button>
                         </div>
@@ -267,7 +252,7 @@
                         </div>
                     </div>
 
-                    <button onclick="saveManualEditor()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
+                    <button onclick="saveManualEditor()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存する
                     </button>
                 </div>
@@ -282,36 +267,36 @@
                         </h3>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
-                            <input type="text" id="csv-input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
+                            <input type="text" id="csv-input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
-                            <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
+                            <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
-                            <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
+                            <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
                         </div>
                     </div>
 
                     <!-- Googleスプレッドシート連携 -->
-                    <div class="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
-                        <h3 class="font-bold text-primary-900 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-link text-primary-600"></i> Googleスプレッドシートから読み込む
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-3">
+                        <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-link text-indigo-600"></i> Googleスプレッドシートから読み込む
                         </h3>
-                        <p class="text-xs text-primary-700 leading-relaxed">
+                        <p class="text-xs text-indigo-700 leading-relaxed">
                             Googleスプレッドシートで「ファイル」→「共有」→「Webに公開」を選択し、形式を「カンマ区切り値 (.csv)」にして発行したURLを入力します。
                         </p>
                         <div class="space-y-2">
                             <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">質問CSVのWeb公開URL</label>
-                                <input type="text" id="sheets-q-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
+                                <input type="text" id="sheets-q-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
                             <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">診断結果CSVのWeb公開URL</label>
-                                <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
+                                <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
-                            <button onclick="loadFromGoogleSheets()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
+                            <button onclick="loadFromGoogleSheets()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
                                 <i class="fa-solid fa-cloud-arrow-down mr-1"></i> スプレッドシートからデータを取得・更新
                             </button>
                         </div>
@@ -364,7 +349,7 @@
                         <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文, 画像URL(任意)</code></p>
                     </div>
 
-                    <button onclick="saveCsvSettings()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
+                    <button onclick="saveCsvSettings()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の設定を保存する
                     </button>
                 </div>
@@ -407,24 +392,25 @@
     <script>
         // デフォルトサンプルデータ
         
-        const colorThemes = {
-            indigo: { 50: '238 242 255', 100: '224 231 255', 200: '199 210 254', 300: '165 180 252', 400: '129 140 248', 500: '99 102 241', 600: '79 70 229', 700: '67 56 202', 800: '55 48 163', 900: '49 46 129' },
-            rose: { 50: '255 241 242', 100: '255 228 230', 200: '254 205 211', 300: '253 164 175', 400: '251 113 133', 500: '244 63 94', 600: '225 29 72', 700: '190 18 60', 800: '159 18 57', 900: '136 19 55' },
-            emerald: { 50: '236 253 245', 100: '209 250 229', 200: '167 243 208', 300: '110 231 183', 400: '52 211 153', 500: '16 185 129', 600: '5 150 105', 700: '4 120 87', 800: '6 95 70', 900: '6 78 59' },
-            amber: { 50: '255 251 235', 100: '254 243 199', 200: '253 230 138', 300: '252 211 77', 400: '251 191 36', 500: '245 158 11', 600: '217 119 6', 700: '180 83 9', 800: '146 64 14', 900: '120 53 15' },
-            sky: { 50: '240 249 255', 100: '224 242 254', 200: '186 230 253', 300: '125 211 252', 400: '56 189 248', 500: '14 165 233', 600: '2 132 199', 700: '3 105 161', 800: '7 89 133', 900: '12 74 110' },
-            violet: { 50: '245 243 255', 100: '237 233 254', 200: '221 214 254', 300: '196 181 253', 400: '167 139 250', 500: '139 92 246', 600: '124 58 237', 700: '109 40 217', 800: '91 33 182', 900: '76 29 149' },
-            fuchsia: { 50: '253 244 255', 100: '250 232 255', 200: '245 208 254', 300: '240 171 252', 400: '232 121 249', 500: '217 70 239', 600: '192 38 211', 700: '162 28 175', 800: '134 25 143', 900: '112 26 117' },
-            teal: { 50: '240 253 250', 100: '204 251 241', 200: '153 246 228', 300: '94 234 212', 400: '45 212 191', 500: '20 184 166', 600: '13 148 136', 700: '15 118 110', 800: '17 94 89', 900: '19 78 74' },
-            orange: { 50: '255 247 237', 100: '255 237 213', 200: '254 215 170', 300: '253 186 116', 400: '251 146 60', 500: '249 115 22', 600: '234 88 12', 700: '194 65 12', 800: '154 52 18', 900: '124 45 18' },
-            slate: { 50: '248 250 252', 100: '241 245 249', 200: '226 232 240', 300: '203 213 225', 400: '148 163 184', 500: '100 116 139', 600: '71 85 105', 700: '51 65 85', 800: '30 41 59', 900: '15 23 42' }
-        };
+        
 
         function applyColorTheme(themeName) {
-            const theme = colorThemes[themeName] || colorThemes.indigo;
-            const root = document.documentElement;
-            for (const [weight, color] of Object.entries(theme)) {
-                root.style.setProperty(`--color-primary-${weight}`, color);
+            if (!themeName) themeName = 'indigo';
+            const oldTheme = window.currentThemeName || 'indigo';
+            if (oldTheme === themeName) return;
+
+            const elements = document.querySelectorAll('*');
+            const regex = new RegExp(`(^|\\s)([a-zA-Z0-9:-]+-)${oldTheme}(-\\d{1,3}(/\\d+)?|\\b)`, 'g');
+            
+            elements.forEach(el => {
+                if (el.className && typeof el.className === 'string') {
+                    if (el.className.includes(oldTheme + '-')) {
+                        el.className = el.className.replace(regex, `$1$2${themeName}$3`);
+                    }
+                }
+            });
+            window.currentThemeName = themeName;
+        }`, color);
             }
         }
 
@@ -796,10 +782,10 @@
 
             q.options.forEach((opt) => {
                 const btn = document.createElement("button");
-                btn.className = "w-full text-left p-4 bg-white hover:bg-primary-50 border-2 border-slate-200 hover:border-primary-400 rounded-xl transition font-medium text-sm md:text-base text-slate-700 flex items-center justify-between group active:scale-[0.99]";
+                btn.className = "w-full text-left p-4 bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-xl transition font-medium text-sm md:text-base text-slate-700 flex items-center justify-between group active:scale-[0.99]";
                 btn.innerHTML = `
                     <span>${escapeHtml(opt.text)}</span>
-                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-primary-500 text-xs transition"></i>
+                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 text-xs transition"></i>
                 `;
                 btn.onclick = () => selectOption(opt);
                 container.appendChild(btn);
@@ -948,12 +934,12 @@
             quizList.forEach((q, index) => {
                 const isCurrent = q.id === currentQuizId;
                 const card = document.createElement("div");
-                card.className = `p-4 border rounded-xl flex items-center justify-between gap-3 transition ${isCurrent ? 'bg-primary-50 border-primary-300 ring-1 ring-primary-300' : 'bg-white border-slate-200'}`;
+                card.className = `p-4 border rounded-xl flex items-center justify-between gap-3 transition ${isCurrent ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300' : 'bg-white border-slate-200'}`;
 
                 card.innerHTML = `
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
-                            ${isCurrent ? '<span class="bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
+                            ${isCurrent ? '<span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
                             ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非公開</span>' : ''}
                             <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHtml(q.title)}</h4>
                         </div>
@@ -1330,7 +1316,7 @@
                             `;
                         });
                         targetsHtml += `
-                            <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
+                            <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
                                 + ターゲット加算を追加
                             </button>
                         `;
@@ -1354,16 +1340,16 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <span class="font-bold text-xs text-primary-600">Q${qIndex + 1}</span>
+                        <span class="font-bold text-xs text-indigo-600">Q${qIndex + 1}</span>
                         <button onclick="removeQuestion(${qIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
                     <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文を入力" class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
                     <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任意) https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
-                    <div class="space-y-1.5 pl-2 border-l-2 border-primary-200 mt-2">
+                    <div class="space-y-1.5 pl-2 border-l-2 border-indigo-200 mt-2">
                         ${optionsHtml}
-                        <button onclick="addOptionEditor(${qIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
+                        <button onclick="addOptionEditor(${qIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
                             <i class="fa-solid fa-plus"></i> 選択肢を追加
                         </button>
                     </div>
@@ -1398,7 +1384,7 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <span class="font-bold text-xs text-primary-600">結果${rIndex + 1}</span>
+                        <span class="font-bold text-xs text-indigo-600">結果${rIndex + 1}</span>
                         <button onclick="removeResult(${rIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
@@ -1550,7 +1536,7 @@
             });
 
             document.getElementById(`tab-content-${tab}`).classList.remove("hidden");
-            document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5";
+            document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5";
         }
 
         // ユーティリティ
