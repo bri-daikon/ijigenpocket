@@ -21,8 +21,11 @@
             </div>
             <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなたの性格タイプ診断</h1>
             <p id="app-desc" class="text-indigo-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！</p>
-            <button id="btn-open-settings" onclick="showView('settings-view')" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定・管理">
+            <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定・管理">
                 <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+            <button id="btn-auth" onclick="toggleAuth()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="ログイン">
+                <i id="auth-icon" class="fa-solid fa-user text-lg"></i>
             </button>
         </header>
 
@@ -42,7 +45,7 @@
                         <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
                             <!-- JSで動的生成 -->
                         </select>
-                        <button onclick="createNewQuiz()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
+                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
                             <i class="fa-solid fa-plus"></i> 新規作成
                         </button>
                     </div>
@@ -58,7 +61,7 @@
                     </button>
                 </div>
 
-                <div class="pt-2 flex justify-center gap-4 text-xs text-slate-500">
+                <div id="settings-link-footer" class="hidden pt-2 flex justify-center gap-4 text-xs text-slate-500">
                     <button onclick="showView('settings-view')" class="hover:text-indigo-600 underline flex items-center gap-1">
                         <i class="fa-solid fa-sliders"></i> この診断を編集・CSV連動
                     </button>
@@ -317,6 +320,32 @@
         <span id="toast-message">メッセージ</span>
     </div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyAjUDkDztnXK63JK8wQD1Hl5SuUBf4RdKs",
+          authDomain: "sindandan-app.firebaseapp.com",
+          projectId: "sindandan-app",
+          storageBucket: "sindandan-app.firebasestorage.app",
+          messagingSenderId: "795713054230",
+          appId: "1:795713054230:web:cf359d0b3a9b00de203737",
+          measurementId: "G-7M8WDZT0W7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.firebaseApp = { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, deleteDoc };
+
+        if (window.onFirebaseLoaded) window.onFirebaseLoaded();
+    </script>
+
     <script>
         // デフォルトサンプルデータ
         const DEFAULT_QUIZ = {
@@ -378,52 +407,47 @@
         let currentQuestionIndex = 0;
         let userScore = 0;
         let currentResult = null;
+        let currentUser = null;
 
         // 初期化処理
         window.addEventListener("DOMContentLoaded", () => {
-            loadAllQuizData();
-            checkUrlParameter();
-            renderHeader();
-            renderHome();
+            window.onFirebaseLoaded = () => {
+                if (window.firebaseApp) {
+                    window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
+                        currentUser = user;
+                        updateAuthUI();
+                        await loadAllQuizData();
+                        checkUrlParameter();
+                        renderHeader();
+                        renderHome();
+                        updateSettingsVisibility();
+                    });
+                }
+            };
         });
 
-        // データの読み込み・過去データのマイグレーション処理
-        function loadAllQuizData() {
-            const savedList = localStorage.getItem("shindan_maker_quiz_list");
-            const oldData = localStorage.getItem("shindan_maker_data");
+        // データの読み込み・クラウドからの取得
+        async function loadAllQuizData() {
+            if (!window.firebaseApp) return;
+            const { db, collection, getDocs } = window.firebaseApp;
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "quizzes"));
+                const loadedQuizzes = [];
+                querySnapshot.forEach((doc) => {
+                    loadedQuizzes.push(doc.data());
+                });
 
-            if (savedList) {
-                try {
-                    quizList = JSON.parse(savedList);
-                } catch (e) {
-                    quizList = [];
-                }
-            }
-
-            // 旧1件データを引き継ぐための自動互換処理
-            if (quizList.length === 0) {
-                if (oldData) {
-                    try {
-                        const parsedOld = JSON.parse(oldData);
-                        quizList = [{
-                            id: "quiz-" + Date.now(),
-                            title: parsedOld.title || "マイ診断 1",
-                            description: parsedOld.description || "",
-                            questions: parsedOld.questions || [],
-                            results: parsedOld.results || [],
-                            sheetsQUrl: "",
-                            sheetsRUrl: ""
-                        }];
-                    } catch (e) {
-                        quizList = [JSON.parse(JSON.stringify(DEFAULT_QUIZ))];
-                    }
+                if (loadedQuizzes.length > 0) {
+                    quizList = loadedQuizzes;
                 } else {
                     quizList = [JSON.parse(JSON.stringify(DEFAULT_QUIZ))];
                 }
-                saveAllQuizData();
+            } catch (err) {
+                console.error("Firestore loading error:", err);
+                quizList = [JSON.parse(JSON.stringify(DEFAULT_QUIZ))];
             }
 
-            // カレントIDの設定
             const savedCurrentId = localStorage.getItem("shindan_maker_current_id");
             if (savedCurrentId && quizList.some(q => q.id === savedCurrentId)) {
                 currentQuizId = savedCurrentId;
@@ -434,9 +458,70 @@
             currentQuiz = quizList.find(q => q.id === currentQuizId) || quizList[0];
         }
 
-        function saveAllQuizData() {
-            localStorage.setItem("shindan_maker_quiz_list", JSON.stringify(quizList));
-            localStorage.setItem("shindan_maker_current_id", currentQuizId);
+        async function saveCurrentQuiz() {
+            if (!window.firebaseApp || !currentUser) return;
+            const { db, doc, setDoc } = window.firebaseApp;
+            
+            if (!currentQuiz.ownerId) {
+                currentQuiz.ownerId = currentUser.uid;
+            }
+
+            try {
+                await setDoc(doc(db, "quizzes", currentQuiz.id), currentQuiz);
+                localStorage.setItem("shindan_maker_current_id", currentQuizId);
+            } catch (err) {
+                console.error(err);
+                showToast("保存に失敗しました", "error");
+            }
+        }
+
+        function toggleAuth() {
+            if (!window.firebaseApp) return;
+            const { auth, provider, signInWithPopup, signOut } = window.firebaseApp;
+            if (currentUser) {
+                signOut(auth).then(() => showToast("ログアウトしました")).catch(err => console.error(err));
+            } else {
+                signInWithPopup(auth, provider).then(() => showToast("ログインしました！")).catch(err => {
+                    console.error(err);
+                    showToast("ログインに失敗しました", "error");
+                });
+            }
+        }
+
+        function updateAuthUI() {
+            const authIcon = document.getElementById("auth-icon");
+            const btnAuth = document.getElementById("btn-auth");
+            if (!btnAuth) return;
+            if (currentUser) {
+                authIcon.className = "fa-solid fa-sign-out-alt text-lg";
+                btnAuth.title = "ログアウト";
+            } else {
+                authIcon.className = "fa-solid fa-user text-lg";
+                btnAuth.title = "ログイン";
+            }
+        }
+
+        function updateSettingsVisibility() {
+            const btnSettings = document.getElementById("btn-open-settings");
+            const btnNewHome = document.getElementById("btn-new-quiz-home");
+            const footerLink = document.getElementById("settings-link-footer");
+            
+            if (!currentUser) {
+                if (btnSettings) btnSettings.classList.add("hidden");
+                if (btnNewHome) btnNewHome.classList.add("hidden");
+                if (footerLink) footerLink.classList.add("hidden");
+                return;
+            }
+
+            if (btnNewHome) btnNewHome.classList.remove("hidden");
+
+            if (currentQuiz && (currentQuiz.ownerId === currentUser.uid || !currentQuiz.ownerId)) {
+                if (btnSettings) btnSettings.classList.remove("hidden");
+                if (footerLink) footerLink.classList.remove("hidden");
+            } else {
+                if (btnSettings) btnSettings.classList.add("hidden");
+                if (footerLink) footerLink.classList.add("hidden");
+            }
         }
 
         // URLパラメータ(?id=xxx)で指定診断を開く機能
@@ -446,7 +531,7 @@
             if (targetId && quizList.some(q => q.id === targetId)) {
                 currentQuizId = targetId;
                 currentQuiz = quizList.find(q => q.id === currentQuizId);
-                saveAllQuizData();
+                localStorage.setItem("shindan_maker_current_id", currentQuizId);
             }
         }
 
@@ -489,7 +574,7 @@
         function switchQuiz(id) {
             currentQuizId = id;
             currentQuiz = quizList.find(q => q.id === id);
-            saveAllQuizData();
+            localStorage.setItem("shindan_maker_current_id", currentQuizId);
             
             // URLパラメータを書き換え (履歴を残さずURLを更新)
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + id;
@@ -497,11 +582,16 @@
 
             renderHeader();
             renderHome();
+            updateSettingsVisibility();
             showToast(`「${currentQuiz.title}」に切り替えました`);
         }
 
         // 新規診断の作成
-        function createNewQuiz() {
+        async function createNewQuiz() {
+            if (!currentUser) {
+                showToast("診断を作成するにはログインしてください", "error");
+                return;
+            }
             const newId = "quiz-" + Date.now();
             const newQuiz = {
                 id: newId,
@@ -509,6 +599,7 @@
                 description: "新しい診断の説明文をここに入力してください。",
                 sheetsQUrl: "",
                 sheetsRUrl: "",
+                ownerId: currentUser.uid,
                 questions: [
                     {
                         text: "質問文をここに入力してください",
@@ -529,7 +620,16 @@
             };
 
             quizList.push(newQuiz);
-            switchQuiz(newId);
+            currentQuizId = newId;
+            currentQuiz = newQuiz;
+            await saveCurrentQuiz();
+            
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + newId;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+            renderHeader();
+            renderHome();
+            updateSettingsVisibility();
             showToast("新しい診断を作成しました！設定画面で編集できます。");
         }
 
@@ -716,22 +816,33 @@
         }
 
         // 診断の複製
-        function duplicateQuiz(id) {
+        async function duplicateQuiz(id) {
+            if (!currentUser) return;
             const target = quizList.find(q => q.id === id);
             if (!target) return;
 
             const newQuiz = JSON.parse(JSON.stringify(target));
             newQuiz.id = "quiz-" + Date.now();
             newQuiz.title = `${target.title} (コピー)`;
+            newQuiz.ownerId = currentUser.uid;
 
             quizList.push(newQuiz);
-            switchQuiz(newQuiz.id);
+            currentQuizId = newQuiz.id;
+            currentQuiz = newQuiz;
+            await saveCurrentQuiz();
+            
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + newQuiz.id;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
             initSettingsView();
+            renderHeader();
+            renderHome();
+            updateSettingsVisibility();
             showToast("診断を複製しました！");
         }
 
         // 診断の削除
-        function deleteQuiz(id) {
+        async function deleteQuiz(id) {
             if (quizList.length <= 1) {
                 showToast("最低1つの診断が必要です", "error");
                 return;
@@ -739,15 +850,27 @@
 
             if (!confirm("この診断を削除してもよろしいですか？")) return;
 
+            if (window.firebaseApp) {
+                const { db, doc, deleteDoc } = window.firebaseApp;
+                try {
+                    await deleteDoc(doc(db, "quizzes", id));
+                } catch (e) {
+                    console.error(e);
+                    showToast("削除に失敗しました", "error");
+                    return;
+                }
+            }
+
             quizList = quizList.filter(q => q.id !== id);
             if (currentQuizId === id) {
                 currentQuizId = quizList[0].id;
                 currentQuiz = quizList[0];
+                localStorage.setItem("shindan_maker_current_id", currentQuizId);
             }
-            saveAllQuizData();
             renderHeader();
             renderHome();
             initSettingsView();
+            updateSettingsVisibility();
             showToast("診断を削除しました");
         }
 
@@ -813,7 +936,7 @@
                 currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
                 currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
 
-                saveAllQuizData();
+                await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
                 showToast(`質問${questions.length}問を取り込み更新しました！`);
@@ -860,10 +983,10 @@
                 }));
             }
 
-            Promise.all(promises).then(() => {
+            Promise.all(promises).then(async () => {
                 currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
                 currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
-                saveAllQuizData();
+                await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
                 showToast("CSVファイルを適用しました！");
@@ -1046,22 +1169,22 @@
             renderEditorQuestions();
         }
 
-        function saveManualEditor() {
+        async function saveManualEditor() {
             currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("input-app-desc").value.trim();
-            saveAllQuizData();
+            await saveCurrentQuiz();
             renderHeader();
             renderHome();
             showToast("現在の診断設定を保存しました！");
             showView("home-view");
         }
 
-        function saveCsvSettings() {
+        async function saveCsvSettings() {
             currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
             currentQuiz.sheetsQUrl = document.getElementById("sheets-q-url").value.trim();
             currentQuiz.sheetsRUrl = document.getElementById("sheets-r-url").value.trim();
-            saveAllQuizData();
+            await saveCurrentQuiz();
             renderHeader();
             renderHome();
             showToast("基本設定とURLを保存しました！");
