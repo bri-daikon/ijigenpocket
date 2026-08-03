@@ -387,6 +387,7 @@
         const provider = new GoogleAuthProvider();
 
         window.firebaseApp = { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, deleteDoc };
+        if (window.initAppAfterFirebase) window.initAppAfterFirebase();
     </script>
 
     <script>
@@ -485,26 +486,36 @@
         let currentUser = null;
 
         // 初期化処理
-        window.addEventListener("DOMContentLoaded", () => {
-            if (window.firebaseApp) {
-                window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
-                    currentUser = user;
-                    updateAuthUI();
-                    await loadAllQuizData();
-                    checkUrlParameter();
-                    renderHeader();
-                    renderHome();
-                    updateSettingsVisibility();
-                });
-            } else {
-                // Firebaseが読み込めなかった場合のフォールバック
-                loadAllQuizData().then(() => {
-                    checkUrlParameter();
-                    renderHeader();
-                    renderHome();
-                });
+        window.initAppAfterFirebase = function() {
+        if (window.appInitialized) return;
+        window.appInitialized = true;
+        if (window.firebaseApp) {
+            window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
+                currentUser = user;
+                updateAuthUI();
+                await loadAllQuizData();
+                checkUrlParameter();
+                renderHeader();
+                renderHome();
+                updateSettingsVisibility();
+            });
+        } else {
+            loadAllQuizData().then(() => {
+                checkUrlParameter();
+                renderHeader();
+                renderHome();
+                updateSettingsVisibility();
+            });
+        }
+    };
+    
+    window.addEventListener("DOMContentLoaded", () => {
+        setTimeout(() => {
+            if (!window.firebaseApp && !window.appInitialized) {
+                window.initAppAfterFirebase();
             }
-        });
+        }, 3000);
+    });
 
         // データの読み込み・クラウドからの取得
         async function loadAllQuizData() {
