@@ -109,6 +109,12 @@
                     <h2 id="result-title" class="text-2xl md:text-3xl font-extrabold text-indigo-950 mb-4">
                         結果タイトル
                     </h2>
+                    
+                    <!-- 結果画像エリア -->
+                    <div id="result-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-indigo-200 flex items-center justify-center">
+                        <img id="result-image" src="" alt="結果画像" class="w-full h-auto object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                    </div>
+
                     <div class="w-12 h-1 bg-indigo-400 mx-auto rounded-full mb-4"></div>
                     <p id="result-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base text-left">
                         ここに詳細な説明が表示されます。
@@ -210,6 +216,21 @@
                 <!-- タブ3: CSV / スプレッドシート連携 -->
                 <div id="tab-content-csv" class="hidden space-y-6">
                     
+                    <!-- 診断基本情報（CSV用） -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-pen text-slate-500"></i> 基本設定
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
+                            <input type="text" id="csv-input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
+                            <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                        </div>
+                    </div>
+
                     <!-- Googleスプレッドシート連携 -->
                     <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-3">
                         <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
@@ -277,8 +298,12 @@
                         <p class="font-bold text-slate-800">💡 CSVファイルの書き方（カラム構造）</p>
                         <p><strong>質問CSV:</strong> <code>質問文, 画像URL(任意), 選択肢1, 点数1, 選択肢2, 点数2, 選択肢3, 点数3, 選択肢4, 点数4, 選択肢5, 点数5</code></p>
                         <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配分可能です。画像が無い場合は画像URL列を空にしてください。</p>
-                        <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文</code></p>
+                        <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文, 画像URL(任意)</code></p>
                     </div>
+
+                    <button onclick="saveCsvSettings()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の設定を保存する
+                    </button>
                 </div>
 
             </section>
@@ -587,6 +612,17 @@
             document.getElementById("result-title").textContent = currentResult.title;
             document.getElementById("result-desc").textContent = currentResult.description;
 
+            // 結果画像の表示制御
+            const resImgContainer = document.getElementById("result-image-container");
+            const resImgEl = document.getElementById("result-image");
+            if (currentResult.image && currentResult.image.trim() !== "") {
+                resImgEl.src = currentResult.image.trim();
+                resImgContainer.classList.remove("hidden");
+            } else {
+                resImgContainer.classList.add("hidden");
+                resImgEl.src = "";
+            }
+
             showView("result-view");
         }
 
@@ -634,6 +670,8 @@
             renderQuizManagerList();
             document.getElementById("input-app-title").value = currentQuiz.title;
             document.getElementById("input-app-desc").value = currentQuiz.description || "";
+            document.getElementById("csv-input-app-title").value = currentQuiz.title;
+            document.getElementById("csv-input-app-desc").value = currentQuiz.description || "";
             document.getElementById("sheets-q-url").value = currentQuiz.sheetsQUrl || "";
             document.getElementById("sheets-r-url").value = currentQuiz.sheetsRUrl || "";
             renderEditorQuestions();
@@ -772,8 +810,11 @@
                 currentQuiz.results = results;
                 currentQuiz.sheetsQUrl = qUrl;
                 currentQuiz.sheetsRUrl = rUrl;
+                currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
+                currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
 
                 saveAllQuizData();
+                renderHeader();
                 renderHome();
                 showToast(`質問${questions.length}問を取り込み更新しました！`);
                 showView("home-view");
@@ -820,7 +861,10 @@
             }
 
             Promise.all(promises).then(() => {
+                currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
+                currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
                 saveAllQuizData();
+                renderHeader();
                 renderHome();
                 showToast("CSVファイルを適用しました！");
                 showView("home-view");
@@ -876,7 +920,8 @@
                     minScore: parseInt(r[0]) || 0,
                     maxScore: parseInt(r[1]) || 999,
                     title: r[2],
-                    description: r[3]
+                    description: r[3],
+                    image: r[4] ? r[4].trim() : ""
                 });
             }
             return results;
@@ -897,9 +942,9 @@
             });
             downloadFile(qCsv, `${currentQuiz.title}_questions.csv`);
 
-            let rCsv = "最小点数,最大点数,診断結果タイトル,診断結果説明文\n";
+            let rCsv = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n";
             currentQuiz.results.forEach(r => {
-                rCsv += `${r.minScore},${r.maxScore},"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}"\n`;
+                rCsv += `${r.minScore},${r.maxScore},"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}","${(r.image || '').replace(/"/g, '""')}"\n`;
             });
             downloadFile(rCsv, `${currentQuiz.title}_results.csv`);
 
@@ -910,7 +955,7 @@
             const sampleQ = "質問文,画像URL,選択肢1,点数1,選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n" +
                 "休日どう過ごす？,https://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制作,2,近所を散歩,1,友達と外出,0,イベント企画,0\n" +
                 "直感で選ぶ場所は？,https://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,最先端のラボ,2,波音の聞こえる海,1,夜のテーマパーク,0,フェスティバル,0";
-            const sampleR = "最小点数,最大点数,診断結果タイトル,診断結果説明文\n0,2,【アクティブタイプ】,行動力バツグンのアクティブ派です！\n3,4,【バランスタイプ】,状況に合わせて柔軟に対応できるバランス派です。\n5,6,【インドア・集中タイプ】,自分の世界を大切にする知的で集中力の高いタイプです。";
+            const sampleR = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n0,2,【アクティブタイプ】,行動力バツグンのアクティブ派です！,https://placehold.co/600x400/fee2e2/991b1b?text=Active\n3,4,【バランスタイプ】,状況に合わせて柔軟に対応できるバランス派です。,https://placehold.co/600x400/dbeafe/1e40af?text=Balance\n5,6,【インドア・集中タイプ】,自分の世界を大切にする知的で集中力の高いタイプです。,https://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
 
             downloadFile(sampleQ, "sample_questions.csv");
             downloadFile(sampleR, "sample_results.csv");
@@ -1008,6 +1053,18 @@
             renderHeader();
             renderHome();
             showToast("現在の診断設定を保存しました！");
+            showView("home-view");
+        }
+
+        function saveCsvSettings() {
+            currentQuiz.title = document.getElementById("csv-input-app-title").value.trim() || "診断メーカー";
+            currentQuiz.description = document.getElementById("csv-input-app-desc").value.trim();
+            currentQuiz.sheetsQUrl = document.getElementById("sheets-q-url").value.trim();
+            currentQuiz.sheetsRUrl = document.getElementById("sheets-r-url").value.trim();
+            saveAllQuizData();
+            renderHeader();
+            renderHome();
+            showToast("基本設定とURLを保存しました！");
             showView("home-view");
         }
 
