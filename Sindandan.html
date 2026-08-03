@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -8,20 +8,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Theme Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'var(--color-primary-50)',
+                            100: 'var(--color-primary-100)',
+                            200: 'var(--color-primary-200)',
+                            300: 'var(--color-primary-300)',
+                            400: 'var(--color-primary-400)',
+                            500: 'var(--color-primary-500)',
+                            600: 'var(--color-primary-600)',
+                            700: 'var(--color-primary-700)',
+                            800: 'var(--color-primary-800)',
+                            900: 'var(--color-primary-900)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
 
-    <!-- メインコンテナ -->
+    <!-- メインコンテナ�� -->
     <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden my-auto border border-slate-200">
         
-        <!-- ヘッダー -->
-        <header class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-6 text-center relative">
+        <!-- ヘッ�?ー -->
+        <header class="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 text-center relative">
             <div class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-2 font-medium">
-                <i class="fa-solid fa-list-check mr-1"></i> Web診断ポータル
+                <i class="fa-solid fa-list-check mr-1"></i> Web診断ポ�Eタル
             </div>
-            <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなたの性格タイプ診断</h1>
-            <p id="app-desc" class="text-indigo-100 text-sm mt-2">直感で質問に答えて、あなたの隠されたタイプをチェックしよう！</p>
-            <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定・管理">
+            <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold tracking-tight">あなた�E性格タイプ診断</h1>
+            <p id="app-desc" class="text-primary-100 text-sm mt-2">直感で質問に答えて、あなた�E�?されたタイプをチェチE��しよぁE��</p>
+            <button id="btn-open-settings" onclick="showView('settings-view')" class="hidden absolute top-4 right-[4.5rem] bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="設定�E管琁E>
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
             <button id="btn-auth" onclick="toggleAuth()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10" title="ログイン">
@@ -29,78 +53,78 @@
             </button>
         </header>
 
-        <!-- メインコンテンツ領域 -->
+        <!-- メインコンテナ��チE?�域 -->
         <main class="p-6 md:p-8">
 
-            <!-- 1. トップ画面（診断選択・開始） -->
+            <!-- 1. トップ画面�E�診断選択�E開始！E-->
             <section id="home-view" class="space-y-6 text-center py-2">
                 
                 <!-- 診断選択セレクター -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i> 診断を選択する</span>
-                        <span id="quiz-total-count" class="text-indigo-600 font-normal">全1件</span>
+                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択すめ</span>
+                        <span id="quiz-total-count" class="text-primary-600 font-normal">全1件</span>
                     </label>
                     <div class="flex gap-2">
-                        <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
-                            <!-- JSで動的生成 -->
+                        <select id="quiz-selector" onchange="switchQuiz(this.value)" class="flex-1 p-2.5 border rounded-xl text-sm font-bold bg-white text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer">
+                            <!-- JSで動的生�E -->
                         </select>
-                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作成">
-                            <i class="fa-solid fa-plus"></i> 新規作成
+                        <button id="btn-new-quiz-home" onclick="createNewQuiz()" class="hidden bg-primary-50 hover:bg-primary-100 text-primary-600 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition whitespace-nowrap" title="新規診断を作�E">
+                            <i class="fa-solid fa-plus"></i> 新規作�E
                         </button>
                     </div>
                 </div>
 
-                <!-- 診断開始カード -->
-                <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
-                    <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-indigo-200 bg-white flex items-center justify-center">
-                        <img id="home-quiz-image" src="" alt="トップ画像" class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                <!-- 診断開始カーチE-->
+                <div class="bg-primary-50 rounded-2xl p-6 border border-primary-100">
+                    <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-primary-200 bg-white flex items-center justify-center">
+                        <img id="home-quiz-image" src="" alt="トップ画僁E class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
-                    <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-indigo-500 mb-4"></i>
+                    <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-primary-500 mb-4"></i>
                     <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
-                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-indigo-600">10</span>問の質問（5択）に回答していきます。</p>
-                    <button onclick="startQuiz()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition text-lg transform active:scale-95">
-                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
+                    <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-primary-600">10</span>問�E質問！E択）に回答してぁE��ます�?�</p>
+                    <button onclick="startQuiz()" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-200 hover:shadow-primary-300 transition text-lg transform active:scale-95">
+                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！E
                     </button>
                 </div>
 
                 <div id="settings-link-footer" class="hidden pt-2 flex justify-center gap-4 text-xs text-slate-500">
-                    <button onclick="showView('settings-view')" class="hover:text-indigo-600 underline flex items-center gap-1">
-                        <i class="fa-solid fa-sliders"></i> この診断を編集・CSV連動
+                    <button onclick="showView('settings-view')" class="hover:text-primary-600 underline flex items-center gap-1">
+                        <i class="fa-solid fa-sliders"></i> こ�E診断を編雁E�ECSV連勁E
                     </button>
                 </div>
             </section>
 
-            <!-- 2. 質問プレイ画面 -->
+            <!-- 2. 質問�Eレイ画面 -->
             <section id="quiz-view" class="hidden space-y-6">
-                <!-- プログレスバー -->
+                <!-- プログレスバ�E -->
                 <div>
                     <div class="flex justify-between text-xs font-semibold text-slate-500 mb-2">
                         <span>PROGRESS</span>
                         <span><span id="current-q-num">1</span> / <span id="total-q-num">10</span></span>
                     </div>
                     <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                        <div id="progress-bar" class="bg-primary-600 h-full w-0 transition-all duration-300"></div>
                     </div>
                 </div>
 
-                <!-- 質問カード -->
+                <!-- 質問カーチE-->
                 <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-sm">
-                    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                    <span class="inline-block bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
                         Q<span id="q-number-badge">1</span>
                     </span>
                     <!-- 質問画像エリア -->
                     <div id="question-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-slate-200 max-h-64 bg-slate-100 flex items-center justify-center">
-                        <img id="question-image" src="" alt="質問画像" class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                        <img id="question-image" src="" alt="質問画僁E class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
                     <h3 id="question-text" class="text-lg md:text-xl font-bold text-slate-800 leading-relaxed">
-                        ここに質問文が表示されます
+                        ここに質問文が表示されまぁE
                     </h3>
                 </div>
 
-                <!-- 選択肢リスト (5択) -->
+                <!-- 選択肢リスチE(5抁E -->
                 <div id="options-container" class="space-y-3">
-                    <!-- JSで動的生成 -->
+                    <!-- JSで動的生�E -->
                 </div>
             </section>
 
@@ -110,26 +134,26 @@
                     診断結果
                 </div>
 
-                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-6 md:p-8 rounded-2xl shadow-inner">
-                    <p class="text-xs text-indigo-500 font-bold mb-1">獲得スコア: <span id="result-score" class="text-base font-extrabold">0</span> 点</p>
-                    <h2 id="result-title" class="text-2xl md:text-3xl font-extrabold text-indigo-950 mb-4">
+                <div class="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-100 p-6 md:p-8 rounded-2xl shadow-inner">
+                    <p class="text-xs text-primary-500 font-bold mb-1">獲得スコア: <span id="result-score" class="text-base font-extrabold">0</span> 点</p>
+                    <h2 id="result-title" class="text-2xl md:text-3xl font-extrabold text-primary-950 mb-4">
                         結果タイトル
                     </h2>
                     
                     <!-- 結果画像エリア -->
-                    <div id="result-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-indigo-200 flex items-center justify-center">
-                        <img id="result-image" src="" alt="結果画像" class="w-full h-auto object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                    <div id="result-image-container" class="mb-4 hidden overflow-hidden rounded-xl border border-primary-200 flex items-center justify-center">
+                        <img id="result-image" src="" alt="結果画僁E class="w-full h-auto object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
 
-                    <div class="w-12 h-1 bg-indigo-400 mx-auto rounded-full mb-4"></div>
+                    <div class="w-12 h-1 bg-primary-400 mx-auto rounded-full mb-4"></div>
                     <p id="result-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base text-left">
-                        ここに詳細な説明が表示されます。
+                        ここに詳細な説明が表示されます�?�E
                     </p>
                 </div>
 
                 <!-- SNS共有エリア -->
                 <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">この結果をシェアする</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">こ�E結果をシェアする</p>
                     <div class="flex flex-wrap justify-center gap-3">
                         <!-- X (旧Twitter) -->
                         <button onclick="shareX()" class="flex-1 min-w-[120px] bg-black hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
@@ -139,48 +163,49 @@
                         <button onclick="shareLine()" class="flex-1 min-w-[120px] bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
                             <i class="fa-brands fa-line text-sm"></i> LINEで送る
                         </button>
-                        <!-- コピー -->
+                        <!-- コピ�E -->
                         <button onclick="copyResultText()" class="flex-1 min-w-[120px] bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
-                            <i class="fa-regular fa-copy text-sm"></i> リンク付き結果コピー
+                            <i class="fa-regular fa-copy text-sm"></i> リンク付き結果コピ�E
                         </button>
                     </div>
                 </div>
 
                 <!-- 再挑戦ボタン -->
                 <button onclick="showView('home-view')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm">
-                    <i class="fa-solid fa-rotate-left mr-2"></i> もう一度診断する
+                    <i class="fa-solid fa-rotate-left mr-2"></i> もう�?度診断する
                 </button>
             </section>
 
-            <!-- 4. 設定・管理画面 -->
+            <!-- 4. 設定�E管琁E��面 -->
             <section id="settings-view" class="hidden space-y-6">
                 <div class="flex justify-between items-center border-b pb-4">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-indigo-600"></i> 設定・診断管理
+                        <i class="fa-solid fa-sliders text-primary-600"></i> 設定�E診断管琁E
                     </h2>
                     <button onclick="showView('home-view')" class="text-slate-400 hover:text-slate-600 text-sm">
                         <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
 
-                <!-- タブ切り替え -->
+                <!-- タブ�Eり替ぁE-->
                 <div class="flex border-b border-slate-200 text-xs md:text-sm font-bold">
-                    <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
-                        <i class="fa-solid fa-folder-open"></i> 診断一覧・管理
+                    <button id="tab-btn-manager" onclick="switchTab('manager')" class="py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5">
+                        <i class="fa-solid fa-folder-open"></i> 診断�?覧・管琁E
                     </button>
                     <button id="tab-btn-editor" onclick="switchTab('editor')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
-                        <i class="fa-solid fa-pen-to-square"></i> 手動編集
+                        <i class="fa-solid fa-pen-to-square"></i> 手動編雁E
                     </button>
                     <button id="tab-btn-csv" onclick="switchTab('csv')" class="py-2.5 px-3 md:px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv"></i> CSV / スプレチE��シーチE
                         <i class="fa-solid fa-file-csv"></i> CSV / スプレッドシート
                     </button>
                 </div>
 
-                <!-- タブ1: 診断一覧・管理 -->
+                <!-- タブ: 診断一覧・管理 -->
                 <div id="tab-content-manager" class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-500">作成した診断の切り替え・複製・削除が行えます。</p>
-                        <button onclick="createNewQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
+                        <p class="text-xs text-slate-500">作成した診断の切り替え・編集・削除が行えます。</p>
+                        <button onclick="createNewQuiz()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1">
                             <i class="fa-solid fa-plus"></i> 新しい診断を作成
                         </button>
                     </div>
@@ -190,40 +215,55 @@
                     </div>
                 </div>
 
-                <!-- タブ2: 手動編集 -->
+                <!-- タブ: 手動編集 -->
                 <div id="tab-content-editor" class="hidden space-y-6">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">公開設定</label>
-                        <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <select id="input-app-published" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
                             <option value="true">公開する（トップ画面の選択肢に表示）</option>
                             <option value="false">非公開（URL直リンクまたは作成者のみアクセス可）</option>
                         </select>
                     </div>
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">テーマカラー</label>
+                        <select id="input-app-theme" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none" onchange="previewTheme(this.value)">
+                            <option value="indigo">インディゴ（青紫）</option>
+                            <option value="rose">ローズ（ピンク）</option>
+                            <option value="emerald">エメラルド（緑）</option>
+                            <option value="amber">アンバー（黄・オレンジ）</option>
+                            <option value="sky">スカイ（水色）</option>
+                            <option value="violet">バイオレット（紫）</option>
+                            <option value="fuchsia">フクシア（赤紫）</option>
+                            <option value="teal">ティール（青緑）</option>
+                            <option value="orange">オレンジ</option>
+                            <option value="slate">スレート（グレー）</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">判定方式</label>
-                        <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" onchange="changeScoringMode(this.value)">
-                            <option value="sum">合計スコア方式（旧）</option>
-                            <option value="target">ターゲット加算方式（新）</option>
+                        <select id="input-app-scoringMode" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none" onchange="changeScoringMode(this.value)">
+                            <option value="sum">合計スコア方式</option>
+                            <option value="target">ターゲット計算方式</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
-                        <input type="text" id="input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <input type="text" id="input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
-                        <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                        <textarea id="input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
-                        <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL (任意)</label>
+                        <input type="text" id="input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
                     </div>
 
                     <!-- 質問リスト表示 -->
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 text-sm">質問一覧 (<span id="editor-q-count">0</span>問)</h3>
-                            <button onclick="addQuestionEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                            <button onclick="addQuestionEditor()" class="bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold px-3 py-1 rounded-lg text-xs transition">
                                 + 質問を追加
                             </button>
                         </div>
@@ -236,7 +276,7 @@
                     <div class="space-y-3 pt-4 border-t border-slate-200">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 text-sm">診断結果一覧 (<span id="editor-r-count">0</span>種)</h3>
-                            <button onclick="addResultEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                            <button onclick="addResultEditor()" class="bg-primary-50 text-primary-600 hover:bg-primary-100 font-bold px-3 py-1 rounded-lg text-xs transition">
                                 + 結果を追加
                             </button>
                         </div>
@@ -245,62 +285,62 @@
                         </div>
                     </div>
 
-                    <button onclick="saveManualEditor()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
+                    <button onclick="saveManualEditor()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存する
                     </button>
                 </div>
 
-                <!-- タブ3: CSV / スプレッドシート連携 -->
+                <!-- タブ: CSV / スプレッドシート連携 -->
                 <div id="tab-content-csv" class="hidden space-y-6">
                     
-                    <!-- 診断基本情報（CSV用） -->
+                    <!-- 診断基本情報 -->
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                         <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <i class="fa-solid fa-pen text-slate-500"></i> 基本設定
                         </h3>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">診断タイトル</label>
-                            <input type="text" id="csv-input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <input type="text" id="csv-input-app-title" class="w-full p-2.5 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">説明文</label>
-                            <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                            <textarea id="csv-input-app-desc" rows="2" class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL（任意）</label>
-                            <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">トップ画像URL (任意)</label>
+                            <input type="text" id="csv-input-app-image" placeholder="https://..." class="w-full p-2.5 border rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none text-slate-600">
                         </div>
                     </div>
 
                     <!-- Googleスプレッドシート連携 -->
-                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-3">
-                        <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-link text-indigo-600"></i> Googleスプレッドシートから読み込む
+                    <div class="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-3">
+                        <h3 class="font-bold text-primary-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-link text-primary-600"></i> Googleスプレッドシートから読み込み
                         </h3>
-                        <p class="text-xs text-indigo-700 leading-relaxed">
+                        <p class="text-xs text-primary-700 leading-relaxed">
                             Googleスプレッドシートで「ファイル」→「共有」→「Webに公開」を選択し、形式を「カンマ区切り値 (.csv)」にして発行したURLを入力します。
                         </p>
                         <div class="space-y-2">
                             <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">質問CSVのWeb公開URL</label>
-                                <input type="text" id="sheets-q-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <input type="text" id="sheets-q-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
                             </div>
                             <div>
                                 <label class="text-xs font-bold text-slate-600 block mb-1">診断結果CSVのWeb公開URL</label>
-                                <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <input type="text" id="sheets-r-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full text-xs p-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none">
                             </div>
-                            <button onclick="loadFromGoogleSheets()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
+                            <button onclick="loadFromGoogleSheets()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm">
                                 <i class="fa-solid fa-cloud-arrow-down mr-1"></i> スプレッドシートからデータを取得・更新
                             </button>
                         </div>
                     </div>
 
-                    <!-- ファイルインポート / エクスポート -->
+                    <!-- ファイルインポート/ エクスポート -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- CSV読み込み -->
                         <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white">
                             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
-                                <i class="fa-solid fa-file-import text-emerald-600"></i> CSVファイルを取り込む
+                                <i class="fa-solid fa-file-import text-emerald-600"></i> CSVファイルを取り込み
                             </h3>
                             <div>
                                 <label class="text-xs text-slate-600 block mb-1">質問CSVファイル</label>
@@ -320,14 +360,14 @@
                             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
                                 <i class="fa-solid fa-file-export text-blue-600"></i> CSV出力 & ひな形
                             </h3>
-                            <p class="text-xs text-slate-500">現在の設定をCSVとして保存、またはスプレッドシート作成用のひな形をダウンロードします。</p>
+                            <p class="text-xs text-slate-500">現在の設定をCSVとして保存。またスプレッドシート作成用のひな形をダウンロードします。</p>
                             <div class="space-y-2 pt-1">
                                 <button onclick="exportCurrentCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
                                     <span><i class="fa-solid fa-download mr-1"></i> 現在の設定をCSV出力</span>
                                     <i class="fa-solid fa-chevron-right text-slate-400"></i>
                                 </button>
                                 <button onclick="downloadSampleCsv()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-xs transition border text-left px-3 flex justify-between items-center">
-                                    <span><i class="fa-solid fa-file-lines mr-1"></i> サンプルCSV（ひな形）を取得</span>
+                                    <span><i class="fa-solid fa-file-lines mr-1"></i> サンプルCSVのひな形を取得</span>
                                     <i class="fa-solid fa-chevron-right text-slate-400"></i>
                                 </button>
                             </div>
@@ -336,13 +376,13 @@
 
                     <!-- フォーマット説明 -->
                     <div class="bg-slate-50 border p-4 rounded-xl text-xs space-y-2 text-slate-600">
-                        <p class="font-bold text-slate-800">💡 CSVファイルの書き方（カラム構造）</p>
+                        <p class="font-bold text-slate-800">CSVファイルの書き方・データ構造</p>
                         <p><strong>質問CSV:</strong> <code>質問文, 画像URL(任意), 選択肢1, 点数1, 選択肢2, 点数2, 選択肢3, 点数3, 選択肢4, 点数4, 選択肢5, 点数5</code></p>
-                        <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配分可能です。画像が無い場合は画像URL列を空にしてください。</p>
+                        <p class="text-slate-500 text-[11px]">※点数は 3, 2, 1, 0, 0 など自由に配分可能です。画像がない場合は画像URL列を空にしてください。</p>
                         <p><strong>結果CSV:</strong> <code>最小点数, 最大点数, 診断結果タイトル, 診断結果説明文, 画像URL(任意)</code></p>
                     </div>
 
-                    <button onclick="saveCsvSettings()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
+                    <button onclick="saveCsvSettings()" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md mt-4">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の設定を保存する
                     </button>
                 </div>
@@ -383,22 +423,43 @@
     </script>
 
     <script>
+        // カラーテーマ定義
+        const colorThemes = {
+            indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+            rose: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337' },
+            emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' },
+            amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f' },
+            sky: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' },
+            violet: { 50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95' },
+            fuchsia: { 50: '#fdf4ff', 100: '#fae8ff', 200: '#f5d0fe', 300: '#f0abfc', 400: '#e879f9', 500: '#d946ef', 600: '#c026d3', 700: '#a21caf', 800: '#86198f', 900: '#701a75' },
+            teal: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' },
+            orange: { 50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 800: '#9a3412', 900: '#7c2d12' },
+            slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+        };
+
+        function applyColorTheme(themeName) {
+            const theme = colorThemes[themeName] || colorThemes['indigo'];
+            const root = document.documentElement;
+            for (const [key, value] of Object.entries(theme)) {
+                root.style.setProperty(`--color-primary-${key}`, value);
+            }
+        }
+
         // デフォルトサンプルデータ
         const DEFAULT_QUIZ = {
             id: "default-1",
             title: "あなたの性格タイプ診断",
             description: "直感で質問に答えて、あなたの隠されたタイプをチェックしよう！",
             scoringMode: "sum",
-            sheetsQUrl: "",
-            sheetsRUrl: "",
+            themeColor: "indigo",
             questions: [
                 {
-                    text: "休日、予定がない日はどう過ごすことが多い？",
+                    text: "休日、予定がないときはどう過ごすことが多い？",
                     image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=60",
                     options: [
-                        { text: "1日中家でゆっくり読書や映画鑑賞", score: 3 },
+                        { text: "1日中家でゆっくり読書・動画鑑賞", score: 3 },
                         { text: "趣味の制作や勉強に没頭する", score: 2 },
-                        { text: "気分次第で近所を散歩する", score: 1 },
+                        { text: "気まぐれで近所を散歩する", score: 1 },
                         { text: "友達に連絡して出かける", score: 0 },
                         { text: "イベントやパーティーを自分で企画する", score: 0 }
                     ]
@@ -432,7 +493,7 @@
                     minScore: 5,
                     maxScore: 6,
                     title: "【静かな思索家（アナリスト）】",
-                    description: "深い洞察力と豊かな内面世界を持つタイプ。一人で集中して物事を探求することで真価を発揮します。"
+                    description: "深い観察力と豊かな内心世界を持つタイプ。一人で静かに物事を探求することで真価を発揮します。"
                 }
             ]
         };
@@ -460,7 +521,7 @@
                     updateSettingsVisibility();
                 });
             } else {
-                // Firebaseが読み込めなかった場合のフォールバック
+                // Firebaseが読み込めなかった場合フォールバック
                 loadAllQuizData().then(() => {
                     checkUrlParameter();
                     renderHeader();
@@ -469,7 +530,7 @@
             }
         });
 
-        // データの読み込み・クラウドからの取得
+        // データの読み込み・クラウドから取得
         async function loadAllQuizData() {
             if (!window.firebaseApp) return;
             const { db, collection, getDocs } = window.firebaseApp;
@@ -499,6 +560,7 @@
             }
 
             currentQuiz = quizList.find(q => q.id === currentQuizId) || quizList[0];
+            applyColorTheme(currentQuiz.themeColor || "indigo");
         }
 
         async function saveCurrentQuiz() {
@@ -527,7 +589,7 @@
             if (currentUser) {
                 signOut(auth).then(() => showToast("ログアウトしました")).catch(err => console.error(err));
             } else {
-                signInWithPopup(auth, provider).then(() => showToast("ログインしました！")).catch(err => {
+                signInWithPopup(auth, provider).then(() => showToast("ログインしました")).catch(err => {
                     console.error(err);
                     showToast("ログインに失敗しました", "error");
                 });
@@ -578,6 +640,7 @@
                 currentQuizId = targetId;
                 currentQuiz = quizList.find(q => q.id === currentQuizId);
                 localStorage.setItem("shindan_maker_current_id", currentQuizId);
+                applyColorTheme(currentQuiz.themeColor || "indigo");
             }
         }
 
@@ -596,7 +659,7 @@
         // ヘッダー・ホーム画面の描画
         function renderHeader() {
             document.getElementById("app-title").textContent = currentQuiz.title;
-            document.getElementById("app-desc").textContent = currentQuiz.description || "直感で質問に答えてチェック！";
+            document.getElementById("app-desc").textContent = currentQuiz.description || "直感で質問に答えてチェックしよう！";
         }
 
         function renderHome() {
@@ -617,16 +680,16 @@
                 if (homeIcon) homeIcon.classList.remove("hidden");
             }
 
-            // ドロップダウンセレクター生成
+            // ドロチE�E�?ウンセレクター生�E
             const selector = document.getElementById("quiz-selector");
             selector.innerHTML = "";
             let visibleCount = 0;
             quizList.forEach(q => {
-                // 公開されているか、現在選択中の診断のみ表示
+                // 公開されてぁE��か�?�現在選択中の診断のみ表示
                 if (q.published !== false || q.id === currentQuizId || (currentUser && q.ownerId === currentUser.uid)) {
                     const opt = document.createElement("option");
                     opt.value = q.id;
-                    opt.textContent = q.title + (q.published === false ? " (非公開)" : "");
+                    opt.textContent = q.title + (q.published === false ? " (非�E閁E" : "");
                     if (q.id === currentQuizId) opt.selected = true;
                     selector.appendChild(opt);
                     visibleCount++;
@@ -635,33 +698,33 @@
             document.getElementById("quiz-total-count").textContent = `全${visibleCount}件`;
         }
 
-        // 診断の切り替え（トップ画面セレクター）
+        // 診断の刁E��替え（トチE�E画面セレクター�E�E
         function switchQuiz(id) {
             currentQuizId = id;
             currentQuiz = quizList.find(q => q.id === id);
             localStorage.setItem("shindan_maker_current_id", currentQuizId);
             
-            // URLパラメータを書き換え (履歴を残さずURLを更新)
+            // URLパラメータを書き換ぁE(履歴を残さずURLを更新)
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + id;
             window.history.replaceState({ path: newUrl }, '', newUrl);
 
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast(`「${currentQuiz.title}」に切り替えました`);
+            showToast(`、E{currentQuiz.title}」に刁E��替えました`);
         }
 
-        // 新規診断の作成
+        // 新規診断の作�E
         async function createNewQuiz() {
             if (!currentUser) {
-                showToast("診断を作成するにはログインしてください", "error");
+                showToast("診断を作�Eするにはログインしてください", "error");
                 return;
             }
             const newId = "quiz-" + Date.now();
             const newQuiz = {
                 id: newId,
                 title: `新しい診断 (${quizList.length + 1})`,
-                description: "新しい診断の説明文をここに入力してください。",
+                description: "新しい診断の説明文をここに入力してください、E,
                 published: false,
                 scoringMode: "target",
                 sheetsQUrl: "",
@@ -679,8 +742,8 @@
                     }
                 ],
                 results: [
-                    { minScore: 0, maxScore: 0, title: "タイプ A", description: "説明 A" },
-                    { minScore: 0, maxScore: 0, title: "タイプ B", description: "説明 B" }
+                    { minScore: 0, maxScore: 0, title: "タイチEA", description: "説昁EA" },
+                    { minScore: 0, maxScore: 0, title: "タイチEB", description: "説昁EB" }
                 ]
             };
 
@@ -695,13 +758,13 @@
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast("新しい診断を作成しました！設定画面で編集できます。");
+            showToast("新しい診断を作�Eしました�E�設定画面で編雁E��きます�?�E);
         }
 
-        // 診断プレイ処理
+        // 診断プレイ処琁E
         function startQuiz() {
             if (!currentQuiz.questions || currentQuiz.questions.length === 0) {
-                showToast("質問が登録されていません。設定から追加してください。", "error");
+                showToast("質問が登録されてぁE��せん。設定から追�?してください、E, "error");
                 return;
             }
             currentQuestionIndex = 0;
@@ -731,20 +794,20 @@
                 imgEl.src = "";
             }
 
-            // プログレスバー
+            // プログレスバ�E
             const progress = (currentQuestionIndex / total) * 100;
             document.getElementById("progress-bar").style.width = `${progress}%`;
 
-            // 選択肢生成
+            // 選択肢生�E
             const container = document.getElementById("options-container");
             container.innerHTML = "";
 
             q.options.forEach((opt) => {
                 const btn = document.createElement("button");
-                btn.className = "w-full text-left p-4 bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-xl transition font-medium text-sm md:text-base text-slate-700 flex items-center justify-between group active:scale-[0.99]";
+                btn.className = "w-full text-left p-4 bg-white hover:bg-primary-50 border-2 border-slate-200 hover:border-primary-400 rounded-xl transition font-medium text-sm md:text-base text-slate-700 flex items-center justify-between group active:scale-[0.99]";
                 btn.innerHTML = `
                     <span>${escapeHtml(opt.text)}</span>
-                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-indigo-500 text-xs transition"></i>
+                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-primary-500 text-xs transition"></i>
                 `;
                 btn.onclick = () => selectOption(opt);
                 container.appendChild(btn);
@@ -794,7 +857,7 @@
 
             if (!currentResult) {
                 currentResult = currentQuiz.results[0] || {
-                    title: "診断完了",
+                    title: "診断完亁E,
                     description: "診断結果が見つかりませんでした"
                 };
             }
@@ -802,7 +865,7 @@
             document.getElementById("result-title").textContent = currentResult.title;
             document.getElementById("result-desc").textContent = currentResult.description;
 
-            // 結果画像の表示制御
+            // 結果画像�E表示制御
             const resImgContainer = document.getElementById("result-image-container");
             const resImgEl = document.getElementById("result-image");
             if (currentResult.image && currentResult.image.trim() !== "") {
@@ -816,7 +879,7 @@
             showView("result-view");
         }
 
-        // SNS共有 (URLパラメータを含めた共有リンクを生成)
+        // SNS共朁E(URLパラメータを含めた共有リンクを生戁E
         function getShareUrl() {
             const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             return `${baseUrl}?id=${currentQuizId}`;
@@ -824,7 +887,7 @@
 
         function shareX() {
             if (!currentResult) return;
-            let text = `【${currentQuiz.title}】の診断結果は…\n${currentResult.title}\n（スコア: ${userScore}点）\n\n#診断メーカー #Web診断\n`;
+            let text = `、E{currentQuiz.title}】�E診断結果は…\n${currentResult.title}\n�E�スコア: ${userScore}点�E�\n\n#診断メーカー #Web診断\n`;
             if (currentResult.image && currentResult.image.trim() !== "") {
                 text += `\n${currentResult.image.trim()}`;
             }
@@ -834,7 +897,7 @@
 
         function shareLine() {
             if (!currentResult) return;
-            let text = `【${currentQuiz.title}】診断結果: ${currentResult.title}`;
+            let text = `、E{currentQuiz.title}】診断結果: ${currentResult.title}`;
             if (currentResult.image && currentResult.image.trim() !== "") {
                 text += `\n${currentResult.image.trim()}`;
             }
@@ -844,14 +907,14 @@
 
         function copyResultText() {
             if (!currentResult) return;
-            let text = `【${currentQuiz.title}】\n診断結果: ${currentResult.title}\n${currentResult.description}\n${getShareUrl()}`;
+            let text = `、E{currentQuiz.title}】\n診断結果: ${currentResult.title}\n${currentResult.description}\n${getShareUrl()}`;
             if (currentResult.image && currentResult.image.trim() !== "") {
                 text += `\n${currentResult.image.trim()}`;
             }
 
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(text).then(() => {
-                    showToast("共有URL付きで結果をコピーしました！");
+                    showToast("共有URL付きで結果をコピ�Eしました�E�E);
                 });
             } else {
                 const textarea = document.createElement("textarea");
@@ -860,18 +923,19 @@
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                showToast("共有URL付きで結果をコピーしました！");
+                showToast("共有URL付きで結果をコピ�Eしました�E�E);
             }
         }
 
         function initSettingsView() {
             if (currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) {
                  showView('home-view');
-                 showToast("この診断の編集権限がありません", "error");
+                 showToast("こ�E診断の編雁E��限がありません", "error");
                  return;
             }
             renderQuizManagerList();
             document.getElementById("input-app-published").value = currentQuiz.published !== false ? "true" : "false";
+            document.getElementById("input-app-theme").value = currentQuiz.themeColor || "indigo";
             document.getElementById("input-app-scoringMode").value = currentQuiz.scoringMode || "sum";
             document.getElementById("input-app-title").value = currentQuiz.title;
             document.getElementById("input-app-desc").value = currentQuiz.description || "";
@@ -885,7 +949,7 @@
             renderEditorResults();
         }
 
-        // タブ1: 診断一覧・管理リストの生成
+        // タチE: 診断�?覧・管琁E��スト�E生�E
         function renderQuizManagerList() {
             const container = document.getElementById("quiz-list-container");
             container.innerHTML = "";
@@ -893,24 +957,24 @@
             quizList.forEach((q, index) => {
                 const isCurrent = q.id === currentQuizId;
                 const card = document.createElement("div");
-                card.className = `p-4 border rounded-xl flex items-center justify-between gap-3 transition ${isCurrent ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300' : 'bg-white border-slate-200'}`;
+                card.className = `p-4 border rounded-xl flex items-center justify-between gap-3 transition ${isCurrent ? 'bg-primary-50 border-primary-300 ring-1 ring-primary-300' : 'bg-white border-slate-200'}`;
 
                 card.innerHTML = `
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
-                            ${isCurrent ? '<span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
-                            ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非公開</span>' : ''}
+                            ${isCurrent ? '<span class="bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">選択中</span>' : ''}
+                            ${q.published === false ? '<span class="bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">非�E閁</span>' : ''}
                             <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHtml(q.title)}</h4>
                         </div>
-                        <p class="text-xs text-slate-500 truncate">${q.questions.length}問の質問 / ${q.results.length}個の診断結果</p>
+                        <p class="text-xs text-slate-500 truncate">${q.questions.length}問�E質啁E/ ${q.results.length}個�E診断結果</p>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${!isCurrent ? `
-                            <button onclick="switchQuiz('${q.id}'); if(currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) { showView('home-view'); showToast('編集権限がないためトップ画面に戻りました', 'error'); } else { initSettingsView(); }" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
-                                選択
+                            <button onclick="switchQuiz('${q.id}'); if(currentQuiz.ownerId && (!currentUser || currentQuiz.ownerId !== currentUser.uid)) { showView('home-view'); showToast('編雁E��限がなぁE��めトチE�E画面に戻りました', 'error'); } else { initSettingsView(); }" class="bg-white hover:bg-slate-100 border text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                                選抁E
                             </button>
                         ` : ''}
-                        <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="この診断を複製">
+                        <button onclick="duplicateQuiz('${q.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition" title="こ�E診断を褁E��">
                             <i class="fa-regular fa-copy"></i>
                         </button>
                         ${(quizList.length > 1 && (!q.ownerId || (currentUser && q.ownerId === currentUser.uid))) ? `
@@ -924,7 +988,7 @@
             });
         }
 
-        // 診断の複製
+        // 診断の褁E��
         async function duplicateQuiz(id) {
             if (!currentUser) return;
             const target = quizList.find(q => q.id === id);
@@ -932,7 +996,7 @@
 
             const newQuiz = JSON.parse(JSON.stringify(target));
             newQuiz.id = "quiz-" + Date.now();
-            newQuiz.title = `${target.title} (コピー)`;
+            newQuiz.title = `${target.title} (コピ�E)`;
             newQuiz.published = false;
             newQuiz.ownerId = currentUser.uid;
 
@@ -948,23 +1012,23 @@
             renderHeader();
             renderHome();
             updateSettingsVisibility();
-            showToast("診断を複製しました！");
+            showToast("診断を褁E��しました�E�E);
         }
 
         // 診断の削除
         async function deleteQuiz(id) {
             if (quizList.length <= 1) {
-                showToast("最低1つの診断が必要です", "error");
+                showToast("�?佁Eつの診断が忁E��でぁE, "error");
                 return;
             }
 
             const target = quizList.find(q => q.id === id);
             if (target && target.ownerId && (!currentUser || target.ownerId !== currentUser.uid)) {
-                showToast("この診断を削除する権限がありません", "error");
+                showToast("こ�E診断を削除する権限がありません", "error");
                 return;
             }
 
-            if (!confirm("この診断を削除してもよろしいですか？")) return;
+            if (!confirm("こ�E診断を削除してもよろしぁE��すか�E�E)) return;
 
             if (window.firebaseApp) {
                 const { db, doc, deleteDoc } = window.firebaseApp;
@@ -990,7 +1054,7 @@
             showToast("診断を削除しました");
         }
 
-        // CSV & スプレッドシート連携機能
+        // CSV & スプレチE��シート�?�携機�E
         function parseCSV(text) {
             const lines = text.split(/\r\n|\n/);
             const result = [];
@@ -1021,7 +1085,7 @@
             const rUrl = document.getElementById("sheets-r-url").value.trim();
 
             if (!qUrl) {
-                showToast("質問CSVのWeb公開URLを入力してください", "error");
+                showToast("質問CSVのWeb公開URLを�E力してください", "error");
                 return;
             }
 
@@ -1056,12 +1120,12 @@
                 await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
-                showToast(`質問${questions.length}問を取り込み更新しました！`);
+                showToast(`質啁E{questions.length}問を取り込み更新しました�E?);
                 showView("home-view");
 
             } catch (err) {
                 console.error(err);
-                showToast("読み込み失敗: URLまたは共有設定を確認してください", "error");
+                showToast("読み込み失敁E URLまた�E共有設定を確認してください", "error");
             }
         }
 
@@ -1070,7 +1134,7 @@
             const fileR = document.getElementById("input-file-r").files[0];
 
             if (!fileQ && !fileR) {
-                showToast("読み込むCSVファイルを選択してください", "error");
+                showToast("読み込�?CSVファイルを選択してください", "error");
                 return;
             }
 
@@ -1107,7 +1171,7 @@
                 await saveCurrentQuiz();
                 renderHeader();
                 renderHome();
-                showToast("CSVファイルを適用しました！");
+                showToast("CSVファイルを適用しました�E�E);
                 showView("home-view");
             });
         }
@@ -1115,7 +1179,7 @@
         function parseQuestionsCSV(text) {
             const rows = parseCSV(text);
             const questions = [];
-            const startIdx = (rows[0] && rows[0][0].includes("質問")) ? 1 : 0;
+            const startIdx = (rows[0] && rows[0][0].includes("質啁E)) ? 1 : 0;
 
             for (let i = startIdx; i < rows.length; i++) {
                 const r = rows[i];
@@ -1169,7 +1233,7 @@
         function parseResultsCSV(text) {
             const rows = parseCSV(text);
             const results = [];
-            const startIdx = (rows[0] && (rows[0][0].includes("最小") || rows[0][2].includes("タイトル"))) ? 1 : 0;
+            const startIdx = (rows[0] && (rows[0][0].includes("�?封E) || rows[0][2].includes("タイトル"))) ? 1 : 0;
 
             for (let i = startIdx; i < rows.length; i++) {
                 const r = rows[i];
@@ -1187,7 +1251,7 @@
         }
 
         function exportCurrentCsv() {
-            let qCsv = "質問文,画像URL,選択肢1,点数(またはターゲット配分),選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n";
+            let qCsv = "質問文,画像URL,選択肢1,点数(また�EターゲチE��配�E),選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n";
             currentQuiz.questions.forEach(q => {
                 let row = [
                     `"${q.text.replace(/"/g, '""')}"`,
@@ -1206,32 +1270,32 @@
             });
             downloadFile(qCsv, `${currentQuiz.title}_questions.csv`);
 
-            let rCsv = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n";
+            let rCsv = "�?小点数,�?大点数,診断結果タイトル,診断結果説明文,画像URL\n";
             currentQuiz.results.forEach(r => {
                 rCsv += `${r.minScore},${r.maxScore},"${r.title.replace(/"/g, '""')}","${r.description.replace(/"/g, '""')}","${(r.image || '').replace(/"/g, '""')}"\n`;
             });
             downloadFile(rCsv, `${currentQuiz.title}_results.csv`);
 
-            showToast("CSVをダウンロードしました！");
+            showToast("CSVをダウンロードしました�E�E);
         }
 
         function downloadSampleCsv() {
             if (currentQuiz.scoringMode === "target") {
-                const sampleQ = "質問文,画像URL,選択肢1,配分(結果番号:点数),選択肢2,配分2,選択肢3,配分3\n" +
-                    "休日の過ごし方は？,https://placehold.co/600x300/e2e8f0/475569?text=Weekend,アクティブに出かける,0:3|1:1,家で読書,1:3|0:1,近所を散歩,0:1|1:1";
-                const sampleR = "最小点数(無視),最大点数(無視),診断結果タイトル,診断結果説明文,画像URL\n0,0,【アクティブタイプ】,行動力バツグンのアクティブ派です！,https://placehold.co/600x400/fee2e2/991b1b?text=Active\n0,0,【インドア・集中タイプ】,自分の世界を大切にする知的で集中力の高いタイプです。,https://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
+                const sampleQ = "質問文,画像URL,選択肢1,配�E(結果番号:点数),選択肢2,配�E2,選択肢3,配�E3\n" +
+                    "休日の過ごし方は�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,アクチE��ブに出か�?めE0:3|1:1,家で読書,1:3|0:1,近所を散歩,0:1|1:1";
+                const sampleR = "�?小点数(無要E,�?大点数(無要E,診断結果タイトル,診断結果説明文,画像URL\n0,0,【アクチE��ブタイプ�?�E行動力バチE��ンのアクチE��ブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n0,0,【インドア・雁E��タイプ�?�E自刁E�E世界を大刁E��する知皁E��雁E��力�E高いタイプです�?�Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
                 downloadFile(sampleQ, "sample_questions.csv");
                 downloadFile(sampleR, "sample_results.csv");
             } else {
                 const sampleQ = "質問文,画像URL,選択肢1,点数1,選択肢2,点数2,選択肢3,点数3,選択肢4,点数4,選択肢5,点数5\n" +
-                    "休日どう過ごす？,https://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制作,2,近所を散歩,1,友達と外出,0,イベント企画,0\n" +
-                    "直感で選ぶ場所は？,https://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,最先端のラボ,2,波音の聞こえる海,1,夜のテーマパーク,0,フェスティバル,0";
-                const sampleR = "最小点数,最大点数,診断結果タイトル,診断結果説明文,画像URL\n0,2,【アクティブタイプ】,行動力バツグンのアクティブ派です！,https://placehold.co/600x400/fee2e2/991b1b?text=Active\n3,4,【バランスタイプ】,状況に合わせて柔軟に対応できるバランス派です。,https://placehold.co/600x400/dbeafe/1e40af?text=Balance\n5,6,【インドア・集中タイプ】,自分の世界を大切にする知的で集中力の高いタイプです。,https://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
+                    "休日どぁE��ごす�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Weekend,1日中家で読書,3,趣味の制佁E2,近所を散歩,1,友達と外�E,0,イベント企画,0\n" +
+                    "直感で選ぶ場�?は�E�Ehttps://placehold.co/600x300/e2e8f0/475569?text=Place,静寂なライブラリー,3,�?先端のラチE2,波音の聞こえる海,1,夜�EチE�Eマパーク,0,フェスチE��バル,0";
+                const sampleR = "�?小点数,�?大点数,診断結果タイトル,診断結果説明文,画像URL\n0,2,【アクチE��ブタイプ�?�E行動力バチE��ンのアクチE��ブ派です！Ehttps://placehold.co/600x400/fee2e2/991b1b?text=Active\n3,4,【バランスタイプ�?�E状況に合わせて柔軟に対応できるバランス派です�?�Ehttps://placehold.co/600x400/dbeafe/1e40af?text=Balance\n5,6,【インドア・雁E��タイプ�?�E自刁E�E世界を大刁E��する知皁E��雁E��力�E高いタイプです�?�Ehttps://placehold.co/600x400/f3e8ff/6b21a8?text=Indoor";
 
                 downloadFile(sampleQ, "sample_questions.csv");
                 downloadFile(sampleR, "sample_results.csv");
             }
-            showToast("サンプルCSVをダウンロードしました！");
+            showToast("サンプルCSVをダウンロードしました�E�E);
         }
 
         function downloadFile(content, filename) {
@@ -1242,7 +1306,7 @@
             link.click();
         }
 
-        // 手動編集画面機能
+        // 手動編雁E��面機�E
         function renderEditorQuestions() {
             const container = document.getElementById("questions-editor-list");
             document.getElementById("editor-q-count").textContent = currentQuiz.questions.length;
@@ -1266,7 +1330,7 @@
                             
                             targetsHtml += `
                                 <div class="flex items-center gap-1 mt-1 ml-4 bg-white p-1 rounded border shadow-sm">
-                                    <span class="text-slate-400 text-[10px] whitespace-nowrap">加算先:</span>
+                                    <span class="text-slate-400 text-[10px] whitespace-nowrap">�?算�E:</span>
                                     ${selectHtml}
                                     <input type="number" value="${ts.points}" onchange="updateTargetPoints(${qIndex}, ${oIndex}, ${tsIndex}, this.value)" class="w-10 p-1 border rounded text-center text-[10px] outline-none">
                                     <span class="text-slate-400 text-[10px]">点</span>
@@ -1275,8 +1339,8 @@
                             `;
                         });
                         targetsHtml += `
-                            <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
-                                + ターゲット加算を追加
+                            <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
+                                + ターゲチE���?算を追�?
                             </button>
                         `;
                     }
@@ -1299,17 +1363,17 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <span class="font-bold text-xs text-indigo-600">Q${qIndex + 1}</span>
+                        <span class="font-bold text-xs text-primary-600">Q${qIndex + 1}</span>
                         <button onclick="removeQuestion(${qIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
-                    <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文を入力" class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
-                    <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任意: https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
-                    <div class="space-y-1.5 pl-2 border-l-2 border-indigo-200 mt-2">
+                    <input type="text" value="${escapeHtml(q.text)}" onchange="updateQuestionText(${qIndex}, this.value)" placeholder="質問文を�E劁E class="w-full p-2 border rounded text-xs font-bold outline-none mb-1">
+                    <input type="text" value="${escapeHtml(q.image || '')}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="画像URL (任愁E https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
+                    <div class="space-y-1.5 pl-2 border-l-2 border-primary-200 mt-2">
                         ${optionsHtml}
-                        <button onclick="addOptionEditor(${qIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
-                            <i class="fa-solid fa-plus"></i> 選択肢を追加
+                        <button onclick="addOptionEditor(${qIndex})" class="text-primary-500 hover:text-primary-700 text-[10px] font-bold py-1 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-plus"></i> 選択肢を追�?
                         </button>
                     </div>
                 `;
@@ -1319,7 +1383,7 @@
 
         function addQuestionEditor() {
             currentQuiz.questions.push({
-                text: "新しい質問",
+                text: "新しい質啁E,
                 image: "",
                 options: [
                     { text: "選択肢 1", score: 3 },
@@ -1343,22 +1407,22 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center gap-2">
-                        <span class="font-bold text-xs text-indigo-600">結果${rIndex + 1}</span>
+                        <span class="font-bold text-xs text-primary-600">結果${rIndex + 1}</span>
                         <button onclick="removeResult(${rIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
                             <i class="fa-solid fa-trash"></i> 削除
                         </button>
                     </div>
                     ${currentQuiz.scoringMode !== "target" ? `
                     <div class="flex gap-2 items-center text-xs text-slate-600 mb-1">
-                        <span>スコア範囲:</span>
+                        <span>スコア篁E��:</span>
                         <input type="number" value="${r.minScore}" onchange="updateResultMinScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
-                        <span>〜</span>
+                        <span>、</span>
                         <input type="number" value="${r.maxScore}" onchange="updateResultMaxScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
                     </div>
                     ` : ''}
                     <input type="text" value="${escapeHtml(r.title)}" onchange="updateResultTitle(${rIndex}, this.value)" placeholder="診断結果のタイトル" class="w-full p-2 border rounded text-sm font-bold outline-none">
                     <textarea onchange="updateResultDesc(${rIndex}, this.value)" placeholder="診断結果の説明文" rows="2" class="w-full p-2 border rounded text-xs outline-none">${escapeHtml(r.description)}</textarea>
-                    <input type="text" value="${escapeHtml(r.image || '')}" onchange="updateResultImage(${rIndex}, this.value)" placeholder="結果の画像URL (任意: https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
+                    <input type="text" value="${escapeHtml(r.image || '')}" onchange="updateResultImage(${rIndex}, this.value)" placeholder="結果の画像URL (任愁E https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
                 `;
                 container.appendChild(card);
             });
@@ -1462,8 +1526,13 @@
             renderEditorResults();
         }
 
+        function previewTheme(themeName) {
+            applyColorTheme(themeName);
+        }
+
         async function saveManualEditor() {
             currentQuiz.published = document.getElementById("input-app-published").value === "true";
+            currentQuiz.themeColor = document.getElementById("input-app-theme").value;
             currentQuiz.scoringMode = document.getElementById("input-app-scoringMode").value;
             currentQuiz.title = document.getElementById("input-app-title").value.trim() || "診断メーカー";
             currentQuiz.description = document.getElementById("input-app-desc").value.trim();
@@ -1471,7 +1540,7 @@
             await saveCurrentQuiz();
             renderHeader();
             renderHome();
-            showToast("現在の診断設定を保存しました！");
+            showToast("現在の診断設定を保存しました�E�E);
             showView("home-view");
         }
 
@@ -1484,7 +1553,7 @@
             await saveCurrentQuiz();
             renderHeader();
             renderHome();
-            showToast("基本設定とURLを保存しました！");
+            showToast("基本設定とURLを保存しました�E�E);
             showView("home-view");
         }
 
@@ -1495,10 +1564,10 @@
             });
 
             document.getElementById(`tab-content-${tab}`).classList.remove("hidden");
-            document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5";
+            document.getElementById(`tab-btn-${tab}`).className = "py-2.5 px-3 md:px-4 border-b-2 border-primary-600 text-primary-600 flex items-center gap-1.5";
         }
 
-        // ユーティリティ
+        // ユーチE��リチE��
         function escapeHtml(str) {
             return String(str)
                 .replace(/&/g, "&amp;")
