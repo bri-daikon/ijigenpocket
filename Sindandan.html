@@ -62,7 +62,7 @@
                 <!-- 診断選択セレクター -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択すめ</span>
+                        <span><i class="fa-solid fa-layer-group text-primary-600 mr-1"></i> 診断を選択する</span>
                         <span id="quiz-total-count" class="text-primary-600 font-normal">全1件</span>
                     </label>
                     <div class="flex gap-2">
@@ -78,13 +78,14 @@
                 <!-- 診断開始カーチE-->
                 <div class="bg-primary-50 rounded-2xl p-6 border border-primary-100">
                     <div id="home-quiz-image-container" class="hidden mb-4 overflow-hidden rounded-xl border border-primary-200 bg-white flex items-center justify-center">
-                        <img id="home-quiz-image" src="" alt="トップ画僁E class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
+                        <img id="home-quiz-image" src="" alt="トップ画像" class="w-full h-auto max-h-48 object-cover rounded-xl" onerror="this.parentElement.classList.add('hidden')">
                     </div>
                     <i id="home-quiz-icon" class="fa-solid fa-clipboard-question text-5xl text-primary-500 mb-4"></i>
                     <h2 id="home-quiz-title" class="text-xl font-bold text-slate-800 mb-2">診断タイトル</h2>
+                    <p id="home-quiz-desc" class="text-sm text-slate-700 mb-4 whitespace-pre-wrap"></p>
                     <p class="text-sm text-slate-600 mb-6">全<span id="question-count-badge" class="font-bold text-primary-600">10</span>問�E質問！E択）に回答してぁE��ます�?�</p>
                     <button onclick="startQuiz()" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-200 hover:shadow-primary-300 transition text-lg transform active:scale-95">
-                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！E
+                        <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
                     </button>
                 </div>
 
@@ -445,6 +446,29 @@
             }
         }
 
+        function formatImageUrl(url) {
+            if (!url) return "";
+            const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
+            const match = url.match(driveRegex);
+            if (match && match[1]) {
+                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            }
+            return url;
+        }
+
+        // 画像URLフォーマッター (Google Drive対応)
+        function formatImageUrl(url) {
+            if (!url) return "";
+            // Google Driveの共有リンクを画像リンクに変換
+            const driveRegex = /drive\.google\.com\/file\/d\/([^\/]+)/;
+            const match = url.match(driveRegex);
+            if (match && match[1]) {
+                // サムネイル用URL。※ファイルの共有設定が「リンクを知っている全員」になっている必要があります
+                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            }
+            return url;
+        }
+
         // デフォルトサンプルデータ
         const DEFAULT_QUIZ = {
             id: "default-1",
@@ -664,6 +688,8 @@
 
         function renderHome() {
             document.getElementById("home-quiz-title").textContent = currentQuiz.title;
+            const descEl = document.getElementById("home-quiz-desc");
+            if (descEl) descEl.textContent = currentQuiz.description || "";
             document.getElementById("question-count-badge").textContent = currentQuiz.questions.length;
             document.getElementById("quiz-total-count").textContent = `全${quizList.length}件`;
 
