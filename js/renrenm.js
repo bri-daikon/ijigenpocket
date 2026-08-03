@@ -28,6 +28,12 @@ const sortable = new Sortable(sortableList, {
 // イベント設定
 if (fileInput) fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
+// ラジオボタンの変更イベント
+const modeRadios = document.querySelectorAll('input[name="rename-mode"]');
+modeRadios.forEach(radio => {
+    radio.addEventListener('change', updateNumbers);
+});
+
 if (dropArea) {
     dropArea.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -132,8 +138,11 @@ function updateNumbers() {
     const items = sortableList.querySelectorAll('li');
     if (countBadge) countBadge.textContent = items.length;
 
+    const mode = document.querySelector('input[name="rename-mode"]:checked')?.value || 'stamp';
+    const padding = mode === 'stamp' ? 2 : 3;
+
     items.forEach((item, index) => {
-        const num = (index + 1).toString().padStart(2, '0');
+        const num = (index + 1).toString().padStart(padding, '0');
         const fileId = item.dataset.id;
         const file = seqFileMap.get(fileId);
         const ext = file.name.split('.').pop();
@@ -178,11 +187,14 @@ if (downloadBtn) {
 
         try {
             // 1. 連番ファイルの処理
+            const mode = document.querySelector('input[name="rename-mode"]:checked')?.value || 'stamp';
+            const padding = mode === 'stamp' ? 2 : 3;
+
             seqItems.forEach((item, index) => {
                 const fileId = item.dataset.id;
                 const file = seqFileMap.get(fileId);
                 const ext = file.name.split('.').pop();
-                const newName = `${(index + 1).toString().padStart(2, '0')}.${ext}`;
+                const newName = `${(index + 1).toString().padStart(padding, '0')}.${ext}`;
                 zip.file(newName, file);
             });
 
