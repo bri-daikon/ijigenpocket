@@ -211,6 +211,19 @@
                         </div>
                     </div>
 
+                    <!-- 結果リスト表示 -->
+                    <div class="space-y-3 pt-4 border-t border-slate-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 text-sm">診断結果一覧 (<span id="editor-r-count">0</span>種)</h3>
+                            <button onclick="addResultEditor()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1 rounded-lg text-xs transition">
+                                + 結果を追加
+                            </button>
+                        </div>
+                        <div id="results-editor-list" class="space-y-4 max-h-96 overflow-y-auto pr-1">
+                            <!-- 動的生成 -->
+                        </div>
+                    </div>
+
                     <button onclick="saveManualEditor()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 現在の診断設定を保存する
                     </button>
@@ -778,6 +791,7 @@
             document.getElementById("sheets-q-url").value = currentQuiz.sheetsQUrl || "";
             document.getElementById("sheets-r-url").value = currentQuiz.sheetsRUrl || "";
             renderEditorQuestions();
+            renderEditorResults();
         }
 
         // タブ1: 診断一覧・管理リストの生成
@@ -1148,6 +1162,74 @@
                 ]
             });
             renderEditorQuestions();
+        }
+
+        function renderEditorResults() {
+            const container = document.getElementById("results-editor-list");
+            document.getElementById("editor-r-count").textContent = currentQuiz.results.length;
+            container.innerHTML = "";
+
+            currentQuiz.results.forEach((r, rIndex) => {
+                const card = document.createElement("div");
+                card.className = "p-4 bg-slate-50 border rounded-xl space-y-3 relative";
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-bold text-xs text-indigo-600">結果${rIndex + 1}</span>
+                        <button onclick="removeResult(${rIndex})" class="text-rose-500 hover:text-rose-700 text-xs">
+                            <i class="fa-solid fa-trash"></i> 削除
+                        </button>
+                    </div>
+                    <div class="flex gap-2 items-center text-xs text-slate-600 mb-1">
+                        <span>スコア範囲:</span>
+                        <input type="number" value="${r.minScore}" onchange="updateResultMinScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
+                        <span>〜</span>
+                        <input type="number" value="${r.maxScore}" onchange="updateResultMaxScore(${rIndex}, this.value)" class="w-16 p-1.5 border rounded text-center outline-none">
+                    </div>
+                    <input type="text" value="${escapeHtml(r.title)}" onchange="updateResultTitle(${rIndex}, this.value)" placeholder="診断結果のタイトル" class="w-full p-2 border rounded text-sm font-bold outline-none">
+                    <textarea onchange="updateResultDesc(${rIndex}, this.value)" placeholder="診断結果の説明文" rows="2" class="w-full p-2 border rounded text-xs outline-none">${escapeHtml(r.description)}</textarea>
+                    <input type="text" value="${escapeHtml(r.image || '')}" onchange="updateResultImage(${rIndex}, this.value)" placeholder="結果の画像URL (任意: https://...)" class="w-full p-1.5 border rounded text-xs outline-none text-slate-600">
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function addResultEditor() {
+            currentQuiz.results.push({
+                minScore: 0,
+                maxScore: 0,
+                title: "新しい診断結果",
+                description: "新しい説明文",
+                image: ""
+            });
+            renderEditorResults();
+        }
+
+        function updateResultMinScore(rIndex, val) {
+            const num = parseInt(val);
+            currentQuiz.results[rIndex].minScore = isNaN(num) ? 0 : num;
+        }
+
+        function updateResultMaxScore(rIndex, val) {
+            const num = parseInt(val);
+            currentQuiz.results[rIndex].maxScore = isNaN(num) ? 0 : num;
+        }
+
+        function updateResultTitle(rIndex, val) {
+            currentQuiz.results[rIndex].title = val;
+        }
+
+        function updateResultDesc(rIndex, val) {
+            currentQuiz.results[rIndex].description = val;
+        }
+
+        function updateResultImage(rIndex, val) {
+            currentQuiz.results[rIndex].image = val.trim();
+        }
+
+        function removeResult(rIndex) {
+            currentQuiz.results.splice(rIndex, 1);
+            renderEditorResults();
         }
 
         function updateQuestionText(qIndex, val) {
