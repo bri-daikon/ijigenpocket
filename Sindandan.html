@@ -430,10 +430,25 @@
 
         function formatImageUrl(url) {
             if (!url) return '';
-            const gdriveMatch = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
+            
+            // パターン1: https://drive.google.com/file/d/ID/view
+            let gdriveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
             if (gdriveMatch) {
                 return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
             }
+            
+            // パターン2: https://drive.google.com/uc?export=view&id=ID や uc?id=ID
+            gdriveMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/);
+            if (gdriveMatch) {
+                return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
+            }
+            
+            // パターン3: https://drive.google.com/open?id=ID
+            gdriveMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+            if (gdriveMatch) {
+                return `https://lh3.googleusercontent.com/d/${gdriveMatch[1]}`;
+            }
+
             return url;
         }
 
