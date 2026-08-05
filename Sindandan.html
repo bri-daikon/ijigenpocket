@@ -963,15 +963,39 @@
                 useCORS: true,
                 backgroundColor: "#f8fafc" // bg-slate-50 equivalent just in case
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `診断結果_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast("画像を保存しました！Xで添付してください。");
+                const fileName = `診断結果_${Date.now()}.png`;
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        const file = new File([blob], fileName, { type: 'image/png' });
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                                files: [file],
+                                title: '診断結果'
+                            }).then(() => {
+                                showToast("共有メニューを開きました");
+                            }).catch((err) => {
+                                console.error('Share failed:', err);
+                                fallbackDownload(canvas, fileName);
+                            });
+                        } else {
+                            fallbackDownload(canvas, fileName);
+                        }
+                    } else {
+                        fallbackDownload(canvas, fileName);
+                    }
+                }, 'image/png');
             }).catch(err => {
                 console.error(err);
                 showToast("画像の生成に失敗しました", "error");
             });
+        }
+
+        function fallbackDownload(canvas, fileName) {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast("画像を保存しました！Xで添付してください。");
         }
 
         function initSettingsView() {
