@@ -967,7 +967,8 @@
                 canvas.toBlob(blob => {
                     if (blob) {
                         const file = new File([blob], fileName, { type: 'image/png' });
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
                             navigator.share({
                                 files: [file],
                                 title: '診断結果'
@@ -1393,28 +1394,19 @@
                     if (!opt.targetScores) opt.targetScores = [];
                     let targetsHtml = "";
                     if (currentQuiz.scoringMode === "target") {
-                        opt.targetScores.forEach((ts, tsIndex) => {
-                            let selectHtml = `<select onchange="updateTargetResult(${qIndex}, ${oIndex}, ${tsIndex}, this.value)" class="p-1 border rounded text-[10px] outline-none max-w-[120px] truncate">`;
-                            currentQuiz.results.forEach((res, rIdx) => {
-                                selectHtml += `<option value="${rIdx}" ${ts.resultIndex == rIdx ? 'selected' : ''}>結果${rIdx + 1}: ${escapeHtml(res.title)}</option>`;
-                            });
-                            selectHtml += `</select>`;
+                        currentQuiz.results.forEach((res, rIdx) => {
+                            let ts = opt.targetScores.find(t => t.resultIndex == rIdx);
+                            let points = ts ? ts.points : 0;
                             
                             targetsHtml += `
-                                <div class="flex items-center gap-1 mt-1 ml-4 bg-white p-1 rounded border shadow-sm">
-                                    <span class="text-slate-400 text-[10px] whitespace-nowrap">加算先:</span>
-                                    ${selectHtml}
-                                    <input type="number" value="${ts.points}" onchange="updateTargetPoints(${qIndex}, ${oIndex}, ${tsIndex}, this.value)" class="w-10 p-1 border rounded text-center text-[10px] outline-none">
-                                    <span class="text-slate-400 text-[10px]">点</span>
-                                    <button onclick="removeTargetScore(${qIndex}, ${oIndex}, ${tsIndex})" class="text-rose-400 hover:text-rose-600 text-[10px] px-1"><i class="fa-solid fa-xmark"></i></button>
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5 ml-4 bg-white p-2 rounded-lg border shadow-sm text-[10px]">
+                                    <span class="text-slate-600 font-bold w-full md:w-32 truncate" title="${escapeHtml(res.title)}">結果${rIdx + 1}: ${escapeHtml(res.title)}</span>
+                                    <input type="range" min="0" max="10" value="${points}" oninput="document.getElementById('target-input-${qIndex}-${oIndex}-${rIdx}').value = this.value; updateTargetPointsFixed(${qIndex}, ${oIndex}, ${rIdx}, this.value)" onchange="updateTargetPointsFixed(${qIndex}, ${oIndex}, ${rIdx}, this.value)" class="flex-1 min-w-[80px] cursor-pointer accent-indigo-500">
+                                    <input type="number" id="target-input-${qIndex}-${oIndex}-${rIdx}" min="0" max="100" value="${points}" onchange="this.previousElementSibling.value = Math.min(this.value, 10); updateTargetPointsFixed(${qIndex}, ${oIndex}, ${rIdx}, this.value)" class="w-12 p-1 border rounded text-center outline-none">
+                                    <span class="text-slate-400">点</span>
                                 </div>
                             `;
                         });
-                        targetsHtml += `
-                            <button onclick="addTargetScore(${qIndex}, ${oIndex})" class="text-indigo-500 hover:text-indigo-700 text-[10px] font-bold py-1 ml-4 flex items-center gap-1 transition">
-                                + ターゲット加算を追加
-                            </button>
-                        `;
                     }
 
                     optionsHtml += `
@@ -1555,26 +1547,19 @@
             currentQuiz.questions[qIndex].options[oIndex].score = isNaN(scoreNum) ? 0 : scoreNum;
         }
 
-        function updateTargetResult(qIndex, oIndex, tsIndex, val) {
-            currentQuiz.questions[qIndex].options[oIndex].targetScores[tsIndex].resultIndex = parseInt(val);
-        }
-
-        function updateTargetPoints(qIndex, oIndex, tsIndex, val) {
+        function updateTargetPointsFixed(qIndex, oIndex, resultIndex, val) {
             const points = parseInt(val);
-            currentQuiz.questions[qIndex].options[oIndex].targetScores[tsIndex].points = isNaN(points) ? 0 : points;
-        }
-
-        function removeTargetScore(qIndex, oIndex, tsIndex) {
-            currentQuiz.questions[qIndex].options[oIndex].targetScores.splice(tsIndex, 1);
-            renderEditorQuestions();
-        }
-
-        function addTargetScore(qIndex, oIndex) {
-            if (!currentQuiz.questions[qIndex].options[oIndex].targetScores) {
-                currentQuiz.questions[qIndex].options[oIndex].targetScores = [];
+            const validPoints = isNaN(points) ? 0 : points;
+            
+            let opt = currentQuiz.questions[qIndex].options[oIndex];
+            if (!opt.targetScores) opt.targetScores = [];
+            
+            let existing = opt.targetScores.find(t => t.resultIndex == resultIndex);
+            if (existing) {
+                existing.points = validPoints;
+            } else {
+                opt.targetScores.push({ resultIndex: parseInt(resultIndex), points: validPoints });
             }
-            currentQuiz.questions[qIndex].options[oIndex].targetScores.push({ resultIndex: 0, points: 1 });
-            renderEditorQuestions();
         }
 
         function removeQuestion(qIndex) {
