@@ -9,11 +9,11 @@
     <meta property="og:description" content="直感で質問に答えて、あなたの隠されたタイプをチェックしよう！">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://bri-daikon.github.io/ijigenpocket/Sindandan.html">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1200&auto=format&fit=crop&q=60">
+    <meta property="og:image" content="https://bri-daikon.github.io/ijigenpocket/images/sindanpranet.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Web診断メーカー">
     <meta name="twitter:description" content="直感で質問に答えて、あなたの隠されたタイプをチェックしよう！">
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1200&auto=format&fit=crop&q=60">
+    <meta name="twitter:image" content="https://bri-daikon.github.io/ijigenpocket/images/sindanpranet.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,6 +25,8 @@
     </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
 
@@ -147,6 +149,9 @@
                 <!-- SNS共有エリア -->
                 <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">この結果をシェアする</p>
+                    <button onclick="downloadResultImage()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-indigo-200 hover:shadow-indigo-300">
+                        <i class="fa-solid fa-camera"></i> 結果を画像として保存（スクショ）
+                    </button>
                     <div class="flex flex-wrap justify-center gap-3">
                         <!-- X (旧Twitter) -->
                         <button onclick="shareX()" class="flex-1 min-w-[120px] bg-black hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
@@ -954,6 +959,28 @@
                 document.body.removeChild(textarea);
                 showToast("共有URL付きで結果をコピーしました。");
             }
+        }
+
+        function downloadResultImage() {
+            const targetElement = document.querySelector("#result-view > .bg-gradient-to-br");
+            if (!targetElement) return;
+            
+            showToast("画像を生成中...");
+            
+            html2canvas(targetElement, { 
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#f8fafc" // bg-slate-50 equivalent just in case
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `診断結果_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("画像を保存しました！Xで添付してください。");
+            }).catch(err => {
+                console.error(err);
+                showToast("画像の生成に失敗しました", "error");
+            });
         }
 
         function initSettingsView() {
