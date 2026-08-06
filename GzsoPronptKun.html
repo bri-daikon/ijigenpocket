@@ -1630,6 +1630,13 @@
                 terms.push("long legs");
             }
 
+            // ★ 構図・カメラアングルを最優先で追加
+            if (state.tabMode === 'character' && state.framing && state.framing.trim() !== '') {
+                terms.push(state.framing.trim());
+            } else if (state.tabMode === 'background' && state.bgCamera && state.bgCamera.trim() !== '') {
+                terms.push(state.bgCamera.trim());
+            }
+
             if (state.tabMode === 'character') {
                 // 人物モード
                 // 差分・着せ替えモード(ref)の場合は、服装や髪型を除外する
@@ -1660,13 +1667,13 @@
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 } else {
-                    ['facialHair', 'mole', 'expression', 'accessory', 'nailColor', 'clothingColor', 'outfit', 'tops', 'outerwear', 'bottoms', 'shoes', 'framing', 'pose', 'background'].forEach(key => {
+                    ['facialHair', 'mole', 'expression', 'accessory', 'nailColor', 'clothingColor', 'outfit', 'tops', 'outerwear', 'bottoms', 'shoes', 'pose', 'background'].forEach(key => {
                         if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                     });
                 }
             } else {
                 // 背景モード
-                ['bgTime', 'bgWeather', 'bgLighting', 'bgSetting', 'bgCamera'].forEach(key => {
+                ['bgTime', 'bgWeather', 'bgLighting', 'bgSetting'].forEach(key => {
                     if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
                 });
             }
