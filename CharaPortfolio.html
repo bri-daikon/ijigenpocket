@@ -189,7 +189,7 @@
                     });
                 }
 
-                allCharacters = parsed.filter(c => c.profile && c.profile.images && c.profile.images.length > 0 && c.profile.images[0].url);
+                allCharacters = parsed.filter(c => c.profile && c.profile.standingImage);
             } catch (e) {
                 console.error("データの読み込みに失敗", e);
             }
@@ -224,13 +224,12 @@
             }
 
             filteredChars.forEach(char => {
-                const mainImage = char.profile.images[0];
-                const displayUrl = convertToDisplayUrl(mainImage.url);
-                const statsStr = \`STR:\${getParam(char, 'STR')} / CON:\${getParam(char, 'CON')} / SIZ:\${getParam(char, 'SIZ')} / APP:\${getParam(char, 'APP')}\`;
+                const displayUrl = convertToDisplayUrl(char.profile.standingImage);
+                const statsStr = `STR:${getParam(char, 'STR')} / CON:${getParam(char, 'CON')} / SIZ:${getParam(char, 'SIZ')} / APP:${getParam(char, 'APP')}`;
                 
                 let tagsHtml = '';
                 if (char.tags && char.tags.length > 0) {
-                    tagsHtml = char.tags.map(t => \`<span class="px-2 py-0.5 bg-black/60 border border-stone-700 rounded text-[10px] text-stone-300 backdrop-blur-sm">\${t}</span>\`).join('');
+                    tagsHtml = char.tags.map(t => `<span class="px-2 py-0.5 bg-black/60 border border-stone-700 rounded text-[10px] text-stone-300 backdrop-blur-sm">${t}</span>`).join('');
                 }
 
                 const card = document.createElement('div');
@@ -238,18 +237,18 @@
                 
                 card.onclick = () => openPreview(displayUrl, char.name, statsStr, tagsHtml);
 
-                card.innerHTML = \`
-                    <img src="\${displayUrl}" loading="lazy" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out min-h-[150px]">
+                card.innerHTML = `
+                    <img src="${displayUrl}" loading="lazy" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out min-h-[150px]">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 sm:p-5">
                         <div class="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                            <h3 class="text-lg font-bold font-header text-amber-400 drop-shadow-md leading-tight mb-1">\${char.name}</h3>
-                            <div class="text-[10px] text-stone-400 font-mono mb-2">\${statsStr}</div>
+                            <h3 class="text-lg font-bold font-header text-amber-400 drop-shadow-md leading-tight mb-1">${char.name}</h3>
+                            <div class="text-[10px] text-stone-400 font-mono mb-2">${statsStr}</div>
                             <div class="flex flex-wrap gap-1.5">
-                                \${tagsHtml}
+                                ${tagsHtml}
                             </div>
                         </div>
                     </div>
-                \`;
+                `;
                 gridEl.appendChild(card);
             });
         }
