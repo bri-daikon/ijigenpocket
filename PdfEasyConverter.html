@@ -162,6 +162,14 @@
     body[data-theme="dark"] #canvas-container {
       background-color: #1e293b !important;
     }
+    
+    /* ページ数入力欄、置換入力欄など */
+    body[data-theme="dark"] input[type="text"],
+    body[data-theme="dark"] input[type="number"] {
+      background-color: #1e293b !important;
+      color: #e2e8f0 !important;
+      border-color: #334155 !important;
+    }
 
     
     /* focus:bg-white をダークモードに対応させる */
@@ -1312,6 +1320,47 @@
 
     // PDFの読み込み、テキスト抽出 ＆ プレビュー本紙の読み込み
     async function loadPdf(file) {
+      if (processedItems.length > 0) {
+        const keep = confirm("現在編集中のカードデータがあります。\n新しくPDFテキストを抽出してカードを上書きしますか？\n（「キャンセル」を押すと現在のカードを維持し、PDFプレビューのみを読み込みます）");
+        if (!keep) {
+          updateStatus('loading', 'PDFをプレビューのみロード中...');
+          isCurrentFileText = false;
+          // do not reset rawTextBlocks or processedItems
+          currentPreviewPage = 1;
+          
+          document.getElementById('preview-canvas').classList.add('hidden');
+          const placeholder = document.getElementById('preview-placeholder');
+          placeholder.classList.remove('hidden');
+          placeholder.innerHTML = `<i data-lucide="book-open" class="w-8 h-8 text-slate-300 mb-2"></i><p class="text-xs">PDFを読み込むとここに元のPDFが表示されます。ページの挿絵や全体のルビ確認に便利！</p>`;
+          lucide.createIcons();
+
+          try {
+            const fileReader = new FileReader();
+            fileReader.onload = async function () {
+              const typedarray = new Uint8Array(this.result);
+              try {
+                pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                const maxPages = pdfDoc.numPages;
+                document.getElementById('preview-total-pages').innerText = maxPages;
+                document.getElementById('preview-page-input').value = 1;
+                document.getElementById('btn-prev-page').disabled = false;
+                document.getElementById('btn-next-page').disabled = false;
+                updateStatus('success', 'ロード完了！');
+                renderPreviewPage(1);
+              } catch (error) {
+                console.error(error);
+                updateStatus('error', 'PDFの解析に失敗しました。');
+              }
+            };
+            fileReader.readAsArrayBuffer(file);
+          } catch (error) {
+            console.error(error);
+            updateStatus('error', 'ファイルの読み込みに失敗しました。');
+          }
+          return;
+        }
+      }
+
       updateStatus('loading', 'PDFを解析 ＆ 本紙ロード中...');
       isCurrentFileText = false;
       rawTextBlocks = [];
@@ -1559,7 +1608,6 @@
       if (!currentFileName || processedItems.length === 0) return;
 
       const saveData = processedItems
-        .filter(item => item.bookmarked || item.note || item.furiganaHtml || item.tabName || item.isCommand || item.isCopied || item.isToc)
         .map((item, index) => {
           let prevOriginal = null;
           if (item.isCommand) {
@@ -1741,6 +1789,35 @@
           } catch (e) {
             console.error("保存データの読み込みに失敗しました", e);
           }
+        }
+      }
+
+      if (isNewFileLoad && savedData.length > 0) {
+        const restore = confirm("前回の編集データ（自動保存）が見つかりました。\n削除や分割などの状態を含めて完全に復元しますか？\n（「キャンセル」を押すと最初から抽出します）");
+        if (restore) {
+          processedItems = savedData.map(item => ({
+            id: globalId++,
+            original: item.original || item.text,
+            text: item.text,
+            bookmarked: !!item.bookmarked,
+            note: item.note || '',
+            page: item.page || 1,
+            isEditing: false,
+            furiganaHtml: item.furiganaHtml,
+            color: item.color,
+            tabName: item.tabName,
+            charName: item.charName,
+            isCommand: !!item.isCommand,
+            isToc: !!item.isToc,
+            tocLevel: item.tocLevel || 1,
+            tocName: item.tocName,
+            isCollapsed: !!item.isCollapsed,
+            isCopied: !!item.isCopied
+          }));
+          renderList();
+          if (kuroshiroEnabled) toggleFurigana();
+          showToast('復元完了', '前回の編集状態を完全に復元しました。', 'success');
+          return;
         }
       }
 
@@ -3758,6 +3835,7 @@
           furiganaHtml: item.furiganaHtml,
           color: item.color,
           tabName: item.tabName,
+          charName: item.charName,
           isCommand: item.isCommand,
           isToc: item.isToc,
           tocLevel: item.tocLevel,
@@ -3817,6 +3895,7 @@
             furiganaHtml: item.furiganaHtml,
             color: item.color,
             tabName: item.tabName,
+            charName: item.charName,
             isCommand: item.isCommand,
             isToc: !!item.isToc,
             tocLevel: item.tocLevel || 1,
