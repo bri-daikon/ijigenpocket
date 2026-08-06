@@ -101,9 +101,15 @@
             <!-- 左カラム：キャラクターリスト (4/12) -->
             <section class="lg:col-span-4 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
                 <div class="p-4 border-b border-amber-950/60 bg-[#1a1511]">
-                    <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i> 対象の探索者
-                    </h2>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> 対象の探索者
+                        </h2>
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500"></i>
+                        <input type="text" id="profileSearchInput" placeholder="名前やタグで検索..." class="w-full bg-[#120e0a] border border-amber-900/40 text-stone-300 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-colors" oninput="renderList()">
+                    </div>
                 </div>
                 <div id="characterList" class="flex-grow overflow-y-auto p-2 space-y-1">
                     <!-- JSでキャラクターリストを生成 -->
@@ -304,7 +310,30 @@
             const listEl = document.getElementById('characterList');
             listEl.innerHTML = '';
 
+            const searchInput = document.getElementById('profileSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            // 大元のデータからタグを取得して検索対象にする
+            let allChars = [];
+            try {
+                const data = localStorage.getItem('weby_trpg_characters');
+                if (data) allChars = JSON.parse(data);
+            } catch (e) {}
+
             targets.forEach(char => {
+                // 名前検索
+                let match = char.name.toLowerCase().includes(query);
+                
+                // タグ検索（大元データからタグを取得）
+                if (query && !match) {
+                    const globalChar = allChars.find(c => c.id === char.id);
+                    if (globalChar && globalChar.tags) {
+                        match = globalChar.tags.some(tag => tag.toLowerCase().includes(query));
+                    }
+                }
+
+                if (query && !match) return; // 検索に引っかからなければスキップ
+
                 const item = document.createElement('div');
                 item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-amber-950/40 border-amber-700/60' : 'bg-transparent border-transparent hover:bg-[#1a1511]'}`;
                 item.onclick = () => selectCharacter(char.id);
@@ -580,16 +609,16 @@
         function convertToDisplayUrl(url) {
             if (!url) return '';
             // Google Driveの共有リンクを判定して変換
-            const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/view/;
+            const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
             const match = url.match(driveRegex);
             if (match && match[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
             }
             // open?id= の形式
             const driveRegex2 = /https:\/\/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/;
             const match2 = url.match(driveRegex2);
             if (match2 && match2[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match2[1]}`;
+                return `https://drive.google.com/thumbnail?id=${match2[1]}&sz=w1000`;
             }
             return url;
         }
