@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探索者ポートフォリオ - Grimoire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0806;
+        }
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(30, 20, 10, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(20, 30, 20, 0.3) 0%, transparent 40%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239c4d1c' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            font-family: 'Noto Serif JP', serif;
+        }
+        .font-header {
+            font-family: 'Cinzel', 'Noto Serif JP', serif;
+        }
+        
+        /* 魔法的なボーダーエフェクト */
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(45deg, transparent 40%, rgba(217, 119, 6, 0.3) 50%, transparent 60%);
+            z-index: -1;
+            border-radius: inherit;
+            animation: borderGlow 4s linear infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes borderGlow {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 100%; }
+        }
+
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #14100c; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #451a03; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78350f; 
+        }
+
+        /* 隠し要素用 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="text-stone-200 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-amber-900/40 bg-[#0a0806]/80 backdrop-blur-md sticky top-0 z-40 px-4 py-4 sm:px-6 shadow-[0_4px_30px_rgba(0,0,0,0.9)]">
+        <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-amber-700 to-amber-950 rounded-xl text-amber-100 shadow-[0_0_15px_rgba(217,119,6,0.2)]">
+                    <i data-lucide="camera" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-widest font-header text-amber-500 bg-gradient-to-r from-amber-300 via-amber-100 to-amber-400 bg-clip-text text-transparent">
+                        探索者ポートフォリオ</h1>
+                    <p class="text-[10px] sm:text-[11px] text-amber-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF CHARACTER PORTFOLIO</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="CharaHeight.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-amber-950/40 text-stone-300 hover:text-amber-300 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="ruler" class="w-4 h-4 sm:mr-2"></i>
+                    <span class="hidden sm:inline">身長比較</span>
+                </a>
+                <a href="CharaProfile.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-amber-950/40 text-stone-300 hover:text-amber-300 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="user-square-2" class="w-4 h-4 sm:mr-2"></i>
+                    <span class="hidden sm:inline">プロフィール</span>
+                </a>
+                <a href="CharaCompare.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-amber-950/40 text-stone-300 hover:text-amber-300 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="swords" class="w-4 h-4 sm:mr-2"></i>
+                    <span class="hidden sm:inline">比較一覧</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+        
+        <!-- ヘッダーコントロール -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <div class="flex items-center gap-2 text-stone-400">
+                <i data-lucide="images" class="w-5 h-5"></i>
+                <span class="text-sm font-header">ポートフォリオ登録数: <span id="portfolioCount" class="text-amber-400 font-bold text-lg">0</span> 名</span>
+            </div>
+            <div class="relative w-full sm:w-64">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500"></i>
+                <input type="text" id="searchInput" placeholder="名前やタグで検索..." class="w-full bg-[#120e0a] border border-amber-900/40 text-stone-300 text-sm rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-colors" oninput="renderPortfolio()">
+            </div>
+        </div>
+
+        <div id="noDataMessage" class="hidden flex flex-col items-center justify-center py-32 text-stone-600">
+            <i data-lucide="image-off" class="w-16 h-16 mb-4 opacity-50"></i>
+            <p class="font-header">表示できる立ち絵がありません。</p>
+            <p class="text-xs mt-2">プロフィール編集画面で立ち絵を登録したキャラクターがここに表示されます。</p>
+        </div>
+
+        <!-- マソンリーレイアウト用コンテナ -->
+        <div id="portfolioGrid" class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+            <!-- JSでカードを生成 -->
+        </div>
+
+    </main>
+
+    <!-- 全画面プレビューモーダル -->
+    <div id="previewModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 opacity-0 transition-opacity duration-300 cursor-zoom-out" onclick="closePreview()">
+        <button class="absolute top-4 right-4 sm:top-8 sm:right-8 text-stone-500 hover:text-white transition-colors bg-black/50 rounded-full p-2" onclick="closePreview()">
+            <i data-lucide="x" class="w-6 h-6 sm:w-8 sm:h-8"></i>
+        </button>
+        
+        <img id="previewImage" src="" class="max-w-full max-h-full object-contain drop-shadow-[0_0_40px_rgba(0,0,0,0.8)] rounded-md transition-transform duration-300 scale-95" onclick="event.stopPropagation()">
+        
+        <div id="previewInfo" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 sm:p-12 flex flex-col items-center sm:items-start pointer-events-none transition-transform duration-300 translate-y-4">
+            <h2 id="previewName" class="text-2xl sm:text-4xl font-bold font-header text-white drop-shadow-lg tracking-wide mb-2"></h2>
+            <div id="previewStats" class="text-xs sm:text-sm text-stone-300 font-mono mb-3"></div>
+            <div id="previewTags" class="flex flex-wrap gap-2 justify-center sm:justify-start"></div>
+        </div>
+    </div>
+
+    <script>
+        let allCharacters = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadCharacters();
+        });
+
+        // Google Drive URLの変換
+        function convertToDisplayUrl(url) {
+            if (!url) return '';
+            const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+            const match = url.match(driveRegex);
+            if (match && match[1]) {
+                return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1500`;
+            }
+            const driveRegex2 = /https:\/\/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/;
+            const match2 = url.match(driveRegex2);
+            if (match2 && match2[1]) {
+                return `https://drive.google.com/thumbnail?id=${match2[1]}&sz=w1500`;
+            }
+            return url;
+        }
+
+        // パラメータ取得ヘルパー
+        function getParam(char, label) {
+            if (!char.params) return '-';
+            const p = char.params.find(x => x.label.toUpperCase() === label);
+            return p ? p.value : '-';
+        }
+
+        function loadCharacters() {
+            try {
+                const data = localStorage.getItem('weby_trpg_characters');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    allCharacters = parsed.filter(c => c.profile && c.profile.images && c.profile.images.length > 0 && c.profile.images[0].url);
+                }
+            } catch (e) {
+                console.error("データの読み込みに失敗", e);
+            }
+            renderPortfolio();
+        }
+
+        function renderPortfolio() {
+            const gridEl = document.getElementById('portfolioGrid');
+            const noDataEl = document.getElementById('noDataMessage');
+            const countEl = document.getElementById('portfolioCount');
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            gridEl.innerHTML = '';
+
+            const filteredChars = allCharacters.filter(char => {
+                let match = char.name.toLowerCase().includes(query);
+                if (query && !match && char.tags) {
+                    match = char.tags.some(tag => tag.toLowerCase().includes(query));
+                }
+                return query ? match : true;
+            });
+
+            countEl.textContent = filteredChars.length;
+
+            if (filteredChars.length === 0) {
+                gridEl.classList.add('hidden');
+                noDataEl.classList.remove('hidden');
+                return;
+            } else {
+                gridEl.classList.remove('hidden');
+                noDataEl.classList.add('hidden');
+            }
+
+            filteredChars.forEach(char => {
+                const mainImage = char.profile.images[0];
+                const displayUrl = convertToDisplayUrl(mainImage.url);
+                const statsStr = \`STR:\${getParam(char, 'STR')} / CON:\${getParam(char, 'CON')} / SIZ:\${getParam(char, 'SIZ')} / APP:\${getParam(char, 'APP')}\`;
+                
+                let tagsHtml = '';
+                if (char.tags && char.tags.length > 0) {
+                    tagsHtml = char.tags.map(t => \`<span class="px-2 py-0.5 bg-black/60 border border-stone-700 rounded text-[10px] text-stone-300 backdrop-blur-sm">\${t}</span>\`).join('');
+                }
+
+                const card = document.createElement('div');
+                card.className = "break-inside-avoid relative group rounded-2xl overflow-hidden cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-amber-900/30 bg-[#120e0a] hover:border-amber-600/60 transition-colors duration-500";
+                
+                card.onclick = () => openPreview(displayUrl, char.name, statsStr, tagsHtml);
+
+                card.innerHTML = \`
+                    <img src="\${displayUrl}" loading="lazy" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out min-h-[150px]">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 sm:p-5">
+                        <div class="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                            <h3 class="text-lg font-bold font-header text-amber-400 drop-shadow-md leading-tight mb-1">\${char.name}</h3>
+                            <div class="text-[10px] text-stone-400 font-mono mb-2">\${statsStr}</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                \${tagsHtml}
+                            </div>
+                        </div>
+                    </div>
+                \`;
+                gridEl.appendChild(card);
+            });
+        }
+
+        const modal = document.getElementById('previewModal');
+        const previewImage = document.getElementById('previewImage');
+        const previewInfo = document.getElementById('previewInfo');
+        
+        function openPreview(imgUrl, name, stats, tagsHtml) {
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewStats').textContent = stats;
+            document.getElementById('previewTags').innerHTML = tagsHtml;
+            
+            previewImage.src = imgUrl;
+            
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                previewImage.classList.remove('scale-95');
+                previewImage.classList.add('scale-100');
+                previewInfo.classList.remove('translate-y-4');
+                previewInfo.classList.add('translate-y-0');
+            });
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePreview() {
+            modal.classList.add('opacity-0');
+            previewImage.classList.remove('scale-100');
+            previewImage.classList.add('scale-95');
+            previewInfo.classList.remove('translate-y-0');
+            previewInfo.classList.add('translate-y-4');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                previewImage.src = ''; 
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closePreview();
+            }
+        });
+    </script>
+</body>
+</html>
