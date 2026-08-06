@@ -61,14 +61,22 @@
 
     <!-- ヘッダー -->
     <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
-        <div class="max-w-7xl mx-auto flex items-center gap-4">
-            <div class="p-3 bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-xl text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                <i data-lucide="user-square-2" class="w-6 h-6"></i>
+        <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-xl text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                    <i data-lucide="user-square-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-widest font-header text-emerald-500 bg-gradient-to-r from-emerald-400 via-green-200 to-emerald-500 bg-clip-text text-transparent">
+                        探索者調書の儀</h1>
+                    <p class="text-[11px] text-emerald-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF CHARACTER PROFILE</p>
+                </div>
             </div>
             <div>
-                <h1 class="text-2xl font-bold tracking-widest font-header text-emerald-500 bg-gradient-to-r from-emerald-400 via-green-200 to-emerald-500 bg-clip-text text-transparent">
-                    探索者調書の儀</h1>
-                <p class="text-[11px] text-emerald-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF CHARACTER PROFILE</p>
+                <a href="BirthdayCalendar.html" class="flex items-center gap-2 px-4 py-2 bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="calendar-heart" class="w-4 h-4"></i>
+                    誕生日カレンダー
+                </a>
             </div>
         </div>
     </header>
@@ -93,9 +101,15 @@
             <!-- 左カラム：キャラクターリスト (4/12) -->
             <section class="lg:col-span-4 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
                 <div class="p-4 border-b border-amber-950/60 bg-[#1a1511]">
-                    <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i> 対象の探索者
-                    </h2>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> 対象の探索者
+                        </h2>
+                    </div>
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500"></i>
+                        <input type="text" id="profileSearchInput" placeholder="名前やタグで検索..." class="w-full bg-[#120e0a] border border-amber-900/40 text-stone-300 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 transition-colors" oninput="renderList()">
+                    </div>
                 </div>
                 <div id="characterList" class="flex-grow overflow-y-auto p-2 space-y-1">
                     <!-- JSでキャラクターリストを生成 -->
@@ -228,6 +242,23 @@
                                     <!-- 動的メモがここに追加される -->
                                 </div>
                             </div>
+
+                            <!-- 立ち絵・顔差分 画像欄 -->
+                            <div class="border-t border-amber-950/40 pt-6 pb-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-sm font-bold text-amber-500 font-header">立ち絵・顔差分</h3>
+                                    <button onclick="addImageField()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50">
+                                        <i data-lucide="image-plus" class="w-3.5 h-3.5"></i> 画像を追加
+                                    </button>
+                                </div>
+                                <p class="text-xs text-stone-500 mb-4">※Google Driveの共有リンク（閲覧者権限）を入力すると自動で表示用に変換されます。</p>
+                                <div id="dynamicImagesContainer" class="space-y-4">
+                                    <!-- 画像URL入力欄がここに追加される -->
+                                </div>
+                                <div id="imageGalleryPreview" class="mt-6 flex flex-wrap gap-4 items-end">
+                                    <!-- プレビュー表示 -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -279,7 +310,30 @@
             const listEl = document.getElementById('characterList');
             listEl.innerHTML = '';
 
+            const searchInput = document.getElementById('profileSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            // 大元のデータからタグを取得して検索対象にする
+            let allChars = [];
+            try {
+                const data = localStorage.getItem('weby_trpg_characters');
+                if (data) allChars = JSON.parse(data);
+            } catch (e) {}
+
             targets.forEach(char => {
+                // 名前検索
+                let match = char.name.toLowerCase().includes(query);
+                
+                // タグ検索（大元データからタグを取得）
+                if (query && !match) {
+                    const globalChar = allChars.find(c => c.id === char.id);
+                    if (globalChar && globalChar.tags) {
+                        match = globalChar.tags.some(tag => tag.toLowerCase().includes(query));
+                    }
+                }
+
+                if (query && !match) return; // 検索に引っかからなければスキップ
+
                 const item = document.createElement('div');
                 item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-amber-950/40 border-amber-700/60' : 'bg-transparent border-transparent hover:bg-[#1a1511]'}`;
                 item.onclick = () => selectCharacter(char.id);
@@ -390,6 +444,7 @@
             document.getElementById('inputNotes').value = profile.notes || '';
 
             renderDynamicMemos(profile.memos || []);
+            renderDynamicImages(profile.images || []);
         }
 
         function saveProfile() {
@@ -422,7 +477,8 @@
                 scenarios: document.getElementById('inputScenarios').value.trim(),
                 items: document.getElementById('inputItems').value.trim(),
                 notes: document.getElementById('inputNotes').value.trim(),
-                memos: currentMemos.map(m => ({ title: m.title.trim(), content: m.content.trim() }))
+                memos: currentMemos.map(m => ({ title: m.title.trim(), content: m.content.trim() })),
+                images: currentImages.map(img => ({ name: img.name.trim(), url: img.url.trim() })).filter(img => img.url !== '')
             };
 
             // targets (現在の画面のState) も更新しておく
@@ -540,6 +596,89 @@
                     '"': '&quot;'
                 }[tag] || tag)
             );
+        }
+
+        // --- 立ち絵・顔差分機能 ---
+        let currentImages = [];
+
+        function renderDynamicImages(images) {
+            currentImages = [...images];
+            drawImages();
+        }
+
+        function convertToDisplayUrl(url) {
+            if (!url) return '';
+            // Google Driveの共有リンクを判定して変換
+            const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+            const match = url.match(driveRegex);
+            if (match && match[1]) {
+                return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+            }
+            // open?id= の形式
+            const driveRegex2 = /https:\/\/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/;
+            const match2 = url.match(driveRegex2);
+            if (match2 && match2[1]) {
+                return `https://drive.google.com/thumbnail?id=${match2[1]}&sz=w1000`;
+            }
+            return url;
+        }
+
+        function drawImages() {
+            const container = document.getElementById('dynamicImagesContainer');
+            const gallery = document.getElementById('imageGalleryPreview');
+            container.innerHTML = '';
+            gallery.innerHTML = '';
+            
+            currentImages.forEach((img, index) => {
+                // 入力フィールドの描画
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 bg-[#120e0a] border border-amber-950/60 rounded-xl p-3 relative';
+                div.innerHTML = `
+                    <div class="flex-grow space-y-2">
+                        <input type="text" class="form-input bg-[#1a1511] text-xs" placeholder="画像名 (例: デフォルト立ち絵, 笑顔)" value="${escapeHtml(img.name)}" onchange="updateImageName(${index}, this.value)">
+                        <input type="text" class="form-input bg-[#1a1511] text-xs font-mono" placeholder="画像URL (Google Drive共有リンク可)" value="${escapeHtml(img.url)}" onchange="updateImageUrl(${index}, this.value)">
+                    </div>
+                    <button onclick="removeImageField(${index})" class="text-stone-500 hover:text-rose-400 p-2 transition-colors shrink-0" title="削除">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+
+                // プレビューの描画
+                if (img.url) {
+                    const displayUrl = convertToDisplayUrl(img.url);
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'flex flex-col items-center gap-1 group';
+                    previewDiv.innerHTML = `
+                        <div class="relative w-24 h-24 sm:w-32 sm:h-32 rounded-lg border-2 border-amber-900/50 overflow-hidden bg-black flex items-center justify-center">
+                            <img src="${displayUrl}" alt="${escapeHtml(img.name)}" class="max-w-full max-h-full object-contain transition-transform group-hover:scale-110" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-xs text-stone-500 p-2 text-center\\'>読み込みエラー</div>';">
+                        </div>
+                        <span class="text-[10px] text-amber-500/80 font-bold max-w-[6rem] sm:max-w-[8rem] truncate">${escapeHtml(img.name) || '名無し画像'}</span>
+                    `;
+                    gallery.appendChild(previewDiv);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function addImageField() {
+            currentImages.push({ name: '', url: '' });
+            drawImages();
+        }
+
+        function removeImageField(index) {
+            currentImages.splice(index, 1);
+            drawImages();
+        }
+
+        function updateImageName(index, val) {
+            currentImages[index].name = val;
+            drawImages();
+        }
+
+        function updateImageUrl(index, val) {
+            currentImages[index].url = val;
+            drawImages();
         }
     </script>
 </body>
