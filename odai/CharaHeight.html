@@ -224,11 +224,11 @@
                 if (parsed.length > 0) {
                     parsed.forEach(c => {
                         const profileHeight = c.profile && c.profile.height ? c.profile.height : '';
-                        const parsedHeight = extractHeight(profileHeight);
-                        if (parsedHeight !== null) {
+                        const parsedHeight = parseFloat(profileHeight);
+                        if (!isNaN(parsedHeight)) {
                             let imgUrl = null;
-                            if (c.profile && c.profile.images && c.profile.images.length > 0 && c.profile.images[0].url) {
-                                imgUrl = convertToDisplayUrl(c.profile.images[0].url);
+                            if (c.profile && c.profile.standingImage) {
+                                imgUrl = convertToDisplayUrl(c.profile.standingImage);
                             }
                             
                             allCharacters.push({
