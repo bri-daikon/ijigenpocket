@@ -139,6 +139,7 @@
                 <div class="flex justify-end gap-3 pt-2">
                     <button id="confirmCancelBtn"
                         class="px-4 py-2 text-xs font-semibold bg-stone-900 hover:bg-stone-850 text-stone-400 rounded-lg border border-stone-800 transition-colors">留まる</button>
+                    <button id="confirmMidBtn" class="hidden px-4 py-2 text-xs font-semibold bg-emerald-900 hover:bg-emerald-800 text-stone-100 rounded-lg transition-colors border border-emerald-600/30">新規追加する</button>
                     <button id="confirmOkBtn"
                         class="px-4 py-2 text-xs font-semibold bg-amber-700 hover:bg-amber-600 text-stone-100 rounded-lg transition-colors border border-amber-600/30">実行する</button>
                 </div>
@@ -625,20 +626,66 @@
             const modal = document.getElementById('confirmModal');
             const msgEl = document.getElementById('confirmMessage');
             const cancelBtn = document.getElementById('confirmCancelBtn');
+            const midBtn = document.getElementById('confirmMidBtn');
             const okBtn = document.getElementById('confirmOkBtn');
 
             msgEl.textContent = message;
+            cancelBtn.textContent = "留まる";
+            okBtn.textContent = "実行する";
+            if (midBtn) midBtn.classList.add('hidden');
+            
             modal.classList.remove('hidden');
 
             const closeModal = () => {
                 modal.classList.add('hidden');
                 cancelBtn.onclick = null;
                 okBtn.onclick = null;
+                if (midBtn) midBtn.onclick = null;
             };
 
             cancelBtn.onclick = () => closeModal();
             okBtn.onclick = () => {
                 onOk();
+                closeModal();
+            };
+        }
+
+        // --- 成長・アップデート確認ダイアログ ---
+        function showUpdateConfirm(message, onUpdate, onAdd) {
+            const modal = document.getElementById('confirmModal');
+            const msgEl = document.getElementById('confirmMessage');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            const midBtn = document.getElementById('confirmMidBtn');
+            const okBtn = document.getElementById('confirmOkBtn');
+
+            msgEl.innerHTML = message.replace(/\n/g, '<br>');
+            cancelBtn.textContent = "やめる";
+            if (midBtn) {
+                midBtn.textContent = "別キャラとして追加";
+                midBtn.classList.remove('hidden');
+            }
+            okBtn.textContent = "上書き更新する";
+            
+            modal.classList.remove('hidden');
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                cancelBtn.onclick = null;
+                okBtn.onclick = null;
+                if (midBtn) midBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = () => closeModal();
+            
+            if (midBtn) {
+                midBtn.onclick = () => {
+                    onAdd();
+                    closeModal();
+                };
+            }
+
+            okBtn.onclick = () => {
+                onUpdate();
                 closeModal();
             };
         }
@@ -816,16 +863,53 @@
                     }));
                 }
 
-                characters.push(newChar);
-                selectedIds.add(newChar.id);
+                const existingChar = characters.find(c => c.name === newChar.name);
 
-                saveToLocalStorage();
-                populateTagFilter();
-                renderCharacters();
-                updateComparison();
+                if (existingChar) {
+                    showUpdateConfirm(
+                        `既に「${newChar.name}」という名前の探索者が存在します。\n能力値や技能を成長・更新しますか？\n（※プロフィール設定やタグは保持されます）`,
+                        () => {
+                            // 上書き処理
+                            existingChar.kana = newChar.kana || existingChar.kana;
+                            existingChar.edition = newChar.edition;
+                            existingChar.initiative = newChar.initiative;
+                            existingChar.externalUrl = newChar.externalUrl || existingChar.externalUrl;
+                            existingChar.iconUrl = newChar.iconUrl || existingChar.iconUrl;
+                            existingChar.status = newChar.status;
+                            existingChar.params = newChar.params;
+                            existingChar.skills = newChar.skills;
+                            
+                            saveToLocalStorage();
+                            populateTagFilter();
+                            renderCharacters();
+                            updateComparison();
+                            document.getElementById('jsonInput').value = "";
+                            showToast(`探索者「${existingChar.name}」のデータを更新しました！`, "success");
+                        },
+                        () => {
+                            // 新規追加処理
+                            characters.push(newChar);
+                            selectedIds.add(newChar.id);
+                            saveToLocalStorage();
+                            populateTagFilter();
+                            renderCharacters();
+                            updateComparison();
+                            document.getElementById('jsonInput').value = "";
+                            showToast(`探索者「${newChar.name}」を別キャラクターとして召喚しました！`, "success");
+                        }
+                    );
+                } else {
+                    characters.push(newChar);
+                    selectedIds.add(newChar.id);
 
-                document.getElementById('jsonInput').value = "";
-                showToast(`探索者「${newChar.name}」を召喚しました！(${selectedEdition}版)`, "success");
+                    saveToLocalStorage();
+                    populateTagFilter();
+                    renderCharacters();
+                    updateComparison();
+
+                    document.getElementById('jsonInput').value = "";
+                    showToast(`探索者「${newChar.name}」を召喚しました！(${selectedEdition}版)`, "success");
+                }
             } catch (error) {
                 showToast("召喚失敗: データの形式が正しくパースできません。" + error.message, "error");
             }
