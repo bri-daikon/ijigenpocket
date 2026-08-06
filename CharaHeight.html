@@ -200,10 +200,28 @@
 
         function loadCharacters() {
             try {
+                let parsed = [];
                 const data = localStorage.getItem('weby_trpg_characters');
                 if (data) {
-                    const parsed = JSON.parse(data);
-                    
+                    parsed = JSON.parse(data);
+                }
+                
+                // weby_profile_targets からのプロファイルデータの補完
+                const profileData = localStorage.getItem('weby_profile_targets');
+                if (profileData) {
+                    const profiles = JSON.parse(profileData);
+                    profiles.forEach(p => {
+                        const target = parsed.find(c => c.id === p.id);
+                        if (target && p.profile) {
+                            target.profile = { ...target.profile, ...p.profile };
+                            target.iconUrl = p.iconUrl || target.iconUrl;
+                        } else if (!target) {
+                            parsed.push(p);
+                        }
+                    });
+                }
+                
+                if (parsed.length > 0) {
                     parsed.forEach(c => {
                         const profileHeight = c.profile && c.profile.height ? c.profile.height : '';
                         const parsedHeight = extractHeight(profileHeight);

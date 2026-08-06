@@ -169,11 +169,27 @@
 
         function loadCharacters() {
             try {
+                let parsed = [];
                 const data = localStorage.getItem('weby_trpg_characters');
                 if (data) {
-                    const parsed = JSON.parse(data);
-                    allCharacters = parsed.filter(c => c.profile && c.profile.images && c.profile.images.length > 0 && c.profile.images[0].url);
+                    parsed = JSON.parse(data);
                 }
+                
+                // weby_profile_targets からのプロファイルデータの補完
+                const profileData = localStorage.getItem('weby_profile_targets');
+                if (profileData) {
+                    const profiles = JSON.parse(profileData);
+                    profiles.forEach(p => {
+                        const target = parsed.find(c => c.id === p.id);
+                        if (target && p.profile) {
+                            target.profile = { ...target.profile, ...p.profile };
+                        } else if (!target) {
+                            parsed.push(p);
+                        }
+                    });
+                }
+
+                allCharacters = parsed.filter(c => c.profile && c.profile.images && c.profile.images.length > 0 && c.profile.images[0].url);
             } catch (e) {
                 console.error("データの読み込みに失敗", e);
             }
