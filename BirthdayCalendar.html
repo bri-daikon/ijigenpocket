@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔導書：生誕祭の記録 - Weby</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705;
+        }
+
+        .font-header {
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #14100c; }
+        ::-webkit-scrollbar-thumb { background: #4a3728; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6e5039; }
+
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(217, 119, 6, 0.15);
+            pointer-events: none;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body class="text-stone-200 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+        <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-rose-700 to-rose-900 rounded-xl text-rose-100 shadow-[0_0_15px_rgba(225,29,72,0.3)]">
+                    <i data-lucide="calendar-heart" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-widest font-header text-rose-500 bg-gradient-to-r from-rose-400 via-pink-200 to-rose-500 bg-clip-text text-transparent">
+                        生誕祭の記録</h1>
+                    <p class="text-[11px] text-rose-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF BIRTHDAYS</p>
+                </div>
+            </div>
+            <div>
+                <a href="CharaProfile.html" class="flex items-center gap-2 px-4 py-2 bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    調書に戻る
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+        
+        <div id="noDataMessage" class="hidden flex flex-col items-center justify-center py-20 text-stone-500">
+            <i data-lucide="ghost" class="w-16 h-16 mb-4 opacity-50"></i>
+            <p class="font-header">対象の探索者が存在しません。</p>
+            <p class="text-xs mt-2">データがないか、誕生日が設定されていません。</p>
+        </div>
+
+        <div id="calendarGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- 月ごとのコンテナをJSで生成 -->
+        </div>
+
+        <!-- 誕生日未設定のキャラクター -->
+        <div id="unknownSection" class="hidden mt-12 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border p-6">
+            <h2 class="text-lg font-bold font-header text-stone-500 flex items-center gap-2 mb-4">
+                <i data-lucide="help-circle" class="w-5 h-5"></i> 誕生月不明・未設定
+            </h2>
+            <div id="unknownList" class="flex flex-wrap gap-4">
+                <!-- JSで生成 -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadCalendar();
+        });
+
+        const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+
+        function parseBirthdayMonth(birthdayStr) {
+            if (!birthdayStr) return null;
+            // "10月31日", "10/31", "10.31" などをパース
+            const str = birthdayStr.trim();
+            // まず数字を探す
+            const matches = str.match(/([0-9]{1,2})/g);
+            if (matches && matches.length > 0) {
+                const month = parseInt(matches[0], 10);
+                if (month >= 1 && month <= 12) {
+                    return month;
+                }
+            }
+            return null;
+        }
+
+        function loadCalendar() {
+            let allChars = [];
+            try {
+                // profileデータが保存されている weby_trpg_characters を優先
+                const globalData = localStorage.getItem('weby_trpg_characters');
+                if (globalData) {
+                    allChars = JSON.parse(globalData);
+                } else {
+                    const localData = localStorage.getItem('weby_profile_targets');
+                    if (localData) {
+                        allChars = JSON.parse(localData);
+                    }
+                }
+            } catch (e) {
+                console.error("データの読み込みに失敗", e);
+            }
+
+            if (allChars.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                return;
+            }
+
+            const monthData = {};
+            for (let i = 1; i <= 12; i++) {
+                monthData[i] = [];
+            }
+            const unknownData = [];
+
+            allChars.forEach(char => {
+                const profile = char.profile || {};
+                const bday = profile.birthday || '';
+                const month = parseBirthdayMonth(bday);
+
+                const charInfo = {
+                    id: char.id,
+                    name: char.name,
+                    iconUrl: char.iconUrl || defaultSvg,
+                    birthday: bday,
+                    job: profile.job || '不明'
+                };
+
+                if (month) {
+                    monthData[month].push(charInfo);
+                } else {
+                    unknownData.push(charInfo);
+                }
+            });
+
+            // 1人でもいるか確認
+            const hasAnyData = Object.values(monthData).some(arr => arr.length > 0) || unknownData.length > 0;
+            if (!hasAnyData) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('calendarGrid').classList.remove('hidden');
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            for (let i = 1; i <= 12; i++) {
+                const charsInMonth = monthData[i];
+                
+                // 月のコンテナ
+                const monthCard = document.createElement('div');
+                monthCard.className = `bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden opacity-90 hover:opacity-100 transition-opacity`;
+                
+                const headerColor = charsInMonth.length > 0 ? 'text-rose-400' : 'text-stone-600';
+                const headerBg = charsInMonth.length > 0 ? 'bg-gradient-to-r from-[#1a1111] to-[#14100c]' : 'bg-[#120e0a]';
+
+                let listHtml = '';
+                if (charsInMonth.length > 0) {
+                    listHtml = `<div class="p-3 space-y-2 flex-grow overflow-y-auto max-h-[300px]">`;
+                    charsInMonth.forEach(c => {
+                        listHtml += `
+                            <div class="flex items-center gap-3 p-2 bg-[#1a1511] border border-amber-950/40 rounded-lg hover:bg-amber-950/30 transition-colors">
+                                <img src="${escapeHtml(c.iconUrl)}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover object-top shrink-0 shadow-md">
+                                <div class="overflow-hidden flex-grow">
+                                    <div class="text-sm font-bold text-stone-200 truncate font-header">${escapeHtml(c.name)}</div>
+                                    <div class="text-[10px] text-stone-400 truncate">${escapeHtml(c.birthday)}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listHtml += `</div>`;
+                } else {
+                    listHtml = `
+                        <div class="flex-grow flex flex-col items-center justify-center p-6 text-stone-600">
+                            <i data-lucide="moon" class="w-8 h-8 mb-2 opacity-20"></i>
+                            <p class="text-xs font-header">該当者なし</p>
+                        </div>
+                    `;
+                }
+
+                monthCard.innerHTML = `
+                    <div class="p-3 border-b border-amber-950/60 ${headerBg} flex items-end justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold font-header ${headerColor}">${i}月</h2>
+                            <p class="text-[10px] font-header text-stone-500 uppercase tracking-widest">${monthNames[i-1]}</p>
+                        </div>
+                        <div class="text-xs font-bold ${charsInMonth.length > 0 ? 'text-rose-500/80 bg-rose-950/50' : 'text-stone-600 bg-stone-900'} px-2 py-1 rounded-full">
+                            ${charsInMonth.length}人
+                        </div>
+                    </div>
+                    ${listHtml}
+                `;
+                grid.appendChild(monthCard);
+            }
+
+            if (unknownData.length > 0) {
+                document.getElementById('unknownSection').classList.remove('hidden');
+                const ukList = document.getElementById('unknownList');
+                ukList.innerHTML = '';
+                unknownData.forEach(c => {
+                    ukList.innerHTML += `
+                        <div class="flex items-center gap-2 p-1.5 bg-[#1a1511] border border-amber-950/40 rounded-full pr-4 opacity-70 hover:opacity-100 transition-opacity">
+                            <img src="${escapeHtml(c.iconUrl)}" onerror="this.src='${defaultSvg}'" class="w-6 h-6 rounded-full border border-stone-800 object-cover object-top shrink-0">
+                            <span class="text-xs font-bold text-stone-300 font-header truncate max-w-[120px]">${escapeHtml(c.name)}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
