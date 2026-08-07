@@ -1144,6 +1144,66 @@
       lucide.createIcons();
     }
 
+    let draggedTabRow = null;
+
+    function handleTabRowDragStart(e) {
+      draggedTabRow = e.currentTarget;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => {
+        draggedTabRow.classList.add('opacity-50', 'bg-slate-50');
+      }, 0);
+    }
+
+    function handleTabRowDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleTabRowDragEnter(e) {
+      e.preventDefault();
+      const targetRow = e.currentTarget;
+      if (targetRow !== draggedTabRow) {
+        targetRow.classList.add('border-teal-400', 'bg-teal-50');
+      }
+    }
+
+    function handleTabRowDragLeave(e) {
+      e.currentTarget.classList.remove('border-teal-400', 'bg-teal-50');
+    }
+
+    function handleTabRowDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetRow = e.currentTarget;
+      targetRow.classList.remove('border-teal-400', 'bg-teal-50');
+      
+      if (draggedTabRow && targetRow !== draggedTabRow) {
+        const container = targetRow.parentNode;
+        const allRows = Array.from(container.children);
+        const draggedIndex = allRows.indexOf(draggedTabRow);
+        const targetIndex = allRows.indexOf(targetRow);
+        
+        if (draggedIndex < targetIndex) {
+          container.insertBefore(draggedTabRow, targetRow.nextSibling);
+        } else {
+          container.insertBefore(draggedTabRow, targetRow);
+        }
+      }
+      
+      if (draggedTabRow) {
+        draggedTabRow.classList.remove('opacity-50', 'bg-slate-50');
+        draggedTabRow = null;
+      }
+    }
+    
+    function handleTabRowDragEnd(e) {
+      e.currentTarget.classList.remove('opacity-50', 'bg-slate-50');
+      draggedTabRow = null;
+      const rows = document.querySelectorAll('.tab-color-row');
+      rows.forEach(r => r.classList.remove('border-teal-400', 'bg-teal-50'));
+    }
+
     function createTabColorRow(tabName = '', colorId = 'slate') {
       let options = cardColors.map(c => `<option value="${c.id}" ${c.id === colorId ? 'selected' : ''}>${c.name}</option>`).join('');
       options += customColors.map(hex => `<option value="${hex}" ${hex === colorId ? 'selected' : ''}>保存済カスタム (${hex})</option>`).join('');
@@ -1153,7 +1213,8 @@
       const customStyle = isCustom ? `background-color: ${colorObj.hex}40; border-color: ${colorObj.hex};` : '';
 
       return `
-        <div class="flex items-center gap-1.5 tab-color-row">
+        <div class="flex items-center gap-1.5 tab-color-row border border-transparent rounded px-1 -mx-1 py-0.5 transition-colors" draggable="true" ondragstart="handleTabRowDragStart(event)" ondragover="handleTabRowDragOver(event)" ondrop="handleTabRowDrop(event)" ondragenter="handleTabRowDragEnter(event)" ondragleave="handleTabRowDragLeave(event)" ondragend="handleTabRowDragEnd(event)">
+          <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 cursor-grab flex-shrink-0"></i>
           <label class="cursor-pointer relative block w-3 h-3 rounded-full overflow-hidden" title="クリックでカスタムカラーを選択">
             <div class="${isCustom ? '' : `${colorObj.bg} ${colorObj.border}`} border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview" style="${customStyle}"></div>
             <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer tab-custom-color" value="${isCustom ? colorId : '#000000'}" onchange="updateTabCustomColor(this)">
@@ -2250,12 +2311,17 @@
                     <i data-lucide="palette" class="w-4 h-4"></i>
                   </button>
                   <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg p-2 hidden gap-1.5 z-10 w-[160px] flex-wrap">
-                    ${getSortedPaletteColors().map(c => c.isCustom ? '' : `
-                      <button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${c.name}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>
-                    `).join('')}
-                    ${customColors.map(hex => `
-                      <button onclick="changeCardColor(${item.id}, '${hex}'); toggleColorPalette(${item.id}, event)" title="カスタム (${hex})" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform" style="background-color: ${hex}40; border-color: ${hex}"></button>
-                    `).join('')}
+                    ${getSortedPaletteColors().map(c => {
+                      if (c.isCustom) return '';
+                      const linkedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === c.id);
+                      const titleStr = linkedTab ? `${c.name} (${linkedTab})` : c.name;
+                      return `<button onclick="changeCardColor(${item.id}, '${c.id}'); toggleColorPalette(${item.id}, event)" title="${escapeHtml(titleStr)}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform ${c.pickerBg || c.bg} shadow-inner"></button>`;
+                    }).join('')}
+                    ${customColors.map(hex => {
+                      const linkedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === hex);
+                      const titleStr = linkedTab ? `カスタム ${hex} (${linkedTab})` : `カスタム (${hex})`;
+                      return `<button onclick="changeCardColor(${item.id}, '${hex}'); toggleColorPalette(${item.id}, event)" title="${escapeHtml(titleStr)}" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform" style="background-color: ${hex}40; border-color: ${hex}"></button>`;
+                    }).join('')}
                     <!-- カスタムカラー追加 -->
                     <label title="カスタムカラー作成" class="w-5 h-5 rounded-full border border-slate-300 hover:scale-110 transition-transform flex items-center justify-center cursor-pointer relative overflow-hidden" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);">
                       <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" onchange="addCustomColor(this.value); changeCardColor(${item.id}, this.value); toggleColorPalette(${item.id}, event)">
