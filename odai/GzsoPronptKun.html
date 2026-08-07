@@ -35,8 +35,24 @@
         <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <!-- 左側：1個ずつ選択できるエリア (8/12) -->
-            <div class="lg:col-span-7 xl:col-span-8 space-y-6 max-h-[82vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="lg:col-span-7 xl:col-span-8 space-y-6 h-[85vh] overflow-y-auto pr-2 custom-scrollbar">
                 
+                <!-- Gemini API設定 -->
+                <section class="bg-indigo-900/40 p-4 rounded-xl border border-indigo-500/50 space-y-3 mb-6">
+                    <h2 class="font-bold text-indigo-300 text-sm flex items-center gap-2">
+                        <span>🔑</span> Gemini API 設定
+                    </h2>
+                    <div class="flex flex-col gap-2">
+                        <input type="password" id="geminiApiKey" placeholder="AI Studio等で取得したAPIキーを入力" class="w-full bg-slate-800 text-slate-200 border border-slate-600 rounded-lg p-2 text-xs focus:outline-none focus:border-indigo-500">
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition shadow">
+                                APIキーを保存
+                            </button>
+                            <span id="apiKeyStatus" class="text-[10px] text-emerald-400 font-semibold hidden">✓ 保存しました</span>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- 0. AIツール & モード & パラメータ設定 -->
                 <section class="bg-slate-700/50 p-4 rounded-xl border border-indigo-500/30 space-y-4">
                     <div>
@@ -1437,7 +1453,7 @@
             </div>
 
             <!-- 右側：プロンプト出力エリア (4/12) -->
-            <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between space-y-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col space-y-4 bg-slate-950 p-5 rounded-xl border border-slate-800 h-[85vh] overflow-y-auto custom-scrollbar">
                 
                 <div class="space-y-4">
                     
@@ -1493,6 +1509,31 @@
                         </button>
                         <div id="negToast" class="hidden text-center text-[11px] text-emerald-400 font-semibold mt-1">
                             ✓ クリップボードにコピーしました！
+                        </div>
+                    </div>
+
+                    <!-- Geminiによる最適化プロンプト -->
+                    <div class="bg-indigo-950/60 p-4 rounded-xl border border-indigo-500/40 mt-4">
+                        <h2 class="text-sm font-bold text-amber-400 flex items-center gap-1.5 mb-2">
+                            <span>✨</span> Gemini 最適化プロンプト
+                        </h2>
+                        <button id="btnGenerateGemini" onclick="generateGeminiPrompt()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-900 font-extrabold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg mb-3">
+                            <span>🚀</span> Geminiでプロンプトを自動生成
+                        </button>
+                        
+                        <div class="space-y-3 hidden" id="geminiOutputContainer">
+                            <div>
+                                <h3 class="text-[11px] font-bold text-indigo-300 mb-1">肯定プロンプト (Positive)</h3>
+                                <div id="geminiPosPrompt" class="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-xs leading-relaxed text-indigo-100 min-h-[80px] max-h-[200px] overflow-y-auto custom-scrollbar select-all"></div>
+                                <button onclick="copyToClipboard('geminiPosPrompt', 'geminiPosToast')" class="mt-2 w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition shadow">📋 コピー</button>
+                                <div id="geminiPosToast" class="hidden text-center text-[10px] text-emerald-400 font-semibold mt-1">✓ コピーしました！</div>
+                            </div>
+                            <div>
+                                <h3 class="text-[11px] font-bold text-rose-300 mb-1">除外プロンプト (Negative)</h3>
+                                <div id="geminiNegPrompt" class="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-xs leading-relaxed text-rose-200/80 min-h-[60px] max-h-[160px] overflow-y-auto custom-scrollbar select-all"></div>
+                                <button onclick="copyToClipboard('geminiNegPrompt', 'geminiNegToast')" class="mt-2 w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition shadow">📋 コピー</button>
+                                <div id="geminiNegToast" class="hidden text-center text-[10px] text-emerald-400 font-semibold mt-1">✓ コピーしました！</div>
+                            </div>
                         </div>
                     </div>
 
@@ -1727,7 +1768,7 @@
 
             // アクティブボタンのテキストを取得する関数
             const getActiveBtnText = (groupName) => {
-                const group = document.querySelector(`[data-group="${groupName}"]`);
+       const group = document.querySelector(`[data-group="${groupName}"]`);
                 if (!group) return '';
                 const activeBtns = group.querySelectorAll('.chip-btn.active:not(.hidden)');
                 if (activeBtns.length === 0) return '';
@@ -1975,8 +2016,144 @@
             updatePrompts();
         }
 
+        // APIキーの保存と読み込み
+        function saveApiKey() {
+            const key = document.getElementById('geminiApiKey').value.trim();
+            if (key) {
+                localStorage.setItem('geminiApiKey', key);
+                const status = document.getElementById('apiKeyStatus');
+                status.classList.remove('hidden');
+                setTimeout(() => status.classList.add('hidden'), 2000);
+            }
+        }
+
+        function loadApiKey() {
+            const key = localStorage.getItem('geminiApiKey');
+            if (key) {
+                document.getElementById('geminiApiKey').value = key;
+            }
+        }
+
+        // Gemini API呼び出し
+        async function generateGeminiPrompt() {
+            const apiKey = localStorage.getItem('geminiApiKey');
+            if (!apiKey) {
+                alert("Gemini APIキーを入力して保存してください。");
+                return;
+            }
+
+            const currentTerms = document.getElementById('japanesePrompt').innerText;
+            if (!currentTerms) {
+                alert("先にプロンプトの要素を選択してください。");
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerateGemini');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span> 生成中...';
+            btn.disabled = true;
+
+            const systemPrompt = `あなたはプロのAI画像生成プロンプトエンジニアです。
+ユーザーが選択した要素（日本語のキーワード）を元に、画像生成AI（Stable DiffusionやMidjourney等）に最適化された高品質な英語プロンプトを作成してください。
+
+出力形式:
+以下のJSONフォーマットで出力してください。
+{
+  "positive": "英語のポジティブプロンプト",
+  "negative": "英語のネガティブプロンプト"
+}
+
+プロンプト作成のルール:
+1. positive は、被写体の詳細、表情、服装、ポーズ、背景、環境、照明、画風、クオリティ（masterpiece, best quality, highly detailed）などを論理的にカンマ区切りで構成してください。
+2. negative は、低品質な要素（worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digit 等）や、指定された要素に反するものを除外するために記述してください。
+3. 文法的に整った自然な英語、あるいはカンマ区切りのタグ形式で記述してください。
+`;
+
+            let success = false;
+            let resultData = null;
+            let lastErrorDetail = "接続タイムアウト、またはインターネットがオフラインです。";
+            let retries = 5;
+            let delayMs = 1000;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+                system_instruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: [{
+                    parts: [{ text: "以下の要素から最適なプロンプトを作成してください:\n" + currentTerms }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    response_mime_type: "application/json"
+                }
+            };
+
+            try {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            resultData = await response.json();
+                            success = true;
+                            break;
+                        } else {
+                            try {
+                                const errJson = await response.json();
+                                if (errJson.error) {
+                                    lastErrorDetail = `${errJson.error.message} (HTTP ${response.status})`;
+                                } else {
+                                    lastErrorDetail = `HTTP error! status: ${response.status}`;
+                                }
+                            } catch (e) {
+                                lastErrorDetail = `HTTP error! status: ${response.status}`;
+                            }
+                            if (response.status === 429) {
+                                lastErrorDetail += "\n(APIの利用制限に達した可能性があります。クオータを確認してください。)";
+                            }
+                        }
+                    } catch (err) {
+                        lastErrorDetail = `${err.message || err}`;
+                    }
+                    
+                    if (!success) {
+                        console.warn(`Gemini API attempt ${i+1} failed. Retrying in ${delayMs}ms... Error: ${lastErrorDetail}`);
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+                        delayMs *= 2;
+                    }
+                }
+
+                if (!success || !resultData) {
+                    throw new Error(lastErrorDetail);
+                }
+
+                let contentText = resultData.candidates[0].content.parts[0].text;
+                
+                // Fallback for parsing if json format is somehow wrapped in markdown
+                contentText = contentText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(contentText);
+
+                document.getElementById('geminiOutputContainer').classList.remove('hidden');
+                document.getElementById('geminiPosPrompt').innerText = parsed.positive;
+                document.getElementById('geminiNegPrompt').innerText = parsed.negative;
+
+            } catch (e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         // ボタンのクリックイベント（グループごとのアクティブ切り替え）
         window.onload = function() {
+            loadApiKey();
             const buttonGroups = document.querySelectorAll('[data-group]');
             // DOMのアクティブなボタンからstateを初期化する
             buttonGroups.forEach(group => {
