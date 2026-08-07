@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>付箋MEMORI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light">
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <h1>付箋MEMORI</h1>
+            <div class="header-controls">
+                <button id="theme-toggle-btn" title="テーマ切り替え">🌙</button>
+                <button id="export-btn">エクスポート</button>
+                <input type="file" id="import-input" accept=".json" style="display: none;">
+                <button id="import-btn">インポート</button>
+                <button id="add-note-btn" class="primary-btn">+ 新規付箋</button>
+            </div>
+        </header>
+
+        <!-- Main Board -->
+        <main id="board-container">
+            <!-- Categories will be rendered here -->
+        </main>
+    </div>
+
+    <!-- Note Editor Modal -->
+    <div id="note-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">付箋を追加</h2>
+            <form id="note-form">
+                <input type="hidden" id="note-id">
+                
+                <div class="form-group">
+                    <label for="note-category">カテゴリ</label>
+                    <input type="text" id="note-category" required placeholder="例: アイデア, Todo, 共有...">
+                </div>
+
+                <div class="form-group">
+                    <label for="note-title">タイトル (最大1000文字)</label>
+                    <input type="text" id="note-title" maxlength="1000" required placeholder="タイトルを入力">
+                </div>
+
+                <div class="form-group">
+                    <label for="note-content">メモ (最大8000文字)</label>
+                    <textarea id="note-content" maxlength="8000" required placeholder="メモ内容を入力..."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-note-btn">キャンセル</button>
+                    <button type="submit" id="save-note-btn" class="primary-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase (Compat Version for file:// protocol support) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
