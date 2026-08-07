@@ -591,8 +591,11 @@
           
           <!-- 検索項目 -->
           <div class="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1 ml-auto shadow-sm">
-            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5"></i>
-            <input type="text" id="card-search-input" placeholder="検索..." class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-40 transition-all" oninput="renderList()">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5 flex-shrink-0"></i>
+            <input type="text" id="card-search-input" placeholder="検索..." class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-40 transition-all" oninput="renderList(); document.getElementById('btn-clear-search').classList.toggle('hidden', !this.value)">
+            <button id="btn-clear-search" onclick="document.getElementById('card-search-input').value = ''; renderList(); this.classList.add('hidden')" class="hidden text-slate-400 hover:text-rose-500 ml-1 outline-none flex-shrink-0 transition-colors" title="検索をクリア">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
 
     <button onclick="clearText()" class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
@@ -2101,6 +2104,17 @@
       const searchInputElem = document.getElementById('card-search-input');
       const searchQuery = searchInputElem ? searchInputElem.value.toLowerCase() : '';
 
+      const highlightMatch = (text) => {
+        if (!text) return '';
+        let escaped = escapeHtml(text);
+        if (searchQuery) {
+          const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(`(${escapedQuery})`, 'gi');
+          escaped = escaped.replace(regex, '<span class="bg-yellow-200 text-yellow-900 font-bold px-0.5 rounded">$1</span>');
+        }
+        return escaped;
+      };
+
       processedItems.forEach((item, index) => {
         if (item.isToc) {
           if (!item.tocLevel) item.tocLevel = 1;
@@ -2280,9 +2294,9 @@
             >${escapeHtml(displayText)}</textarea>
           ` : `
             ${globalMode === 'copy' ? `
-              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" onfocus="jumpToPreviewPage(${item.page})" tabindex="0" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-all cursor-pointer" onclick="copyItemText(${item.id})" onfocus="jumpToPreviewPage(${item.page})" tabindex="0" title="クリックでコピー">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : highlightMatch(displayText)}</div>
             ` : `
-              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed cursor-text outline-none focus:ring-1 focus:ring-teal-400 focus:bg-white rounded px-1 -mx-1" contenteditable="true" onkeydown="handleCardTextKeydown(event, ${item.id})" onblur="handleCardTextBlur(event, ${item.id})" onfocus="jumpToPreviewPage(${item.page})" title="クリックしてカーソルを置き、Enterキーで分割">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : escapeHtml(displayText)}</div>
+              <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed cursor-text outline-none focus:ring-1 focus:ring-teal-400 focus:bg-white rounded px-1 -mx-1" contenteditable="true" onkeydown="handleCardTextKeydown(event, ${item.id})" onblur="handleCardTextBlur(event, ${item.id})" onfocus="jumpToPreviewPage(${item.page})" title="クリックしてカーソルを置き、Enterキーで分割">${kuroshiroEnabled && item.furiganaHtml ? item.furiganaHtml : highlightMatch(displayText)}</div>
             `}
           `}
 
@@ -2291,7 +2305,7 @@
             <div id="note-view-${item.id}" class="${item.note && !item.isEditingNote ? 'flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100' : 'hidden'}">
               <span class="text-emerald-800 font-medium flex items-center gap-1">
                 <i data-lucide="pencil" class="w-3 h-3 text-emerald-600"></i>
-                <span class="italic font-normal">${escapeHtml(item.note)}</span>
+                <span class="italic font-normal">${highlightMatch(item.note)}</span>
               </span>
               <div class="flex items-center gap-1">
                 <button onclick="editNote(${item.id})" class="text-slate-400 hover:text-teal-600 p-0.5"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
