@@ -223,9 +223,9 @@
                 
                 if (parsed.length > 0) {
                     parsed.forEach(c => {
-                        const profileHeight = c.profile && c.profile.height ? c.profile.height : '';
-                        const parsedHeight = parseFloat(profileHeight);
-                        if (!isNaN(parsedHeight)) {
+                        const profileHeight = c.profile && c.profile.height ? String(c.profile.height) : '';
+                        const parsedHeight = extractHeight(profileHeight);
+                        if (parsedHeight !== null) {
                             let imgUrl = null;
                             if (c.profile && c.profile.standingImage) {
                                 imgUrl = convertToDisplayUrl(c.profile.standingImage);
