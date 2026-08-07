@@ -385,16 +385,19 @@
             const char = targets.find(c => c.id === id);
             if (!char) return;
 
-            // 大元のデータから欠損しているプロパティ（skillsやstatusなど）を補完
+            // 大元のデータ（weby_trpg_characters）から常に最新の情報をマージする
             try {
                 const globalData = localStorage.getItem('weby_trpg_characters');
                 if (globalData) {
                     const allChars = JSON.parse(globalData);
                     const globalChar = allChars.find(c => c.id === id);
                     if (globalChar) {
-                        if (!char.skills && globalChar.skills) char.skills = globalChar.skills;
-                        if (!char.status && globalChar.status) char.status = globalChar.status;
-                        if (!char.params && globalChar.params) char.params = globalChar.params;
+                        if (globalChar.skills && globalChar.skills.length > 0) char.skills = globalChar.skills;
+                        if (globalChar.status && globalChar.status.length > 0) char.status = globalChar.status;
+                        if (globalChar.params && globalChar.params.length > 0) char.params = globalChar.params;
+                        if (globalChar.profile) char.profile = { ...(char.profile || {}), ...globalChar.profile };
+                        if (globalChar.iconUrl) char.iconUrl = globalChar.iconUrl;
+                        char.name = globalChar.name || char.name;
                     }
                 }
             } catch (e) {}
