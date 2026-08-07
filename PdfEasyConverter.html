@@ -589,6 +589,12 @@
             <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
           </label>
           
+          <!-- 検索項目 -->
+          <div class="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1 ml-auto shadow-sm">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5"></i>
+            <input type="text" id="card-search-input" placeholder="検索..." class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-40 transition-all" oninput="renderList()">
+          </div>
+
     <button onclick="clearText()" class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全クリア
     </button>
@@ -2091,6 +2097,9 @@
       let collapseThreshold = Infinity;
       let currentTocLevel = 0;
       let currentChild = container.firstElementChild;
+      
+      const searchInputElem = document.getElementById('card-search-input');
+      const searchQuery = searchInputElem ? searchInputElem.value.toLowerCase() : '';
 
       processedItems.forEach((item, index) => {
         if (item.isToc) {
@@ -2112,6 +2121,13 @@
         }
 
         if (isHidden) return;
+
+        if (searchQuery && 
+            !(item.text || '').toLowerCase().includes(searchQuery) && 
+            !(item.charName || '').toLowerCase().includes(searchQuery) && 
+            !(item.note || '').toLowerCase().includes(searchQuery)) {
+          return;
+        }
 
         const colorObj = getColorObj(item.color || 'slate');
         let isSelected = selectedCardIds.has(item.id);
