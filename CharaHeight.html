@@ -270,16 +270,16 @@
                 const label = document.createElement('label');
                 label.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-cyan-900/30 border border-cyan-800/50' : 'hover:bg-[#131b26] border border-transparent'}`;
                 
-                label.innerHTML = \`
-                    <div class="relative flex items-center justify-center w-5 h-5 border \${isSelected ? 'border-cyan-400 bg-cyan-900' : 'border-stone-600 bg-stone-900'} rounded">
-                        \${isSelected ? '<i data-lucide="check" class="w-3 h-3 text-cyan-400 absolute"></i>' : ''}
-                        <input type="checkbox" class="hidden" \${isSelected ? 'checked' : ''} onchange="toggleSelection('\${char.id}')">
+                label.innerHTML = `
+                    <div class="relative flex items-center justify-center w-5 h-5 border ${isSelected ? 'border-cyan-400 bg-cyan-900' : 'border-stone-600 bg-stone-900'} rounded">
+                        ${isSelected ? '<i data-lucide="check" class="w-3 h-3 text-cyan-400 absolute"></i>' : ''}
+                        <input type="checkbox" class="hidden" ${isSelected ? 'checked' : ''} onchange="toggleSelection('${char.id}')">
                     </div>
                     <div class="flex-grow min-w-0">
-                        <div class="text-sm font-bold text-stone-200 truncate">\${char.name}</div>
-                        <div class="text-xs text-cyan-500 font-mono">\${char.heightCm} cm</div>
+                        <div class="text-sm font-bold text-stone-200 truncate">${char.name}</div>
+                        <div class="text-xs text-cyan-500 font-mono">${char.heightCm} cm</div>
                     </div>
-                \`;
+                `;
                 
                 listEl.appendChild(label);
             });
@@ -317,31 +317,31 @@
                 
                 let contentHtml = '';
                 if (char.imgUrl) {
-                    contentHtml = \`<img src="\${char.imgUrl}" class="h-full w-auto object-contain object-bottom drop-shadow-[0_0_10px_rgba(6,182,212,0.3)] transition-transform duration-300 group-hover:scale-[1.02]" style="height: \${pxHeight}px;">\`;
+                    contentHtml = `<img src="${char.imgUrl}" class="h-full w-auto object-contain object-bottom drop-shadow-[0_0_10px_rgba(6,182,212,0.3)] transition-transform duration-300 group-hover:scale-[1.02]" style="height: ${pxHeight}px;">`;
                 } else {
                     // 立ち絵がない場合はシルエット
-                    contentHtml = \`
-                        <div class="flex flex-col items-center justify-end" style="height: \${pxHeight}px; width: \${pxHeight * 0.3}px;">
+                    contentHtml = `
+                        <div class="flex flex-col items-center justify-end" style="height: ${pxHeight}px; width: ${pxHeight * 0.3}px;">
                             <div class="w-full h-full chara-silhouette opacity-60 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                    \`;
+                    `;
                 }
 
-                charDiv.innerHTML = \`
+                charDiv.innerHTML = `
                     <!-- ホバー時に表示される情報 -->
                     <div class="absolute -top-16 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center pointer-events-none z-20">
                         <div class="bg-cyan-950/90 border border-cyan-500/50 px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
-                            <div class="text-white font-bold text-sm">\${char.name}</div>
-                            <div class="text-cyan-300 text-xs font-mono text-center">\${char.heightCm} cm</div>
+                            <div class="text-white font-bold text-sm">${char.name}</div>
+                            <div class="text-cyan-300 text-xs font-mono text-center">${char.heightCm} cm</div>
                         </div>
                         <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-cyan-500/50"></div>
                     </div>
                     
-                    \${contentHtml}
+                    ${contentHtml}
                     
                     <!-- 常時表示の名前ラベル（下部） -->
-                    <div class="absolute -bottom-6 text-[10px] text-cyan-200/80 font-bold whitespace-nowrap truncate w-full text-center drop-shadow-md">\${char.name.substring(0,6)}\${char.name.length > 6 ? '...' : ''}</div>
-                \`;
+                    <div class="absolute -bottom-6 text-[10px] text-cyan-200/80 font-bold whitespace-nowrap truncate w-full text-center drop-shadow-md">${char.name.substring(0,6)}${char.name.length > 6 ? '...' : ''}</div>
+                `;
                 
                 stageEl.appendChild(charDiv);
             });
@@ -357,12 +357,12 @@
                 const line = document.createElement('div');
                 
                 const isMajor = cm % 50 === 0;
-                line.className = \`height-line \${isMajor ? 'major' : ''}\`;
-                line.style.bottom = \`\${pxHeight}px\`;
+                line.className = `height-line ${isMajor ? 'major' : ''}`;
+                line.style.bottom = `${pxHeight}px`;
                 
                 // 偶数（20, 40...）または50の倍数の時に数値を表示
                 if (cm > 0 && (cm % 20 === 0 || isMajor)) {
-                    line.textContent = \`\${cm}cm\`;
+                    line.textContent = `${cm}cm`;
                 }
                 
                 container.appendChild(line);
@@ -372,7 +372,7 @@
         function zoomIn() {
             if (cmPerPx < 8) {
                 cmPerPx += 0.5;
-                document.documentElement.style.setProperty('--cm-px', \`\${cmPerPx}px\`);
+                document.documentElement.style.setProperty('--cm-px', `${cmPerPx}px`);
                 drawLines();
                 renderStage();
             }
@@ -381,7 +381,7 @@
         function zoomOut() {
             if (cmPerPx > 1.5) {
                 cmPerPx -= 0.5;
-                document.documentElement.style.setProperty('--cm-px', \`\${cmPerPx}px\`);
+                document.documentElement.style.setProperty('--cm-px', `${cmPerPx}px`);
                 drawLines();
                 renderStage();
             }
