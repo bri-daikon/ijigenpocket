@@ -227,12 +227,25 @@ function renderBoard() {
         
         const dateStr = new Date(note.updatedAt).toLocaleString('ja-JP');
         
+        const nowMs = new Date().getTime();
+        const createdMs = new Date(note.createdAt || note.updatedAt).getTime();
+        const updatedMs = new Date(note.updatedAt).getTime();
+        const daysSinceCreated = (nowMs - createdMs) / (1000 * 60 * 60 * 24);
+        const daysSinceUpdated = (nowMs - updatedMs) / (1000 * 60 * 60 * 24);
+        
+        let badgeHtml = '';
+        if (daysSinceCreated <= 3) {
+            badgeHtml = '<span class="badge badge-new">新着</span>';
+        } else if (daysSinceUpdated <= 3) {
+            badgeHtml = '<span class="badge badge-updated">更新</span>';
+        }
+        
         card.innerHTML = `
             <div class="note-actions">
                 <button class="edit-btn" data-id="${note.id}" title="編集">✏️</button>
                 <button class="delete-btn" data-id="${note.id}" title="削除">🗑️</button>
             </div>
-            <div class="note-card-title">${escapeHTML(note.title)}</div>
+            <div class="note-card-title"><span>${escapeHTML(note.title)}</span>${badgeHtml}</div>
             <div class="note-card-date">更新: ${dateStr}</div>
             <div class="note-card-content">${escapeHTML(note.content)}</div>
         `;
@@ -293,6 +306,20 @@ function setupEventListeners() {
         };
         await saveNote(noteData);
         closeModal();
+    });
+
+    // Auto-sync color when category is selected/typed
+    noteCategoryInput.addEventListener('input', (e) => {
+        const selectedCategory = e.target.value.trim();
+        if (selectedCategory) {
+            const matchingNotes = notes.filter(n => (n.category || '未分類') === selectedCategory);
+            if (matchingNotes.length > 0) {
+                matchingNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                if (matchingNotes[0].color) {
+                    noteColorInput.value = matchingNotes[0].color;
+                }
+            }
+        }
     });
 
     // Theme Toggle
