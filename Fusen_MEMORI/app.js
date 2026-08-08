@@ -28,11 +28,14 @@ if (useFirebase) {
 
 // State
 let notes = [];
+let currentCategoryFilter = 'すべて';
 const STORAGE_KEY = 'fusen_memori_notes';
 const THEME_KEY = 'fusen_memori_theme';
 
 // DOM Elements
 const boardContainer = document.getElementById('board-container');
+const categoryFilterContainer = document.getElementById('category-filter');
+const categoryOptionsDatalist = document.getElementById('category-options');
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const addNoteBtn = document.getElementById('add-note-btn');
 const exportBtn = document.getElementById('export-btn');
@@ -47,6 +50,7 @@ const noteIdInput = document.getElementById('note-id');
 const noteCategoryInput = document.getElementById('note-category');
 const noteTitleInput = document.getElementById('note-title');
 const noteContentInput = document.getElementById('note-content');
+const noteColorInput = document.getElementById('note-color');
 const modalTitle = document.getElementById('modal-title');
 
 // Initialize
@@ -58,7 +62,7 @@ function init() {
         db.collection("notes").onSnapshot((snapshot) => {
             const fetchedNotes = [];
             snapshot.forEach((doc) => {
-                fetchedNotes.push({ id: doc.id, ...doc.data() });
+                fetchedNotes.push({ ...doc.data(), id: doc.id });
             });
             notes = fetchedNotes;
             saveToLocal(); // Backup locally
@@ -87,11 +91,16 @@ function saveToLocal() {
 
 async function saveNote(noteData) {
     const now = new Date().toISOString();
+    
+    // Create a copy without the id field for Firebase payload
+    const payload = { ...noteData };
+    delete payload.id;
+    
     if (noteData.id) {
         // Update
         if (useFirebase && db) {
             await db.collection("notes").doc(noteData.id).update({
-                ...noteData,
+                ...payload,
                 updatedAt: now
             });
         } else {
@@ -102,15 +111,19 @@ async function saveNote(noteData) {
         }
     } else {
         // Create
-        const newNote = {
-            ...noteData,
-            createdAt: now,
-            updatedAt: now
-        };
         if (useFirebase && db) {
-            await db.collection("notes").add(newNote);
+            await db.collection("notes").add({
+                ...payload,
+                createdAt: now,
+                updatedAt: now
+            });
         } else {
-            newNote.id = 'note_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            const newNote = {
+                ...noteData,
+                createdAt: now,
+                updatedAt: now,
+                id: 'note_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
+            };
             notes.push(newNote);
         }
     }
@@ -137,59 +150,107 @@ async function deleteNote(id) {
 function renderBoard() {
     boardContainer.innerHTML = '';
     
-    // Group by category
-    const categories = {};
-    notes.forEach(note => {
+    // Get unique categories and their latest colors
+    const categoryColors = {};
+    const categorySet = new Set();
+    const sortedNotesForColors = [...notes].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    
+    sortedNotesForColors.forEach(note => {
         const cat = note.category || '未分類';
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push(note);
+        categorySet.add(cat);
+        if (!categoryColors[cat] && note.color) {
+            categoryColors[cat] = note.color;
+        }
     });
+    const uniqueCategories = Array.from(categorySet).sort();
 
-    // Sort categories alphabetically or keep creation order (we use Object.keys which is mostly alphabetical)
-    Object.keys(categories).sort().forEach(categoryName => {
-        const catNotes = categories[categoryName];
-        // Sort notes by updatedAt descending (newest first)
-        catNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    // 1. Update Datalist for Modal
+    if (categoryOptionsDatalist) {
+        categoryOptionsDatalist.innerHTML = '';
+        uniqueCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            categoryOptionsDatalist.appendChild(option);
+        });
+    }
 
-        const col = document.createElement('div');
-        col.className = 'category-column';
+    // 2. Render Category Filters
+    if (categoryFilterContainer) {
+        categoryFilterContainer.innerHTML = '';
         
-        const header = document.createElement('div');
-        header.className = 'category-header';
-        header.innerHTML = `
-            <span>${escapeHTML(categoryName)}</span>
-            <span class="category-count">${catNotes.length}</span>
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn' + (currentCategoryFilter === 'すべて' ? ' active' : '');
+        allBtn.textContent = 'すべて';
+        allBtn.addEventListener('click', () => {
+            currentCategoryFilter = 'すべて';
+            renderBoard();
+        });
+        categoryFilterContainer.appendChild(allBtn);
+
+        uniqueCategories.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn' + (currentCategoryFilter === cat ? ' active' : '');
+            btn.textContent = cat;
+            
+            const catColor = categoryColors[cat];
+            if (catColor) {
+                btn.style.setProperty('--btn-color', catColor);
+                btn.classList.add('colored-btn');
+            }
+            
+            btn.addEventListener('click', () => {
+                currentCategoryFilter = cat;
+                renderBoard();
+            });
+            categoryFilterContainer.appendChild(btn);
+        });
+    }
+    
+    // 3. Filter notes
+    let filteredNotes = notes;
+    if (currentCategoryFilter !== 'すべて') {
+        filteredNotes = notes.filter(n => (n.category || '未分類') === currentCategoryFilter);
+    }
+    
+    // Sort descending
+    filteredNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    // 4. Render Note Cards
+    filteredNotes.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        
+        if (note.color) {
+            card.style.backgroundColor = note.color;
+            card.style.color = '#333';
+        }
+        
+        const dateStr = new Date(note.updatedAt).toLocaleString('ja-JP');
+        
+        card.innerHTML = `
+            <div class="note-actions">
+                <button class="edit-btn" data-id="${note.id}" title="編集">✏️</button>
+                <button class="delete-btn" data-id="${note.id}" title="削除">🗑️</button>
+            </div>
+            <div class="note-card-title">${escapeHTML(note.title)}</div>
+            <div class="note-card-date">更新: ${dateStr}</div>
+            <div class="note-card-content">${escapeHTML(note.content)}</div>
         `;
         
-        const list = document.createElement('div');
-        list.className = 'notes-list';
-
-        catNotes.forEach(note => {
-            const card = document.createElement('div');
-            card.className = 'note-card';
-            
-            const dateStr = new Date(note.updatedAt).toLocaleString('ja-JP');
-            
-            card.innerHTML = `
-                <div class="note-actions">
-                    <button class="edit-btn" data-id="${note.id}" title="編集">✏️</button>
-                    <button class="delete-btn" data-id="${note.id}" title="削除">🗑️</button>
-                </div>
-                <div class="note-card-title">${escapeHTML(note.title)}</div>
-                <div class="note-card-date">更新: ${dateStr}</div>
-                <div class="note-card-content">${escapeHTML(note.content)}</div>
-            `;
-            
-            // Event Listeners for buttons
-            card.querySelector('.edit-btn').addEventListener('click', () => openModal(note));
-            card.querySelector('.delete-btn').addEventListener('click', () => deleteNote(note.id));
-
-            list.appendChild(card);
+        card.querySelector('.note-card-title').addEventListener('click', () => {
+            card.classList.toggle('expanded');
+        });
+        
+        card.querySelector('.edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModal(note);
+        });
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteNote(note.id);
         });
 
-        col.appendChild(header);
-        col.appendChild(list);
-        boardContainer.appendChild(col);
+        boardContainer.appendChild(card);
     });
 }
 
@@ -201,10 +262,12 @@ function openModal(note = null) {
         noteCategoryInput.value = note.category;
         noteTitleInput.value = note.title;
         noteContentInput.value = note.content;
+        noteColorInput.value = note.color || '#fff9c4';
     } else {
         modalTitle.textContent = '付箋を追加';
         noteForm.reset();
         noteIdInput.value = '';
+        noteColorInput.value = '#fff9c4'; // default sticky yellow
     }
     noteModal.classList.remove('hidden');
 }
@@ -225,7 +288,8 @@ function setupEventListeners() {
             id: noteIdInput.value || null,
             category: noteCategoryInput.value.trim() || '未分類',
             title: noteTitleInput.value.trim(),
-            content: noteContentInput.value.trim()
+            content: noteContentInput.value.trim(),
+            color: noteColorInput.value
         };
         await saveNote(noteData);
         closeModal();
