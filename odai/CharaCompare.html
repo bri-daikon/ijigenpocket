@@ -1330,6 +1330,8 @@
         function populateScoutSkills() {
             // 全キャラクターが持っているユニークな全技能名を集める
             const allSkillsSet = new Set();
+            allSkillsSet.add('現在正気度');
+            allSkillsSet.add('最大正気度');
             characters.forEach(char => {
                 const skills = char.skills || [];
                 skills.forEach(s => allSkillsSet.add(s.label));
@@ -1393,12 +1395,19 @@
 
                 selectedSkills.forEach(targetSkillName => {
                     let value = 0;
-                    const charSkillObj = (char.skills || []).find(s => s.label.toLowerCase() === targetSkillName.toLowerCase());
-                    if (charSkillObj) {
-                        value = charSkillObj.value;
+                    if (targetSkillName === '現在正気度' || targetSkillName === '最大正気度') {
+                        const sanObj = (char.status || []).find(s => s.label.toUpperCase() === 'SAN');
+                        if (sanObj) {
+                            value = (targetSkillName === '現在正気度') ? (Number(sanObj.value) || 0) : (Number(sanObj.max) || 99);
+                        }
                     } else {
-                        const paramObj = (char.params || []).find(p => p.label.toLowerCase() === targetSkillName.toLowerCase());
-                        if (paramObj) value = paramObj.value;
+                        const charSkillObj = (char.skills || []).find(s => s.label.toLowerCase() === targetSkillName.toLowerCase());
+                        if (charSkillObj) {
+                            value = charSkillObj.value;
+                        } else {
+                            const paramObj = (char.params || []).find(p => p.label.toLowerCase() === targetSkillName.toLowerCase());
+                            if (paramObj) value = paramObj.value;
+                        }
                     }
                     totalScore += value;
                     skillDetails.push({ label: targetSkillName, value: value });
@@ -1494,9 +1503,16 @@
                         </div>
 
                         <!-- 合計点数 -->
-                        <div class="border-t border-amber-950/20 mt-2 pt-1.5 flex justify-between items-center">
-                            <span class="text-[9px] text-stone-500 uppercase tracking-wider">合計適正</span>
-                            <span class="text-sm font-bold text-amber-400 font-mono">${item.totalScore}%</span>
+                        <div class="border-t border-amber-950/20 mt-2 pt-1.5 flex flex-col gap-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] text-stone-500 uppercase tracking-wider">合計適正</span>
+                                <span class="text-sm font-bold text-amber-400 font-mono">${item.totalScore}%</span>
+                            </div>
+                            ${char.externalUrl ? `
+                            <a href="${char.externalUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[10px] text-amber-600 hover:text-amber-400 transition-colors">
+                                <i data-lucide="external-link" class="w-2.5 h-2.5"></i> キャラシを開く
+                            </a>
+                            ` : ''}
                         </div>
                     </div>
                 `;
