@@ -3,13 +3,15 @@
 // === Firebase Config ===
 // ユーザーが自分のFirebaseを使用する場合は、ここの設定を書き換える
 const firebaseConfig = {
-    // apiKey: "YOUR_API_KEY",
-    // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    // projectId: "YOUR_PROJECT_ID",
-    // storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    // appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDGFygrkRwp5rcClriBNyc2u_DwDIC_DHI",
+  authDomain: "fusen-memori.firebaseapp.com",
+  projectId: "fusen-memori",
+  storageBucket: "fusen-memori.firebasestorage.app",
+  messagingSenderId: "41552418931",
+  appId: "1:41552418931:web:c2fc9d9ac03a1472477206",
+  measurementId: "G-MV7FVHWNJQ"
 };
+
 
 let db = null;
 const useFirebase = Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey;
