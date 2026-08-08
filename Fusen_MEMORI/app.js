@@ -242,6 +242,7 @@ function renderBoard() {
         
         card.innerHTML = `
             <div class="note-actions">
+                <button class="copy-btn" data-id="${note.id}" title="コピー">📋</button>
                 <button class="edit-btn" data-id="${note.id}" title="編集">✏️</button>
                 <button class="delete-btn" data-id="${note.id}" title="削除">🗑️</button>
             </div>
@@ -261,6 +262,20 @@ function renderBoard() {
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             deleteNote(note.id);
+        });
+        card.querySelector('.copy-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                await navigator.clipboard.writeText(note.content);
+                const btn = e.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✔️';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1500);
+            } catch (err) {
+                alert('コピーに失敗しました');
+            }
         });
 
         boardContainer.appendChild(card);
