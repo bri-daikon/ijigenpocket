@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LINE風トークシミュレーター</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- html2canvas for image generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    /* LINE Chat Bubble Triangle Effects */
+    .bubble-left::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: -8px;
+      border-width: 6px 8px 6px 0;
+      border-style: solid;
+      border-color: transparent #ffffff transparent transparent;
+    }
+    .bubble-right::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      right: -8px;
+      border-width: 6px 0 6px 8px;
+      border-style: solid;
+      border-color: transparent transparent transparent #85e249;
+    }
+    /* Custom scrollbar for preview */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
+  <header class="bg-emerald-600 text-white py-4 px-6 shadow-md mb-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-comments text-2xl"></i>
+        <h1 class="text-xl font-bold tracking-wide">LINE風トークシミュレーター</h1>
+      </div>
+      <span class="text-xs bg-emerald-700 px-3 py-1 rounded-full border border-emerald-500">Weby Studio</span>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- 左側：操作パネル -->
+    <section class="lg:col-span-5 space-y-6">
+      
+      <!-- 基本設定カード -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <h2 class="text-base font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-emerald-500"></i> トーク相手の設定
+        </h2>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">相手の名前</label>
+          <input type="text" id="partner-name" value="友人" class="w-full text-sm p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:outline-none transition" oninput="updateHeader()">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">相手のアバター画像</label>
+          <input type="file" id="partner-avatar-input" accept="image/*" onchange="uploadPartnerAvatar(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+        </div>
+      </div>
+
+      <!-- 背景デザイン設定カード -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <h2 class="text-base font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+          <i class="fa-solid fa-palette text-emerald-500"></i> 背景デザインの設定
+        </h2>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-2">テーマカラーを選択</label>
+          <div class="flex gap-3">
+            <button type="button" onclick="setBgColor('#7294c2')" class="w-9 h-9 rounded-full bg-[#7294c2] border-2 border-white shadow-md hover:scale-110 transition" title="標準LINEブルー"></button>
+            <button type="button" onclick="setBgColor('#1f2937')" class="w-9 h-9 rounded-full bg-slate-800 border-2 border-white shadow-md hover:scale-110 transition" title="ダーク"></button>
+            <button type="button" onclick="setBgColor('#f472b6')" class="w-9 h-9 rounded-full bg-pink-400 border-2 border-white shadow-md hover:scale-110 transition" title="ピンク"></button>
+            <button type="button" onclick="setBgColor('#10b981')" class="w-9 h-9 rounded-full bg-emerald-500 border-2 border-white shadow-md hover:scale-110 transition" title="エメラルド"></button>
+            <button type="button" onclick="setBgColor('#f59e0b')" class="w-9 h-9 rounded-full bg-amber-500 border-2 border-white shadow-md hover:scale-110 transition" title="ウォーム"></button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">お好きな背景画像をアップロード</label>
+          <input type="file" id="bg-file-input" accept="image/*" onchange="uploadBgImage(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+        </div>
+      </div>
+
+      <!-- メッセージ投稿カード -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <h2 class="text-base font-bold text-slate-700 border-b pb-2 flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane text-emerald-500"></i> メッセージの送信設定
+        </h2>
+
+        <!-- 発言者切り替え -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">送信者</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-sender-left" onclick="setSender('left')" class="py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-emerald-600 text-white border-emerald-600 shadow-sm">
+              <i class="fa-solid fa-user"></i> 相手 (左)
+            </button>
+            <button type="button" id="btn-sender-right" onclick="setSender('right')" class="py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200">
+              <i class="fa-solid fa-user-check"></i> 自分 (右)
+            </button>
+          </div>
+        </div>
+
+        <!-- タイプ切り替え（テキスト / スタンプ） -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">コンテンツの種類</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-type-text" onclick="setContentType('text')" class="py-1.5 px-3 text-xs font-bold rounded-lg border bg-emerald-100 text-emerald-700 border-emerald-300">
+              📝 テキスト
+            </button>
+            <button type="button" id="btn-type-stamp" onclick="setContentType('stamp')" class="py-1.5 px-3 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600 border-slate-200">
+              🐻 スタンプ
+            </button>
+          </div>
+        </div>
+
+        <!-- テキスト入力 -->
+        <div id="input-text-container">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">メッセージ内容</label>
+          <textarea id="message-text" rows="3" placeholder="メッセージを入力してください..." class="w-full text-sm p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:outline-none transition"></textarea>
+        </div>
+
+        <!-- スタンプ選択 -->
+        <div id="input-stamp-container" class="hidden space-y-2">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">スタンプを選択</label>
+          <div class="grid grid-cols-4 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200" id="stamp-grid">
+            <!-- JSでスタンプ一覧が生成されます -->
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">または画像ファイルをスタンプとしてアップロード:</label>
+            <input type="file" id="custom-stamp-input" accept="image/*" onchange="uploadCustomStamp(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-slate-200 text-slate-700 hover:file:bg-slate-300 cursor-pointer">
+          </div>
+        </div>
+
+        <!-- オプション（時間・既読） -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">送信時間</label>
+            <input type="time" id="message-time" class="w-full text-xs p-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="message-read" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+              <span class="ml-2 text-xs font-semibold text-slate-600">「既読」をつける</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 追加ボタン -->
+        <button type="button" onclick="addMessage()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition transform active:scale-98 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> メッセージを追加する
+        </button>
+      </div>
+
+      <!-- 一括操作・画像保存 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+        <button type="button" onclick="downloadImage()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg transition transform active:scale-98 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-download"></i> スマホごと画像保存 (.png)
+        </button>
+        <button type="button" onclick="clearAllMessages()" class="w-full py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-semibold rounded-xl text-xs transition border border-slate-200 flex items-center justify-center gap-1">
+          <i class="fa-solid fa-trash-can"></i> トーク履歴を全クリア
+        </button>
+      </div>
+
+    </section>
+
+    <!-- 右側：スマホ画面プレビュー -->
+    <section class="lg:col-span-7 flex justify-center items-start">
+      <div class="sticky top-6">
+        <!-- iPhone風フレーム -->
+        <div class="w-[360px] sm:w-[380px] bg-slate-900 p-3 rounded-[48px] shadow-2xl border-4 border-slate-800 relative">
+          
+          <!-- スピーカーノッチ -->
+          <div class="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4 bg-slate-900 rounded-full z-20 flex items-center justify-center">
+            <div class="w-10 h-1 bg-slate-700 rounded-full"></div>
+          </div>
+
+          <!-- スマホ液晶画面内 -->
+          <div id="phone-screen" class="bg-[#7294c2] bg-cover bg-center rounded-[38px] overflow-hidden flex flex-col h-[660px] relative transition-all duration-300">
+            
+            <!-- ステータスバー（時計・アイコン） -->
+            <div class="pt-5 pb-2 px-6 flex justify-between items-center text-white text-xs z-10 font-semibold shrink-0">
+              <span id="status-bar-time" class="leading-tight">09:41</span>
+              <div class="flex items-center gap-1.5 text-[10px] leading-tight">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-full text-xs"></i>
+              </div>
+            </div>
+
+            <!-- LINE ヘッダーバー -->
+            <div class="bg-slate-900/40 backdrop-blur-md px-6 py-3 flex items-center justify-between text-white border-b border-white/10 z-10 min-h-[52px] shrink-0">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-chevron-left text-sm cursor-pointer flex items-center"></i>
+                <span id="preview-header-name" class="font-bold text-sm tracking-wide truncate max-w-[150px] inline-flex items-center leading-normal py-1">友人</span>
+              </div>
+              <div class="flex items-center gap-4 text-sm leading-tight">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <i class="fa-solid fa-bars"></i>
+              </div>
+            </div>
+
+            <!-- トーク本文表示領域 -->
+            <div id="chat-container" class="flex-1 p-4 px-5 overflow-y-auto space-y-3 custom-scrollbar">
+              <!-- JSにより動的にメッセージが生成されます -->
+            </div>
+
+            <!-- LINE フッターバー（入力風ダミー） -->
+            <div class="bg-white/90 backdrop-blur-md p-2.5 px-6 pb-6 flex items-center gap-2 text-slate-400 z-10 border-t border-slate-200/50">
+              <i class="fa-solid fa-plus text-base"></i>
+              <i class="fa-solid fa-camera text-base"></i>
+              <i class="fa-solid fa-image text-base"></i>
+              <div class="flex-1 bg-slate-100 rounded-full px-3 py-1.5 text-xs text-slate-400">
+                メッセージを入力
+              </div>
+              <i class="fa-solid fa-face-smile text-lg text-emerald-500"></i>
+            </div>
+
+          </div>
+          <!-- ホームバー -->
+          <div class="w-32 h-1 bg-slate-700 rounded-full mx-auto mt-2"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- アプリケーション状態変数 ---
+    let currentSender = 'left'; // 'left' (相手) または 'right' (自分)
+    let contentType = 'text';   // 'text' または 'stamp'
+    let selectedStampUrl = '';
+    let partnerAvatarUrl = ''; // 相手のアイコン画像
+
+    // 初期サンプルスタンプリスト（SVG/絵文字デザイン）
+    const presetStamps = [
+      { id: 1, url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Happy&backgroundColor=b6e3f4' },
+      { id: 2, url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Love&backgroundColor=ffd5dc' },
+      { id: 3, url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Cool&backgroundColor=c0aede' },
+      { id: 4, url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Shock&backgroundColor=d1d4f9' }
+    ];
+
+    // メッセージデータ配列
+    let messages = [
+      {
+        id: 1,
+        sender: 'left',
+        type: 'text',
+        content: 'こんにちは！元気？',
+        time: '12:00',
+        read: true
+      },
+      {
+        id: 2,
+        sender: 'right',
+        type: 'text',
+        content: '久しぶり！元気だよ〜！',
+        time: '12:01',
+        read: true
+      },
+      {
+        id: 3,
+        sender: 'left',
+        type: 'stamp',
+        content: presetStamps[0].url,
+        time: '12:02',
+        read: true
+      }
+    ];
+
+    window.onload = function() {
+      // 現在時刻のセット
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('message-time').value = `${hours}:${minutes}`;
+      document.getElementById('status-bar-time').innerText = `${hours}:${minutes}`;
+
+      // スタンプグリッドの初期生成
+      renderStampGrid();
+
+      // 初回メッセージ描画
+      renderMessages();
+    };
+
+    // --- ヘッダー・プロフィール更新 ---
+    function updateHeader() {
+      const name = document.getElementById('partner-name').value || '名前なし';
+      document.getElementById('preview-header-name').innerText = name;
+    }
+
+    function uploadPartnerAvatar(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        partnerAvatarUrl = e.target.result;
+        renderMessages();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // --- 背景変更機能 ---
+    function setBgColor(color) {
+      const screen = document.getElementById('phone-screen');
+      screen.style.backgroundImage = 'none';
+      screen.style.backgroundColor = color;
+    }
+
+    function uploadBgImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const screen = document.getElementById('phone-screen');
+        screen.style.backgroundImage = `url('${e.target.result}')`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 発言者の切り替え
+    function setSender(sender) {
+      currentSender = sender;
+      const btnLeft = document.getElementById('btn-sender-left');
+      const btnRight = document.getElementById('btn-sender-right');
+
+      if (sender === 'left') {
+        btnLeft.className = "py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-emerald-600 text-white border-emerald-600 shadow-sm";
+        btnRight.className = "py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200";
+      } else {
+        btnLeft.className = "py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200";
+        btnRight.className = "py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-2 bg-emerald-600 text-white border-emerald-600 shadow-sm";
+      }
+    }
+
+    // コンテンツタイプ（テキスト / スタンプ）の切り替え
+    function setContentType(type) {
+      contentType = type;
+      const btnText = document.getElementById('btn-type-text');
+      const btnStamp = document.getElementById('btn-type-stamp');
+      const containerText = document.getElementById('input-text-container');
+      const containerStamp = document.getElementById('input-stamp-container');
+
+      if (type === 'text') {
+        btnText.className = "py-1.5 px-3 text-xs font-bold rounded-lg border bg-emerald-100 text-emerald-700 border-emerald-300";
+        btnStamp.className = "py-1.5 px-3 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600 border-slate-200";
+        containerText.classList.remove('hidden');
+        containerStamp.classList.add('hidden');
+      } else {
+        btnText.className = "py-1.5 px-3 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600 border-slate-200";
+        btnStamp.className = "py-1.5 px-3 text-xs font-bold rounded-lg border bg-emerald-100 text-emerald-700 border-emerald-300";
+        containerText.classList.add('hidden');
+        containerStamp.classList.remove('hidden');
+      }
+    }
+
+    // スタンプグリッド描画
+    function renderStampGrid() {
+      const grid = document.getElementById('stamp-grid');
+      grid.innerHTML = '';
+      presetStamps.forEach((stamp, index) => {
+        const item = document.createElement('div');
+        item.className = `cursor-pointer p-1 rounded-lg border-2 hover:border-emerald-500 transition ${selectedStampUrl === stamp.url || (index === 0 && !selectedStampUrl) ? 'border-emerald-500 bg-emerald-50' : 'border-transparent'}`;
+        item.onclick = () => selectStamp(stamp.url, item);
+        item.innerHTML = `<img src="${stamp.url}" class="w-12 h-12 object-contain mx-auto">`;
+        grid.appendChild(item);
+      });
+      if (!selectedStampUrl && presetStamps.length > 0) {
+        selectedStampUrl = presetStamps[0].url;
+      }
+    }
+
+    function selectStamp(url, element) {
+      selectedStampUrl = url;
+      const children = document.getElementById('stamp-grid').children;
+      for (let child of children) {
+        child.className = child.className.replace('border-emerald-500 bg-emerald-50', 'border-transparent');
+      }
+      element.className = "cursor-pointer p-1 rounded-lg border-2 border-emerald-500 bg-emerald-50 transition";
+    }
+
+    function uploadCustomStamp(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        selectedStampUrl = e.target.result;
+        presetStamps.unshift({ id: Date.now(), url: selectedStampUrl });
+        renderStampGrid();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // メッセージ追加処理
+    function addMessage() {
+      const timeVal = document.getElementById('message-time').value || '12:00';
+      const isRead = document.getElementById('message-read').checked;
+
+      let newContent = '';
+      if (contentType === 'text') {
+        newContent = document.getElementById('message-text').value.trim();
+        if (!newContent) {
+          alert('メッセージテキストを入力してください。');
+          return;
+        }
+      } else {
+        newContent = selectedStampUrl;
+        if (!newContent) {
+          alert('スタンプを選択してください。');
+          return;
+        }
+      }
+
+      const msg = {
+        id: Date.now(),
+        sender: currentSender,
+        type: contentType,
+        content: newContent,
+        time: timeVal,
+        read: isRead
+      };
+
+      messages.push(msg);
+      renderMessages();
+
+      if (contentType === 'text') {
+        document.getElementById('message-text').value = '';
+      }
+    }
+
+    // 個別メッセージ削除
+    function deleteMessage(id) {
+      messages = messages.filter(m => m.id !== id);
+      renderMessages();
+    }
+
+    // 全メッセージクリア
+    function clearAllMessages() {
+      messages = [];
+      renderMessages();
+    }
+
+    // トーク本文の描画処理
+    function renderMessages() {
+      const chatContainer = document.getElementById('chat-container');
+      chatContainer.innerHTML = '';
+
+      const partnerName = document.getElementById('partner-name').value || '友人';
+
+      messages.forEach((msg) => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'group relative flex items-end gap-2 mb-2 ' + (msg.sender === 'right' ? 'justify-end' : 'justify-start');
+
+        const delBtn = `<button onclick="deleteMessage(${msg.id})" class="opacity-0 group-hover:opacity-100 transition absolute -top-2 ${msg.sender === 'right' ? '-left-6' : '-right-6'} bg-rose-500 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center shadow z-20">×</button>`;
+
+        if (msg.sender === 'left') {
+          const avatarSrc = partnerAvatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + encodeURIComponent(partnerName);
+          
+          let contentHtml = '';
+          if (msg.type === 'text') {
+            contentHtml = `<div class="bg-white text-slate-800 text-sm px-3.5 py-2 rounded-2xl relative max-w-[200px] sm:max-w-[240px] break-words shadow-sm bubble-left">${escapeHtml(msg.content).replace(/\n/g, '<br>')}</div>`;
+          } else {
+            contentHtml = `<img src="${msg.content}" class="w-28 h-28 object-contain">`;
+          }
+
+          msgDiv.innerHTML = `
+            ${delBtn}
+            <div class="flex items-start gap-2 max-w-[85%]">
+              <img src="${avatarSrc}" class="w-9 h-9 rounded-full bg-white object-cover border border-slate-200 shrink-0">
+              <div class="flex flex-col">
+                <span class="text-[10px] text-white/80 mb-1 ml-0.5 leading-normal pt-0.5">${escapeHtml(partnerName)}</span>
+                <div class="flex items-end gap-1.5">
+                  ${contentHtml}
+                  <span class="text-[9px] text-white/80 shrink-0">${msg.time}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          let contentHtml = '';
+          if (msg.type === 'text') {
+            contentHtml = `<div class="bg-[#85e249] text-slate-900 text-sm px-3.5 py-2 rounded-2xl relative max-w-[200px] sm:max-w-[240px] break-words shadow-sm bubble-right">${escapeHtml(msg.content).replace(/\n/g, '<br>')}</div>`;
+          } else {
+            contentHtml = `<img src="${msg.content}" class="w-28 h-28 object-contain">`;
+          }
+
+          msgDiv.innerHTML = `
+            ${delBtn}
+            <div class="flex items-end gap-1.5 max-w-[85%] justify-end">
+              <div class="flex flex-col items-end text-[9px] text-white/80 shrink-0 leading-tight">
+                ${msg.read ? '<span class="text-white font-bold">既読</span>' : ''}
+                <span>${msg.time}</span>
+              </div>
+              ${contentHtml}
+            </div>
+          `;
+        }
+
+        chatContainer.appendChild(msgDiv);
+      });
+
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+
+    // スマホごと画像保存機能
+    function downloadImage() {
+      const phoneScreen = document.getElementById('phone-screen');
+
+      html2canvas(phoneScreen, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `LINE_Talk_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(err => {
+        console.error('画像生成に失敗しました:', err);
+        alert('画像の保存中にエラーが発生しました。');
+      });
+    }
+  </script>
+</body>
+</html>
