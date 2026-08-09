@@ -148,7 +148,7 @@
                 <div class="absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end pt-20" id="stageScrollWrapper">
                     
                     <!-- キャラクターが並ぶコンテナ -->
-                    <div id="stageContainer" class="relative flex items-end -space-x-8 sm:-space-x-16 px-12 pb-0 min-w-max h-full z-10">
+                    <div id="stageContainer" class="relative flex items-end -space-x-16 sm:-space-x-24 px-12 pb-0 min-w-max h-full z-10">
                         <!-- JSでキャラを描画 -->
                     </div>
 
@@ -256,7 +256,8 @@
                                 heightStr: profileHeight,
                                 heightCm: parsedHeight,
                                 imgUrl: imgUrl,
-                                colorCode: c.profile ? c.profile.colorCode : null
+                                colorCode: c.profile ? c.profile.colorCode : null,
+                                heightRatio: 1.0
                             });
                         }
                     });
@@ -287,23 +288,53 @@
 
                 const isSelected = selectedIds.has(char.id);
                 
-                const label = document.createElement('label');
-                label.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-cyan-900/30 border border-cyan-800/50' : 'hover:bg-[#131b26] border border-transparent'}`;
+                const div = document.createElement('div');
+                div.className = `flex flex-col gap-1 p-2 rounded-lg transition-colors ${isSelected ? 'bg-cyan-900/30 border border-cyan-800/50' : 'hover:bg-[#131b26] border border-transparent'}`;
                 
-                label.innerHTML = `
-                    <div class="relative flex items-center justify-center w-5 h-5 border ${isSelected ? 'border-cyan-400 bg-cyan-900' : 'border-stone-600 bg-stone-900'} rounded">
-                        ${isSelected ? '<i data-lucide="check" class="w-3 h-3 text-cyan-400 absolute"></i>' : ''}
-                        <input type="checkbox" class="hidden" ${isSelected ? 'checked' : ''} onchange="toggleSelection('${char.id}')">
+                let ratioButtonsHtml = '';
+                if (isSelected) {
+                    const currentRatio = char.heightRatio || 1.0;
+                    const ratios = [
+                        { label: '100%', val: 1.0 },
+                        { label: '-30%', val: 0.7 },
+                        { label: '-50%', val: 0.5 }
+                    ];
+                    const buttons = ratios.map(r => {
+                        const active = currentRatio === r.val;
+                        return `<button onclick="changeHeightRatio('${char.id}', ${r.val}, event)" class="px-2 py-0.5 text-[10px] rounded border ${active ? 'bg-cyan-700 border-cyan-400 text-white' : 'bg-stone-800 border-stone-600 text-stone-400 hover:bg-stone-700'} transition-colors">${r.label}</button>`;
+                    }).join('');
+                    ratioButtonsHtml = `<div class="flex gap-1 mt-1 ml-8">${buttons}</div>`;
+                }
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="toggleSelection('${char.id}')">
+                        <div class="relative flex items-center justify-center w-5 h-5 border ${isSelected ? 'border-cyan-400 bg-cyan-900' : 'border-stone-600 bg-stone-900'} rounded">
+                            ${isSelected ? '<i data-lucide="check" class="w-3 h-3 text-cyan-400 absolute"></i>' : ''}
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <div class="text-sm font-bold text-stone-200 truncate">${char.name}</div>
+                            <div class="text-xs text-cyan-500 font-mono">${char.heightCm} cm</div>
+                        </div>
                     </div>
-                    <div class="flex-grow min-w-0">
-                        <div class="text-sm font-bold text-stone-200 truncate">${char.name}</div>
-                        <div class="text-xs text-cyan-500 font-mono">${char.heightCm} cm</div>
-                    </div>
+                    ${ratioButtonsHtml}
                 `;
                 
-                listEl.appendChild(label);
+                listEl.appendChild(div);
             });
             lucide.createIcons();
+        }
+
+        function changeHeightRatio(id, ratio, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            const char = allCharacters.find(c => c.id === id);
+            if (char) {
+                char.heightRatio = ratio;
+                renderList();
+                renderStage();
+            }
         }
 
         function toggleSelection(id) {
@@ -330,14 +361,16 @@
             
             selectedChars.forEach(char => {
                 const charDiv = document.createElement('div');
-                charDiv.className = "relative flex flex-col items-center justify-end group transition-all duration-300 shrink-0 cursor-grab active:cursor-grabbing";
+                charDiv.className = "relative flex flex-col items-center justify-end group transition-all duration-300 shrink-0 cursor-grab active:cursor-grabbing hover:z-[10001]";
                 charDiv.setAttribute('data-id', char.id);
                 
                 // 身長が低いほど手前に表示 (z-indexを高くする)
                 charDiv.style.zIndex = Math.round(10000 - char.heightCm * 10);
                 
                 // 身長に基づいた高さを計算
-                const pxHeight = char.heightCm * cmPerPx;
+                const ratio = char.heightRatio || 1.0;
+                const pxHeight = char.heightCm * ratio * cmPerPx;
+                const displayHeight = ratio === 1.0 ? `${char.heightCm} cm` : `${char.heightCm} cm &rarr; ${Math.round(char.heightCm * ratio)} cm`;
                 
                 let contentHtml = '';
                 if (char.imgUrl) {
@@ -357,7 +390,7 @@
                     <div class="absolute -top-16 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center pointer-events-none z-20">
                         <div class="bg-cyan-950/90 border border-cyan-500/50 px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
                             <div class="text-white font-bold text-sm">${char.name}</div>
-                            <div class="text-cyan-300 text-xs font-mono text-center">${char.heightCm} cm</div>
+                            <div class="text-cyan-300 text-xs font-mono text-center">${displayHeight}</div>
                         </div>
                         <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-cyan-500/50"></div>
                     </div>
