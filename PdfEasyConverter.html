@@ -2561,6 +2561,37 @@
       }
     }
 
+    // 指定されたIDのアイテムが折りたたまれている場合、親階層の折りたたみを展開して表示可能にする
+    function ensureItemVisible(targetId) {
+      const targetIndex = processedItems.findIndex(i => i.id === targetId);
+      if (targetIndex === -1) return;
+
+      let changed = false;
+      let activeTocs = [];
+
+      for (let i = 0; i <= targetIndex; i++) {
+        const item = processedItems[i];
+        if (item.isToc) {
+          const tocLevel = item.tocLevel || 1;
+          while (activeTocs.length > 0 && activeTocs[activeTocs.length - 1].level >= tocLevel) {
+            activeTocs.pop();
+          }
+          activeTocs.push({ item: item, level: tocLevel });
+        }
+      }
+
+      for (const tocInfo of activeTocs) {
+        if (tocInfo.item.isCollapsed) {
+          tocInfo.item.isCollapsed = false;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        renderList();
+      }
+    }
+
     // 右側サイドバー（しおり・目次・付箋）の更新
     function updateBookmarkAndNoteLists() {
       const bList = document.getElementById('bookmark-list');
@@ -2584,6 +2615,7 @@
           div.setAttribute('title', 'クリックで該当箇所にジャンプ');
 
           div.onclick = () => {
+            ensureItemVisible(item.id);
             const targetCard = document.querySelector(`[data-id="${item.id}"]`);
             if (targetCard) {
               targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2621,6 +2653,7 @@
             div.style.marginLeft = `${(tocLevel - 1) * 12}px`;
             div.setAttribute('title', 'クリックで該当箇所にジャンプ');
             div.onclick = () => {
+              ensureItemVisible(item.id);
               const targetCard = document.querySelector(`[data-id="${item.id}"]`);
               if (targetCard) {
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2661,6 +2694,7 @@
           div.setAttribute('title', 'クリックで該当箇所にジャンプ');
           
           div.onclick = () => {
+            ensureItemVisible(item.id);
             const targetCard = document.querySelector(`[data-id="${item.id}"]`);
             if (targetCard) {
               targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4250,6 +4284,10 @@
       jumpToPreviewPage(pageNum);
 
       // 2. テキスト一覧の対象ページの最初のカードへスクロール
+      const targetItem = processedItems.find(i => i.page == pageNum);
+      if (targetItem) {
+        ensureItemVisible(targetItem.id);
+      }
       const targetCard = document.querySelector(`#text-list [data-page="${pageNum}"]`);
       if (targetCard) {
         targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
