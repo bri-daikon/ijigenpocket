@@ -72,7 +72,7 @@
         }
 
         .chara-silhouette {
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 300"><path d="M50 10c11 0 20 9 20 20s-9 20-20 20-20-9-20-20 9-20 20-20zM30 60h40c11 0 20 9 20 20v100h-15v110h-20V190H45v100H25V180H10V80c0-11 9-20 20-20z" fill="white"/></svg>');
+            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 10 100 280"><path d="M50 10c11 0 20 9 20 20s-9 20-20 20-20-9-20-20 9-20 20-20zM30 60h40c11 0 20 9 20 20v100h-15v110h-20V190H45v100H25V180H10V80c0-11 9-20 20-20z" fill="white"/></svg>');
             mask-size: contain;
             mask-repeat: no-repeat;
             mask-position: bottom;
@@ -178,7 +178,7 @@
             const match = halfStr.match(/[0-9]+(\.[0-9]+)?/);
             if (match && match[0]) {
                 const h = parseFloat(match[0]);
-                if (h > 0 && h < 500) return h; // 異常値を除外（0〜500cmまで）
+                if (h > 0 && h <= 800) return h; // 異常値を除外（0〜800cmまで）
             }
             return null;
         }
@@ -236,7 +236,8 @@
                                 name: c.name,
                                 heightStr: profileHeight,
                                 heightCm: parsedHeight,
-                                imgUrl: imgUrl
+                                imgUrl: imgUrl,
+                                colorCode: c.profile ? c.profile.colorCode : null
                             });
                         }
                     });
@@ -253,7 +254,7 @@
                 console.error("データの読み込みに失敗", e);
             }
             renderList();
-            renderStage();
+            autoFitZoom();
         }
 
         function renderList() {
@@ -293,13 +294,13 @@
                 selectedIds.add(id);
             }
             renderList();
-            renderStage();
+            autoFitZoom();
         }
 
         function clearSelection() {
             selectedIds.clear();
             renderList();
-            renderStage();
+            autoFitZoom();
         }
 
         function renderStage() {
@@ -320,9 +321,10 @@
                     contentHtml = `<img src="${char.imgUrl}" class="h-full w-auto object-contain object-bottom drop-shadow-[0_0_10px_rgba(6,182,212,0.3)] transition-transform duration-300 group-hover:scale-[1.02]" style="height: ${pxHeight}px;">`;
                 } else {
                     // 立ち絵がない場合はシルエット
+                    const silhouetteStyle = char.colorCode ? `style="background-color: ${char.colorCode};"` : '';
                     contentHtml = `
-                        <div class="flex flex-col items-center justify-end" style="height: ${pxHeight}px; width: ${pxHeight / 3}px;">
-                            <div class="w-full h-full chara-silhouette opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="flex flex-col items-center justify-end" style="height: ${pxHeight}px; width: ${pxHeight * (100 / 280)}px;">
+                            <div class="w-full h-full chara-silhouette opacity-60 group-hover:opacity-100 transition-opacity" ${silhouetteStyle}></div>
                         </div>
                     `;
                 }
@@ -347,12 +349,37 @@
             });
         }
 
+        function autoFitZoom() {
+            const selectedChars = allCharacters.filter(c => selectedIds.has(c.id));
+            const maxCm = selectedChars.length > 0 ? Math.max(...selectedChars.map(c => c.heightCm)) : 160;
+            const stageWrapper = document.getElementById('stageScrollWrapper');
+            const stageHeight = stageWrapper && stageWrapper.clientHeight > 0 ? stageWrapper.clientHeight : 500;
+            
+            let newCmPerPx = (stageHeight * 0.8) / maxCm;
+            
+            if (newCmPerPx < 0.1) newCmPerPx = 0.1;
+            if (newCmPerPx > 15) newCmPerPx = 15;
+            
+            cmPerPx = newCmPerPx;
+            document.documentElement.style.setProperty('--cm-px', `${cmPerPx}px`);
+            
+            drawLines();
+            renderStage();
+        }
+
         function drawLines() {
             const container = document.getElementById('linesContainer');
             container.innerHTML = '';
             
-            // 最大300cmまで線を描画
-            for (let cm = 0; cm <= 300; cm += 10) {
+            const selectedChars = allCharacters.filter(c => selectedIds.has(c.id));
+            const maxCm = selectedChars.length > 0 ? Math.max(...selectedChars.map(c => c.heightCm)) : 300;
+            const drawUpTo = Math.max(300, Math.ceil(maxCm / 50) * 50 + 50);
+
+            let step = 10;
+            if (cmPerPx < 1.0) step = 50;
+            if (cmPerPx < 0.3) step = 100;
+            
+            for (let cm = 0; cm <= drawUpTo; cm += step) {
                 const pxHeight = cm * cmPerPx;
                 const line = document.createElement('div');
                 
@@ -360,8 +387,7 @@
                 line.className = `height-line ${isMajor ? 'major' : ''}`;
                 line.style.bottom = `${pxHeight}px`;
                 
-                // 偶数（20, 40...）または50の倍数の時に数値を表示
-                if (cm > 0 && (cm % 20 === 0 || isMajor)) {
+                if (cm > 0 && (cm % (step * 2) === 0 || isMajor)) {
                     line.textContent = `${cm}cm`;
                 }
                 
@@ -370,8 +396,8 @@
         }
 
         function zoomIn() {
-            if (cmPerPx < 8) {
-                cmPerPx += 0.5;
+            if (cmPerPx < 15) {
+                cmPerPx *= 1.2;
                 document.documentElement.style.setProperty('--cm-px', `${cmPerPx}px`);
                 drawLines();
                 renderStage();
@@ -379,8 +405,8 @@
         }
 
         function zoomOut() {
-            if (cmPerPx > 1.5) {
-                cmPerPx -= 0.5;
+            if (cmPerPx > 0.1) {
+                cmPerPx /= 1.2;
                 document.documentElement.style.setProperty('--cm-px', `${cmPerPx}px`);
                 drawLines();
                 renderStage();
