@@ -148,7 +148,7 @@
                 <div class="absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end pt-20" id="stageScrollWrapper">
                     
                     <!-- キャラクターが並ぶコンテナ -->
-                    <div id="stageContainer" class="relative flex items-end gap-2 sm:gap-6 px-12 pb-0 min-w-max h-full z-10">
+                    <div id="stageContainer" class="relative flex items-end -space-x-8 sm:-space-x-16 px-12 pb-0 min-w-max h-full z-10">
                         <!-- JSでキャラを描画 -->
                     </div>
 
@@ -332,6 +332,9 @@
                 const charDiv = document.createElement('div');
                 charDiv.className = "relative flex flex-col items-center justify-end group transition-all duration-300 shrink-0 cursor-grab active:cursor-grabbing";
                 charDiv.setAttribute('data-id', char.id);
+                
+                // 身長が低いほど手前に表示 (z-indexを高くする)
+                charDiv.style.zIndex = Math.round(10000 - char.heightCm * 10);
                 
                 // 身長に基づいた高さを計算
                 const pxHeight = char.heightCm * cmPerPx;
