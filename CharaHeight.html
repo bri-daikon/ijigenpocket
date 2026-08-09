@@ -6,6 +6,7 @@
     <title>身長比較の儀 - Grimoire</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -138,17 +139,20 @@
                 </button>
             </div>
 
-            <!-- ステージ本体（横スクロール可能） -->
-            <div class="flex-grow overflow-x-auto overflow-y-hidden relative flex items-end pt-20" id="stageScrollWrapper">
-                
-                <!-- 基準線コンテナ -->
-                <div id="linesContainer" class="absolute inset-0 pointer-events-none"></div>
+            <!-- ステージ領域全体 -->
+            <div class="flex-grow relative overflow-hidden flex flex-col">
+                <!-- 基準線コンテナ（スクロールしない） -->
+                <div id="linesContainer" class="absolute inset-0 pointer-events-none z-0"></div>
 
-                <!-- キャラクターが並ぶコンテナ -->
-                <div id="stageContainer" class="relative flex items-end gap-2 sm:gap-6 px-12 pb-0 min-w-max h-full z-10">
-                    <!-- JSでキャラを描画 -->
+                <!-- ステージ本体（横スクロール可能） -->
+                <div class="absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end pt-20" id="stageScrollWrapper">
+                    
+                    <!-- キャラクターが並ぶコンテナ -->
+                    <div id="stageContainer" class="relative flex items-end gap-2 sm:gap-6 px-12 pb-0 min-w-max h-full z-10">
+                        <!-- JSでキャラを描画 -->
+                    </div>
+
                 </div>
-
             </div>
             
             <!-- 床 -->
@@ -166,6 +170,21 @@
             lucide.createIcons();
             loadCharacters();
             drawLines();
+
+            new Sortable(document.getElementById('stageContainer'), {
+                animation: 150,
+                delay: 100, // スマホ誤動作防止
+                delayOnTouchOnly: true,
+                onEnd: function () {
+                    const newSelectedIds = new Set();
+                    const items = document.getElementById('stageContainer').children;
+                    for (let i = 0; i < items.length; i++) {
+                        const id = items[i].getAttribute('data-id');
+                        if (id) newSelectedIds.add(id);
+                    }
+                    selectedIds = newSelectedIds;
+                }
+            });
         });
 
         function extractHeight(str) {
@@ -307,11 +326,12 @@
             const stageEl = document.getElementById('stageContainer');
             stageEl.innerHTML = '';
 
-            const selectedChars = allCharacters.filter(c => selectedIds.has(c.id));
+            const selectedChars = Array.from(selectedIds).map(id => allCharacters.find(c => c.id === id)).filter(Boolean);
             
             selectedChars.forEach(char => {
                 const charDiv = document.createElement('div');
-                charDiv.className = "relative flex flex-col items-center justify-end group transition-all duration-300 shrink-0";
+                charDiv.className = "relative flex flex-col items-center justify-end group transition-all duration-300 shrink-0 cursor-grab active:cursor-grabbing";
+                charDiv.setAttribute('data-id', char.id);
                 
                 // 身長に基づいた高さを計算
                 const pxHeight = char.heightCm * cmPerPx;
@@ -350,7 +370,7 @@
         }
 
         function autoFitZoom() {
-            const selectedChars = allCharacters.filter(c => selectedIds.has(c.id));
+            const selectedChars = Array.from(selectedIds).map(id => allCharacters.find(c => c.id === id)).filter(Boolean);
             const maxCm = selectedChars.length > 0 ? Math.max(...selectedChars.map(c => c.heightCm)) : 160;
             const stageWrapper = document.getElementById('stageScrollWrapper');
             const stageHeight = stageWrapper && stageWrapper.clientHeight > 0 ? stageWrapper.clientHeight : 500;
@@ -371,7 +391,7 @@
             const container = document.getElementById('linesContainer');
             container.innerHTML = '';
             
-            const selectedChars = allCharacters.filter(c => selectedIds.has(c.id));
+            const selectedChars = Array.from(selectedIds).map(id => allCharacters.find(c => c.id === id)).filter(Boolean);
             const maxCm = selectedChars.length > 0 ? Math.max(...selectedChars.map(c => c.heightCm)) : 300;
             const drawUpTo = Math.max(300, Math.ceil(maxCm / 50) * 50 + 50);
 
