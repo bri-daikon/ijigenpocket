@@ -447,6 +447,18 @@
       if (contentType === 'text') {
         document.getElementById('message-text').value = '';
       }
+
+      // 送信時間を5分進める
+      const timeInput = document.getElementById('message-time');
+      if (timeInput.value) {
+        const [h, m] = timeInput.value.split(':').map(Number);
+        const d = new Date();
+        d.setHours(h);
+        d.setMinutes(m + 5);
+        const newH = String(d.getHours()).padStart(2, '0');
+        const newM = String(d.getMinutes()).padStart(2, '0');
+        timeInput.value = `${newH}:${newM}`;
+      }
     }
 
     // 個別メッセージ削除
