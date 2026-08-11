@@ -1,4 +1,9 @@
+import { db, ref, onValue, set, get } from './firebase-config.js';
+
 let currentSessionId = null;
+let currentRoomId = null;
+let isHost = false;
+let isSyncing = false;
 let config = { numPeople: 3, numRounds: 10, names: [], currentRound: 1 };
 let statusEntries = [];
 let currentTheme = 'dark';
@@ -36,6 +41,7 @@ window.changeTheme = (themeKey) => {
     const theme = themes[themeKey];
     document.body.className = theme.class + " transition-colors duration-500 min-h-screen p-4 pb-32";
     document.getElementById('theme-container').className = theme.class + " max-w-7xl mx-auto border p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4";
+    if (typeof window.syncToFirebase === 'function') window.syncToFirebase();
 };
 
 function initThemes() {
@@ -197,6 +203,8 @@ function renderManager() {
             body.appendChild(tr);
         });
     });
+    
+    if (typeof window.syncToFirebase === 'function') window.syncToFirebase();
 }
 
 window.applyAction = () => {
@@ -423,7 +431,115 @@ window.newSession = () => {
     }
 };
 
-window.onload = () => { initThemes(); generateNameFields(); updateSessionList(); changeTheme('dark'); initDragToScroll(); renderPresets(); };
+window.onload = async () => { 
+    initThemes(); updateSessionList(); initDragToScroll(); renderPresets(); 
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    if (roomId) {
+        currentRoomId = roomId;
+        document.getElementById('room-url').value = window.location.href;
+        document.getElementById('btn-create-room').classList.add('hidden');
+        document.getElementById('btn-copy-room').classList.remove('hidden');
+        await window.joinRoom(roomId);
+    } else {
+        generateNameFields(); 
+        changeTheme('dark');
+    }
+};
+
+window.createRoom = async () => {
+    const newRoomId = 'room_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    currentRoomId = newRoomId;
+    isHost = true;
+    
+    await window.syncToFirebase();
+    
+    const newUrl = window.location.origin + window.location.pathname + '?room=' + newRoomId;
+    window.history.pushState({path: newUrl}, '', newUrl);
+    
+    document.getElementById('room-url').value = newUrl;
+    document.getElementById('btn-create-room').classList.add('hidden');
+    document.getElementById('btn-copy-room').classList.remove('hidden');
+    
+    window.setupFirebaseListener();
+    showMsg("共有ルームを作成しました！URLをコピーして招待してください");
+};
+
+window.copyRoomUrl = () => {
+    const urlInput = document.getElementById('room-url');
+    urlInput.select();
+    document.execCommand('copy');
+    showMsg("URLをコピーしました！");
+};
+
+window.joinRoom = async (roomId) => {
+    try {
+        const roomRef = ref(db, 'rooms/' + roomId);
+        const snapshot = await get(roomRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            config = data.config || config;
+            statusEntries = data.statusEntries || [];
+            currentTheme = data.currentTheme || 'dark';
+            
+            if (!config.characters && config.names) {
+                config.characters = config.names.map((name, i) => ({ id: i.toString(), name: name, inactive: false }));
+            }
+            changeTheme(currentTheme);
+            renderManager();
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('main-manager').classList.remove('hidden');
+            showMsg("ルームに参加しました！");
+            
+            window.setupFirebaseListener();
+        } else {
+            showMsg("ルームが見つかりません。新規作成します", "error");
+            generateNameFields();
+            changeTheme('dark');
+        }
+    } catch (e) {
+        console.error(e);
+        showMsg("Firebase接続エラー。設定を確認してください", "error");
+        generateNameFields();
+        changeTheme('dark');
+    }
+};
+
+window.setupFirebaseListener = () => {
+    const roomRef = ref(db, 'rooms/' + currentRoomId);
+    onValue(roomRef, (snapshot) => {
+        if (isSyncing) return;
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            isSyncing = true;
+            config = data.config || config;
+            statusEntries = data.statusEntries || [];
+            if (currentTheme !== data.currentTheme) {
+                changeTheme(data.currentTheme || 'dark');
+            }
+            renderManager();
+            setTimeout(() => { isSyncing = false; }, 200);
+        }
+    });
+};
+
+window.syncToFirebase = async () => {
+    if (!currentRoomId || isSyncing) return; 
+    isSyncing = true;
+    try {
+        const roomRef = ref(db, 'rooms/' + currentRoomId);
+        await set(roomRef, {
+            config: config,
+            statusEntries: statusEntries,
+            currentTheme: currentTheme,
+            updatedAt: Date.now()
+        });
+    } catch(e) {
+        console.error(e);
+    }
+    setTimeout(() => { isSyncing = false; }, 500); 
+};
 
 const PRESET_STORAGE_KEY = 'weby_trpg_presets_v1';
 let presets = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY) || '[]');
