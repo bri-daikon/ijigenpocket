@@ -280,7 +280,14 @@ function handleDrop(e, pIdx, catId, r) {
 }
 
 window.populateInput = (pIdx, catId, round) => {
-    document.getElementById('action-person-select').value = pIdx;
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    // すでに複数選択されており、かつクリックした対象がその選択肢に含まれている場合は選択を解除しない
+    if (!(selectedOptions.length > 1 && selectedOptions.includes(pIdx))) {
+        select.value = pIdx;
+    }
+    
     const catRadio = document.querySelector(`input[name="action-cat"][value="${catId}"]`);
     if (catRadio) catRadio.checked = true;
     
@@ -615,6 +622,16 @@ window.addCharacter = () => {
     config.numPeople++;
     renderManager();
     showMsg("キャラクターを追加しました");
+};
+
+window.nextRound = () => {
+    if (config.currentRound < config.numRounds) {
+        config.currentRound++;
+        renderManager();
+        showMsg(`ラウンド ${config.currentRound} に進みました`);
+    } else {
+        showMsg("すでに最終ラウンドです", "error");
+    }
 };
 
 window.toggleCharacterStatus = (id) => {
