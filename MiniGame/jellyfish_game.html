@@ -13,9 +13,10 @@
     <style>
         body {
             font-family: 'M PLUS Rounded 1c', sans-serif;
-            touch-action: manipulation;
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            overscroll-behavior-y: none; /* 引っ張り更新を防止 */
         }
         /* Custom Scrollbar for customize panel */
         .custom-scroll::-webkit-scrollbar {
@@ -312,10 +313,11 @@
             container.addEventListener('mouseleave', () => guideLine.style.display = 'none');
 
             container.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // 画面のスクロールを防止
                 if (e.touches.length > 0) {
                     updateGuidePosition(e.touches[0].clientX);
                 }
-            }, { passive: true });
+            }, { passive: false });
 
             // Drop Action on Click / Touch End
             container.addEventListener('click', (e) => {
