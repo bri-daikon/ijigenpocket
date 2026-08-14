@@ -78,6 +78,20 @@
                 </button>
             </div>
 
+            <!-- Game Clear Overlay -->
+            <div id="game-clear-modal" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden transition-opacity">
+                <img src="img/nice1.png" alt="Clear!" class="w-32 h-32 object-contain mb-4 animate-bounce drop-shadow-lg">
+                <h2 class="text-2xl font-extrabold text-amber-300 mb-1">CONGRATULATIONS!</h2>
+                <p class="text-xs text-slate-300 mb-4">最高レベルのクラゲが誕生しました！</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-6">
+                    <p class="text-xs text-slate-400">達成時スコア</p>
+                    <p id="clear-score" class="text-3xl font-extrabold text-emerald-400">0</p>
+                </div>
+                <button onclick="continueGameAfterClear()" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    続けてあそぶ ✨
+                </button>
+            </div>
+
             <!-- Matter.js Canvas render target -->
             <canvas id="game-canvas" class="w-full h-full block"></canvas>
         </div>
@@ -89,6 +103,11 @@
             <span>🔄</span> リセット
         </button>
     </footer>
+
+    <!-- Footer Credit -->
+    <div class="mt-4 mb-2 text-center text-[10px] text-white/60">
+        Product By <a href="https://ijigenpocket.booth.pm/" target="_blank" class="underline hover:text-white transition-colors">異次元ポケット</a>
+    </div>
 
     <script>
         // --- 1. GAME DATA & CONFIGURATION ---
@@ -115,6 +134,7 @@
         let nextLevel = 0;
         let canDrop = true;
         let isGameOver = false;
+        let isGameCleared = false;
         let dropCooldown = false;
 
         // Matter.js Module Aliases
@@ -240,6 +260,11 @@
 
                             // Bounce effect
                             Body.setVelocity(newJelly, { x: (Math.random() - 0.5) * 2, y: -2 });
+
+                            // Check for Game Clear condition (max level reached)
+                            if (currentLvl + 1 === JELLYFISH_TYPES.length - 1 && !isGameCleared) {
+                                triggerGameClear();
+                            }
                         }, 10);
                     }
                 }
@@ -488,6 +513,18 @@
             document.getElementById('game-over-modal').classList.remove('hidden');
         }
 
+        function triggerGameClear() {
+            isGameCleared = true;
+            canDrop = false;
+            document.getElementById('clear-score').innerText = score;
+            document.getElementById('game-clear-modal').classList.remove('hidden');
+        }
+
+        function continueGameAfterClear() {
+            document.getElementById('game-clear-modal').classList.add('hidden');
+            canDrop = true;
+        }
+
         function restartGame() {
             // Remove all physics bodies except walls
             const bodies = Composite.allBodies(world);
@@ -499,11 +536,13 @@
 
             score = 0;
             isGameOver = false;
+            isGameCleared = false;
             canDrop = true;
             dropCooldown = false;
             updateScoreUI();
 
             document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('game-clear-modal').classList.add('hidden');
             
             currentLevel = getRandomSpawnLevel();
             nextLevel = getRandomSpawnLevel();
