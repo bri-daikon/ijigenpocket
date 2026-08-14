@@ -50,6 +50,7 @@ const noteIdInput = document.getElementById('note-id');
 const noteCategoryInput = document.getElementById('note-category');
 const noteTitleInput = document.getElementById('note-title');
 const noteContentInput = document.getElementById('note-content');
+const noteUrlInput = document.getElementById('note-url');
 const noteColorInput = document.getElementById('note-color');
 const modalTitle = document.getElementById('modal-title');
 
@@ -240,6 +241,11 @@ function renderBoard() {
             badgeHtml = '<span class="badge badge-updated">更新</span>';
         }
         
+        let urlHtml = '';
+        if (note.url) {
+            urlHtml = `<div class="note-card-url"><a href="${escapeHTML(note.url)}" target="_blank" rel="noopener noreferrer">🔗 参照を開く</a></div>`;
+        }
+        
         card.innerHTML = `
             <div class="note-actions">
                 <button class="copy-btn" data-id="${note.id}" title="コピー">📋</button>
@@ -249,6 +255,7 @@ function renderBoard() {
             <div class="note-card-title"><span>${escapeHTML(note.title)}</span>${badgeHtml}</div>
             <div class="note-card-date">更新: ${dateStr}</div>
             <div class="note-card-content">${escapeHTML(note.content)}</div>
+            ${urlHtml}
         `;
         
         card.querySelector('.note-card-title').addEventListener('click', () => {
@@ -290,11 +297,13 @@ function openModal(note = null) {
         noteCategoryInput.value = note.category;
         noteTitleInput.value = note.title;
         noteContentInput.value = note.content;
+        noteUrlInput.value = note.url || '';
         noteColorInput.value = note.color || '#fff9c4';
     } else {
         modalTitle.textContent = '付箋を追加';
         noteForm.reset();
         noteIdInput.value = '';
+        noteUrlInput.value = '';
         noteColorInput.value = '#fff9c4'; // default sticky yellow
     }
     noteModal.classList.remove('hidden');
@@ -317,6 +326,7 @@ function setupEventListeners() {
             category: noteCategoryInput.value.trim() || '未分類',
             title: noteTitleInput.value.trim(),
             content: noteContentInput.value.trim(),
+            url: noteUrlInput.value.trim(),
             color: noteColorInput.value
         };
         await saveNote(noteData);
