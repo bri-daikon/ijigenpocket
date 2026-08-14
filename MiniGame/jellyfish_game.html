@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>くらげのロロ、ぽよぽよ合体パズル</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Matter.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* Custom Scrollbar for customize panel */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-sky-900 via-indigo-900 to-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-2 md:p-4 overflow-x-hidden">
+
+    <!-- Header / Scoreboard -->
+    <header class="w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-lg flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+            <div class="animate-bounce">
+                <img src="img/01.png" alt="jellyfish" class="w-10 h-10 object-contain drop-shadow-md">
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-sky-200 leading-tight">ぽよぽよ！くらげパズル</h1>
+                <div class="flex gap-3 text-xs mt-0.5">
+                    <span class="text-slate-300">SCORE: <strong id="score" class="text-amber-300 text-base">0</strong></span>
+                    <span class="text-slate-300">BEST: <strong id="best-score" class="text-emerald-300 text-base">0</strong></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Jellyfish Preview -->
+        <div class="flex flex-col items-center bg-black/20 px-3 py-1.5 rounded-xl border border-white/10">
+            <span class="text-[10px] text-sky-200 font-bold uppercase tracking-wider">NEXT</span>
+            <div id="next-preview" class="w-10 h-10 flex items-center justify-center mt-1">
+                <!-- Preview Canvas or Image injected by JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="relative w-full max-w-md flex-1 flex flex-col items-center justify-center">
+        <!-- Canvas Wrapper with custom border -->
+        <div id="game-container" class="relative w-full aspect-[2/3] max-h-[65vh] bg-sky-950/60 rounded-3xl border-4 border-sky-400/40 shadow-2xl overflow-hidden backdrop-blur-sm cursor-crosshair">
+            <!-- Drop Guide Line -->
+            <div id="guide-line" class="absolute top-0 bottom-0 w-0.5 border-r-2 border-dashed border-sky-300/50 pointer-events-none hidden"></div>
+            
+            <!-- Game Over Overlay -->
+            <div id="game-over-modal" class="absolute inset-0 bg-slate-900/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden transition-opacity">
+                <div class="text-5xl mb-2">🌊</div>
+                <h2 class="text-2xl font-extrabold text-rose-400 mb-1">GAME OVER</h2>
+                <p class="text-xs text-slate-300 mb-4">くらげが水面からあふれてしまいました！</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-6">
+                    <p class="text-xs text-slate-400">最終スコア</p>
+                    <p id="final-score" class="text-3xl font-extrabold text-amber-300">0</p>
+                </div>
+                <button onclick="restartGame()" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    もう一度あそぶ 🔄
+                </button>
+            </div>
+
+            <!-- Matter.js Canvas render target -->
+            <canvas id="game-canvas" class="w-full h-full block"></canvas>
+        </div>
+    </main>
+
+    <!-- Controls & Action Buttons -->
+    <footer class="w-full max-w-md mt-2 flex gap-2">
+        <button onclick="restartGame()" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all border border-white/20">
+            <span>🔄</span> リセット
+        </button>
+    </footer>
+
+    <script>
+        // --- 1. GAME DATA & CONFIGURATION ---
+        // 11 Levels of Jellyfish (Size, Color, Score, Default Render)
+        const JELLYFISH_TYPES = [
+            { level: 0, name: "赤ちゃんクラゲ", radius: 18, color: "#f472b6", score: 2, emoji: "🪼", imgSrc: "img/01.png" },
+            { level: 1, name: "ももくらげ",     radius: 26, color: "#fb7185", score: 4, emoji: "🌸", imgSrc: "img/02.png" },
+            { level: 2, name: "きいろくらげ",   radius: 35, color: "#facc15", score: 8, emoji: "⭐", imgSrc: "img/03.png" },
+            { level: 3, name: "みんとくらげ",   radius: 45, color: "#4ade80", score: 16, emoji: "🌱", imgSrc: "img/04.png" },
+            { level: 4, name: "そらくらげ",     radius: 56, color: "#38bdf8", score: 32, emoji: "💧", imgSrc: "img/05.png" },
+            { level: 5, name: "むらさきくらげ", radius: 68, color: "#c084fc", score: 64, emoji: "🔮", imgSrc: "img/06.png" },
+            { level: 6, name: "みかんくらげ",   radius: 80, color: "#fb923c", score: 128, emoji: "🍊", imgSrc: "img/07.png" },
+            { level: 7, name: "にじくらげ",     radius: 93, color: "#e879f9", score: 256, emoji: "🌈", imgSrc: "img/08.png" },
+            { level: 8, name: "キングくらげ",   radius: 106, color: "#f43f5e", score: 512, emoji: "👑", imgSrc: "img/09.png" },
+            { level: 9, name: "エンペラー",     radius: 120, color: "#06b6d4", score: 1024, emoji: "✨", imgSrc: "img/10.png" },
+            { level: 10, name: "ゴッドクラゲ",  radius: 135, color: "#a855f7", score: 2048, emoji: "🌟", imgSrc: "img/11.png" }
+        ];
+        let loadedImgObjects = new Array(JELLYFISH_TYPES.length).fill(null);
+
+        // Game State Variables
+        let score = 0;
+        let bestScore = parseInt(localStorage.getItem('jellyfish_best_score') || '0');
+        let currentLevel = 0;
+        let nextLevel = 0;
+        let canDrop = true;
+        let isGameOver = false;
+        let dropCooldown = false;
+
+        // Matter.js Module Aliases
+        const { Engine, Render, Runner, Bodies, Composite, Body, Events, Vector } = Matter;
+
+        let engine, world, runner;
+        let canvas, ctx;
+        let containerWidth, containerHeight;
+        let currentDropperX = 0;
+
+        // --- 2. INITIALIZATION & SETUP ---
+        window.addEventListener('load', () => {
+            loadFixedImages();
+            initGame();
+            setupEvents();
+            updateScoreUI();
+        });
+
+        function initGame() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            const container = document.getElementById('game-container');
+            
+            containerWidth = container.clientWidth;
+            containerHeight = container.clientHeight;
+
+            // Set high DPI canvas resolution
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = containerWidth * dpr;
+            canvas.height = containerHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Create Physics Engine
+            engine = Engine.create({
+                gravity: { x: 0, y: 1.2, scale: 0.001 }
+            });
+            world = engine.world;
+
+            // Create Boundaries (Walls & Floor)
+            const wallOptions = { isStatic: true, friction: 0.3, restitution: 0.2 };
+            const wallThickness = 100;
+
+            // Floor
+            const floor = Bodies.rectangle(
+                containerWidth / 2, 
+                containerHeight + wallThickness / 2, 
+                containerWidth * 2, 
+                wallThickness, 
+                wallOptions
+            );
+            // Left Wall
+            const leftWall = Bodies.rectangle(
+                -wallThickness / 2, 
+                containerHeight / 2, 
+                wallThickness, 
+                containerHeight * 2, 
+                wallOptions
+            );
+            // Right Wall
+            const rightWall = Bodies.rectangle(
+                containerWidth + wallThickness / 2, 
+                containerHeight / 2, 
+                wallThickness, 
+                containerHeight * 2, 
+                wallOptions
+            );
+
+            Composite.add(world, [floor, leftWall, rightWall]);
+
+            // Start Physics Runner
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // Setup Collision Handler for Merging
+            Events.on(engine, 'collisionStart', handleCollisions);
+
+            // Spawn initial next items
+            currentLevel = getRandomSpawnLevel();
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+
+            currentDropperX = containerWidth / 2;
+
+            // Start Animation Render Loop
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- 3. MERGING LOGIC & PHYSICS ---
+        function handleCollisions(event) {
+            if (isGameOver) return;
+
+            const pairs = event.pairs;
+            for (let i = 0; i < pairs.length; i++) {
+                const { bodyA, bodyB } = pairs[i];
+
+                // Check if both bodies are valid jellyfish and have matching level
+                if (bodyA.jellyLevel !== undefined && bodyB.jellyLevel !== undefined) {
+                    if (bodyA.jellyLevel === bodyB.jellyLevel && !bodyA.isMerging && !bodyB.isMerging) {
+                        const currentLvl = bodyA.jellyLevel;
+                        
+                        // Maximum level reached?
+                        if (currentLvl >= JELLYFISH_TYPES.length - 1) continue;
+
+                        // Mark as merging to prevent duplicate collision processing
+                        bodyA.isMerging = true;
+                        bodyB.isMerging = true;
+
+                        // Midpoint for new merged jellyfish
+                        const midX = (bodyA.position.x + bodyB.position.x) / 2;
+                        const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                        // Add score
+                        const nextType = JELLYFISH_TYPES[currentLvl + 1];
+                        addScore(nextType.score);
+
+                        // Remove old bodies and spawn upgraded body
+                        setTimeout(() => {
+                            Composite.remove(world, bodyA);
+                            Composite.remove(world, bodyB);
+
+                            const newJelly = createJellyBody(midX, midY, currentLvl + 1);
+                            Composite.add(world, newJelly);
+
+                            // Bounce effect
+                            Body.setVelocity(newJelly, { x: (Math.random() - 0.5) * 2, y: -2 });
+                        }, 10);
+                    }
+                }
+            }
+        }
+
+        function createJellyBody(x, y, level) {
+            const type = JELLYFISH_TYPES[level];
+            const body = Bodies.circle(x, y, type.radius, {
+                restitution: 0.3,
+                friction: 0.1,
+                density: 0.002,
+                label: `JellyLevel_${level}`
+            });
+            body.jellyLevel = level;
+            return body;
+        }
+
+        function getRandomSpawnLevel() {
+            // Drop only small levels (0 to 3)
+            return Math.floor(Math.random() * 4);
+        }
+
+        // --- 4. PLAYER CONTROLS & DROPPING ---
+        function setupEvents() {
+            const container = document.getElementById('game-container');
+            const guideLine = document.getElementById('guide-line');
+
+            function updateGuidePosition(clientX) {
+                if (!canDrop || isGameOver) return;
+                const rect = container.getBoundingClientRect();
+                let x = clientX - rect.left;
+                
+                // Keep within boundaries
+                const currentRadius = JELLYFISH_TYPES[currentLevel].radius;
+                x = Math.max(currentRadius, Math.min(containerWidth - currentRadius, x));
+                
+                currentDropperX = x;
+                guideLine.style.left = `${x}px`;
+                guideLine.style.display = 'block';
+            }
+
+            // Mouse / Touch Move
+            container.addEventListener('mousemove', (e) => updateGuidePosition(e.clientX));
+            container.addEventListener('mouseleave', () => guideLine.style.display = 'none');
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    updateGuidePosition(e.touches[0].clientX);
+                }
+            }, { passive: true });
+
+            // Drop Action on Click / Touch End
+            container.addEventListener('click', (e) => {
+                updateGuidePosition(e.clientX);
+                dropJellyfish();
+            });
+
+            container.addEventListener('touchend', (e) => {
+                dropJellyfish();
+                guideLine.style.display = 'none';
+            });
+        }
+
+        function dropJellyfish() {
+            if (!canDrop || dropCooldown || isGameOver) return;
+
+            dropCooldown = true;
+            const radius = JELLYFISH_TYPES[currentLevel].radius;
+            const spawnY = 40; // Top margin
+
+            // Create and drop jellyfish body
+            const body = createJellyBody(currentDropperX, spawnY, currentLevel);
+            Composite.add(world, body);
+
+            // Prepare next drop
+            currentLevel = nextLevel;
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+
+            // Cooldown delay (500ms)
+            setTimeout(() => {
+                dropCooldown = false;
+            }, 500);
+        }
+
+        // --- 5. CUSTOM CANVAS RENDER LOOP ---
+        function renderLoop() {
+            if (!ctx) return;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, containerWidth, containerHeight);
+
+            // 1. Draw Game Over Limit Line (Red dashed line at top)
+            const deadLineY = 70;
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = "rgba(244, 63, 94, 0.6)";
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, deadLineY);
+            ctx.lineTo(containerWidth, deadLineY);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Draw Ready Dropper Jellyfish at top
+            if (canDrop && !isGameOver && !dropCooldown) {
+                drawJellyfishItem(ctx, currentDropperX, 40, currentLevel, 0.85);
+            }
+
+            // 3. Draw All Active Physics Bodies
+            const bodies = Composite.allBodies(world);
+            let overflowDetected = false;
+
+            bodies.forEach(body => {
+                if (body.jellyLevel !== undefined) {
+                    const { x, y } = body.position;
+                    const angle = body.angle;
+                    
+                    drawJellyfishItem(ctx, x, y, body.jellyLevel, 1.0, angle);
+
+                    // Check for Game Over condition (body stationary above line)
+                    if (y - JELLYFISH_TYPES[body.jellyLevel].radius < deadLineY && Math.abs(body.velocity.y) < 0.2) {
+                        if (!body.overflowStartTime) {
+                            body.overflowStartTime = Date.now();
+                        } else if (Date.now() - body.overflowStartTime > 1800) { // 1.8 seconds grace time
+                            overflowDetected = true;
+                        }
+                    } else {
+                        body.overflowStartTime = null;
+                    }
+                }
+            });
+
+            if (overflowDetected && !isGameOver) {
+                triggerGameOver();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Draw Single Jellyfish (Custom Image or Vector Cute Jellyfish Fallback)
+        function drawJellyfishItem(targetCtx, x, y, level, opacity = 1.0, angle = 0) {
+            const type = JELLYFISH_TYPES[level];
+            const radius = type.radius;
+
+            targetCtx.save();
+            targetCtx.translate(x, y);
+            targetCtx.rotate(angle);
+            targetCtx.globalAlpha = opacity;
+
+            // If user uploaded a custom image for this level, render it!
+            if (loadedImgObjects[level]) {
+                targetCtx.beginPath();
+                targetCtx.arc(0, 0, radius, 0, Math.PI * 2);
+                targetCtx.clip();
+                targetCtx.drawImage(loadedImgObjects[level], -radius, -radius, radius * 2, radius * 2);
+            } else {
+                // Otherwise, draw cute vector jellyfish procedurally
+                // Jelly Umbrella Body
+                targetCtx.beginPath();
+                targetCtx.fillStyle = type.color;
+                targetCtx.arc(0, -radius * 0.1, radius, Math.PI, 0, false);
+                targetCtx.quadraticCurveTo(radius * 0.5, radius * 0.5, 0, radius * 0.5);
+                targetCtx.quadraticCurveTo(-radius * 0.5, radius * 0.5, -radius, -radius * 0.1);
+                targetCtx.fill();
+
+                // Inner Glow / Highlight
+                targetCtx.beginPath();
+                targetCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                targetCtx.arc(-radius * 0.3, -radius * 0.4, radius * 0.3, 0, Math.PI * 2);
+                targetCtx.fill();
+
+                // Tentacles
+                targetCtx.strokeStyle = type.color;
+                targetCtx.lineWidth = Math.max(2, radius * 0.1);
+                targetCtx.lineCap = "round";
+                const tentacleCount = 4;
+                for (let i = 0; i < tentacleCount; i++) {
+                    const tx = -radius * 0.6 + (radius * 1.2 / (tentacleCount - 1)) * i;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(tx, radius * 0.4);
+                    targetCtx.quadraticCurveTo(tx + (i % 2 === 0 ? 5 : -5), radius * 0.7, tx, radius * 0.9);
+                    targetCtx.stroke();
+                }
+
+                // Cute Eyes
+                targetCtx.fillStyle = "#1e293b";
+                const eyeOffset = radius * 0.3;
+                const eyeSize = Math.max(2, radius * 0.12);
+                targetCtx.beginPath();
+                targetCtx.arc(-eyeOffset, -radius * 0.1, eyeSize, 0, Math.PI * 2);
+                targetCtx.arc(eyeOffset, -radius * 0.1, eyeSize, 0, Math.PI * 2);
+                targetCtx.fill();
+
+                // Smile
+                targetCtx.beginPath();
+                targetCtx.strokeStyle = "#1e293b";
+                targetCtx.lineWidth = Math.max(1.5, radius * 0.08);
+                targetCtx.arc(0, -radius * 0.05, radius * 0.15, 0.2, Math.PI - 0.2);
+                targetCtx.stroke();
+            }
+
+            // Outline Ring
+            targetCtx.beginPath();
+            targetCtx.arc(0, 0, radius, 0, Math.PI * 2);
+            targetCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            targetCtx.lineWidth = 2;
+            targetCtx.stroke();
+
+            targetCtx.restore();
+        }
+
+        // --- 6. UI & GAME OVER MANAGEMENT ---
+        function addScore(points) {
+            score += points;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('jellyfish_best_score', bestScore.toString());
+            }
+            updateScoreUI();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('best-score').innerText = bestScore;
+        }
+
+        function updateNextPreview() {
+            const container = document.getElementById('next-preview');
+            container.innerHTML = '';
+            
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = 40;
+            pCanvas.height = 40;
+            const pCtx = pCanvas.getContext('2d');
+            
+            drawJellyfishItem(pCtx, 20, 20, nextLevel, 1.0);
+            container.appendChild(pCanvas);
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            canDrop = false;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            // Remove all physics bodies except walls
+            const bodies = Composite.allBodies(world);
+            bodies.forEach(body => {
+                if (body.jellyLevel !== undefined) {
+                    Composite.remove(world, body);
+                }
+            });
+
+            score = 0;
+            isGameOver = false;
+            canDrop = true;
+            dropCooldown = false;
+            updateScoreUI();
+
+            document.getElementById('game-over-modal').classList.add('hidden');
+            
+            currentLevel = getRandomSpawnLevel();
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+        }
+
+        // --- 7. LOAD FIXED IMAGES ---
+        function loadFixedImages() {
+            JELLYFISH_TYPES.forEach((type, idx) => {
+                const img = new Image();
+                img.src = type.imgSrc;
+                img.onload = () => {
+                    loadedImgObjects[idx] = img;
+                    if (idx === nextLevel || idx === currentLevel) {
+                        updateNextPreview();
+                    }
+                };
+            });
+        }
+    </script>
+</body>
+</html>
