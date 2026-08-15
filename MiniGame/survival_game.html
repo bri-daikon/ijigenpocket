@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>スタンプサバイバー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            overscroll-behavior-y: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-900 via-purple-900 to-black text-white min-h-screen flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden relative">
+
+    <!-- Header / HUD -->
+    <header class="absolute top-4 w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-lg flex items-center justify-between z-10">
+        <div class="flex items-center space-x-2">
+            <div>
+                <h1 class="text-sm font-bold text-purple-300 leading-tight">スタンプサバイバー</h1>
+                <div class="flex gap-3 text-xs mt-0.5">
+                    <span class="text-slate-300">SCORE: <strong id="score" class="text-amber-300 text-base">0</strong></span>
+                    <span class="text-slate-300">HP: <strong id="hp-display" class="text-rose-400 text-base">♥♥♥</strong></span>
+                </div>
+                <div class="flex gap-2 text-[10px] font-bold mt-1" id="powerup-display">
+                    <span class="text-pink-300">弾数: 1</span>
+                    <span class="text-green-300">サイズ: Lv0</span>
+                    <span class="text-sky-300">連射: Lv0</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col items-end">
+            <span class="text-[10px] text-slate-300 uppercase tracking-wider">残り時間</span>
+            <div id="timer" class="text-xl font-bold text-sky-300">60.0</div>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="relative w-full max-w-md flex-1 flex flex-col items-center justify-center mt-16 mb-4">
+        <div id="game-container" class="relative w-full h-[70vh] bg-gray-800/80 rounded-3xl border-4 border-purple-500/40 shadow-2xl overflow-hidden backdrop-blur-sm cursor-crosshair">
+            
+            <!-- Start Screen -->
+            <div id="start-screen" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-6 text-center z-20">
+                <img src="img/01.png" alt="Player" class="w-24 h-24 object-contain mb-4 animate-bounce drop-shadow-lg">
+                <h2 class="text-2xl font-extrabold text-white mb-2">スタンプサバイバー</h2>
+                <p class="text-sm text-slate-300 mb-6">画面をスワイプして移動！<br>自動で攻撃するよ。<br>60秒間生き残れ！</p>
+                <button onclick="startGame()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-lg">
+                    ゲームスタート 🚀
+                </button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="game-over-screen" class="absolute inset-0 bg-red-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                <img src="img/end.png" alt="Game Over" class="w-32 h-32 object-contain mb-4 drop-shadow-lg">
+                <h2 class="text-3xl font-extrabold text-white mb-2">GAME OVER</h2>
+                <p class="text-sm text-slate-200 mb-4">敵にやられてしまった...</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
+                    <p class="text-xs text-slate-300">最終スコア</p>
+                    <p id="final-score" class="text-3xl font-extrabold text-amber-300">0</p>
+                </div>
+
+                <a href="https://store.line.me/stickershop/author/6151799/ja" target="_blank" class="w-full bg-[#06C755]/10 border border-[#06C755]/30 hover:bg-[#06C755]/20 rounded-xl p-3 mb-4 transition-colors flex flex-col items-center justify-center group">
+                    <span class="text-[10px] text-slate-300 mb-1">かわいいキャラクターたちはLINEスタンプや絵文字になってます</span>
+                    <span class="text-xs font-bold text-[#06C755] flex items-center gap-1 group-hover:underline">
+                        LINEストアを見る
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </span>
+                </a>
+
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像を保存
+                    </button>
+                </div>
+
+                <button onclick="resetGame()" class="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    もう一度挑戦する 🔄
+                </button>
+            </div>
+
+            <!-- Game Clear Screen -->
+            <div id="game-clear-screen" class="absolute inset-0 bg-emerald-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                <img src="img/nice1.png" alt="Clear" class="w-32 h-32 object-contain mb-4 drop-shadow-lg animate-bounce">
+                <h2 class="text-3xl font-extrabold text-white mb-2">STAGE CLEAR!!</h2>
+                <p class="text-sm text-slate-200 mb-4">60秒間生き残った！</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
+                    <p class="text-xs text-slate-300">最終スコア</p>
+                    <p id="clear-score" class="text-3xl font-extrabold text-amber-300">0</p>
+                </div>
+
+                <a href="https://store.line.me/stickershop/author/6151799/ja" target="_blank" class="w-full bg-[#06C755]/10 border border-[#06C755]/30 hover:bg-[#06C755]/20 rounded-xl p-3 mb-4 transition-colors flex flex-col items-center justify-center group">
+                    <span class="text-[10px] text-slate-300 mb-1">かわいいキャラクターたちはLINEスタンプや絵文字になってます</span>
+                    <span class="text-xs font-bold text-[#06C755] flex items-center gap-1 group-hover:underline">
+                        LINEストアを見る
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </span>
+                </a>
+
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像を保存
+                    </button>
+                </div>
+
+                <button onclick="resetGame()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    もう一度あそぶ ✨
+                </button>
+            </div>
+
+            <!-- Canvas -->
+            <canvas id="game-canvas" class="w-full h-full block"></canvas>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+        
+        let cw, ch;
+        
+        // Game State
+        let state = 'start'; // start, playing, gameover, clear
+        let score = 0;
+        let hp = 3;
+        let timeRemaining = 60.0;
+        let lastTime = 0;
+        
+        let powerups = {
+            multiShot: 1,
+            sizeUp: 0,
+            rateUp: 0
+        };
+
+        // Player
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 20,
+            speed: 250, // pixels per second
+            targetX: 0,
+            targetY: 0,
+            img: null,
+            lastShootTime: 0,
+            shootInterval: 400 // ms
+        };
+
+        // Entities
+        let enemies = [];
+        let bullets = [];
+        let particles = [];
+        let items = [];
+
+        // Assets
+        const images = {};
+        const enemyImgSources = [
+            'img/02.png', 'img/03.png', 'img/04.png', 'img/05.png', 
+            'img/06.png', 'img/07.png', 'img/08.png', 'img/09.png', 
+            'img/10.png', 'img/11.png'
+        ];
+
+        // Input
+        let pointerDown = false;
+        let pointerX = 0;
+        let pointerY = 0;
+
+        // Init
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Load Player Image
+            player.img = new Image();
+            player.img.src = 'img/01.png';
+
+            // Load Enemy Images
+            enemyImgSources.forEach((src, idx) => {
+                images[`enemy_${idx}`] = new Image();
+                images[`enemy_${idx}`].src = src;
+            });
+
+            setupInput();
+            requestAnimationFrame(loop);
+        }
+
+        function resize() {
+            cw = container.clientWidth;
+            ch = container.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = cw * dpr;
+            canvas.height = ch * dpr;
+            ctx.scale(dpr, dpr);
+            
+            if (state === 'start') {
+                player.x = cw / 2;
+                player.y = ch / 2;
+                player.targetX = cw / 2;
+                player.targetY = ch / 2;
+            }
+        }
+
+        function setupInput() {
+            const updatePointer = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                let clientX = e.clientX;
+                let clientY = e.clientY;
+                
+                if (e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                }
+                
+                pointerX = clientX - rect.left;
+                pointerY = clientY - rect.top;
+                
+                if (pointerDown) {
+                    player.targetX = pointerX;
+                    player.targetY = pointerY;
+                }
+            };
+
+            container.addEventListener('mousedown', (e) => { pointerDown = true; updatePointer(e); });
+            container.addEventListener('mousemove', updatePointer);
+            window.addEventListener('mouseup', () => { pointerDown = false; });
+
+            container.addEventListener('touchstart', (e) => { 
+                e.preventDefault();
+                pointerDown = true; 
+                updatePointer(e); 
+            }, {passive: false});
+            container.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                updatePointer(e);
+            }, {passive: false});
+            window.addEventListener('touchend', () => { pointerDown = false; });
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            state = 'playing';
+            score = 0;
+            hp = 3;
+            timeRemaining = 60.0;
+            enemies = [];
+            bullets = [];
+            particles = [];
+            items = [];
+            powerups = { multiShot: 1, sizeUp: 0, rateUp: 0 };
+            player.x = cw / 2;
+            player.y = ch / 2;
+            player.targetX = cw / 2;
+            player.targetY = ch / 2;
+            lastTime = performance.now();
+            updateHUD();
+        }
+
+        function resetGame() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-clear-screen').classList.add('hidden');
+            startGame();
+        }
+
+        function shareResult() {
+            let resultText = state === 'clear' ? '60秒間生き残ってステージクリア！✨' : '敵にやられてしまった...😭';
+            const text = `スタンプサバイバーで遊んだよ！\n${resultText}\nスコア: ${score}\n\n#スタンプサバイバー #異次元ポケット`;
+            const url = window.location.href;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(twitterUrl, '_blank');
+        }
+
+        function downloadScreenshot() {
+            const container = document.getElementById('game-container');
+            
+            html2canvas(container, {
+                backgroundColor: null,
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], `survival_score_${score}.png`, { type: 'image/png' });
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: 'スタンプサバイバー',
+                            text: `スコア: ${score}\n#スタンプサバイバー #異次元ポケット\n`
+                        }).catch((error) => {
+                            showImageModal(imageUrl, file);
+                        });
+                    } else {
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                            showImageModal(imageUrl, file);
+                        } else {
+                            const link = document.createElement('a');
+                            link.download = file.name;
+                            link.href = imageUrl;
+                            link.click();
+                        }
+                    }
+                }, 'image/png');
+            });
+        }
+
+        function showImageModal(imageUrl, file) {
+            let modal = document.getElementById('image-save-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'image-save-modal';
+                modal.className = 'absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity';
+                modal.innerHTML = `
+                    <p class="text-white font-bold mb-2">画像を長押しして保存してください</p>
+                    <p class="text-xs text-slate-400 mb-4">※保存できない場合は「直接ダウンロード」をお試しください</p>
+                    <img id="save-image-preview" src="" style="-webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; pointer-events: auto;" class="max-w-full max-h-[50vh] rounded-xl shadow-2xl mb-4 border border-white/20 object-contain">
+                    
+                    <div class="flex gap-2 w-full mb-4">
+                        <button id="direct-download-btn" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                            ⬇️ 直接ダウンロード
+                        </button>
+                    </div>
+
+                    <button onclick="document.getElementById('image-save-modal').classList.add('hidden')" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-sm w-full">
+                        閉じる
+                    </button>
+                `;
+                document.getElementById('game-container').appendChild(modal);
+            }
+            
+            document.getElementById('save-image-preview').src = imageUrl;
+            
+            const dlBtn = document.getElementById('direct-download-btn');
+            dlBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = file ? file.name : 'survival_score.png';
+                link.href = imageUrl;
+                link.click();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('hp-display').innerText = '♥'.repeat(Math.max(0, hp));
+            document.getElementById('timer').innerText = Math.max(0, timeRemaining).toFixed(1);
+
+            document.getElementById('powerup-display').innerHTML = `
+                <span class="text-pink-300">弾数: ${powerups.multiShot}</span>
+                <span class="text-green-300">サイズ: Lv${powerups.sizeUp}</span>
+                <span class="text-sky-300">連射: Lv${powerups.rateUp}</span>
+            `;
+        }
+
+        function spawnEnemy() {
+            // 時間経過とパワーアップレベルの両方で難易度を上昇させる
+            const progress = 1 - (timeRemaining / 60);
+            const powerLevel = (powerups.multiShot - 1) + powerups.sizeUp + powerups.rateUp;
+            
+            // 基礎出現率 + 時間経過ボーナス + パワーアップボーナス
+            // パワーレベルの2乗にすることで、序盤は緩やかに、後半は急激に難易度が上がるように手加減
+            const spawnChance = 0.02 + (progress * 0.08) + (powerLevel * powerLevel * 0.002); 
+            
+            // spawnChanceが1を超える場合、1フレームに複数体スポーンさせる
+            let spawnsThisFrame = Math.floor(spawnChance);
+            if (Math.random() < (spawnChance - spawnsThisFrame)) {
+                spawnsThisFrame++;
+            }
+            
+            for (let i = 0; i < spawnsThisFrame; i++) {
+                // 画面外からスポーン
+                let ex, ey;
+                if (Math.random() < 0.5) {
+                    ex = Math.random() < 0.5 ? -30 : cw + 30;
+                    ey = Math.random() * ch;
+                } else {
+                    ex = Math.random() * cw;
+                    ey = Math.random() < 0.5 ? -30 : ch + 30;
+                }
+
+                const imgKeys = Object.keys(images);
+                const randomImgKey = imgKeys[Math.floor(Math.random() * imgKeys.length)];
+
+                // パワーアップするほど敵の足も速くなる
+                const speedBoost = powerLevel * 10;
+                // パワーアップしすぎると敵のHPも増える（5レベルごとに+1）
+                const bonusHp = Math.floor(powerLevel / 5);
+
+                enemies.push({
+                    x: ex,
+                    y: ey,
+                    radius: 15 + Math.random() * 10,
+                    speed: 50 + Math.random() * 50 + (progress * 50) + speedBoost,
+                    imgKey: randomImgKey,
+                    hp: 1 + bonusHp
+                });
+            }
+        }
+
+        function getNearestEnemy() {
+            let nearest = null;
+            let minDist = Infinity;
+            enemies.forEach(enemy => {
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = enemy;
+                }
+            });
+            return nearest;
+        }
+
+        function playerShoot(currentTime) {
+            const actualInterval = Math.max(100, player.shootInterval - powerups.rateUp * 40);
+            if (currentTime - player.lastShootTime > actualInterval) {
+                const target = getNearestEnemy();
+                if (target) {
+                    const dx = target.x - player.x;
+                    const dy = target.y - player.y;
+                    const baseAngle = Math.atan2(dy, dx);
+                    
+                    const actualRadius = 5 + powerups.sizeUp * 2;
+                    const shotCount = powerups.multiShot;
+                    const spread = 0.2; // 弾が複数出るときの角度の広がり
+                    
+                    const startAngle = baseAngle - (spread * (shotCount - 1)) / 2;
+                    
+                    for (let s = 0; s < shotCount; s++) {
+                        const angle = startAngle + s * spread;
+                        bullets.push({
+                            x: player.x,
+                            y: player.y,
+                            radius: actualRadius,
+                            speed: 400,
+                            vx: Math.cos(angle),
+                            vy: Math.sin(angle)
+                        });
+                    }
+                    
+                    player.lastShootTime = currentTime;
+                }
+            }
+        }
+
+        function spawnParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 100 + 50;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        function checkCollisions() {
+            // Bullets vs Enemies
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                let hit = false;
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const e = enemies[j];
+                    const dx = b.x - e.x;
+                    const dy = b.y - e.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < b.radius + e.radius) {
+                        // Hit!
+                        e.hp--;
+                        hit = true;
+                        if (e.hp <= 0) {
+                            score += 10;
+                            spawnParticles(e.x, e.y, '#fcd34d');
+                            
+                            // 敵を倒した時に20%の確率でアイテムドロップ
+                            if (Math.random() < 0.2) {
+                                items.push({ x: e.x, y: e.y, radius: 15, life: 10 });
+                            }
+                            
+                            enemies.splice(j, 1);
+                            updateHUD();
+                        }
+                        break;
+                    }
+                }
+                if (hit) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Player vs Enemies
+            for (let j = enemies.length - 1; j >= 0; j--) {
+                const e = enemies[j];
+                const dx = player.x - e.x;
+                const dy = player.y - e.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < player.radius + e.radius - 5) {
+                    // Player hit
+                    hp--;
+                    spawnParticles(player.x, player.y, '#f43f5e');
+                    enemies.splice(j, 1); // destroy enemy on hit
+                    updateHUD();
+                    
+                    if (hp <= 0) {
+                        state = 'gameover';
+                        document.getElementById('final-score').innerText = score;
+                        document.getElementById('game-over-screen').classList.remove('hidden');
+                    }
+                }
+            }
+        }
+
+        function update(dt, currentTime) {
+            if (state !== 'playing') return;
+
+            // Timer
+            timeRemaining -= dt;
+            if (timeRemaining <= 0) {
+                timeRemaining = 0;
+                state = 'clear';
+                document.getElementById('clear-score').innerText = score;
+                document.getElementById('game-clear-screen').classList.remove('hidden');
+                updateHUD();
+                return;
+            }
+            updateHUD();
+
+            // Player Movement
+            if (pointerDown) {
+                const dx = player.targetX - player.x;
+                const dy = player.targetY - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist > 5) {
+                    player.x += (dx / dist) * player.speed * dt;
+                    player.y += (dy / dist) * player.speed * dt;
+                }
+                
+                // Clamp to screen
+                player.x = Math.max(player.radius, Math.min(cw - player.radius, player.x));
+                player.y = Math.max(player.radius, Math.min(ch - player.radius, player.y));
+            }
+
+            // Player Attack
+            playerShoot(currentTime);
+
+            // Enemies
+            spawnEnemy();
+            enemies.forEach(e => {
+                const dx = player.x - e.x;
+                const dy = player.y - e.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                e.x += (dx / dist) * e.speed * dt;
+                e.y += (dy / dist) * e.speed * dt;
+            });
+
+            // Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].x += bullets[i].vx * bullets[i].speed * dt;
+                bullets[i].y += bullets[i].vy * bullets[i].speed * dt;
+                
+                // Remove out of bounds
+                if (bullets[i].x < -50 || bullets[i].x > cw + 50 || bullets[i].y < -50 || bullets[i].y > ch + 50) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx * dt;
+                particles[i].y += particles[i].vy * dt;
+                particles[i].life -= dt * 2; // fade speed
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Items
+            for (let i = items.length - 1; i >= 0; i--) {
+                items[i].life -= dt;
+                
+                // プレイヤーとアイテムの当たり判定
+                const dx = player.x - items[i].x;
+                const dy = player.y - items[i].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < player.radius + items[i].radius) {
+                    // アイテム取得
+                    score += 50;
+                    spawnParticles(items[i].x, items[i].y, '#a855f7');
+                    
+                    const rnd = Math.random();
+                    if (rnd < 0.33) powerups.multiShot++;
+                    else if (rnd < 0.66) powerups.sizeUp++;
+                    else powerups.rateUp++;
+                    
+                    items.splice(i, 1);
+                    updateHUD();
+                    continue;
+                }
+
+                if (items[i].life <= 0) {
+                    items.splice(i, 1);
+                }
+            }
+
+            checkCollisions();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Draw Bullets
+            bullets.forEach(b => {
+                ctx.fillStyle = '#60a5fa';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#93c5fd';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw Enemies
+            enemies.forEach(e => {
+                const img = images[e.imgKey];
+                if (img && img.complete) {
+                    ctx.drawImage(img, e.x - e.radius, e.y - e.radius, e.radius * 2, e.radius * 2);
+                } else {
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Draw Items (Star)
+            items.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                
+                // 消えかけたら点滅する
+                if (item.life < 3) {
+                    ctx.globalAlpha = Math.sin(item.life * 15) * 0.5 + 0.5;
+                }
+                
+                ctx.fillStyle = '#fef08a';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // 光の表現
+                ctx.shadowColor = '#facc15';
+                ctx.shadowBlur = 10;
+                ctx.fillText('★', 0, 0);
+                
+                ctx.restore();
+            });
+
+            // Draw Player
+            if (player.img && player.img.complete) {
+                // Flash red if hit recently? (Optional polish)
+                ctx.drawImage(player.img, player.x - player.radius*1.5, player.y - player.radius*1.5, player.radius * 3, player.radius * 3);
+            } else {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000; // seconds
+            lastTime = timestamp;
+            
+            // Limit dt to prevent huge jumps if tab was inactive
+            if (dt < 0.1) {
+                update(dt, timestamp);
+                draw();
+            }
+            
+            requestAnimationFrame(loop);
+        }
+
+        // Run
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
