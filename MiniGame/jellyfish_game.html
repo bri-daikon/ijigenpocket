@@ -81,7 +81,7 @@
                         𝕏でシェア
                     </button>
                     <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
-                        📷 画像保存
+                        📷 画像を保存 / シェア
                     </button>
                 </div>
                 <button onclick="restartGame()" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
@@ -103,7 +103,7 @@
                         𝕏でシェア
                     </button>
                     <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
-                        📷 画像保存
+                        📷 画像を保存 / シェア
                     </button>
                 </div>
                 <button onclick="continueGameAfterClear()" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
@@ -549,7 +549,6 @@
 
         function downloadScreenshot() {
             const container = document.getElementById('game-container');
-            const originalScroll = window.scrollY;
             
             html2canvas(container, {
                 backgroundColor: null,
@@ -557,10 +556,25 @@
                 logging: false,
                 useCORS: true
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `jellyfish_score_${score}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                canvas.toBlob(blob => {
+                    const file = new File([blob], `jellyfish_score_${score}.png`, { type: 'image/png' });
+                    
+                    // スマホのネイティブシェア（画像保存も可能）を試みる
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: 'ぽよぽよ！くらげパズル',
+                            text: `スコア: ${score} でゲームオーバー！\n#くらげパズル #異次元ポケット\n`
+                        }).catch((error) => console.log('シェアがキャンセルされました', error));
+                    } else {
+                        // PCなどのフォールバック処理（直接ダウンロード）
+                        const link = document.createElement('a');
+                        link.download = file.name;
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                        alert("画像をダウンロードしました。スマホの場合は「ファイル」アプリなどに保存されている可能性があります。");
+                    }
+                }, 'image/png');
             });
         }
 
