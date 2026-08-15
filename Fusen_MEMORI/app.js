@@ -29,6 +29,7 @@ if (useFirebase) {
 // State
 let notes = [];
 let currentCategoryFilter = 'すべて';
+let currentSearchQuery = '';
 const STORAGE_KEY = 'fusen_memori_notes';
 const THEME_KEY = 'fusen_memori_theme';
 
@@ -36,6 +37,7 @@ const THEME_KEY = 'fusen_memori_theme';
 const boardContainer = document.getElementById('board-container');
 const categoryFilterContainer = document.getElementById('category-filter');
 const categoryOptionsDatalist = document.getElementById('category-options');
+const searchInput = document.getElementById('search-input');
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const addNoteBtn = document.getElementById('add-note-btn');
 const exportBtn = document.getElementById('export-btn');
@@ -212,6 +214,14 @@ function renderBoard() {
     if (currentCategoryFilter !== 'すべて') {
         filteredNotes = notes.filter(n => (n.category || '未分類') === currentCategoryFilter);
     }
+
+    if (currentSearchQuery) {
+        const query = currentSearchQuery.toLowerCase();
+        filteredNotes = filteredNotes.filter(n => 
+            (n.title && n.title.toLowerCase().includes(query)) || 
+            (n.content && n.content.toLowerCase().includes(query))
+        );
+    }
     
     // Sort descending
     filteredNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -318,6 +328,13 @@ function closeModal() {
 function setupEventListeners() {
     addNoteBtn.addEventListener('click', () => openModal());
     cancelNoteBtn.addEventListener('click', closeModal);
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.trim();
+            renderBoard();
+        });
+    }
     
     noteForm.addEventListener('submit', async (e) => {
         e.preventDefault();
