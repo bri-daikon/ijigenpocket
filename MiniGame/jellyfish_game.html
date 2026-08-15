@@ -558,6 +558,7 @@
             }).then(canvas => {
                 canvas.toBlob(blob => {
                     const file = new File([blob], `jellyfish_score_${score}.png`, { type: 'image/png' });
+                    const imageUrl = URL.createObjectURL(blob);
                     
                     // スマホのネイティブシェア（画像保存も可能）を試みる
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -565,17 +566,45 @@
                             files: [file],
                             title: 'ぽよぽよ！くらげパズル',
                             text: `スコア: ${score} でゲームオーバー！\n#くらげパズル #異次元ポケット\n`
-                        }).catch((error) => console.log('シェアがキャンセルされました', error));
+                        }).catch((error) => {
+                            console.log('シェアがキャンセルされました', error);
+                            // シェアが失敗した場合やキャンセルされた場合は長押し保存画面へ
+                            showImageModal(imageUrl);
+                        });
                     } else {
-                        // PCなどのフォールバック処理（直接ダウンロード）
-                        const link = document.createElement('a');
-                        link.download = file.name;
-                        link.href = URL.createObjectURL(blob);
-                        link.click();
-                        alert("画像をダウンロードしました。スマホの場合は「ファイル」アプリなどに保存されている可能性があります。");
+                        // ネイティブシェア非対応（アプリ内ブラウザ等）の場合
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                            showImageModal(imageUrl);
+                        } else {
+                            // PCなどのフォールバック処理（直接ダウンロード）
+                            const link = document.createElement('a');
+                            link.download = file.name;
+                            link.href = imageUrl;
+                            link.click();
+                        }
                     }
                 }, 'image/png');
             });
+        }
+
+        function showImageModal(imageUrl) {
+            let modal = document.getElementById('image-save-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'image-save-modal';
+                modal.className = 'absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity';
+                modal.innerHTML = `
+                    <p class="text-white font-bold mb-2">画像を長押しして保存してください</p>
+                    <p class="text-xs text-slate-400 mb-4">※保存後は下の閉じるボタンで戻れます</p>
+                    <img id="save-image-preview" src="" class="max-w-full max-h-[60vh] rounded-xl shadow-2xl mb-6 border border-white/20 object-contain">
+                    <button onclick="document.getElementById('image-save-modal').classList.add('hidden')" class="bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-sm w-full">
+                        閉じる
+                    </button>
+                `;
+                document.getElementById('game-container').appendChild(modal);
+            }
+            document.getElementById('save-image-preview').src = imageUrl;
+            modal.classList.remove('hidden');
         }
 
         function continueGameAfterClear() {
