@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Matter.js Physics Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
@@ -67,12 +69,20 @@
             
             <!-- Game Over Overlay -->
             <div id="game-over-modal" class="absolute inset-0 bg-slate-900/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden transition-opacity">
-                <div class="text-5xl mb-2">🌊</div>
+                <img src="img/end.png" alt="Game Over" class="w-32 h-32 object-contain mb-2 drop-shadow-lg">
                 <h2 class="text-2xl font-extrabold text-rose-400 mb-1">GAME OVER</h2>
                 <p class="text-xs text-slate-300 mb-4">くらげが水面からあふれてしまいました！</p>
-                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-6">
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
                     <p class="text-xs text-slate-400">最終スコア</p>
                     <p id="final-score" class="text-3xl font-extrabold text-amber-300">0</p>
+                </div>
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像保存
+                    </button>
                 </div>
                 <button onclick="restartGame()" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
                     もう一度あそぶ 🔄
@@ -84,9 +94,17 @@
                 <img src="img/nice1.png" alt="Clear!" class="w-32 h-32 object-contain mb-4 animate-bounce drop-shadow-lg">
                 <h2 class="text-2xl font-extrabold text-amber-300 mb-1">CONGRATULATIONS!</h2>
                 <p class="text-xs text-slate-300 mb-4">最高レベルのクラゲが誕生しました！</p>
-                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-6">
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
                     <p class="text-xs text-slate-400">達成時スコア</p>
                     <p id="clear-score" class="text-3xl font-extrabold text-emerald-400">0</p>
+                </div>
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像保存
+                    </button>
                 </div>
                 <button onclick="continueGameAfterClear()" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
                     続けてあそぶ ✨
@@ -520,6 +538,30 @@
             canDrop = false;
             document.getElementById('clear-score').innerText = score;
             document.getElementById('game-clear-modal').classList.remove('hidden');
+        }
+
+        function shareResult() {
+            const text = `ぽよぽよ！くらげパズルで遊んだよ！\nスコア: ${score}\n\n#くらげパズル #異次元ポケット`;
+            const url = window.location.href;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(twitterUrl, '_blank');
+        }
+
+        function downloadScreenshot() {
+            const container = document.getElementById('game-container');
+            const originalScroll = window.scrollY;
+            
+            html2canvas(container, {
+                backgroundColor: null,
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `jellyfish_score_${score}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
         }
 
         function continueGameAfterClear() {
