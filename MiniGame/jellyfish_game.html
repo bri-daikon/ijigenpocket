@@ -587,12 +587,12 @@
                         }).catch((error) => {
                             console.log('シェアがキャンセルされました', error);
                             // シェアが失敗した場合やキャンセルされた場合は長押し保存画面へ
-                            showImageModal(imageUrl);
+                            showImageModal(imageUrl, file);
                         });
                     } else {
                         // ネイティブシェア非対応（アプリ内ブラウザ等）の場合
                         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                            showImageModal(imageUrl);
+                            showImageModal(imageUrl, file);
                         } else {
                             // PCなどのフォールバック処理（直接ダウンロード）
                             const link = document.createElement('a');
@@ -605,7 +605,7 @@
             });
         }
 
-        function showImageModal(imageUrl) {
+        function showImageModal(imageUrl, file) {
             let modal = document.getElementById('image-save-modal');
             if (!modal) {
                 modal = document.createElement('div');
@@ -613,15 +613,33 @@
                 modal.className = 'absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity';
                 modal.innerHTML = `
                     <p class="text-white font-bold mb-2">画像を長押しして保存してください</p>
-                    <p class="text-xs text-slate-400 mb-4">※保存後は下の閉じるボタンで戻れます</p>
-                    <img id="save-image-preview" src="" class="max-w-full max-h-[60vh] rounded-xl shadow-2xl mb-6 border border-white/20 object-contain">
-                    <button onclick="document.getElementById('image-save-modal').classList.add('hidden')" class="bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-sm w-full">
+                    <p class="text-xs text-slate-400 mb-4">※保存できない場合は「直接ダウンロード」をお試しください</p>
+                    <img id="save-image-preview" src="" style="-webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; pointer-events: auto;" class="max-w-full max-h-[50vh] rounded-xl shadow-2xl mb-4 border border-white/20 object-contain">
+                    
+                    <div class="flex gap-2 w-full mb-4">
+                        <button id="direct-download-btn" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                            ⬇️ 直接ダウンロード
+                        </button>
+                    </div>
+
+                    <button onclick="document.getElementById('image-save-modal').classList.add('hidden')" class="bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-sm w-full">
                         閉じる
                     </button>
                 `;
                 document.getElementById('game-container').appendChild(modal);
             }
+            
             document.getElementById('save-image-preview').src = imageUrl;
+            
+            // Setup direct download button
+            const dlBtn = document.getElementById('direct-download-btn');
+            dlBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = file ? file.name : 'jellyfish_score.png';
+                link.href = imageUrl;
+                link.click();
+            };
+
             modal.classList.remove('hidden');
         }
 
