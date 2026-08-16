@@ -508,7 +508,8 @@
                             if (Math.random() < 0.2) {
                                 let itemX = Math.max(20, Math.min(cw - 20, e.x));
                                 let itemY = Math.max(20, Math.min(ch - 20, e.y));
-                                items.push({ x: itemX, y: itemY, radius: 15, life: 10 });
+                                let itemType = Math.random() < 0.8 ? 'star' : 'heart'; // 80%で★、20%で♥
+                                items.push({ x: itemX, y: itemY, radius: 15, life: 10, type: itemType });
                             }
                             
                             enemies.splice(j, 1);
@@ -620,13 +621,18 @@
                 
                 if (dist < player.radius + items[i].radius) {
                     // アイテム取得
-                    score += 50;
-                    spawnParticles(items[i].x, items[i].y, '#a855f7');
-                    
-                    const rnd = Math.random();
-                    if (rnd < 0.33) powerups.multiShot++;
-                    else if (rnd < 0.66) powerups.sizeUp++;
-                    else powerups.rateUp++;
+                    if (items[i].type === 'star' || !items[i].type) {
+                        score += 50;
+                        spawnParticles(items[i].x, items[i].y, '#a855f7');
+                        const rnd = Math.random();
+                        if (rnd < 0.33) powerups.multiShot++;
+                        else if (rnd < 0.66) powerups.sizeUp++;
+                        else powerups.rateUp++;
+                    } else if (items[i].type === 'heart') {
+                        score += 20;
+                        hp = Math.min(hp + 1, 5); // 最大HPを5に設定
+                        spawnParticles(items[i].x, items[i].y, '#f43f5e');
+                    }
                     
                     items.splice(i, 1);
                     updateHUD();
@@ -678,7 +684,7 @@
                 }
             });
 
-            // Draw Items (Star)
+            // Draw Items
             items.forEach(item => {
                 ctx.save();
                 ctx.translate(item.x, item.y);
@@ -688,14 +694,21 @@
                     ctx.globalAlpha = Math.sin(item.life * 15) * 0.5 + 0.5;
                 }
                 
-                ctx.fillStyle = '#fef08a';
                 ctx.font = '24px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                // 光の表現
-                ctx.shadowColor = '#facc15';
-                ctx.shadowBlur = 10;
-                ctx.fillText('★', 0, 0);
+
+                if (item.type === 'heart') {
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.shadowColor = '#fb7185';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('♥', 0, 0);
+                } else {
+                    ctx.fillStyle = '#fef08a';
+                    ctx.shadowColor = '#facc15';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('★', 0, 0);
+                }
                 
                 ctx.restore();
             });
