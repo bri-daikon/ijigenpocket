@@ -305,23 +305,27 @@
                     const file = new File([blob], `survival_score_${score}.png`, { type: 'image/png' });
                     const imageUrl = URL.createObjectURL(blob);
                     
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: 'スタンプサバイバー',
-                            text: `スコア: ${score}\n#スタンプサバイバー #異次元ポケット\n`
-                        }).catch((error) => {
-                            showImageModal(imageUrl, file);
-                        });
-                    } else {
-                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                            showImageModal(imageUrl, file);
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    if (isMobile) {
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                                files: [file],
+                                title: 'スタンプサバイバー',
+                                text: `スコア: ${score}\n#スタンプサバイバー #異次元ポケット\n`
+                            }).catch((error) => {
+                                showImageModal(imageUrl, file);
+                            });
                         } else {
-                            const link = document.createElement('a');
-                            link.download = file.name;
-                            link.href = imageUrl;
-                            link.click();
+                            showImageModal(imageUrl, file);
                         }
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = file.name;
+                        link.href = imageUrl;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
                     }
                 }, 'image/png');
             });
