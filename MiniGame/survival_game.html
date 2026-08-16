@@ -382,8 +382,11 @@
             const powerLevel = (powerups.multiShot - 1) + powerups.sizeUp + powerups.rateUp;
             
             // 基礎出現率 + 時間経過ボーナス + パワーアップボーナス
-            // パワーレベルの2乗にすることで、序盤は緩やかに、後半は急激に難易度が上がるように手加減
-            const spawnChance = 0.02 + (progress * 0.08) + (powerLevel * powerLevel * 0.002); 
+            // 急激に増えすぎないよう、1.5乗スケールで計算
+            let spawnChance = 0.02 + (progress * 0.08) + (Math.pow(powerLevel, 1.5) * 0.003); 
+            
+            // 後半で処理落ちや即死を防ぐため、秒間24体（0.4）程度を上限とする
+            spawnChance = Math.min(spawnChance, 0.4);
             
             // spawnChanceが1を超える場合、1フレームに複数体スポーンさせる
             let spawnsThisFrame = Math.floor(spawnChance);
@@ -405,8 +408,8 @@
                 const imgKeys = Object.keys(images);
                 const randomImgKey = imgKeys[Math.floor(Math.random() * imgKeys.length)];
 
-                // パワーアップするほど敵の足も速くなる
-                const speedBoost = powerLevel * 10;
+                // パワーアップするほど敵の足も速くなる（ただしプレイヤーを完全に超えないよう上限設定）
+                const speedBoost = Math.min(powerLevel * 6, 120);
                 // パワーアップしすぎると敵のHPも増える（5レベルごとに+1）
                 const bonusHp = Math.floor(powerLevel / 5);
 
