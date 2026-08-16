@@ -508,7 +508,12 @@
                             if (Math.random() < 0.2) {
                                 let itemX = Math.max(20, Math.min(cw - 20, e.x));
                                 let itemY = Math.max(20, Math.min(ch - 20, e.y));
-                                let itemType = Math.random() < 0.8 ? 'star' : 'heart'; // 80%で★、20%で♥
+                                
+                                let r = Math.random();
+                                let itemType = 'star';
+                                if (r < 0.05) itemType = 'bomb';
+                                else if (r < 0.25) itemType = 'heart';
+                                
                                 items.push({ x: itemX, y: itemY, radius: 15, life: 10, type: itemType });
                             }
                             
@@ -632,6 +637,12 @@
                         score += 20;
                         hp = Math.min(hp + 1, 5); // 最大HPを5に設定
                         spawnParticles(items[i].x, items[i].y, '#f43f5e');
+                    } else if (items[i].type === 'bomb') {
+                        score += 50 + enemies.length * 10;
+                        // 全ての敵の位置で爆発エフェクト
+                        enemies.forEach(e => spawnParticles(e.x, e.y, '#ef4444'));
+                        for(let k=0; k<5; k++) spawnParticles(items[i].x, items[i].y, '#f97316');
+                        enemies = []; // 敵を全滅
                     }
                     
                     items.splice(i, 1);
@@ -703,6 +714,11 @@
                     ctx.shadowColor = '#fb7185';
                     ctx.shadowBlur = 10;
                     ctx.fillText('♥', 0, 0);
+                } else if (item.type === 'bomb') {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.shadowColor = '#f97316';
+                    ctx.shadowBlur = 15;
+                    ctx.fillText('💣', 0, 0);
                 } else {
                     ctx.fillStyle = '#fef08a';
                     ctx.shadowColor = '#facc15';
