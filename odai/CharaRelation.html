@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探索者相関図 - Weby</title>
+    <!-- Tailwind CSS (Aesthetics and Responsiveness) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 900: '#78350f', 950: '#451a03' },
+                        stone: { 500: '#78716c', 800: '#292524', 900: '#1c1917', 950: '#0c0a09' },
+                    },
+                    fontFamily: {
+                        header: ['"Cinzel"', 'serif'],
+                        body: ['"M PLUS Rounded 1c"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- vis-network (for Relationship Chart) -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        /* 視認性の高い丸ゴシック（M PLUS Rounded 1c）と英字装飾（Cinzel）を読み込み */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705;
+            background-image:
+                radial-gradient(circle at 100% 0%, #1a1005 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, #150a05 0%, transparent 40%);
+            background-attachment: fixed;
+            color: #d6d3d1;
+            /* ページ全体でスクロールを無効にして、フルスクリーンアプリのように見せる */
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            background: linear-gradient(180deg, rgba(217,119,6,0.3) 0%, rgba(217,119,6,0) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --------------------------
+           スクロールバーのカスタマイズ
+        -------------------------- */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0c0a09;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #451a03;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78350f;
+        }
+
+        /* vis-network キャンバス内の輪郭線を消す */
+        .vis-network:focus {
+            outline: none;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen text-stone-300">
+
+    <!-- ヘッダー（ナビゲーション） -->
+    <header class="bg-[#0c0a09]/90 backdrop-blur-md border-b border-amber-900/40 p-4 sticky top-0 z-50 flex items-center justify-between shrink-0 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-br from-amber-700 to-amber-900 p-2 rounded-xl shadow-lg border border-amber-600/50">
+                <i data-lucide="network" class="text-amber-100 w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-extrabold font-header tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 drop-shadow-sm">探索者相関図</h1>
+                <p class="text-[10px] text-amber-600/80 font-header tracking-widest uppercase mt-0.5">Grimoire of Relationships</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.location.href='CharaHikaku.html'" class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all bg-[#14100c] border border-amber-950/60 text-stone-400 hover:text-amber-400 hover:border-amber-700 shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 比較の儀へ戻る
+            </button>
+        </div>
+    </header>
+
+    <!-- メインレイアウト（サイドバー + キャンバス） -->
+    <main class="flex-grow flex overflow-hidden min-h-0">
+        
+        <!-- サイドバー（キャラクター選択） -->
+        <aside class="w-64 bg-[#0e0b08] border-r border-amber-950/40 flex flex-col shrink-0">
+            <div class="p-4 border-b border-amber-950/40">
+                <h2 class="text-sm font-bold text-amber-500 font-header tracking-wider mb-2"><i data-lucide="users" class="w-4 h-4 inline-block mr-1 align-text-bottom"></i> 登場人物</h2>
+                <div class="relative">
+                    <i data-lucide="search" class="w-3.5 h-3.5 text-amber-700 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="charSearchInput" oninput="renderCharacterList()" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-md py-1.5 pl-8 pr-3 text-xs text-amber-200 placeholder-stone-700 focus:outline-none transition-all" placeholder="名前で絞り込み...">
+                </div>
+            </div>
+            <div class="flex-grow overflow-y-auto p-2" id="characterList">
+                <!-- JSでキャラクター一覧を挿入 -->
+            </div>
+            <div class="p-3 border-t border-amber-950/40 bg-[#14100c] space-y-2">
+                <button onclick="openGuestModal()" class="w-full py-1.5 text-xs text-amber-200 hover:text-amber-100 bg-amber-900/40 border border-amber-900/60 rounded-md transition-colors flex items-center justify-center gap-1">
+                    <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> ゲストを追加
+                </button>
+                <button onclick="clearAllSelections()" class="w-full py-1.5 text-xs text-stone-400 hover:text-stone-200 bg-stone-900 border border-stone-800 rounded-md transition-colors">
+                    選択をすべて解除
+                </button>
+            </div>
+        </aside>
+
+        <!-- メインキャンバス領域 -->
+        <section class="flex-grow flex flex-col relative bg-[#050403] min-h-0">
+            
+            <!-- キャンバス -->
+            <div id="relationNetworkCanvas" class="w-full flex-grow min-h-0"></div>
+
+            <!-- 操作パネル（上部フローティング） -->
+            <div class="absolute top-4 right-4 flex gap-2">
+                <button onclick="toggleGroupPanel()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#14100c]/80 backdrop-blur border border-amber-900/60 text-amber-500 hover:text-amber-300 hover:bg-amber-900/40 rounded-lg transition-all shadow-lg">
+                    <i data-lucide="layers" class="w-4 h-4"></i> 枠の管理
+                </button>
+                <button onclick="downloadRelationChart()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#14100c]/80 backdrop-blur border border-amber-900/60 text-amber-400 hover:text-amber-200 hover:bg-amber-900/40 rounded-lg transition-all shadow-lg">
+                    <i data-lucide="download" class="w-4 h-4"></i> 画像として保存
+                </button>
+            </div>
+
+            <!-- グループ（枠）管理パネル -->
+            <div class="absolute top-14 right-4 bg-[#14100c]/90 backdrop-blur-md border border-amber-900/60 p-3 rounded-xl shadow-lg w-64 z-10 hidden" id="groupPanel">
+                <h4 class="text-xs font-bold text-amber-500 mb-2 border-b border-amber-900/50 pb-1 flex items-center gap-1"><i data-lucide="plus-square" class="w-3.5 h-3.5"></i> 枠を作る</h4>
+                <div class="space-y-2">
+                    <input type="text" id="groupName" placeholder="枠の名前（例: 家族）" class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-1.5 text-xs text-amber-200 focus:outline-none focus:border-amber-600">
+                    <div class="flex gap-2">
+                        <input type="color" id="groupColor" value="#d97706" class="w-8 h-6 bg-transparent cursor-pointer" title="枠の色">
+                        <select id="groupStyle" class="flex-grow bg-[#0a0806] border border-amber-950/60 rounded p-1 text-xs text-amber-200 focus:outline-none">
+                            <option value="solid">実線</option>
+                            <option value="dashed">点線</option>
+                        </select>
+                    </div>
+                    <button onclick="addGroup()" class="w-full py-1.5 bg-amber-900 hover:bg-amber-800 text-amber-100 text-xs rounded border border-amber-700 transition-colors">枠を作成</button>
+                </div>
+                <div class="mt-3 border-t border-amber-900/50 pt-2 max-h-60 overflow-y-auto" id="groupListArea">
+                    <!-- グループ一覧 -->
+                </div>
+            </div>
+
+            <!-- 関係性追加パネル（下部） -->
+            <div class="bg-[#0c0a09]/95 backdrop-blur-md border-t border-amber-900/40 p-4 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.5)]">
+                <h3 class="text-xs font-bold text-amber-600 font-header tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="link-2" class="w-4 h-4"></i> 関係性を結ぶ</h3>
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="flex-grow min-w-[150px]">
+                        <select id="relCharA" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none transition-all cursor-pointer shadow-inner"></select>
+                    </div>
+                    <div class="shrink-0 pb-1">
+                        <button onclick="swapRelationChars()" class="p-1.5 text-amber-700 hover:text-amber-400 bg-[#14100c] border border-amber-950/60 hover:border-amber-600 rounded-md transition-all shadow-sm" title="左右のキャラクターを入れ替える">
+                            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="flex-grow min-w-[150px]">
+                        <select id="relCharB" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none transition-all cursor-pointer shadow-inner"></select>
+                    </div>
+                    <div class="flex-grow min-w-[120px]">
+                        <input type="text" id="relLabel" placeholder="関係性（例: 犬猿）" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 placeholder-stone-700 focus:outline-none transition-all shadow-inner">
+                    </div>
+                    <div class="shrink-0 pb-1">
+                        <input type="color" id="relColor" value="#ea580c" class="w-8 h-8 bg-transparent cursor-pointer rounded" title="線の色">
+                    </div>
+                    <div class="shrink-0">
+                        <select id="relStyle" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none cursor-pointer">
+                            <option value="solid">実線</option>
+                            <option value="dashed">点線</option>
+                            <option value="thick">太線</option>
+                        </select>
+                    </div>
+                    <div class="shrink-0 w-full sm:w-auto">
+                        <button onclick="addRelationship()" class="w-full sm:w-auto py-2 px-4 bg-amber-900 hover:bg-amber-800 text-amber-100 text-xs font-bold rounded-lg transition-colors border border-amber-700 flex items-center justify-center gap-1.5 font-header shadow-md hover:shadow-amber-900/50">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 結ぶ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 通知トースト -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50 pointer-events-none"></div>
+
+    <!-- ゲスト追加モーダル -->
+    <div id="guestModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-[#14100c] border border-amber-900/60 p-5 rounded-xl shadow-2xl w-80 max-w-full">
+            <h3 class="text-sm font-bold text-amber-500 font-header tracking-wider mb-3"><i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i> ゲスト追加</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-stone-400 mb-1">名前 <span class="text-red-500">*</span></label>
+                    <input type="text" id="guestName" class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-2 text-xs text-amber-200 focus:outline-none focus:border-amber-600">
+                </div>
+                <div>
+                    <label class="block text-xs text-stone-400 mb-1">画像URL (任意)</label>
+                    <input type="text" id="guestIcon" placeholder="https://..." class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-2 text-xs text-amber-200 focus:outline-none focus:border-amber-600">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeGuestModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded border border-stone-600">キャンセル</button>
+                    <button onclick="addGuestCharacter()" class="flex-1 py-2 bg-amber-900 hover:bg-amber-800 text-amber-100 text-xs rounded border border-amber-700">追加する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 外部化されたロジックファイル -->
+    <script src="js/CharaRelation.js?v=3"></script>
+</body>
+</html>
