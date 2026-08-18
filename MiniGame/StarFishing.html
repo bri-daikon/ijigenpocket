@@ -107,7 +107,7 @@
             bottom: 35%;
             transform: translate(-50%, 0) scale(0.5);
             opacity: 0;
-            transition: transform 8s ease-out, opacity 8s ease-out, bottom 8s ease-out;
+            transition: transform 4s ease-out, opacity 4s ease-out, bottom 4s ease-out;
             pointer-events: none;
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
         }
@@ -148,6 +148,40 @@
             cursor: pointer;
             transition: opacity 1s;
         }
+
+        /* 釣り上げた数 */
+        #counter-display {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 16px;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* お説教ポップアップ */
+        #scold-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 200;
+        }
+        .show-scold {
+            opacity: 1 !important;
+        }
     </style>
 </head>
 <body>
@@ -157,6 +191,9 @@
     <div id="fishing-line">
         <div id="bobber"></div>
     </div>
+    
+    <div id="counter-display">釣った星: <span id="catch-count">0</span></div>
+    <div id="scold-popup"></div>
 
     <script>
         const bgStarsCount = 50;
@@ -258,6 +295,31 @@
         const instruction = document.getElementById('instruction');
         const audioStart = document.getElementById('audio-start');
         
+        let catchCount = 0;
+        const catchCountEl = document.getElementById('catch-count');
+        const scoldPopup = document.getElementById('scold-popup');
+        const scoldMessages = [
+            "まだ寝てないの？",
+            "ねむれない？",
+            "早く寝たら？",
+            "寝ろっつってんだろ！"
+        ];
+        
+        function checkScold() {
+            if (catchCount > 0 && catchCount % 100 === 0) {
+                let index = (catchCount / 100) - 1;
+                if (index >= scoldMessages.length) {
+                    index = scoldMessages.length - 1;
+                }
+                scoldPopup.innerText = scoldMessages[index];
+                scoldPopup.classList.add('show-scold');
+                
+                setTimeout(() => {
+                    scoldPopup.classList.remove('show-scold');
+                }, 5000);
+            }
+        }
+        
         audioStart.addEventListener('click', function() {
             initAudio();
             this.style.opacity = '0';
@@ -329,6 +391,10 @@
             line.style.height = '0';
             playSound('catch');
             
+            catchCount++;
+            catchCountEl.innerText = catchCount;
+            checkScold();
+            
             createRipple(parseInt(line.style.left), window.innerHeight * 0.65);
 
             // スタンプを生成
@@ -354,8 +420,8 @@
                     stamp.remove();
                     state = 'idle';
                     instruction.style.opacity = '1';
-                }, 8000); // fadeout css transition
-            }, 10000);
+                }, 4000); // fadeout css transition
+            }, 4000);
         }
     </script>
 </body>
