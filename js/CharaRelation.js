@@ -87,9 +87,21 @@
             container.innerHTML = '';
 
             const allChars = getAllAvailableCharacters();
-            const filteredChars = allChars.filter(c => {
+            let filteredChars = allChars.filter(c => {
                 const nameStr = c.name || '名無し';
                 return nameStr.toLowerCase().includes(searchKeyword);
+            });
+
+            // ソート：チェック済みを上に、未チェックを下に
+            filteredChars.sort((a, b) => {
+                const aSelected = selectedIds.has(String(a.id)) || selectedIds.has(a.id);
+                const bSelected = selectedIds.has(String(b.id)) || selectedIds.has(b.id);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                // どちらも同じ状態の場合はゲストを少し下に
+                if (a.isGuest && !b.isGuest) return 1;
+                if (!a.isGuest && b.isGuest) return -1;
+                return 0;
             });
 
             if(filteredChars.length === 0) {
@@ -98,7 +110,7 @@
             }
 
             filteredChars.forEach(c => {
-                const isSelected = selectedIds.has(c.id);
+                const isSelected = selectedIds.has(String(c.id)) || selectedIds.has(c.id);
                 const isGuest = c.isGuest;
                 
                 const item = document.createElement('div');
@@ -142,22 +154,72 @@
         // ==========================
         // ゲスト機能
         // ==========================
+        function toggleGuestIconInput() {
+            const iconType = document.querySelector('input[name="guestIconType"]:checked').value;
+            const urlWrapper = document.getElementById('guestIconUrlWrapper');
+            const emojiWrapper = document.getElementById('guestIconEmojiWrapper');
+            if (iconType === 'emoji') {
+                urlWrapper.classList.add('hidden');
+                emojiWrapper.classList.remove('hidden');
+            } else {
+                urlWrapper.classList.remove('hidden');
+                emojiWrapper.classList.add('hidden');
+            }
+        }
+
         function openGuestModal() {
             document.getElementById('guestModal').classList.remove('hidden');
+            document.querySelector('input[name="guestIconType"][value="url"]').checked = true;
+            toggleGuestIconInput();
         }
 
         function closeGuestModal() {
             document.getElementById('guestModal').classList.add('hidden');
             document.getElementById('guestName').value = '';
             document.getElementById('guestIcon').value = '';
+            document.getElementById('guestEmoji').value = '';
+        }
+
+        function emojiToDataURL(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景を描画（円形）
+            ctx.fillStyle = '#292524';
+            ctx.beginPath();
+            ctx.arc(50, 50, 50, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 絵文字を描画
+            ctx.font = '60px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 50, 55);
+            
+            return canvas.toDataURL('image/png');
         }
 
         function addGuestCharacter() {
             const name = document.getElementById('guestName').value.trim();
-            const iconUrl = document.getElementById('guestIcon').value.trim();
             if (!name) {
                 showToast("名前を入力してください", "error");
                 return;
+            }
+
+            const iconType = document.querySelector('input[name="guestIconType"]:checked').value;
+            let iconUrl = '';
+
+            if (iconType === 'emoji') {
+                let emoji = document.getElementById('guestEmoji').value.trim();
+                // もし絵文字が入力されていなければ、名前の1文字目をアイコンにする
+                if (!emoji) {
+                    emoji = name.charAt(0);
+                }
+                iconUrl = emojiToDataURL(emoji);
+            } else {
+                iconUrl = document.getElementById('guestIcon').value.trim();
             }
             
             const newGuest = {
@@ -501,23 +563,50 @@
                 relationNodes.update({ id: id, image: url });
                 return;
             }
+
+            // 1. まずは直接読み込みを試す（image.iaproject.app 等、CORS許可されているサーバー用）
             try {
-                // allorigins proxy (ファイルスキーム等からのCORS制約を回避しやすい)
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Proxy fetch failed: " + response.status);
-                const blob = await response.blob();
-                
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    relationNodes.update({ id: id, image: reader.result });
-                };
-                reader.readAsDataURL(blob);
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        relationNodes.update({ id: id, image: reader.result });
+                    };
+                    reader.readAsDataURL(blob);
+                    return; // 成功したら終了
+                }
             } catch (e) {
-                console.warn("Proxy failed, falling back to direct URL. Canvas may be tainted.", e);
-                // 失敗した場合はCanvas汚染覚悟で直接画像を読み込む（少なくとも画像は表示させる）
-                relationNodes.update({ id: id, image: url });
+                console.warn(`Direct fetch failed: ${url}`, e);
             }
+
+            // 2. 直接読み込みが失敗した場合のみ、中継サーバーを順番に試す
+            const proxies = [
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+                `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            ];
+
+            for (const proxyUrl of proxies) {
+                try {
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            relationNodes.update({ id: id, image: reader.result });
+                        };
+                        reader.readAsDataURL(blob);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn(`Proxy failed: ${proxyUrl}`, e);
+                }
+            }
+
+            console.warn("All image loading methods failed, falling back to direct URL. Canvas WILL be tainted.");
+            // 失敗した場合はCanvas汚染覚悟で直接画像を読み込む（画像は表示されるが保存時にエラーになる）
+            relationNodes.update({ id: id, image: url });
         }
 
         function syncRelationNodes() {
@@ -530,18 +619,20 @@
             const toRemove = relationNodes.getIds().filter(id => !selectedSet.has(String(id)));
             relationNodes.remove(toRemove);
 
-            // 追加すべきノード
+            // 追加すべきノード、更新すべきノード
             const toAdd = [];
+            const toUpdate = [];
             const savedPos = window._savedRelationPositions || {};
             
             const loadingSvg = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23292524'/%3E%3Ctext x='50' y='50' fill='%23fbbf24' font-size='12' text-anchor='middle' alignment-baseline='middle'%3ELoading...%3C/text%3E%3C/svg%3E";
             const noImgSvg = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23292524'/%3E%3Ctext x='50' y='50' fill='%23fbbf24' font-size='14' text-anchor='middle' alignment-baseline='middle'%3ENo Img%3C/text%3E%3C/svg%3E";
 
             const addedIds = new Set(); // ループ内での重複追加を完全防止
+            const loadTasks = []; // 画像読み込みタスクを後でまとめて実行する
 
             allSelectedChars.forEach(c => {
                 const strId = String(c.id);
-                if (!currentNodes.includes(strId) && !addedIds.has(strId)) {
+                if (!addedIds.has(strId)) {
                     addedIds.add(strId);
                     let originalImg = c.iconUrl || noImgSvg;
                     const nameStr = c.name || '名無し';
@@ -549,22 +640,29 @@
                     let nodeObj = {
                         id: strId, // 強制的に文字列にする
                         label: `<b>${nameStr.split(/[\s　]+/)[0]}</b>`,
-                        image: loadingSvg,
                         brokenImage: noImgSvg
                     };
-                    if (savedPos[strId] || savedPos[c.id]) {
-                        const pos = savedPos[strId] || savedPos[c.id];
-                        nodeObj.x = pos.x;
-                        nodeObj.y = pos.y;
+
+                    if (!currentNodes.includes(strId)) {
+                        nodeObj.image = loadingSvg;
+                        if (savedPos[strId] || savedPos[c.id]) {
+                            const pos = savedPos[strId] || savedPos[c.id];
+                            nodeObj.x = pos.x;
+                            nodeObj.y = pos.y;
+                        } else {
+                            // ランダム初期配置（広いキャンバス用）
+                            nodeObj.x = (Math.random() - 0.5) * 800;
+                            nodeObj.y = (Math.random() - 0.5) * 600;
+                        }
+                        toAdd.push(nodeObj);
+                        loadTasks.push({ id: strId, url: originalImg });
                     } else {
-                        // ランダム初期配置（広いキャンバス用）
-                        nodeObj.x = (Math.random() - 0.5) * 800;
-                        nodeObj.y = (Math.random() - 0.5) * 600;
+                        toUpdate.push(nodeObj);
+                        const existingNode = relationNodes.get(strId);
+                        if (!existingNode.image || existingNode.image === loadingSvg || existingNode.image === noImgSvg) {
+                            loadTasks.push({ id: strId, url: originalImg });
+                        }
                     }
-                    toAdd.push(nodeObj);
-                    
-                    // 非同期で画像をBase64化して安全に読み込む
-                    loadSafeImage(strId, originalImg);
                 }
             });
             
@@ -578,6 +676,16 @@
                     });
                 }
             }
+            if (toUpdate.length > 0) {
+                try {
+                    relationNodes.update(toUpdate);
+                } catch(e) {}
+            }
+
+            // 全てのノードがキャンバスに登録された後に、安全に画像を更新する
+            loadTasks.forEach(task => {
+                loadSafeImage(task.id, task.url);
+            });
 
             updateRelationSelects(allSelectedChars);
             
