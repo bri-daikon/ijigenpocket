@@ -236,6 +236,46 @@
                     ambientGain.gain.setTargetAtTime(0.02 + Math.random() * 0.04, audioCtx.currentTime, 5);
                 }
             }, 5000);
+            
+            playSleepyBGM();
+        }
+
+        function playSleepyBGM() {
+            // Cmaj7 -> Fmaj7 -> Emin7 -> Fmaj7
+            const chords = [
+                [261.63, 329.63, 392.00, 493.88],
+                [349.23, 440.00, 523.25, 659.25],
+                [329.63, 392.00, 493.88, 587.33],
+                [349.23, 440.00, 523.25, 659.25]
+            ];
+            let chordIndex = 0;
+
+            function playChord() {
+                if(!audioCtx || audioCtx.state !== 'running') return;
+                const t = audioCtx.currentTime;
+                const freqs = chords[chordIndex];
+                
+                freqs.forEach((freq, i) => {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq / 2; // 少し低くして落ち着かせる
+                    
+                    gain.gain.setValueAtTime(0, t);
+                    // ゆっくり音が大きくなり、ゆっくり消える
+                    gain.gain.linearRampToValueAtTime(0.03, t + 4.0 + i * 0.5); 
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + 12.0);
+                    
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(t);
+                    osc.stop(t + 12.1);
+                });
+                
+                chordIndex = (chordIndex + 1) % chords.length;
+                setTimeout(playChord, 8000); // 8秒ごとに次の和音（余韻が重なる）
+            }
+            playChord();
         }
 
         function playSound(type) {
