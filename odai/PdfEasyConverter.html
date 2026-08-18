@@ -3427,6 +3427,12 @@
       item.isEditing = true;
 
       processedItems.splice(idx + 1, 1);
+      
+      const targetCard = document.querySelector(`[data-id="${item.id}"]`);
+      if (targetCard) targetCard._cachedHTML = null;
+      const sourceCard = document.querySelector(`[data-id="${nextItem.id}"]`);
+      if (sourceCard) sourceCard.remove();
+
       renderList();
       const newTa = document.getElementById(`edit-textarea-${id}`);
       if (newTa) newTa.focus();
@@ -3457,6 +3463,12 @@
       prevItem.isEditing = true;
 
       processedItems.splice(idx, 1);
+      
+      const targetCard = document.querySelector(`[data-id="${prevItem.id}"]`);
+      if (targetCard) targetCard._cachedHTML = null;
+      const sourceCard = document.querySelector(`[data-id="${item.id}"]`);
+      if (sourceCard) sourceCard.remove();
+      
       renderList();
       const newTa = document.getElementById(`edit-textarea-${prevItem.id}`);
       if (newTa) newTa.focus();
@@ -3641,6 +3653,13 @@
       const idsToRemove = new Set(selectedItems.map(item => item.id).slice(1));
       processedItems = processedItems.filter(item => !idsToRemove.has(item.id));
       
+      const targetCard = document.querySelector(`[data-id="${firstItem.id}"]`);
+      if (targetCard) targetCard._cachedHTML = null;
+      idsToRemove.forEach(id => {
+        const card = document.querySelector(`[data-id="${id}"]`);
+        if (card) card.remove();
+      });
+      
       clearSelection();
       saveToLocalStorage();
       renderList();
@@ -3779,6 +3798,14 @@
         }
         targetItem.furiganaHtml = undefined;
         processedItems.splice(sourceIndex, 1);
+        
+        // 高速化のため、renderListを呼ぶ前にsourceItemのDOM要素を削除する
+        // これにより、renderList内で不要な insertBefore が大量発生するのを防ぐ
+        const targetCard = document.querySelector(`[data-id="${targetId}"]`);
+        if (targetCard) targetCard._cachedHTML = null;
+        const sourceCard = document.querySelector(`[data-id="${sourceId}"]`);
+        if (sourceCard) sourceCard.remove();
+
         renderList();
         saveToLocalStorage();
         showToast('結合完了', 'カードを結合しました。', 'success');
