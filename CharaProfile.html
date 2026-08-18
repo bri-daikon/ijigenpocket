@@ -172,51 +172,78 @@
                         </div>
                         
                         <div class="px-6 space-y-6">
+                            <!-- 外部データからの詳細取り込み -->
+                            <div class="p-4 bg-[#1a1511] border border-amber-900/50 rounded-lg shadow-inner">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i data-lucide="file-text" class="text-amber-500 w-4 h-4"></i>
+                                    <label class="block text-sm font-bold text-amber-500 font-header">いあきゃらのテキストから詳細を抽出</label>
+                                </div>
+                                <p class="text-xs text-stone-400 mb-3 leading-relaxed">
+                                    いあきゃらの**「ファイルに出力」**で表示されるテキストをここに貼り付けてください。<br>
+                                    <span class="text-amber-600/80">※年齢・身長・誕生日・通過シナリオなどを自動で読み取ります。</span>
+                                </p>
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <textarea id="inputExternalText" rows="2" class="form-input text-xs flex-grow font-mono" placeholder="いあきゃらテキスト 6版 v2.0.1&#10;【基本情報】..."></textarea>
+                                    <button onclick="importFromText()" class="shrink-0 self-end sm:self-stretch flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 text-emerald-100 rounded-lg transition-all border border-emerald-600 shadow-md">
+                                        <i data-lucide="download" class="w-4 h-4"></i> データを抽出
+                                    </button>
+                                </div>
+                            </div>
+
+
                             <!-- 基本プロフィール -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">年齢</label>
-                                    <input type="text" id="inputAge" class="form-input" placeholder="例: 24">
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-sm font-bold text-amber-500 font-header">基本プロフィール</h3>
+                                    <button onclick="importFromOriginalData()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i> 元データから取り込む
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">職業</label>
-                                    <input type="text" id="inputJob" class="form-input" placeholder="例: 私立探偵, 医師">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">性別</label>
-                                    <input type="text" id="inputSex" class="form-input" placeholder="例: 男性, 女性, その他">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">身長 (cm)</label>
-                                    <input type="number" id="inputHeight" class="form-input" placeholder="例: 175" step="0.1">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">体重</label>
-                                    <input type="text" id="inputWeight" class="form-input" placeholder="例: 65kg">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">誕生日</label>
-                                    <input type="text" id="inputBirthday" class="form-input" placeholder="例: 10月31日" onchange="autoFillZodiac()">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">星座</label>
-                                    <input type="text" id="inputZodiac" class="form-input" placeholder="例: 蠍座">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">血液型</label>
-                                    <input type="text" id="inputBloodType" class="form-input" placeholder="例: A型">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">アライメント</label>
-                                    <input type="text" id="inputAlignment" class="form-input" placeholder="例: 秩序・善">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">イメージカラー</label>
-                                    <input type="color" id="inputColorCode" class="w-full h-9 bg-transparent cursor-pointer rounded-lg border border-amber-950/60 p-0">
-                                </div>
-                                <div class="lg:col-span-2">
-                                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">メイン武器</label>
-                                    <input type="text" id="inputMainWeapon" class="form-input" placeholder="例: 38口径リボルバー">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">年齢</label>
+                                        <input type="text" id="inputAge" class="form-input" placeholder="例: 24">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">職業</label>
+                                        <input type="text" id="inputJob" class="form-input" placeholder="例: 私立探偵, 医師">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">性別</label>
+                                        <input type="text" id="inputSex" class="form-input" placeholder="例: 男性, 女性, その他">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">身長 (cm)</label>
+                                        <input type="number" id="inputHeight" class="form-input" placeholder="例: 175" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">体重</label>
+                                        <input type="text" id="inputWeight" class="form-input" placeholder="例: 65kg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">誕生日</label>
+                                        <input type="text" id="inputBirthday" class="form-input" placeholder="例: 10月31日" onchange="autoFillZodiac()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">星座</label>
+                                        <input type="text" id="inputZodiac" class="form-input" placeholder="例: 蠍座">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">血液型</label>
+                                        <input type="text" id="inputBloodType" class="form-input" placeholder="例: A型">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">アライメント</label>
+                                        <input type="text" id="inputAlignment" class="form-input" placeholder="例: 秩序・善">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">イメージカラー</label>
+                                        <input type="color" id="inputColorCode" class="w-full h-9 bg-transparent cursor-pointer rounded-lg border border-amber-950/60 p-0">
+                                    </div>
+                                    <div class="lg:col-span-2">
+                                        <label class="block text-xs font-semibold text-amber-600/80 mb-1.5 font-header">メイン武器</label>
+                                        <input type="text" id="inputMainWeapon" class="form-input" placeholder="例: 38口径リボルバー">
+                                    </div>
                                 </div>
                             </div>
 
@@ -526,6 +553,171 @@
                 showToast(`「${targetGlobalChar.name}」の調書を記録しました。`, "success");
             } else {
                 showToast("保存先の大元データが見つかりません。削除された可能性があります。", "error");
+            }
+        }
+
+        function importFromOriginalData() {
+            if (!currentEditingId) return;
+
+            let allChars = [];
+            try {
+                const data = localStorage.getItem('weby_trpg_characters');
+                if (data) allChars = JSON.parse(data);
+            } catch (e) {
+                console.error("元データのパースに失敗", e);
+            }
+
+            const globalChar = allChars.find(c => c.id === currentEditingId);
+            if (!globalChar) {
+                showToast('元データが見つかりません', 'error');
+                return;
+            }
+
+            let importedCount = 0;
+            const trySet = (inputId, value, isNumber = false) => {
+                const el = document.getElementById(inputId);
+                // 値が存在し、かつ入力欄が空の場合のみ取り込む
+                if (el && value && value !== "" && value !== "-" && !el.value) {
+                    if (isNumber) {
+                        // 数字のみ抽出（"175cm" などを "175" にする）
+                        const num = String(value).replace(/[^0-9.]/g, '');
+                        if (num) {
+                            el.value = num;
+                            importedCount++;
+                        }
+                    } else {
+                        el.value = value;
+                        importedCount++;
+                    }
+                }
+            };
+
+            // いあきゃらデータに含まれやすい項目の取り込みを試みる
+            // ※ globalChar の直下、または globalChar.profile などにある可能性を考慮
+            const getVal = (key) => globalChar[key] || (globalChar.raw && globalChar.raw[key]) || (globalChar.profile && globalChar.profile[key]);
+            
+            trySet('inputAge', getVal('age') || getVal('年齢'));
+            trySet('inputJob', getVal('job') || getVal('職業'));
+            trySet('inputSex', getVal('sex') || getVal('性別'));
+            trySet('inputHeight', getVal('height') || getVal('身長'), true);
+            trySet('inputWeight', getVal('weight') || getVal('体重'));
+
+            if (importedCount > 0) {
+                showToast(`年齢や身長など ${importedCount} 件のデータを元データから補完しました。`, 'success');
+            } else {
+                showToast('新しく取り込めるデータがありませんでした（空欄のみ対象です）。', 'info');
+            }
+        }
+
+        function importFromText() {
+            if (!currentEditingId) {
+                showToast("対象の探索者を選択してください", "error");
+                return;
+            }
+            const input = document.getElementById('inputExternalText').value.trim();
+            if (!input) {
+                showToast("データを貼り付けてください", "error");
+                return;
+            }
+
+            let importedCount = 0;
+            const trySet = (inputId, value, isNumber = false) => {
+                const el = document.getElementById(inputId);
+                if (el && value && value !== "" && value !== "-" && !el.value) {
+                    if (isNumber) {
+                        const num = String(value).replace(/[^0-9.]/g, '');
+                        if (num) {
+                            el.value = num;
+                            importedCount++;
+                        }
+                    } else {
+                        el.value = value;
+                        importedCount++;
+                    }
+                }
+            };
+
+            let age, job, sex, height, weight, birthday, notesStr, scenariosStr;
+
+            // テキストフォーマットまたはJSONの両対応
+            if (input.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(input);
+                    const data = parsed.data || parsed;
+                    const memo = data.memo || "";
+                    
+                    const extractJson = (regex) => {
+                        const m = memo.match(regex);
+                        return m ? m[1].trim() : null;
+                    };
+                    age = extractJson(/(?:年齢)[\s：:]+([^\r\n\s]+)/);
+                    job = extractJson(/(?:職業)[\s：:]+([^\r\n]+)/);
+                    sex = extractJson(/(?:性別)[\s：:]+([^\r\n\s]+)/);
+                    height = extractJson(/(?:身長)[\s：:]+([^\r\n]+)/);
+                    weight = extractJson(/(?:体重)[\s：:]+([^\r\n]+)/);
+                    birthday = extractJson(/(?:誕生日)[\s：:]+([^\r\n]+)/);
+                    notesStr = memo;
+                } catch(e) {
+                    console.error(e);
+                    showToast("JSONの形式が正しくありません", "error");
+                    return;
+                }
+            } else {
+                // いあきゃら「ファイルに出力」プレーンテキストの解析
+                const extractText = (regex) => {
+                    const m = input.match(regex);
+                    return m ? m[1].trim() : null;
+                };
+
+                // 年齢: 17 / 性別: 男 / 身長: 169
+                age = extractText(/年齢\s*:\s*([^\s/／]+)/);
+                job = extractText(/職業\s*:\s*([^\r\n]+)/);
+                sex = extractText(/性別\s*:\s*([^\s/／]+)/);
+                height = extractText(/身長\s*:\s*([^\s/／]+)/);
+                weight = extractText(/体重\s*:\s*([^\s/／]+)/);
+                birthday = extractText(/誕生日\s*:\s*([^\r\n]+)/);
+
+                // メモ欄の抽出
+                const memoMatch = input.match(/【メモ】([\s\S]*)/);
+                if (memoMatch) {
+                    notesStr = memoMatch[1].trim();
+                } else {
+                    // もし【メモ】がなければ適当に切り出すか、なしにする
+                    notesStr = "";
+                }
+            }
+
+            // メモからシナリオらしき部分を分離（【通過シナリオ】などの表記があれば）
+            if (notesStr) {
+                const scenarioMatch = notesStr.match(/【(?:通過シナリオ|シナリオ|履歴|新たに得た知識・経験|遭遇した超自然の存在)】([\s\S]*)/);
+                if (scenarioMatch) {
+                    scenariosStr = scenarioMatch[1].trim();
+                    notesStr = notesStr.replace(scenarioMatch[0], "").trim();
+                }
+            }
+
+            trySet('inputAge', age);
+            trySet('inputJob', job);
+            trySet('inputSex', sex);
+            trySet('inputHeight', height, true);
+            trySet('inputWeight', weight);
+            trySet('inputBirthday', birthday);
+            
+            // 星座の自動入力トリガー
+            if (birthday) {
+                autoFillZodiac();
+            }
+
+            trySet('inputNotes', notesStr);
+            if (scenariosStr) {
+                trySet('inputScenarios', scenariosStr);
+            }
+
+            if (importedCount > 0) {
+                showToast(`年齢・身長・メモなど ${importedCount} 件のデータを取り込みました！`, "success");
+                document.getElementById('inputExternalText').value = ""; // 成功したらクリア
+            } else {
+                showToast("新しく取り込めるデータが見つかりませんでした", "info");
             }
         }
 
