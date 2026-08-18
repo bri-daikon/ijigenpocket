@@ -434,6 +434,25 @@
                 }, 4000); // fadeout css transition
             }, 4000);
         }
+
+        // スマホ等でバックグラウンドに回った時に音を消す処理
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (audioCtx && audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                }
+                if (bgmAudio) {
+                    bgmAudio.pause();
+                }
+            } else {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (bgmAudio) {
+                    bgmAudio.play().catch(e => console.log("BGM再開エラー:", e));
+                }
+            }
+        });
     </script>
 </body>
 </html>
