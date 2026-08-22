@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Bookmark Hub - ブックマーク整理ビューア</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        xDark: '#15202b',
+                        xCard: '#1e2732',
+                        xBorder: '#38444d',
+                        xBlue: '#1d9bf0',
+                        xBlueHover: '#1a8cd8',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-xDark text-gray-100 min-h-screen flex flex-col">
+
+    <!-- ヘッダーナビゲーション -->
+    <header class="sticky top-0 z-30 bg-xDark/90 backdrop-blur-md border-b border-xBorder px-4 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-xBlue p-2 rounded-full text-white flex items-center justify-center w-10 h-10">
+                    <i class="fa-brands fa-x-twitter text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">X Bookmark Hub</h1>
+                    <p class="text-xs text-gray-400">スマートなブックマーク整理ビューア</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="openModal()" class="bg-xBlue hover:bg-xBlueHover text-white px-4 py-2 rounded-full text-sm font-semibold transition flex items-center shadow">
+                    <i class="fa-solid fa-plus mr-2"></i><span class="hidden sm:inline">ブックマーク</span>追加
+                </button>
+                <button onclick="openBookmarkletModal()" title="ブックマークレット設定" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-full text-sm border border-xBorder transition">
+                    <i class="fa-solid fa-link"></i>
+                </button>
+                <button onclick="exportData()" title="JSONでバックアップ" class="bg-gray-800 hover:bg-gray-700 text-gray-300 p-2.5 rounded-full text-sm border border-xBorder transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label title="JSONから復元" class="bg-gray-800 hover:bg-gray-700 text-gray-300 p-2.5 rounded-full text-sm border border-xBorder transition cursor-pointer">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden">
+                </label>
+                <button onclick="loadSampleData()" title="サンプルデータ読込" class="bg-emerald-800/60 hover:bg-emerald-700/60 text-emerald-200 px-3 py-2 rounded-full text-xs font-medium border border-emerald-600 transition">
+                    サンプル読込
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ領域 -->
+    <div class="max-w-7xl mx-auto w-full flex-1 px-4 py-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        <!-- サイドバー（検索・フィルター・タグ） -->
+        <aside class="md:col-span-1 space-y-6">
+            <!-- 検索ボックス -->
+            <div class="bg-xCard p-4 rounded-2xl border border-xBorder shadow-md">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">キーワード検索</label>
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="searchInput" oninput="renderBookmarks()" placeholder="本文・投稿者・メモ..." class="w-full bg-xDark border border-xBorder rounded-xl pl-9 pr-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue transition">
+                </div>
+            </div>
+
+            <!-- クイックフィルター -->
+            <div class="bg-xCard p-4 rounded-2xl border border-xBorder shadow-md">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">フィルター</label>
+                <div class="space-y-1">
+                    <button onclick="setFilter('all')" id="filter-all" class="w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between bg-xBlue/10 text-xBlue">
+                        <span><i class="fa-solid fa-border-all mr-2.5"></i>すべて</span>
+                        <span id="count-all" class="text-xs bg-xDark px-2 py-0.5 rounded-full border border-xBorder">0</span>
+                    </button>
+                    <button onclick="setFilter('starred')" id="filter-starred" class="w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between text-gray-400 hover:bg-gray-800 transition">
+                        <span><i class="fa-solid fa-star text-amber-400 mr-2.5"></i>お気に入り</span>
+                        <span id="count-starred" class="text-xs bg-xDark px-2 py-0.5 rounded-full border border-xBorder">0</span>
+                    </button>
+                    <button onclick="setFilter('hasMedia')" id="filter-hasMedia" class="w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between text-gray-400 hover:bg-gray-800 transition">
+                        <span><i class="fa-solid fa-image text-purple-400 mr-2.5"></i>画像付き</span>
+                        <span id="count-hasMedia" class="text-xs bg-xDark px-2 py-0.5 rounded-full border border-xBorder">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- タグ一覧 -->
+            <div class="bg-xCard p-4 rounded-2xl border border-xBorder shadow-md">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">タグ</label>
+                    <button onclick="selectedTag = ''; renderBookmarks();" class="text-xs text-xBlue hover:underline">リセット</button>
+                </div>
+                <div id="tagList" class="flex flex-wrap gap-2">
+                    <!-- JavaScriptで動的生成 -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- メイン一覧エリア -->
+        <main class="md:col-span-3 space-y-4">
+            <!-- 統計・ソートバー & 表示モード切替 -->
+            <div class="flex flex-wrap items-center justify-between bg-xCard px-4 py-3 rounded-2xl border border-xBorder gap-3">
+                <div class="text-xs text-gray-400">
+                    表示中: <span id="displayedCount" class="font-bold text-gray-200">0</span> 件
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <!-- 表示切替ボタン -->
+                    <div class="flex items-center bg-xDark p-1 rounded-xl border border-xBorder text-xs">
+                        <button onclick="setViewMode('card')" id="btn-view-card" title="カード表示" class="px-2.5 py-1 rounded-lg text-xBlue bg-xBlue/10 font-medium transition">
+                            <i class="fa-solid fa-table-cells-large mr-1"></i><span class="hidden sm:inline">カード</span>
+                        </button>
+                        <button onclick="setViewMode('list')" id="btn-view-list" title="コンパクト表示" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition">
+                            <i class="fa-solid fa-list mr-1"></i><span class="hidden sm:inline">リスト</span>
+                        </button>
+                        <button onclick="setViewMode('gallery')" id="btn-view-gallery" title="画像ギャラリー表示" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition">
+                            <i class="fa-solid fa-images mr-1"></i><span class="hidden sm:inline">ギャラリー</span>
+                        </button>
+                    </div>
+
+                    <!-- ソート順選択 -->
+                    <div class="flex items-center space-x-1.5">
+                        <label class="text-xs text-gray-400">並び替え:</label>
+                        <select id="sortSelect" onchange="renderBookmarks()" class="bg-xDark border border-xBorder text-xs text-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-xBlue">
+                            <option value="newest">追加日が新しい順</option>
+                            <option value="oldest">追加日が古い順</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カード / リスト / ギャラリー表示コンテナ -->
+            <div id="bookmarkGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- JavaScriptで動的挿入 -->
+            </div>
+
+            <!-- 空の状態表示 -->
+            <div id="emptyState" class="hidden text-center py-16 bg-xCard rounded-2xl border border-xBorder">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center text-gray-500 text-2xl">
+                    <i class="fa-solid fa-bookmark"></i>
+                </div>
+                <h3 class="text-base font-bold text-gray-300">ブックマークが見つかりません</h3>
+                <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">「ブックマーク追加」ボタンから新しい投稿を登録するか、検索条件をクリアしてください。</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- ブックマーク追加・編集モーダル -->
+    <div id="bookmarkModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-xCard w-full max-w-lg rounded-2xl border border-xBorder shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-xBorder flex items-center justify-between">
+                <h2 id="modalTitle" class="font-bold text-lg text-gray-100">ブックマークを登録</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="bookmarkForm" onsubmit="saveBookmark(event)" class="p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="editId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">X Post URL <span class="text-red-400">*</span></label>
+                    <div class="flex gap-2">
+                        <input type="url" id="postUrl" required placeholder="https://x.com/username/status/123456789" class="w-full bg-xDark border border-xBorder rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue">
+                        <button type="button" onclick="fetchUrlInfo(event)" class="bg-xBlue/20 text-xBlue hover:bg-xBlue/30 px-3 py-2 rounded-xl text-xs font-medium transition border border-xBlue/30 whitespace-nowrap flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i>取得
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">投稿者名</label>
+                        <input type="text" id="authorName" placeholder="例: Weby" class="w-full bg-xDark border border-xBorder rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">ユーザーID</label>
+                        <input type="text" id="authorHandle" placeholder="例: @weby_dev" class="w-full bg-xDark border border-xBorder rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold text-gray-300">ツイート本文 <span class="text-red-400">*</span></label>
+                        <button type="button" onclick="analyzeWithGemini()" class="text-xs text-xBlue bg-xBlue/10 hover:bg-xBlue/20 px-2.5 py-1 rounded-lg border border-xBlue/30 transition flex items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>AIでタグ・要約を自動入力
+                        </button>
+                    </div>
+                    <textarea id="postText" rows="4" required placeholder="ツイートのテキストを貼り付け..." class="w-full bg-xDark border border-xBorder rounded-xl p-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">画像URL (オプション)</label>
+                    <input type="url" id="imageUrl" placeholder="https://pbs.twimg.com/media/..." class="w-full bg-xDark border border-xBorder rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">タグ (カンマ区切り)</label>
+                    <input type="text" id="tagsInput" placeholder="開発, デザイン, AI, アイデア" class="w-full bg-xDark border border-xBorder rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue">
+                    <div id="existingTagsContainer" class="mt-2 flex flex-wrap gap-1.5 hidden"></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">自分用メモ</label>
+                    <textarea id="userNotes" rows="2" placeholder="後で試す、要約メモなど..." class="w-full bg-xDark border border-xBorder rounded-xl p-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-xBlue"></textarea>
+                </div>
+
+                <!-- ローディングインジケータ -->
+                <div id="aiLoading" class="hidden text-xs text-xBlue flex items-center justify-center p-2 bg-xBlue/5 rounded-xl border border-xBlue/20">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Gemini AI が本文を解析中...
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-400 hover:bg-gray-800 transition">キャンセル</button>
+                    <button type="submit" class="bg-xBlue hover:bg-xBlueHover text-white px-5 py-2 rounded-xl text-sm font-semibold transition shadow">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ブックマークレットモーダル -->
+    <div id="bookmarkletModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-xCard w-full max-w-lg rounded-2xl border border-xBorder shadow-2xl overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-xBorder flex items-center justify-between">
+                <h2 class="font-bold text-lg text-gray-100">ブックマークレットの設定</h2>
+                <button onclick="closeBookmarkletModal()" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    X（Twitter）の投稿ページで以下のボタンをクリックすると、このページに投稿のURLや本文を自動で入力できます。
+                </p>
+                
+                <div class="bg-xDark border border-xBorder rounded-xl p-4 flex flex-col items-center justify-center space-y-3">
+                    <p class="text-xs text-gray-400">下のボタンをブラウザのブックマークバーにドラッグ＆ドロップしてください。</p>
+                    <a href="javascript:(function(){const u=window.location.href;if(!u.includes('x.com')&&!u.includes('twitter.com')){alert('X (Twitter)の投稿ページで実行してください。');return;}let a='',h='',t='';try{const ar=document.querySelector('article[data-testid=%22tweet%22]');if(ar){const ns=ar.querySelectorAll('[data-testid=%22User-Name%22] a');if(ns.length>=2){a=ns[0].textContent;h=ns[1].textContent;}const tt=ar.querySelector('[data-testid=%22tweetText%22]');if(tt)t=tt.textContent;}}catch(e){}const p=new URLSearchParams({url:u,text:t,author:a,handle:h});const tu='https://bri-daikon.github.io/ijigenpocket/ijigenBookMark.html?'+p.toString();const w=window.open(tu,'_blank');if(!w||w.closed||typeof w.closed=='undefined'){prompt('ブラウザのセキュリティ制限により自動で開けませんでした。以下のURLをコピーして新しいタブのアドレスバーに貼り付けてください：',tu);}})();" 
+                       class="inline-block bg-xBlue hover:bg-xBlueHover text-white px-6 py-2 rounded-full font-bold shadow-lg transition cursor-grab"
+                       onclick="event.preventDefault(); alert('このボタンはクリックするのではなく、ブックマークバーにドラッグ＆ドロップしてください。');">
+                        Xに追加
+                    </a>
+                </div>
+
+                <div class="bg-yellow-900/20 border border-yellow-700/50 rounded-xl p-3 mt-2">
+                    <h3 class="text-yellow-500 font-bold text-sm mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ご注意</h3>
+                    <p class="text-xs text-gray-300">
+                        Webページ（https）からローカルファイル（file://）を直接開くことはブラウザのセキュリティ制限によりブロックされる場合があります。その場合は表示されるプロンプトからURLをコピーして、新しいタブに貼り付けてください。
+                    </p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-xBorder flex justify-end">
+                <button onclick="closeBookmarkletModal()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-800 text-gray-200 hover:bg-gray-700 transition">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bookmarks = JSON.parse(localStorage.getItem('x_bookmarks') || '[]');
+        let activeFilter = 'all';
+        let selectedTag = '';
+        let currentViewMode = 'card'; // 'card' | 'list' | 'gallery'
+
+        window.onload = function() {
+            // URLパラメータ（拡張機能・ブックマークレットからの自動キャプチャ用）チェック
+            checkUrlParams();
+
+            if (bookmarks.length === 0) {
+                loadSampleData();
+            } else {
+                renderBookmarks();
+            }
+        };
+
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const url = params.get('url');
+            const text = params.get('text');
+            const author = params.get('author');
+            const handle = params.get('handle');
+
+            if (url || text) {
+                openModal();
+                if (url) document.getElementById('postUrl').value = url;
+                if (text) document.getElementById('postText').value = text;
+                if (author) document.getElementById('authorName').value = author;
+                if (handle) document.getElementById('authorHandle').value = handle;
+
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            ['card', 'list', 'gallery'].forEach(m => {
+                const btn = document.getElementById(`btn-view-${m}`);
+                if (!btn) return;
+                if (m === mode) {
+                    btn.className = "px-2.5 py-1 rounded-lg text-xBlue bg-xBlue/10 font-medium transition";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition";
+                }
+            });
+            renderBookmarks();
+        }
+
+        function renderBookmarks() {
+            const grid = document.getElementById('bookmarkGrid');
+            const emptyState = document.getElementById('emptyState');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const sortVal = document.getElementById('sortSelect').value;
+
+            // フィルタリング
+            let filtered = bookmarks.filter(b => {
+                const matchesFilter = 
+                    activeFilter === 'all' ? true :
+                    activeFilter === 'starred' ? b.starred :
+                    activeFilter === 'hasMedia' ? !!b.imageUrl : true;
+
+                const matchesTag = selectedTag ? (b.tags && b.tags.includes(selectedTag)) : true;
+
+                const matchesSearch = 
+                    (b.text && b.text.toLowerCase().includes(searchVal)) ||
+                    (b.authorName && b.authorName.toLowerCase().includes(searchVal)) ||
+                    (b.authorHandle && b.authorHandle.toLowerCase().includes(searchVal)) ||
+                    (b.notes && b.notes.toLowerCase().includes(searchVal));
+
+                return matchesFilter && matchesTag && matchesSearch;
+            });
+
+            if (currentViewMode === 'gallery') {
+                filtered = filtered.filter(b => !!b.imageUrl);
+            }
+
+            // ソート
+            filtered.sort((a, b) => {
+                if (sortVal === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+                if (sortVal === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+                return 0;
+            });
+
+            document.getElementById('displayedCount').textContent = filtered.length;
+            updateCounts();
+            renderTags();
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            if (currentViewMode === 'card') {
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+                grid.innerHTML = filtered.map(b => renderCardHtml(b)).join('');
+            } else if (currentViewMode === 'list') {
+                grid.className = "space-y-2";
+                grid.innerHTML = filtered.map(b => renderListHtml(b)).join('');
+            } else if (currentViewMode === 'gallery') {
+                grid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3";
+                grid.innerHTML = filtered.map(b => renderGalleryHtml(b)).join('');
+            }
+        }
+
+        function renderCardHtml(b) {
+            return `
+                <div class="bg-xCard rounded-2xl border border-xBorder p-4 flex flex-col justify-between hover:border-gray-500 transition shadow-md group">
+                    <div>
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-xBlue to-indigo-500 flex items-center justify-center font-bold text-white text-sm">
+                                    ${(b.authorName || 'X').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm text-gray-100 leading-tight">${escapeHtml(b.authorName || 'X User')}</div>
+                                    <div class="text-xs text-gray-400">${escapeHtml(b.authorHandle || '@user')}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="toggleStar('${b.id}')" class="p-1.5 rounded-lg text-gray-400 hover:text-amber-400 transition">
+                                    <i class="${b.starred ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+                                </button>
+                                <button onclick="editBookmark('${b.id}')" class="p-1.5 rounded-lg text-gray-400 hover:text-xBlue transition">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteBookmark('${b.id}')" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed mb-3">${escapeHtml(b.text)}</p>
+
+                        ${b.imageUrl ? `
+                            <div class="mb-3 rounded-xl overflow-hidden border border-xBorder bg-xDark max-h-48 flex items-center justify-center">
+                                <img src="${escapeHtml(b.imageUrl)}" onerror="this.src='https://placehold.co/600x300/1e2732/ffffff?text=Image+Load+Failed'" alt="Tweet Image" class="w-full h-full object-cover">
+                            </div>
+                        ` : ''}
+
+                        ${b.notes ? `
+                            <div class="mb-3 p-2.5 rounded-xl bg-xDark/80 border border-xBorder/60 text-xs text-gray-300">
+                                <span class="font-semibold text-xBlue"><i class="fa-regular fa-note-sticky mr-1"></i>メモ:</span> ${escapeHtml(b.notes)}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div>
+                        ${b.tags && b.tags.length > 0 ? `
+                            <div class="flex flex-wrap gap-1.5 mb-3">
+                                ${b.tags.map(t => `
+                                    <span onclick="selectedTag = '${escapeHtml(t)}'; renderBookmarks();" class="cursor-pointer text-[11px] bg-xBlue/10 text-xBlue hover:bg-xBlue/20 border border-xBlue/20 px-2 py-0.5 rounded-md transition">
+                                        #${escapeHtml(t)}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        <div class="pt-2 border-t border-xBorder/60 flex items-center justify-between text-xs text-gray-400">
+                            <span>${new Date(b.createdAt).toLocaleDateString('ja-JP')}</span>
+                            <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener noreferrer" class="text-xBlue hover:underline flex items-center font-medium">
+                                Xで開く <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderListHtml(b) {
+            return `
+                <div class="bg-xCard rounded-xl border border-xBorder px-4 py-2.5 flex items-center justify-between hover:border-gray-500 transition text-sm group">
+                    <div class="flex items-center space-x-3 overflow-hidden mr-2">
+                        <button onclick="toggleStar('${b.id}')" class="text-gray-400 hover:text-amber-400 transition flex-shrink-0">
+                            <i class="${b.starred ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+                        </button>
+                        ${b.imageUrl ? `<i class="fa-solid fa-image text-purple-400 text-xs flex-shrink-0" title="画像あり"></i>` : ''}
+                        
+                        <div class="truncate">
+                            <span class="font-semibold text-gray-200 mr-2">${escapeHtml(b.authorName)}:</span>
+                            <span class="text-gray-300 text-xs truncate">${escapeHtml(b.text)}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 flex-shrink-0 text-xs">
+                        <div class="hidden sm:flex gap-1">
+                            ${(b.tags || []).slice(0, 2).map(t => `<span class="bg-xDark px-2 py-0.5 rounded text-[10px] text-xBlue border border-xBorder">#${escapeHtml(t)}</span>`).join('')}
+                        </div>
+                        <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener noreferrer" class="text-xBlue hover:underline p-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                        <button onclick="editBookmark('${b.id}')" class="text-gray-400 hover:text-xBlue p-1">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="deleteBookmark('${b.id}')" class="text-gray-400 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGalleryHtml(b) {
+            return `
+                <div class="bg-xCard rounded-2xl border border-xBorder overflow-hidden hover:border-xBlue transition group flex flex-col justify-between">
+                    <div class="relative aspect-square bg-xDark overflow-hidden">
+                        <img src="${escapeHtml(b.imageUrl)}" onerror="this.src='https://placehold.co/400x400/1e2732/ffffff?text=No+Image'" alt="Tweet Image" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <button onclick="toggleStar('${b.id}')" class="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white hover:text-amber-400 backdrop-blur-sm transition">
+                            <i class="${b.starred ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+                        </button>
+                    </div>
+                    <div class="p-2.5 text-xs">
+                        <div class="font-bold text-gray-200 truncate mb-1">${escapeHtml(b.authorName)}</div>
+                        <p class="text-gray-400 line-clamp-2 text-[11px] mb-2">${escapeHtml(b.text)}</p>
+                        <div class="flex items-center justify-between border-t border-xBorder/60 pt-2 text-[10px] text-gray-500">
+                            <a href="${escapeHtml(b.url)}" target="_blank" class="text-xBlue hover:underline flex items-center">
+                                Xで開く <i class="fa-solid fa-external-link ml-1"></i>
+                            </a>
+                            <button onclick="editBookmark('${b.id}')" class="hover:text-white">編集</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTags() {
+            const tagContainer = document.getElementById('tagList');
+            const allTags = {};
+            
+            bookmarks.forEach(b => {
+                if (b.tags) {
+                    b.tags.forEach(t => {
+                        allTags[t] = (allTags[t] || 0) + 1;
+                    });
+                }
+            });
+
+            const tagsArray = Object.keys(allTags);
+
+            if (tagsArray.length === 0) {
+                tagContainer.innerHTML = '<span class="text-xs text-gray-500">タグは登録されていません</span>';
+                return;
+            }
+
+            tagContainer.innerHTML = tagsArray.map(t => {
+                const isSelected = selectedTag === t;
+                return `
+                    <button onclick="toggleTagFilter('${escapeHtml(t)}')" class="text-xs px-2.5 py-1 rounded-xl transition flex items-center space-x-1 ${isSelected ? 'bg-xBlue text-white font-bold' : 'bg-xDark text-gray-300 border border-xBorder hover:border-gray-500'}">
+                        <span>#${escapeHtml(t)}</span>
+                        <span class="text-[10px] opacity-75">(${allTags[t]})</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function toggleTagFilter(tag) {
+            selectedTag = (selectedTag === tag) ? '' : tag;
+            renderBookmarks();
+        }
+
+        function updateCounts() {
+            document.getElementById('count-all').textContent = bookmarks.length;
+            document.getElementById('count-starred').textContent = bookmarks.filter(b => b.starred).length;
+            document.getElementById('count-hasMedia').textContent = bookmarks.filter(b => b.imageUrl).length;
+        }
+
+        function setFilter(type) {
+            activeFilter = type;
+            ['all', 'starred', 'hasMedia'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (!btn) return;
+                if (f === type) {
+                    btn.className = "w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between bg-xBlue/10 text-xBlue";
+                } else {
+                    btn.className = "w-full text-left px-3 py-2 rounded-xl text-sm font-medium flex items-center justify-between text-gray-400 hover:bg-gray-800 transition";
+                }
+            });
+            renderBookmarks();
+        }
+
+        async function analyzeWithGemini() {
+            const text = document.getElementById('postText').value;
+            if (!text) {
+                alert('先にツイート本文を入力してください。');
+                return;
+            }
+
+            const loading = document.getElementById('aiLoading');
+            loading.classList.remove('hidden');
+
+            try {
+                const systemPrompt = "あなたはSNS投稿の整理アシスタントです。入力されたツイート本文を分析し、最も適切なタグ（3つ以内）と、自分用メモに使える要約・ポイント（1文）を抽出してください。JSON形式で出力してください。";
+                const userQuery = `ツイート本文:\n${text}`;
+                
+                const apiKey = ""; // APIキーを設定（必要に応じて）
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "tags": { type: "ARRAY", items: { type: "STRING" } },
+                                "summary": { type: "STRING" }
+                            },
+                            required: ["tags", "summary"]
+                        }
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const parsed = JSON.parse(result.candidates[0].content.parts[0].text);
+                    if (parsed.tags) {
+                        const currentTags = document.getElementById('tagsInput').value;
+                        const newTags = parsed.tags.join(', ');
+                        document.getElementById('tagsInput').value = currentTags ? `${currentTags}, ${newTags}` : newTags;
+                    }
+                    if (parsed.summary) {
+                        document.getElementById('userNotes').value = parsed.summary;
+                    }
+                }
+            } catch (err) {
+                console.error("AI分析エラー:", err);
+                alert("AI解析中にエラーが発生しました。");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        async function fetchUrlInfo(event) {
+            const urlInput = document.getElementById('postUrl').value;
+            if (!urlInput) {
+                alert('URLを入力してください。');
+                return;
+            }
+
+            // メタデータ取得API (Microlink) を使用
+            const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(urlInput)}`;
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>取得中';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('取得に失敗しました');
+                
+                const json = await response.json();
+                const data = json.data;
+
+                if (data) {
+                    // 投稿者名のセット
+                    if (data.author) {
+                        document.getElementById('authorName').value = data.author;
+                    }
+                    
+                    // URLからユーザーID (@ユーザー名) を抽出
+                    const match = urlInput.match(/https?:\/\/(twitter\.com|x\.com)\/([^/]+)/);
+                    if (match && match[2]) {
+                        document.getElementById('authorHandle').value = `@${match[2]}`;
+                    }
+
+                    // ツイート本文のセット
+                    if (data.description) {
+                        document.getElementById('postText').value = data.description;
+                    }
+
+                    // 画像URLがある場合はセット
+                    if (data.image && data.image.url) {
+                        document.getElementById('imageUrl').value = data.image.url;
+                    }
+                }
+            } catch (err) {
+                console.error('URL情報取得エラー:', err);
+                alert('URLからの情報取得に失敗しました。URLが正しいか確認してください。');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function saveBookmark(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const url = document.getElementById('postUrl').value;
+            const authorName = document.getElementById('authorName').value;
+            const authorHandle = document.getElementById('authorHandle').value;
+            const text = document.getElementById('postText').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+            const tagsRaw = document.getElementById('tagsInput').value;
+            const notes = document.getElementById('userNotes').value;
+
+            const tags = tagsRaw.split(/[,、]/).map(t => t.trim()).filter(t => t.length > 0);
+
+            if (editId) {
+                const idx = bookmarks.findIndex(b => b.id === editId);
+                if (idx !== -1) {
+                    bookmarks[idx] = {
+                        ...bookmarks[idx],
+                        url, authorName, authorHandle, text, imageUrl, tags, notes
+                    };
+                }
+            } else {
+                const newBookmark = {
+                    id: Date.now().toString(),
+                    url, authorName, authorHandle, text, imageUrl, tags, notes,
+                    starred: false,
+                    createdAt: new Date().toISOString()
+                };
+                bookmarks.unshift(newBookmark);
+            }
+
+            saveToLocalStorage();
+            closeModal();
+            renderBookmarks();
+        }
+
+        function toggleStar(id) {
+            const b = bookmarks.find(item => item.id === id);
+            if (b) {
+                b.starred = !b.starred;
+                saveToLocalStorage();
+                renderBookmarks();
+            }
+        }
+
+        function deleteBookmark(id) {
+            if (confirm('このブックマークを削除してもよろしいですか？')) {
+                bookmarks = bookmarks.filter(b => b.id !== id);
+                saveToLocalStorage();
+                renderBookmarks();
+            }
+        }
+
+        function editBookmark(id) {
+            const b = bookmarks.find(item => item.id === id);
+            if (!b) return;
+
+            document.getElementById('editId').value = b.id;
+            document.getElementById('postUrl').value = b.url || '';
+            document.getElementById('authorName').value = b.authorName || '';
+            document.getElementById('authorHandle').value = b.authorHandle || '';
+            document.getElementById('postText').value = b.text || '';
+            document.getElementById('imageUrl').value = b.imageUrl || '';
+            document.getElementById('tagsInput').value = b.tags ? b.tags.join(', ') : '';
+            document.getElementById('userNotes').value = b.notes || '';
+            document.getElementById('modalTitle').textContent = 'ブックマークを編集';
+
+            openModal();
+        }
+
+        function openModal() {
+            renderModalTags();
+            document.getElementById('bookmarkModal').classList.remove('hidden');
+        }
+
+        function renderModalTags() {
+            const container = document.getElementById('existingTagsContainer');
+            if (!container) return;
+
+            const allTags = new Set();
+            bookmarks.forEach(b => {
+                if (b.tags) b.tags.forEach(t => allTags.add(t));
+            });
+
+            if (allTags.size === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            const tagsHtml = Array.from(allTags).map(t => {
+                return `<button type="button" onclick="addTagToInput('${escapeHtml(t)}')" class="text-[10px] bg-xDark text-gray-300 border border-xBorder hover:border-xBlue hover:text-xBlue px-2 py-1 rounded-md transition">#${escapeHtml(t)}</button>`;
+            }).join('');
+            
+            container.innerHTML = `<div class="text-[10px] text-gray-500 w-full mb-0.5 flex items-center"><i class="fa-solid fa-tags mr-1"></i>既存のタグから選択:</div>${tagsHtml}`;
+        }
+
+        function addTagToInput(tag) {
+            const input = document.getElementById('tagsInput');
+            let currentTags = input.value.split(/[,、]/).map(t => t.trim()).filter(t => t.length > 0);
+            if (!currentTags.includes(tag)) {
+                currentTags.push(tag);
+                input.value = currentTags.join(', ');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('bookmarkModal').classList.add('hidden');
+            document.getElementById('bookmarkForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('modalTitle').textContent = 'ブックマークを登録';
+        }
+
+        function openBookmarkletModal() {
+            document.getElementById('bookmarkletModal').classList.remove('hidden');
+        }
+
+        function closeBookmarkletModal() {
+            document.getElementById('bookmarkletModal').classList.add('hidden');
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('x_bookmarks', JSON.stringify(bookmarks));
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bookmarks, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `x_bookmarks_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        bookmarks = imported;
+                        saveToLocalStorage();
+                        renderBookmarks();
+                        alert('データを正常に読み込みました！');
+                    } else {
+                        alert('無効なファイルフォーマットです。');
+                    }
+                } catch (err) {
+                    alert('JSONファイルの読み込みに失敗しました。');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadSampleData() {
+            bookmarks = [
+                {
+                    id: "1",
+                    url: "https://x.com/openai/status/123456789",
+                    authorName: "OpenAI",
+                    authorHandle: "@OpenAI",
+                    text: "新モデルの発表！コード生成とドキュメント整理の効率が劇的に向上しました。詳細な活用ガイドはこちらからご覧いただけます。",
+                    imageUrl: "https://placehold.co/600x300/1e2732/1d9bf0?text=AI+Update+News",
+                    tags: ["AI", "テクノロジー", "最新ニュース"],
+                    notes: "仕事の効率化ツールに活用できそう。",
+                    starred: true,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: "2",
+                    url: "https://x.com/tailwindui/status/987654321",
+                    authorName: "Tailwind CSS",
+                    authorHandle: "@tailwindcss",
+                    text: "UIデザインを高速化するための新しいコンポーネント集をリリースしました。ダークモードにも標準対応しています。",
+                    imageUrl: "",
+                    tags: ["デザイン", "CSS", "Web開発"],
+                    notes: "新しいWebアプリのスタイリングで参考にする。",
+                    starred: false,
+                    createdAt: new Date(Date.now() - 86400000).toISOString()
+                }
+            ];
+            saveToLocalStorage();
+            renderBookmarks();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
