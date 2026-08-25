@@ -1716,7 +1716,7 @@
             tocLevel: item.tocLevel,
             tocName: item.tocName,
             isCollapsed: item.isCollapsed,
-            text: item.isCommand ? item.text : undefined, // コマンドカードの場合はテキストも保存
+            text: item.text, // 常にテキストを保存（テキストファイルの完全復元や手動分割の復元に必須）
             insertAfterOriginal: item.isCommand ? prevOriginal : undefined
           };
         });
@@ -1882,7 +1882,7 @@
           processedItems = savedData.map(item => ({
             id: globalId++,
             original: item.original || item.text,
-            text: item.text,
+            text: item.text !== undefined ? item.text : (item.original || ""),
             bookmarked: !!item.bookmarked,
             note: item.note || '',
             page: item.page || 1,
@@ -3843,7 +3843,9 @@
     function handleCardTextKeydown(e, id) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault(); // デフォルトの改行を防ぐ
-        e.currentTarget.dataset.ignoreBlur = 'true';
+        
+        const targetItem = processedItems.find(i => i.id === id);
+        if (targetItem) targetItem._ignoreNextBlur = true;
         
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
@@ -3855,9 +3857,32 @@
         preRange.selectNodeContents(textElement);
         preRange.setEnd(range.startContainer, range.startOffset);
         
-        const beforeText = preRange.toString();
-        const fullText = textElement.innerText;
-        const afterText = fullText.substring(beforeText.length);
+        const postRange = range.cloneRange();
+        postRange.selectNodeContents(textElement);
+        postRange.setStart(range.endContainer, range.endOffset);
+        
+        function extractText(nodeOrRange) {
+          const div = document.createElement('div');
+          if (nodeOrRange.cloneContents) {
+            div.appendChild(nodeOrRange.cloneContents());
+          } else {
+            div.innerHTML = nodeOrRange.innerHTML;
+          }
+          const brs = div.querySelectorAll('br');
+          brs.forEach(br => br.replaceWith('\n'));
+          return div.textContent;
+        }
+        
+        // Chromeなどが末尾に自動付与する不可視の<br>由来の改行を除去して比較
+        const afterText = extractText(postRange).replace(/[\r\n]+$/, '');
+        const fullText = extractText(textElement).replace(/[\r\n]+$/, '');
+        
+        let beforeText = fullText;
+        if (fullText.endsWith(afterText)) {
+          beforeText = fullText.substring(0, fullText.length - afterText.length);
+        } else {
+          beforeText = extractText(preRange).replace(/[\r\n]+$/, '');
+        }
         
         if (!beforeText.trim() || !afterText.trim()) {
           showToast('分割不可', 'カーソルをテキストの中間に置いてください。', 'error');
@@ -3890,10 +3915,14 @@
     
     function handleCardTextBlur(e, id) {
       const textElement = e.currentTarget;
-      if (textElement.dataset.ignoreBlur) return;
+      
+      const item = processedItems.find(i => i.id === id);
+      if (item && item._ignoreNextBlur) {
+        item._ignoreNextBlur = false;
+        return;
+      }
       
       const newText = textElement.innerText;
-      const item = processedItems.find(i => i.id === id);
       if (item && item.text !== newText) {
         item.text = newText;
         item.furiganaHtml = undefined;
