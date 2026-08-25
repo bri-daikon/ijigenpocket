@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Calendar | 予定提出カレンダー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for UI -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas for saving as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/sscalendar.css">
+</head>
+<body data-theme="premium-glass" class="font-sans">
+
+    <!-- Header Section -->
+    <header class="main-header sticky top-0 z-20 p-4 shadow-md">
+        <div class="max-w-full mx-auto flex flex-wrap items-center justify-between gap-4 px-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="calendar"></i> 予定提出カレンダー
+                </h1>
+                <div class="flex items-center bg-black/10 rounded-lg p-1">
+                    <button onclick="changeDate(-1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-left"></i></button>
+                    <button onclick="goToToday()" class="px-4 py-1 text-sm font-medium hover:bg-black/10 rounded-md transition text-current">今日</button>
+                    <button onclick="changeDate(1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <h2 id="currentDateDisplay" class="text-lg font-bold"></h2>
+            </div>
+
+            <div class="flex flex-wrap gap-1 bg-black/10 p-1 rounded-xl">
+                <button onclick="setView('hourly')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="hourly">時間</button>
+                <button onclick="setView('day')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="day">1日</button>
+                <button onclick="setView('week')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="week">1週</button>
+                <button onclick="setView('2weeks')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="2weeks">2週</button>
+                <button onclick="setView('month')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="month">月</button>
+                <button onclick="setView('3months')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="3months">3ヶ月</button>
+                <button onclick="setView('year')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="year">年</button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="downloadBtn" onclick="downloadCalendarImage()" class="hidden border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> 画像で保存
+                </button>
+                <select id="themeSelect" onchange="setTheme(this.value)" class="outline-none cursor-pointer text-sm font-semibold">
+                    <option value="premium-glass">✨ プレミアム・ガラス</option>
+                    <option value="default">デフォルト</option>
+                    <option value="antique">アンティーク調</option>
+                    <option value="pastel-pink">パステルピンク</option>
+                    <option value="pastel-green">パステルグリーン</option>
+                    <option value="pastel-yellow">パステルイエロー</option>
+                    <option value="neon-pink">ネオンピンク</option>
+                    <option value="neon-blue">ネオンブルー</option>
+                    <option value="neon-green">ネオングリーン</option>
+                    <option value="black">ブラック</option>
+                    <option value="beige">ベージュ</option>
+                    <option value="rainbow">七色</option>
+                </select>
+                <button onclick="openCategoryModal()" class="border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="settings" class="w-4 h-4"></i> カテゴリ
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition shadow-md font-bold">
+                    <i data-lucide="plus"></i> 予定を追加
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="full-width-container mx-auto p-4" id="calendarContainer"></main>
+
+    <footer>
+        <p>Product by <a href="https://ijigenpocket.booth.pm/" target="_blank">異次元ポケット</a></p>
+    </footer>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="modalTitle">予定の登録</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">タイトル</label>
+                    <input type="text" id="eventTitle" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">カテゴリー</label>
+                    <select id="eventCategory" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 py-2">
+                    <input type="checkbox" id="eventAllDay" class="w-5 h-5 rounded cursor-pointer accent-blue-600" onchange="toggleTimeInputs()">
+                    <label for="eventAllDay" class="text-sm font-bold cursor-pointer">終日予定にする</label>
+                </div>
+                <div class="grid grid-cols-2 gap-4 border-t pt-4 border-gray-100">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始日</label>
+                        <input type="date" id="eventStartDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了日</label>
+                        <input type="date" id="eventEndDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div id="timeInputs" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始時間</label>
+                        <input type="time" id="eventStartTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了時間</label>
+                        <input type="time" id="eventEndTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">メモ</label>
+                    <textarea id="eventDescription" class="w-full border-gray-300 border rounded-lg p-3 h-24 outline-none resize-none" placeholder="メモを入力してください"></textarea>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button id="saveBtn" onclick="saveEvent()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">保存する</button>
+                    <button id="googleExportBtn" onclick="exportToGoogle()" class="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition text-sm font-bold">
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Google
+                    </button>
+                </div>
+                <div class="flex flex-col gap-2 pt-2">
+                    <button id="duplicateBtn" onclick="duplicateEvent()" class="w-full text-blue-500 text-sm font-bold hidden hover:underline">この予定を複製する</button>
+                    <button id="deleteBtn" onclick="deleteEvent()" class="w-full text-red-500 text-sm font-bold hidden hover:underline">この予定を削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">カテゴリ管理</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-xl space-y-3">
+                    <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider">新しいカテゴリを追加</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="newCatName" placeholder="カテゴリ名" class="flex-1 border rounded-lg p-2 outline-none">
+                        <input type="color" id="newCatColor" value="#3b82f6" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+                        <button onclick="addCategory()" class="bg-blue-600 text-white px-4 rounded-lg font-bold hover:bg-blue-700 transition">追加</button>
+                    </div>
+                </div>
+                <div id="categoryList" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/sscalendar.js"></script>
+</body>
+</html>
