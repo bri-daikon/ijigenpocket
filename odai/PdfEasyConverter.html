@@ -2741,9 +2741,21 @@
         lucide.createIcons({ root: document.getElementById('note-list') });
       }
     }
+    // 編集中に他の操作が行われた場合に、テキストエリアの内容を保持する
+    function syncEditState(id) {
+      const item = processedItems.find(i => i.id === id);
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      if (item && item.isEditing && ta) {
+        if (item.text !== ta.value) {
+          item.text = ta.value;
+          item.furiganaHtml = undefined;
+        }
+      }
+    }
 
     // カードのタブ設定を更新
     function updateCardTab(id, tabName) {
+      syncEditState(id);
       const item = processedItems.find(i => i.id === id);
       if (item) {
         item.tabName = tabName;
@@ -2757,6 +2769,7 @@
 
     // カードの発言者設定を更新
     function updateCardChar(id, charName) {
+      syncEditState(id);
       const item = processedItems.find(i => i.id === id);
       if (item) {
         item.charName = charName;
@@ -3941,6 +3954,7 @@
       renderList();
     }
     function toggleCollapse(id) {
+      syncEditState(id);
       const item = processedItems.find(i => i.id === id);
       if (item && item.isToc) {
         item.isCollapsed = !item.isCollapsed;
@@ -3950,6 +3964,7 @@
     }
 
     function changeTocLevel(id, delta) {
+      syncEditState(id);
       const item = processedItems.find(i => i.id === id);
       if (item && item.isToc) {
         item.tocLevel = (item.tocLevel || 1) + delta;
