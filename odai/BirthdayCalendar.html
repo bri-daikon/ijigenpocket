@@ -68,6 +68,10 @@
                     <i data-lucide="arrow-left" class="w-4 h-4 sm:mr-1"></i>
                     <span class="hidden sm:inline">調書に戻る</span>
                 </a>
+                <button onclick="exportToSSCalendar()" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-rose-950/40 text-rose-400 text-sm font-bold rounded-lg border border-rose-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 sm:mr-1"></i>
+                    <span class="hidden sm:inline">カレンダーへ転記</span>
+                </button>
             </div>
         </div>
     </header>
@@ -258,6 +262,83 @@
                     '"': '&quot;'
                 }[tag] || tag)
             );
+        }
+
+        function exportToSSCalendar() {
+            if (!confirm('SSCalendar（予定提出カレンダー）に誕生日を登録しますか？\n（昨年、今年、来年の3年分の予定として追加されます）')) return;
+
+            let allChars = [];
+            try {
+                const globalData = localStorage.getItem('weby_trpg_characters');
+                if (globalData) {
+                    allChars = JSON.parse(globalData);
+                } else {
+                    const localData = localStorage.getItem('weby_profile_targets');
+                    if (localData) {
+                        allChars = JSON.parse(localData);
+                    }
+                }
+            } catch (e) {
+                console.error("データの読み込みに失敗", e);
+                return;
+            }
+
+            let events = JSON.parse(localStorage.getItem('weby_events') || '[]');
+            let categories = JSON.parse(localStorage.getItem('weby_categories') || '[]');
+            
+            let birthdayCat = categories.find(c => c.name === '誕生日' || c.id === 'birthday');
+            if (!birthdayCat) {
+                birthdayCat = { id: 'birthday', name: '誕生日', color: '#f43f5e' };
+                categories.push(birthdayCat);
+                localStorage.setItem('weby_categories', JSON.stringify(categories));
+            }
+
+            const currentYear = new Date().getFullYear();
+            const targetYears = [currentYear - 1, currentYear, currentYear + 1];
+            let addedCount = 0;
+
+            allChars.forEach(char => {
+                const profile = char.profile || {};
+                const bdayStr = profile.birthday || '';
+                
+                const matches = bdayStr.match(/([0-9]{1,2})[^0-9]+([0-9]{1,2})/);
+                if (matches && matches.length >= 3) {
+                    const month = parseInt(matches[1], 10);
+                    const day = parseInt(matches[2], 10);
+                    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                        const monthStr = String(month).padStart(2, '0');
+                        const dayStr = String(day).padStart(2, '0');
+                        const title = `🎂 ${char.name}の誕生日`;
+
+                        targetYears.forEach(year => {
+                            const dateStr = `${year}-${monthStr}-${dayStr}`;
+                            const exists = events.some(e => e.title === title && e.start === dateStr);
+                            if (!exists) {
+                                events.push({
+                                    id: 'bday_' + char.id + '_' + year,
+                                    title: title,
+                                    start: dateStr,
+                                    end: dateStr,
+                                    startTime: '',
+                                    endTime: '',
+                                    category: birthdayCat.id,
+                                    isAllDay: true,
+                                    description: `誕生日：${bdayStr}\n自動転記された誕生日予定です。`
+                                });
+                                addedCount++;
+                            }
+                        });
+                    }
+                }
+            });
+            
+            if (addedCount > 0) {
+                localStorage.setItem('weby_events', JSON.stringify(events));
+                const charCount = Math.floor(addedCount / targetYears.length);
+                alert(`${charCount}人分の誕生日をカレンダーに転記しました！\nSSCalendarを開いて確認してください。`);
+            } else {
+                alert('転記できる新しい誕生日データがありませんでした。');
+            }
         }
     </script>
 </body>
