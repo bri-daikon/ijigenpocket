@@ -371,6 +371,14 @@
     </style>
 </head>
 <body>
+    <datalist id="roleOptions">
+        <option value="KP"></option>
+        <option value="GM"></option>
+        <option value="DL"></option>
+        <option value="SKP"></option>
+        <option value="KPC"></option>
+    </datalist>
+
     <div class="bg-animations">
         <div class="bg-shape shape-1"></div>
         <div class="bg-shape shape-2"></div>
@@ -682,13 +690,7 @@
                 const el = document.createElement('div');
                 el.className = 'list-item';
                 el.innerHTML = `
-                    <select onchange="updateGM(${index}, 'role', this.value)">
-                        <option value="KP" ${gm.role === 'KP' ? 'selected' : ''}>KP</option>
-                        <option value="GM" ${gm.role === 'GM' ? 'selected' : ''}>GM</option>
-                        <option value="DL" ${gm.role === 'DL' ? 'selected' : ''}>DL</option>
-                        <option value="SKP" ${gm.role === 'SKP' ? 'selected' : ''}>SKP</option>
-                        <option value="KPC" ${gm.role === 'KPC' ? 'selected' : ''}>KPC</option>
-                    </select>
+                    <input type="text" list="roleOptions" placeholder="役職" value="${gm.role}" style="width:100px;flex:none;" oninput="updateGM(${index}, 'role', this.value)">
                     <input type="text" placeholder="名前" value="${gm.name}" oninput="updateGM(${index}, 'name', this.value)">
                     <button class="btn-icon" onclick="removeGM(${index})" title="削除">×</button>
                 `;
