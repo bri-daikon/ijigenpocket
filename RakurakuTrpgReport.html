@@ -481,7 +481,16 @@
 
             <!-- PCs / PLs -->
             <div class="form-group">
-                <label>参加者 (PC / PL)</label>
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 0.5rem;">
+                    <label style="margin-bottom:0;">参加者 (PC / PL)</label>
+                    <button type="button" style="font-size:0.75rem; background:#eff6ff; color:#4f46e5; border:none; padding:2px 8px; border-radius:4px; cursor:pointer;" onclick="document.getElementById('ccfoliaImportArea').style.display = document.getElementById('ccfoliaImportArea').style.display === 'none' ? 'block' : 'none'">ココフォリアから追加</button>
+                </div>
+                
+                <div id="ccfoliaImportArea" style="display:none; margin-bottom:1rem; padding:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.5rem;">
+                    <p style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem; margin-top:0;">ココフォリアでキャラクターを右クリック→「コピー」し、下に貼り付けてください。</p>
+                    <textarea style="width:100%; font-size:0.75rem; font-family:monospace; height:4rem; padding:0.5rem; border:1px solid #cbd5e1; border-radius:0.25rem; resize:vertical; box-sizing:border-box;" placeholder='{"kind":"character","data":{...}}' oninput="handleCcfoliaPaste(this)"></textarea>
+                </div>
+
                 <div id="plList" class="list-container">
                     <!-- Dynamic items -->
                 </div>
@@ -683,15 +692,28 @@
         const gmList = document.getElementById('gmList');
         const plList = document.getElementById('plList');
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/\r?\n/g, ' '); // 改行はスペースに変換
+        }
+
         // Render GM/PL lists
         function renderGMList() {
             gmList.innerHTML = '';
             gms.forEach((gm, index) => {
                 const el = document.createElement('div');
                 el.className = 'list-item';
+                const role = escapeHtml(gm.role);
+                const name = escapeHtml(gm.name);
                 el.innerHTML = `
-                    <input type="text" list="roleOptions" placeholder="役職" value="${gm.role}" style="width:100px;flex:none;" oninput="updateGM(${index}, 'role', this.value)">
-                    <input type="text" placeholder="名前" value="${gm.name}" oninput="updateGM(${index}, 'name', this.value)">
+                    <input type="text" list="roleOptions" placeholder="役職" value="${role}" style="width:100px;flex:none;" oninput="updateGM(${index}, 'role', this.value)">
+                    <input type="text" placeholder="名前" value="${name}" oninput="updateGM(${index}, 'name', this.value)">
                     <button class="btn-icon" onclick="removeGM(${index})" title="削除">×</button>
                 `;
                 gmList.appendChild(el);
@@ -703,11 +725,14 @@
             pls.forEach((pl, index) => {
                 const el = document.createElement('div');
                 el.className = 'list-item';
+                const ho = escapeHtml(pl.ho);
+                const pc = escapeHtml(pl.pcName);
+                const plName = escapeHtml(pl.plName);
                 el.innerHTML = `
-                    <input type="text" placeholder="HOなど (例:HO1)" value="${pl.ho}" style="width:100px;flex:none;" oninput="updatePL(${index}, 'ho', this.value)">
+                    <input type="text" placeholder="HOなど (例:HO1)" value="${ho}" style="width:100px;flex:none;" oninput="updatePL(${index}, 'ho', this.value)">
                     <div class="pl-item-inputs">
-                        <input type="text" placeholder="PC名" value="${pl.pcName}" oninput="updatePL(${index}, 'pcName', this.value)">
-                        <input type="text" placeholder="PL名" value="${pl.plName}" oninput="updatePL(${index}, 'plName', this.value)">
+                        <input type="text" placeholder="PC名" value="${pc}" oninput="updatePL(${index}, 'pcName', this.value)">
+                        <input type="text" placeholder="PL名" value="${plName}" oninput="updatePL(${index}, 'plName', this.value)">
                     </div>
                     <button class="btn-icon" onclick="removePL(${index})" title="削除">×</button>
                 `;
@@ -790,6 +815,87 @@
             const text = encodeURIComponent(previewTextarea.value);
             window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
         };
+
+        // Ccfolia Import handler
+        function handleCcfoliaPaste(el) {
+            // setTimeout to ensure paste event has populated the value
+            setTimeout(() => {
+                const text = el.value.trim();
+                if(!text) return;
+
+                // 共通の追加処理（空枠があれば上書き、なければ追加）
+                const addOrUpdatePL = (pcName, plName) => {
+                    const emptyIndex = pls.findIndex(p => !p.pcName && !p.plName);
+                    if (emptyIndex !== -1) {
+                        pls[emptyIndex].pcName = pcName;
+                        pls[emptyIndex].plName = plName;
+                    } else {
+                        const lastHo = pls.length > 0 ? pls[pls.length-1].ho : '';
+                        let nextHo = '';
+                        const hoMatch = lastHo.match(/(HO)(\d+)/i);
+                        if(hoMatch) nextHo = hoMatch[1] + (parseInt(hoMatch[2]) + 1);
+                        pls.push({ ho: nextHo, pcName: pcName, plName: plName });
+                    }
+                };
+
+                try {
+                    const json = JSON.parse(text);
+                    let added = false;
+                    
+                    const processChar = (data) => {
+                        let name = data.name ? data.name.trim() : '';
+                        
+                        // 名前を空白にして非表示にするテクニック対策として、名前が空ならメモの1行目を取得
+                        if (!name && data.memo) {
+                            const lines = data.memo.split('\n').map(l => l.trim()).filter(l => l);
+                            if (lines.length > 0) {
+                                name = lines[0];
+                            }
+                        }
+                        if (!name) name = '名無し';
+
+                        let plName = '';
+                        if (data.memo) {
+                            const match = data.memo.match(/(?:PL|プレイヤー)[:：]\s*([^\n]+)/i);
+                            if (match) {
+                                plName = match[1].trim();
+                            }
+                        }
+                        addOrUpdatePL(name, plName);
+                        added = true;
+                    };
+
+                    if (json.kind === 'character' && json.data) {
+                        processChar(json.data);
+                    } else if (Array.isArray(json)) {
+                        json.forEach(item => {
+                            if (item.kind === 'character' && item.data) processChar(item.data);
+                        });
+                    } else if (json.data && Array.isArray(json.data) && json.kind === 'characters') {
+                        json.data.forEach(char => processChar(char));
+                    }
+
+                    if (added) {
+                        renderPLList();
+                        generatePreview();
+                        el.value = '';
+                    } else {
+                        throw new Error("Not a ccfolia JSON");
+                    }
+                } catch(e) {
+                    // JSONでパースできなかった場合は、改行区切りのプレーンテキストとして処理
+                    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                    if (lines.length > 0) {
+                        lines.forEach(line => {
+                            addOrUpdatePL(line, '');
+                        });
+                        renderPLList();
+                        generatePreview();
+                        el.value = '';
+                    }
+                }
+            }, 10);
+        }
 
         // Init
         renderGMList();
