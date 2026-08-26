@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>楽々TRPG卓報告</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(15, 23, 42, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Animated background elements */
+        .bg-animations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 15s infinite ease-in-out alternate;
+            opacity: 0.5;
+        }
+
+        .shape-1 {
+            width: 45vw;
+            height: 45vw;
+            background: rgba(59, 130, 246, 0.25);
+            top: -10%;
+            left: -10%;
+        }
+
+        .shape-2 {
+            width: 50vw;
+            height: 50vw;
+            background: rgba(139, 92, 246, 0.2);
+            bottom: -20%;
+            right: -10%;
+            animation-delay: -5s;
+            animation-duration: 20s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 30px) scale(1.05); }
+            100% { transform: translate(-20px, 60px) scale(1.1); }
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.05em;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--glass-shadow);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row > * {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        select option {
+            background-color: #0f172a;
+            color: #fff;
+        }
+
+        /* Dynamic Lists */
+        .list-container {
+            margin-top: 0.5rem;
+        }
+        
+        .list-item {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .list-item input[type="text"] {
+            flex: 1;
+        }
+        
+        .list-item select {
+            width: 100px;
+            flex: none;
+        }
+
+        .pl-item-inputs {
+            display: flex;
+            flex: 1;
+            gap: 0.25rem;
+        }
+
+        .btn-icon {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+        }
+        
+        .btn-add {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.2);
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            border-style: dashed;
+            transition: all 0.2s;
+        }
+        
+        .btn-add:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* Preview area */
+        .preview-area {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .preview-card {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        #previewTextarea {
+            width: 100%;
+            height: 400px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        
+        #previewTextarea:focus {
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .decoration-panel {
+            background: rgba(0,0,0,0.15);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .decoration-panel h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animations">
+        <div class="bg-shape shape-1"></div>
+        <div class="bg-shape shape-2"></div>
+    </div>
+
+    <header>
+        <h1>楽々TRPG卓報告</h1>
+        <p class="subtitle">モダンで美しいUIで、X(Twitter)向けの卓報告文を簡単に作成</p>
+    </header>
+
+    <main>
+        <!-- Left: Input Form -->
+        <section class="glass-panel" id="inputPanel">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                入力情報
+            </h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>卓報告テンプレート</label>
+                    <select id="tplSelect">
+                        <option value="classic">クラシック（標準・読みやすい）</option>
+                        <option value="simple">シンプル（要素少なめ）</option>
+                        <option value="emo">エモ（雰囲気重視）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>英数字フォント (X用装飾)</label>
+                    <select id="fontStyle">
+                        <option value="normal">標準</option>
+                        <option value="sans-bold">𝗦𝗮𝗻𝘀 𝗕𝗼𝗹𝗱 (太字)</option>
+                        <option value="sans-italic">𝘚𝘢𝘯𝘴 𝘐𝘵𝘢𝘭𝘪𝘤 (斜体)</option>
+                        <option value="serif-bold-italic">𝑺𝒆𝒓𝒊𝒇 𝑩𝒐𝒍𝒅 𝑰𝒕𝒂𝒍𝒊𝒄</option>
+                        <option value="monospace">𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (等幅)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>システム</label>
+                    <input type="text" id="systemName" placeholder="例：クトゥルフ神話TRPG" value="Call of Cthulhu">
+                </div>
+                <div class="form-group">
+                    <label>作者 / 作</label>
+                    <input type="text" id="authorName" placeholder="例：〇〇様">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>シナリオ名</label>
+                    <input type="text" id="scenarioName" placeholder="シナリオ名を入力">
+                </div>
+                <div class="form-group">
+                    <label>通過 / END / 結果</label>
+                    <input type="text" id="endResult" placeholder="例：END A 両生還">
+                </div>
+            </div>
+
+            <div class="decoration-panel">
+                <h3>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                    装飾マーク設定
+                </h3>
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>区切り線</label>
+                        <select id="decLine">
+                            <option value="----------------">----------------</option>
+                            <option value="───────">───────</option>
+                            <option value="═══════">═══════</option>
+                            <option value="✦ ✦ ✦ ✦ ✦">✦ ✦ ✦ ✦ ✦</option>
+                            <option value="///////////////">///////////////</option>
+                            <option value=" ">（なし）</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>リスト記号</label>
+                        <select id="decMark">
+                            <option value="">（なし）</option>
+                            <option value="✦">✦ ✧</option>
+                            <option value="◆">◆ ◇</option>
+                            <option value="🎲">🎲 📖</option>
+                            <option value="⚙️">⚙️ 💡</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GMs / KPs -->
+            <div class="form-group">
+                <label>進行役 (GM / KP / DL / 等)</label>
+                <div id="gmList" class="list-container">
+                    <!-- Dynamic items -->
+                </div>
+                <button type="button" class="btn-add" onclick="addGM()">+ 進行役を追加</button>
+            </div>
+
+            <!-- PCs / PLs -->
+            <div class="form-group">
+                <label>参加者 (PC / PL)</label>
+                <div id="plList" class="list-container">
+                    <!-- Dynamic items -->
+                </div>
+                <button type="button" class="btn-add" onclick="addPL()">+ 参加者を追加</button>
+            </div>
+            
+            <div class="form-group">
+                <label>日付</label>
+                <input type="text" id="sessionDate" placeholder="例：2026.08.26">
+            </div>
+
+            <div class="form-group">
+                <label>フリーメモ / 感想</label>
+                <textarea id="freeMemo" rows="3" placeholder="感想などを入力..."></textarea>
+            </div>
+        </section>
+
+        <!-- Right: Preview -->
+        <section class="glass-panel preview-area">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                プレビュー / 編集
+            </h2>
+
+            <div class="preview-card">
+                <textarea id="previewTextarea" spellcheck="false"></textarea>
+            </div>
+            
+            <div class="char-count" id="charCount">0 / 140</div>
+
+            <div class="actions" style="margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="copyToClipboard()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    コピー
+                </button>
+                <button class="btn btn-primary" onclick="postToX()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    𝕏 に投稿
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">コピーしました！</div>
+
+    <script>
+        // Data models
+        let gms = [{ role: 'KP', name: '' }];
+        let pls = [{ ho: 'HO1', pcName: '', plName: '' }];
+        let userEditedText = null;
+
+        function getMarks(markType) {
+            switch(markType) {
+                case '✦': return { main: '✦', sub: '✧' };
+                case '◆': return { main: '◆', sub: '◇' };
+                case '🎲': return { main: '🎲', sub: '📖' };
+                case '⚙️': return { main: '⚙️', sub: '💡' };
+                default: return { main: '', sub: '' };
+            }
+        }
+
+        function formatPlLine(pl, mark) {
+            let line = '';
+            if (pl.ho) line += `${pl.ho} `;
+            if (mark) line += `${mark} `;
+            if (pl.pcName && pl.plName) {
+                line += `${pl.pcName} / ${pl.plName}`;
+            } else if (pl.pcName) {
+                line += pl.pcName;
+            } else if (pl.plName) {
+                line += `PL: ${pl.plName}`;
+            }
+            return line.trim();
+        }
+
+        function convertFont(text, style) {
+            if (style === 'normal' || !text) return text;
+            
+            const maps = {
+                'sans-bold': {
+                    upper: 0x1D5D4 - 0x41, lower: 0x1D5EE - 0x61, digit: 0x1D7EC - 0x30
+                },
+                'sans-italic': {
+                    upper: 0x1D608 - 0x41, lower: 0x1D622 - 0x61, digit: 0
+                },
+                'serif-bold-italic': {
+                    upper: 0x1D468 - 0x41, lower: 0x1D482 - 0x61, digit: 0
+                },
+                'monospace': {
+                    upper: 0x1D670 - 0x41, lower: 0x1D68A - 0x61, digit: 0x1D7F6 - 0x30
+                }
+            };
+            
+            const m = maps[style];
+            if(!m) return text;
+
+            return Array.from(text).map(char => {
+                const code = char.charCodeAt(0);
+                if (code >= 0x41 && code <= 0x5A) return String.fromCodePoint(code + m.upper);
+                if (code >= 0x61 && code <= 0x7A) return String.fromCodePoint(code + m.lower);
+                if (m.digit && code >= 0x30 && code <= 0x39) return String.fromCodePoint(code + m.digit);
+                return char;
+            }).join('');
+        }
+
+        // Templates
+        const templates = {
+            classic: (data) => {
+                let text = `【${data.system}】\n`;
+                if(data.scenario) text += `「${data.scenario}」\n`;
+                if(data.author) text += `作：${data.author}\n`;
+                text += `\n`;
+                
+                if(data.line && data.line !== " ") text += `${data.line}\n`;
+                if(data.end) text += `${data.end}\n`;
+                if(data.line && data.line !== " ") text += `${data.line}\n\n`;
+                
+                const marks = getMarks(data.mark);
+                const gmMark = marks.main ? marks.main + ' ' : '';
+                
+                data.gms.forEach(gm => {
+                    if(gm.name) text += `${gm.role}: ${gmMark}${gm.name}\n`;
+                });
+                
+                text += `\n`;
+                data.pls.forEach(pl => {
+                    if(pl.pcName || pl.plName) {
+                        text += formatPlLine(pl, marks.sub) + `\n`;
+                    }
+                });
+                
+                text += `\n`;
+                if(data.date) text += `(${data.date})\n`;
+                if(data.memo) text += `\n${data.memo}\n`;
+                
+                return text;
+            },
+            simple: (data) => {
+                let text = `🎲 ${data.system}\n`;
+                if(data.scenario) text += `📖 ${data.scenario}\n`;
+                if(data.author) text += `🖊️ ${data.author}\n`;
+                if(data.date) text += `📅 ${data.date}\n`;
+                text += `\n`;
+                
+                let gmLines = data.gms.filter(gm => gm.name).map(gm => `${gm.role}: ${gm.name}`);
+                if(gmLines.length) text += gmLines.join(' / ') + `\n`;
+                
+                let plLines = data.pls.filter(pl => pl.pcName || pl.plName).map(pl => {
+                    let parts = [];
+                    if(pl.pcName) parts.push(pl.pcName);
+                    if(pl.plName) parts.push(pl.plName);
+                    return pl.ho ? `${pl.ho}.${parts.join('/')}` : parts.join('/');
+                });
+                if(plLines.length) text += `PL: ` + plLines.join(' / ') + `\n`;
+                
+                if(data.end || data.memo) text += `\n`;
+                if(data.line && data.line !== " " && data.end) text += `${data.line}\n`;
+                if(data.end) text += `[ ${data.end} ]\n`;
+                if(data.line && data.line !== " " && data.end) text += `${data.line}\n`;
+                if(data.memo) text += `\n${data.memo}\n`;
+                
+                return text;
+            },
+            emo: (data) => {
+                const marks = getMarks(data.mark) || {main: '✦', sub: '✧'};
+                const m1 = marks.main || '✦';
+                const m2 = marks.sub || '✧';
+                
+                let text = `${m1} ${data.system}\n`;
+                if(data.scenario) text += `『${data.scenario}』\n`;
+                if(data.author) text += `作：${data.author}\n`;
+                text += `\n`;
+                
+                const line = (data.line && data.line !== " ") ? data.line : '───────';
+                
+                if(data.end) text += `${line}\n${data.end}\n${line}\n\n`;
+                
+                data.gms.forEach(gm => {
+                    if(gm.name) text += `${gm.role} ${m1} ${gm.name}\n`;
+                });
+                data.pls.forEach(pl => {
+                    if(pl.pcName || pl.plName) {
+                        text += formatPlLine(pl, m2) + `\n`;
+                    }
+                });
+                
+                text += `\n`;
+                if(data.date) text += `${data.date}\n`;
+                if(data.memo) text += `\n${data.memo}\n`;
+                
+                return text;
+            }
+        };
+
+        // DOM Elements
+        const formInputs = document.querySelectorAll('input, textarea, select');
+        const previewTextarea = document.getElementById('previewTextarea');
+        const charCount = document.getElementById('charCount');
+        const gmList = document.getElementById('gmList');
+        const plList = document.getElementById('plList');
+
+        // Render GM/PL lists
+        function renderGMList() {
+            gmList.innerHTML = '';
+            gms.forEach((gm, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                el.innerHTML = `
+                    <select onchange="updateGM(${index}, 'role', this.value)">
+                        <option value="KP" ${gm.role === 'KP' ? 'selected' : ''}>KP</option>
+                        <option value="GM" ${gm.role === 'GM' ? 'selected' : ''}>GM</option>
+                        <option value="DL" ${gm.role === 'DL' ? 'selected' : ''}>DL</option>
+                        <option value="SKP" ${gm.role === 'SKP' ? 'selected' : ''}>SKP</option>
+                        <option value="KPC" ${gm.role === 'KPC' ? 'selected' : ''}>KPC</option>
+                    </select>
+                    <input type="text" placeholder="名前" value="${gm.name}" oninput="updateGM(${index}, 'name', this.value)">
+                    <button class="btn-icon" onclick="removeGM(${index})" title="削除">×</button>
+                `;
+                gmList.appendChild(el);
+            });
+        }
+
+        function renderPLList() {
+            plList.innerHTML = '';
+            pls.forEach((pl, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                el.innerHTML = `
+                    <input type="text" placeholder="HOなど (例:HO1)" value="${pl.ho}" style="width:100px;flex:none;" oninput="updatePL(${index}, 'ho', this.value)">
+                    <div class="pl-item-inputs">
+                        <input type="text" placeholder="PC名" value="${pl.pcName}" oninput="updatePL(${index}, 'pcName', this.value)">
+                        <input type="text" placeholder="PL名" value="${pl.plName}" oninput="updatePL(${index}, 'plName', this.value)">
+                    </div>
+                    <button class="btn-icon" onclick="removePL(${index})" title="削除">×</button>
+                `;
+                plList.appendChild(el);
+            });
+        }
+
+        // List Operations
+        window.addGM = () => { gms.push({ role: 'KP', name: '' }); renderGMList(); generatePreview(); };
+        window.removeGM = (index) => { gms.splice(index, 1); renderGMList(); generatePreview(); };
+        window.updateGM = (index, field, value) => { gms[index][field] = value; generatePreview(); };
+
+        window.addPL = () => { 
+            const lastHo = pls.length > 0 ? pls[pls.length-1].ho : '';
+            let nextHo = '';
+            const match = lastHo.match(/(HO)(\d+)/i);
+            if(match) nextHo = match[1] + (parseInt(match[2]) + 1);
+            pls.push({ ho: nextHo, pcName: '', plName: '' }); 
+            renderPLList(); 
+            generatePreview(); 
+        };
+        window.removePL = (index) => { pls.splice(index, 1); renderPLList(); generatePreview(); };
+        window.updatePL = (index, field, value) => { pls[index][field] = value; generatePreview(); };
+
+        // Generate Text
+        function generatePreview() {
+            if(userEditedText !== null) return; // Prevent overwriting user edits
+
+            const tpl = document.getElementById('tplSelect').value;
+            const fontStyle = document.getElementById('fontStyle').value;
+            
+            const data = {
+                system: document.getElementById('systemName').value,
+                author: document.getElementById('authorName').value,
+                scenario: document.getElementById('scenarioName').value,
+                end: document.getElementById('endResult').value,
+                date: document.getElementById('sessionDate').value,
+                memo: document.getElementById('freeMemo').value,
+                line: document.getElementById('decLine').value,
+                mark: document.getElementById('decMark').value,
+                gms: gms,
+                pls: pls
+            };
+
+            let text = templates[tpl](data);
+            text = convertFont(text, fontStyle);
+            
+            previewTextarea.value = text;
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            const count = previewTextarea.value.length;
+            charCount.textContent = `${count} / 140 (全角目安)`;
+        }
+
+        // Setup Event Listeners
+        document.querySelectorAll('input:not(.list-item input), textarea:not(#previewTextarea), select:not(.list-item select)').forEach(el => {
+            el.addEventListener('input', () => {
+                userEditedText = null;
+                generatePreview();
+            });
+        });
+
+        previewTextarea.addEventListener('input', () => {
+            userEditedText = previewTextarea.value;
+            updateCharCount();
+        });
+
+        // Actions
+        window.copyToClipboard = () => {
+            navigator.clipboard.writeText(previewTextarea.value).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            });
+        };
+
+        window.postToX = () => {
+            const text = encodeURIComponent(previewTextarea.value);
+            window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+        };
+
+        // Init
+        renderGMList();
+        renderPLList();
+        
+        // Auto-set today's date
+        const today = new Date();
+        document.getElementById('sessionDate').value = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+        
+        generatePreview();
+    </script>
+</body>
+</html>
