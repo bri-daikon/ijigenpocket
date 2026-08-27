@@ -156,7 +156,7 @@ function renderBoard() {
     // Get unique categories and their latest colors
     const categoryColors = {};
     const categorySet = new Set();
-    const sortedNotesForColors = [...notes].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const sortedNotesForColors = [...notes].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
     
     sortedNotesForColors.forEach(note => {
         const cat = note.category || '未分類';
@@ -224,9 +224,12 @@ function renderBoard() {
     }
     
     // Sort descending
-    filteredNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    filteredNotes.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
     // 4. Render Note Cards
+    const fragment = document.createDocumentFragment();
+    const nowMs = Date.now();
+
     filteredNotes.forEach(note => {
         const card = document.createElement('div');
         card.className = 'note-card';
@@ -238,7 +241,6 @@ function renderBoard() {
         
         const dateStr = new Date(note.updatedAt).toLocaleString('ja-JP');
         
-        const nowMs = new Date().getTime();
         const createdMs = new Date(note.createdAt || note.updatedAt).getTime();
         const updatedMs = new Date(note.updatedAt).getTime();
         const daysSinceCreated = (nowMs - createdMs) / (1000 * 60 * 60 * 24);
@@ -295,8 +297,10 @@ function renderBoard() {
             }
         });
 
-        boardContainer.appendChild(card);
+        fragment.appendChild(card);
     });
+    
+    boardContainer.appendChild(fragment);
 }
 
 // Modal Management
@@ -356,7 +360,7 @@ function setupEventListeners() {
         if (selectedCategory) {
             const matchingNotes = notes.filter(n => (n.category || '未分類') === selectedCategory);
             if (matchingNotes.length > 0) {
-                matchingNotes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                matchingNotes.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
                 if (matchingNotes[0].color) {
                     noteColorInput.value = matchingNotes[0].color;
                 }
