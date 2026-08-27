@@ -56,12 +56,15 @@ const noteUrlInput = document.getElementById('note-url');
 const noteColorInput = document.getElementById('note-color');
 const modalTitle = document.getElementById('modal-title');
 
-// Initialize
 function init() {
     loadTheme();
     
+    // まずローカルストレージから読み込んで即座に表示（表示の高速化＆オフライン/エラー時の対策）
+    loadFromLocal();
+    renderBoard();
+    
     if (useFirebase && db) {
-        // Firebase Sync
+        // Firebase Sync (データが取得できたら上書きして再描画)
         db.collection("notes").onSnapshot((snapshot) => {
             const fetchedNotes = [];
             snapshot.forEach((doc) => {
@@ -70,11 +73,9 @@ function init() {
             notes = fetchedNotes;
             saveToLocal(); // Backup locally
             renderBoard();
+        }, (error) => {
+            console.error("Firebaseの同期中にエラーが発生しました:", error);
         });
-    } else {
-        // Local Only
-        loadFromLocal();
-        renderBoard();
     }
     
     setupEventListeners();
