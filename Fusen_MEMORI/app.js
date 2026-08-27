@@ -156,7 +156,11 @@ function renderBoard() {
     // Get unique categories and their latest colors
     const categoryColors = {};
     const categorySet = new Set();
-    const sortedNotesForColors = [...notes].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    const sortedNotesForColors = [...notes].sort((a, b) => {
+        const timeA = new Date(a.updatedAt).getTime() || 0;
+        const timeB = new Date(b.updatedAt).getTime() || 0;
+        return timeB - timeA;
+    });
     
     sortedNotesForColors.forEach(note => {
         const cat = note.category || '未分類';
@@ -224,7 +228,11 @@ function renderBoard() {
     }
     
     // Sort descending
-    filteredNotes.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    filteredNotes.sort((a, b) => {
+        const timeA = new Date(a.updatedAt).getTime() || 0;
+        const timeB = new Date(b.updatedAt).getTime() || 0;
+        return timeB - timeA;
+    });
 
     // 4. Render Note Cards
     const fragment = document.createDocumentFragment();
@@ -360,7 +368,11 @@ function setupEventListeners() {
         if (selectedCategory) {
             const matchingNotes = notes.filter(n => (n.category || '未分類') === selectedCategory);
             if (matchingNotes.length > 0) {
-                matchingNotes.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+                matchingNotes.sort((a, b) => {
+                    const timeA = new Date(a.updatedAt).getTime() || 0;
+                    const timeB = new Date(b.updatedAt).getTime() || 0;
+                    return timeB - timeA;
+                });
                 if (matchingNotes[0].color) {
                     noteColorInput.value = matchingNotes[0].color;
                 }
