@@ -2288,6 +2288,144 @@ function loadThemes() {
             loadTargets();
         });
     </script>
-    <script type="module" src="js/uchiyoso_firebase.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDWihGTCFg9hC5M2mqqn0xr2Fw9qPHgVmg",
+          authDomain: "battlemanager-93b66.firebaseapp.com",
+          projectId: "battlemanager-93b66",
+          storageBucket: "battlemanager-93b66.firebasestorage.app",
+          messagingSenderId: "1264794788",
+          appId: "1:1264794788:web:4151c6956c7d5f7e99ba31",
+          measurementId: "G-79J6PMDNK8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- uchiyoso_firebase.js contents ---
+        window.uchiyosoRoomId = new URLSearchParams(window.location.search).get('room');
+        window.isHost = false;
+        window.roomHostId = null;
+
+        function getUchiyosoUserId() {
+            let uid = localStorage.getItem('weby_user_id');
+            if (!uid) {
+                uid = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+                localStorage.setItem('weby_user_id', uid);
+            }
+            return uid;
+        }
+
+        window.uchiyosoUserId = getUchiyosoUserId();
+
+        window.createSharedRoom = async () => {
+            if (!window.targets) window.targets = [];
+            if (!window.questions) window.questions = [];
+
+            const newRoomId = 'rm_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+            const roomRef = ref(db, 'uchiyoso_rooms/' + newRoomId);
+            
+            window.targets.forEach(t => {
+                if (!t.ownerId) t.ownerId = window.uchiyosoUserId;
+            });
+
+            const roomData = {
+                hostId: window.uchiyosoUserId,
+                targets: window.targets,
+                questions: window.questions,
+                createdAt: Date.now()
+            };
+
+            try {
+                await set(roomRef, roomData);
+                window.location.href = window.location.pathname + '?room=' + newRoomId;
+            } catch (e) {
+                console.error(e);
+                if(window.showToast) window.showToast("ルームの作成に失敗しました", "error");
+            }
+        };
+
+        window.copyRoomUrl = () => {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                if (window.showToast) window.showToast("ルームのURLをコピーしました", "success");
+            });
+        };
+
+        window.uchiyosoSyncData = () => {
+            if (!window.uchiyosoRoomId) return;
+            
+            window.targets.forEach(t => {
+                if (!t.ownerId) t.ownerId = window.uchiyosoUserId;
+            });
+
+            const roomRef = ref(db, 'uchiyoso_rooms/' + window.uchiyosoRoomId);
+            set(roomRef, {
+                hostId: window.roomHostId || window.uchiyosoUserId,
+                targets: window.targets,
+                questions: window.questions,
+                updatedAt: Date.now()
+            }).catch(e => console.error(e));
+        };
+
+        if (window.uchiyosoRoomId) {
+            const initRoomUI = () => {
+                const urlInput = document.getElementById('room-url');
+                const createBtn = document.getElementById('btn-create-room');
+                const copyBtn = document.getElementById('btn-copy-room');
+                
+                if (urlInput && createBtn && copyBtn) {
+                    urlInput.value = window.location.href;
+                    urlInput.classList.remove('hidden');
+                    createBtn.classList.add('hidden');
+                    copyBtn.classList.remove('hidden');
+                    document.getElementById('room-controls').classList.remove('hidden');
+                }
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initRoomUI);
+            } else {
+                initRoomUI();
+            }
+
+            const roomRef = ref(db, 'uchiyoso_rooms/' + window.uchiyosoRoomId);
+            onValue(roomRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.roomHostId = data.hostId;
+                    window.isHost = (window.roomHostId === window.uchiyosoUserId);
+                    
+                    window.targets = data.targets || [];
+                    window.questions = data.questions || [];
+                    
+                    if (window.renderList) window.renderList();
+                    if (window.renderSummary) window.renderSummary();
+                    
+                    if (window.buildQuestionsForm) {
+                        const oldEditingId = window.currentEditingId;
+                        window.buildQuestionsForm();
+                        if (oldEditingId && window.selectCharacter) {
+                            window.selectCharacter(oldEditingId);
+                        }
+                    }
+                } else {
+                    if (window.showToast) window.showToast("ルームが見つかりません。ローカルモードに戻ります。", "error");
+                    setTimeout(() => { window.location.href = window.location.pathname; }, 2000);
+                }
+            });
+        } else {
+            const initLocalUI = () => {
+                const controls = document.getElementById('room-controls');
+                if (controls) controls.classList.remove('hidden');
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initLocalUI);
+            } else {
+                initLocalUI();
+            }
+        }
+    </script>
 </body>
 </html>
