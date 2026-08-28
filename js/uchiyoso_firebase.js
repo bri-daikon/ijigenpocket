@@ -68,7 +68,7 @@ window.uchiyosoSyncData = () => {
 // Initialize room listener
 if (window.uchiyosoRoomId) {
     // Show room controls state
-    document.addEventListener('DOMContentLoaded', () => {
+    const initRoomUI = () => {
         const urlInput = document.getElementById('room-url');
         const createBtn = document.getElementById('btn-create-room');
         const copyBtn = document.getElementById('btn-copy-room');
@@ -80,7 +80,12 @@ if (window.uchiyosoRoomId) {
             copyBtn.classList.remove('hidden');
             document.getElementById('room-controls').classList.remove('hidden');
         }
-    });
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRoomUI);
+    } else {
+        initRoomUI();
+    }
 
     const roomRef = ref(db, 'uchiyoso_rooms/' + window.uchiyosoRoomId);
     onValue(roomRef, (snapshot) => {
@@ -112,8 +117,13 @@ if (window.uchiyosoRoomId) {
     });
 } else {
     // Local mode UI
-    document.addEventListener('DOMContentLoaded', () => {
+    const initLocalUI = () => {
         const controls = document.getElementById('room-controls');
         if (controls) controls.classList.remove('hidden');
-    });
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLocalUI);
+    } else {
+        initLocalUI();
+    }
 }
