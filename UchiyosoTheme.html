@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔導書：自陣お題・比較の儀 - Weby</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705;
+        }
+
+        .font-header {
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #14100c; }
+        ::-webkit-scrollbar-thumb { background: #4a3728; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6e5039; }
+
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(217, 119, 6, 0.15);
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: #0a0806;
+            border: 1px solid rgba(120, 53, 15, 0.6);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            color: #fde68a;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #d97706;
+            box-shadow: 0 0 0 1px #d97706;
+        }
+
+        .tab-btn {
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #f59e0b; /* amber-500 */
+            color: #fcd34d; /* amber-300 */
+            background-color: rgba(120, 53, 15, 0.2);
+        }
+
+        /* Modal Background */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+
+<body class="text-stone-200 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+        <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-amber-700 to-amber-900 rounded-xl text-amber-100 shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+                    <i data-lucide="swords" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-widest font-header text-amber-500 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
+                        自陣お題・比較の儀</h1>
+                    <p class="text-[11px] text-amber-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF PARTY THEMES & COMPARISON</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div id="room-controls" class="flex gap-2 items-center bg-[#1a1511] p-1.5 rounded-lg border border-amber-900/50 hidden">
+                    <input type="text" id="room-url" readonly class="p-1.5 rounded bg-black/40 border border-amber-900/50 text-[10px] focus:outline-none text-stone-300 w-32 hidden" placeholder="ローカル専用">
+                    <button onclick="window.createSharedRoom()" id="btn-create-room" class="flex items-center justify-center px-3 py-1.5 bg-indigo-900 hover:bg-indigo-800 text-indigo-100 text-xs font-bold rounded transition-all shadow-lg border border-indigo-700/50 font-header whitespace-nowrap">
+                        <i data-lucide="users" class="w-4 h-4 mr-1"></i> 共有ルーム作成
+                    </button>
+                    <button onclick="window.copyRoomUrl()" id="btn-copy-room" class="hidden flex items-center justify-center px-3 py-1.5 bg-emerald-900 hover:bg-emerald-800 text-emerald-100 text-xs font-bold rounded transition-all shadow-lg border border-emerald-700/50 font-header whitespace-nowrap">
+                        <i data-lucide="copy" class="w-4 h-4 mr-1"></i> URLコピー
+                    </button>
+                </div>
+                <button onclick="openModal('ioModal')" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-indigo-950/40 hover:bg-indigo-900/60 text-indigo-300 text-sm font-bold rounded-lg border border-indigo-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="folder-sync" class="w-4 h-4 sm:mr-1"></i>
+                    <span class="hidden sm:inline">データ入出力</span>
+                </button>
+                <a href="CharaProfile.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                    <i data-lucide="user-square-2" class="w-4 h-4 sm:mr-1"></i>
+                    <span class="hidden sm:inline">調書の儀へ戻る</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+        
+        <div id="toast" class="hidden fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300">
+            <div class="flex items-center gap-3 bg-[#1c1510] border border-amber-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                <div id="toast-icon-wrapper" class="p-1 rounded-full"></div>
+                <p id="toast-message" class="text-sm font-semibold"></p>
+            </div>
+        </div>
+
+        <div id="contentGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-140px)]">
+            
+            <!-- 左カラム：キャラクターリスト (3/12) -->
+            <section class="lg:col-span-3 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
+                    <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i> 参加キャラクター
+                    </h2>
+                    <button onclick="openModal('newCharModal')" class="p-1.5 bg-[#120e0a] hover:bg-amber-950/60 text-amber-500 rounded border border-amber-900/40 transition-colors" title="新規キャラクター登録">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div id="noDataMessage" class="hidden flex-col items-center justify-center p-6 text-stone-500 text-center h-full">
+                    <i data-lucide="ghost" class="w-8 h-8 mb-2 opacity-50"></i>
+                    <p class="text-xs">データがありません。<br>元の画面で選択するか新規登録してください。</p>
+                </div>
+
+                <div id="characterList" class="flex-grow overflow-y-auto p-2 space-y-1">
+                    <!-- JSでキャラクターリストを生成 -->
+                </div>
+            </section>
+
+            <!-- 右カラム：メインコンテンツ (9/12) -->
+            <section class="lg:col-span-9 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden relative">
+                
+                <!-- タブナビゲーション -->
+                <div class="flex border-b border-amber-950/60 bg-[#1a1511]">
+                    <button onclick="switchTab('comparison')" id="tab-comparison" class="tab-btn active flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> ステータス・身長比較
+                    </button>
+                    <button onclick="switchTab('answers')" id="tab-answers" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> 個人のお題回答
+                    </button>
+                    <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                        <i data-lucide="gallery-horizontal-end" class="w-4 h-4"></i> お題結果一覧
+                    </button>
+                </div>
+
+                <!-- タブコンテンツエリア -->
+                <div class="flex-grow overflow-y-auto relative">
+                    
+                    <!-- ステータス・身長比較タブ -->
+                    <div id="content-comparison" class="p-6 space-y-8">
+                        <div>
+                            <h3 class="text-lg font-bold font-header text-amber-400 border-b border-amber-900/40 pb-2 mb-4">ステータス比較</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-stone-300 border-collapse border border-amber-950/50">
+                                    <thead class="text-xs text-amber-500 bg-[#1a1511]">
+                                        <tr>
+                                            <th class="p-3 border border-amber-950/50">キャラクター</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">STR</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">CON</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">POW</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">DEX</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">APP</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">SIZ</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">INT</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">EDU</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">HP</th>
+                                            <th class="p-3 border border-amber-950/50 text-center">MP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="statusComparisonTable">
+                                        <!-- JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-bold font-header text-amber-400 border-b border-amber-900/40 pb-2 mb-4">身長比較</h3>
+                            <div id="heightComparisonChart" class="flex items-end gap-4 pb-4 border-b border-stone-800 overflow-x-auto h-64 px-4 pt-8">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 個人のお題回答タブ -->
+                    <div id="content-answers" class="hidden h-full flex flex-col">
+                        <div id="emptyAnswersState" class="absolute inset-0 flex flex-col items-center justify-center text-stone-600 bg-[#14100c] z-10">
+                            <i data-lucide="feather" class="w-12 h-12 mb-3 opacity-30"></i>
+                            <p class="text-sm font-header">左のリストから回答するキャラクターを選択してください。</p>
+                        </div>
+                        
+                        <div id="answersForm" class="hidden flex-col h-full">
+                            <div class="p-4 border-b border-amber-950/60 bg-gradient-to-b from-[#1a1511] to-[#14100c] flex items-center gap-4">
+                                <img id="answerIcon" src="" class="w-16 h-16 rounded-full border border-amber-800/50 object-cover object-top shadow-lg">
+                                <div>
+                                    <h2 id="answerName" class="text-lg font-bold font-header text-amber-400">キャラクター名</h2>
+                                    <p class="text-xs text-stone-400 mt-0.5">のお題回答を編集</p>
+                                </div>
+                            </div>
+                            <div class="flex-grow overflow-y-auto p-6 space-y-6" id="questionsContainer">
+                                <!-- JSで質問を生成 -->
+                            </div>
+                            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end">
+                                <button onclick="saveAnswers()" class="flex items-center gap-2 px-6 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-stone-100 font-bold rounded-lg shadow-lg border border-emerald-600 transition-all">
+                                    <i data-lucide="save" class="w-4 h-4"></i> 回答を保存する
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- お題結果一覧タブ -->
+                    <div id="content-summary" class="hidden p-6 space-y-8">
+                        <div class="flex items-center justify-between border-b border-amber-900/40 pb-2 mb-4">
+                            <h3 class="text-lg font-bold font-header text-amber-400">みんなの回答一覧</h3>
+                            <button onclick="openModal('editThemesModal')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50">
+                                <i data-lucide="settings" class="w-3.5 h-3.5"></i> お題を編集・追加する
+                            </button>
+                        </div>
+                        <div id="summaryContainer" class="space-y-10">
+                            <!-- JS -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- モーダル群 -->
+    
+    <!-- 1. 新規キャラクター登録モーダル -->
+    <div id="newCharModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-overlay" onclick="closeModal('newCharModal')"></div>
+        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-lg overflow-hidden flex flex-col max-h-full">
+            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
+                <h3 class="font-bold text-amber-400 font-header">新規キャラクターの手動登録</h3>
+                <button onclick="closeModal('newCharModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">キャラクター名</label>
+                    <input type="text" id="newCharName" class="form-input" placeholder="例: 探索者 太郎">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">アイコン画像 URL</label>
+                    <input type="text" id="newCharIcon" class="form-input" placeholder="画像のURL（http...）">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">身長 (cm)</label>
+                    <input type="number" id="newCharHeight" class="form-input" placeholder="例: 175">
+                </div>
+                <div class="border-t border-amber-950/40 pt-4 mt-2">
+                    <label class="block text-xs font-semibold text-amber-600/80 mb-2">主要ステータス</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="text-[10px] text-stone-400">STR</label><input type="number" id="newCharSTR" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">CON</label><input type="number" id="newCharCON" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">POW</label><input type="number" id="newCharPOW" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">DEX</label><input type="number" id="newCharDEX" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">APP</label><input type="number" id="newCharAPP" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">SIZ</label><input type="number" id="newCharSIZ" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">INT</label><input type="number" id="newCharINT" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">EDU</label><input type="number" id="newCharEDU" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-stone-400">HP</label><input type="number" id="newCharHP" class="form-input px-2 py-1 border-emerald-900/50"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end gap-3">
+                <button onclick="closeModal('newCharModal')" class="px-4 py-2 text-sm text-stone-400 hover:text-stone-200">キャンセル</button>
+                <button onclick="registerNewCharacter()" class="px-4 py-2 text-sm font-bold bg-amber-700 hover:bg-amber-600 text-stone-100 rounded shadow">登録する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. データ入出力モーダル -->
+    <div id="ioModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-overlay" onclick="closeModal('ioModal')"></div>
+        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
+                <h3 class="font-bold text-amber-400 font-header">データ入出力 (共有用)</h3>
+                <button onclick="closeModal('ioModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="bg-[#1a1511] border border-amber-900/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> エクスポート（出力）</h4>
+                    <p class="text-xs text-stone-400 mb-3">現在の参加キャラクター情報とお題リストをJSONファイルとしてダウンロードします。友人との共有用です。</p>
+                    <button onclick="exportData()" class="w-full py-2 bg-indigo-900 hover:bg-indigo-800 text-indigo-100 font-bold rounded shadow transition-colors text-sm">
+                        データをダウンロード (uchiyoso_party.json)
+                    </button>
+                </div>
+                <div class="bg-[#1a1511] border border-amber-900/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> インポート（読込）</h4>
+                    <p class="text-xs text-stone-400 mb-3">共有されたJSONファイルを読み込みます。<br><span class="text-rose-400">※現在のリストは上書きされます。</span></p>
+                    <input type="file" id="importFile" accept=".json" class="block w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-950 file:text-amber-400 hover:file:bg-amber-900 mb-3">
+                    <button onclick="importData()" class="w-full py-2 bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold rounded shadow transition-colors text-sm border border-rose-900/50">
+                        データを上書きインポート
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. お題の編集・追加モーダル -->
+    <div id="editThemesModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 modal-overlay" onclick="closeModal('editThemesModal')"></div>
+        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-2xl overflow-hidden flex flex-col max-h-full">
+            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
+                <h3 class="font-bold text-amber-400 font-header">お題リストの編集</h3>
+                <button onclick="closeModal('editThemesModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <!-- Preset Selector -->
+            <div class="p-4 bg-[#120e0a] border-b border-amber-950/60 flex flex-col sm:flex-row sm:items-center gap-3">
+                <label class="text-xs font-bold text-amber-500 whitespace-nowrap"><i data-lucide="book-open" class="w-4 h-4 inline mr-1"></i>プリセットから選ぶ:</label>
+                <select id="presetThemeSelect" class="form-input text-xs py-2 w-full" onchange="loadPresetTheme(this.value)">
+                    <option value="">-- 選択してください（エディタに展開されます） --</option>
+                </select>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-grow bg-[#0a0806]" id="themeEditorList">
+                <!-- JSでエディタ行を生成 -->
+            </div>
+            <div class="p-4 bg-[#1a1511] border-t border-b border-amber-950/60 flex justify-center">
+                <button onclick="addNewThemeField()" class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[#120e0a] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 shadow">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 新しいお題を追加
+                </button>
+            </div>
+            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end gap-3">
+                <button onclick="closeModal('editThemesModal')" class="px-4 py-2 text-sm text-stone-400 hover:text-stone-200">キャンセル</button>
+                <button onclick="saveThemes()" class="px-4 py-2 text-sm font-bold bg-amber-700 hover:bg-amber-600 text-stone-100 rounded shadow">お題リストを保存する</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        var targets = [];
+        var currentEditingId = null;
+        var questions = [];
+        
+        window.saveDataToStorageOrCloud = function(isTheme = false) {
+            if (isTheme) {
+                localStorage.setItem('weby_theme_questions', JSON.stringify(questions));
+            } else {
+                localStorage.setItem('weby_profile_targets', JSON.stringify(targets));
+            }
+            if (window.uchiyosoSyncData) {
+                window.uchiyosoSyncData();
+            }
+        };
+        const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+
+        const presetThemes = [
+    {
+        "title": "1.日常・生活習慣",
+        "questions": [
+            {
+                "text": "朝のアラームが鳴ったときの行動は？",
+                "type": "select",
+                "options": [
+                    "目覚まし1回ですぐにパッと起きる",
+                    "スヌーズを何回もかけてギリギリまで粘る",
+                    "アラームが鳴る前に自然と目が覚める",
+                    "誰かに起こされるまで絶対に起きられない",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q1"
+            },
+            {
+                "text": "自室の散らかり具合・インテリアの状態は？",
+                "type": "select",
+                "options": [
+                    "常にモデルルーム並みに整理整頓されている",
+                    "物は多いが、自分なりの定位置が決まっていて散らかってはいない",
+                    "服や本が床に散乱しており、人を呼べる状態ではない",
+                    "趣味の物（コレクション・機材・本など）で埋め尽くされている",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q2"
+            },
+            {
+                "text": "普段の食生活・自炊のスタイルは？",
+                "type": "select",
+                "options": [
+                    "栄養や味にこだわり、ほぼ毎日自炊する",
+                    "簡単なもの（パスタ、炒め物など）なら自分で作る",
+                    "コンビニ弁当やスーパーの惣菜、外食がメイン",
+                    "誰かに作ってもらう、または出前・完全栄養食などに頼る",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q3"
+            },
+            {
+                "text": "突然のオフ（予定のない完全な休日）はどう過ごす？",
+                "type": "select",
+                "options": [
+                    "一日中ベッドから出ずに寝て過ごす",
+                    "趣味・創作・研究などに没頭して引きこもる",
+                    "買い物やドライブ、旅行など積極的に外出する",
+                    "誰かを誘ってご飯や遊びに行く",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q4"
+            },
+            {
+                "text": "普段持ち歩くカバンの中身の傾向は？",
+                "type": "select",
+                "options": [
+                    "スマホと財布だけ（超身軽・手ぶら派）",
+                    "必要最低限の必需品だけをきれいにポーチ等に収納",
+                    "「念のため」とあれこれ詰め込んで常に大荷物",
+                    "ゴミやレシート、よくわからない物が底に溜まっている",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q5"
+            },
+            {
+                "text": "お風呂に入っているときの過ごし方は？",
+                "type": "select",
+                "options": [
+                    "湯船に浸かって動画・音楽・読書などを楽しむ長風呂派",
+                    "シャワーだけで手早く済ませる時短派",
+                    "ぼーっと考え事をしたり、1日の反省会をしたりする",
+                    "体や髪のケア、マッサージを丁寧に行う",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q6"
+            },
+            {
+                "text": "日常生活における「買い物」のスタンスは？",
+                "type": "select",
+                "options": [
+                    "欲しいと思ったら直感ですぐに即決・衝動買い",
+                    "口コミや価格を徹底的に調べてから慎重に買う",
+                    "必要なもの以外は極力買わないミニマリスト",
+                    "セールや「限定」という言葉に弱く、ついつい買いがち",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q7"
+            },
+            {
+                "text": "スマホの通知（LINEや連絡ツール）への対応は？",
+                "type": "select",
+                "options": [
+                    "気づいたら即座に返信する（即レス派）",
+                    "既読はすぐにつけるが、返信は後回しにしがち",
+                    "未読が数十〜数百件溜まっていても気にしない",
+                    "通知は基本的にオフで、気が向いたときしか見ない",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q8"
+            },
+            {
+                "text": "ストレスが溜まったときの主な発散方法は？",
+                "type": "select",
+                "options": [
+                    "爆食い・豪遊・飲酒など物欲や食欲で発散",
+                    "ひたすら寝る、または一人きりで静かに過ごす",
+                    "運動や筋トレ、掃除などで体を動かす",
+                    "誰かに愚痴を聞いてもらったり、思い切り騒いだりする",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q9"
+            },
+            {
+                "text": "夜、寝る直前の定番ルーティンは？",
+                "type": "select",
+                "options": [
+                    "暗闇の中でベッドに入りながらスマホをいじる",
+                    "ストレッチや読書、日記をつけてリラックスする",
+                    "疲れて服を着替える間もなく倒れ込むように寝落ちする",
+                    "明日の準備やスケジュール確認を完璧に済ませてから寝る",
+                    "その他（自由記入）"
+                ],
+                "id": "p0_q10"
+            }
+        ]
+    },
+    {
+        "title": "2. 過去・バックストーリー",
+        "questions": [
+            {
+                "text": "幼少期はどんな子どもだった？",
+                "type": "select",
+                "options": [
+                    "元気いっぱいで外を駆け回るリーダータイプ",
+                    "物静かで本や一人遊びを好むタイプ",
+                    "大人の顔色を窺うようなませた子ども",
+                    "周りを困らせてばかりのトラブルメーカー",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q1"
+            },
+            {
+                "text": "生まれ育った家庭環境・家族との距離感は？",
+                "type": "select",
+                "options": [
+                    "家族仲が良く、温かい愛情を受けて育った",
+                    "厳格・放任などでどこか距離感や冷たさがあった",
+                    "複雑な事情（離別・死別・家庭崩壊など）を抱えていた",
+                    "家族の記憶が曖昧、または天涯孤独",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q2"
+            },
+            {
+                "text": "人生の大きなターニングポイント（分岐点）はいつ？",
+                "type": "select",
+                "options": [
+                    "幼少期の出来事",
+                    "学生時代（思春期・学生生活）",
+                    "社会人・現在の職業に就いたとき",
+                    "探索者として怪異・事件に関わった瞬間",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q3"
+            },
+            {
+                "text": "学生時代のポジション・過ごし方は？",
+                "type": "select",
+                "options": [
+                    "クラスの中心・目立つ人気者グループ",
+                    "趣味の合う少数の仲間とマイペースに過ごした",
+                    "部活動や勉強・研究に打ち込んでいた",
+                    "周囲と馴染めず孤立・または目立たないようにしていた",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q4"
+            },
+            {
+                "text": "今の職業や生き方を選んだ決定的な理由は？",
+                "type": "select",
+                "options": [
+                    "幼い頃からの純粋な夢・憧れを叶えた",
+                    "誰か（家族・恩師など）の影響や後を継いだ",
+                    "流れや妥協、生活のためになんとなく",
+                    "過去のトラウマや事件に対する復讐・贖罪・探求のため",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q5"
+            },
+            {
+                "text": "過去の自分に対して抱いている感情は？",
+                "type": "select",
+                "options": [
+                    "あの頃の自分を誇らしく思っている",
+                    "若気の至りや未熟さに恥ずかしさを感じる",
+                    "後悔や罪悪感でやり直したいと思っている",
+                    "完全に過去と割り切って何も思わない",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q6"
+            },
+            {
+                "text": "今の自分を形作った「大切な恩人」はいる？",
+                "type": "select",
+                "options": [
+                    "両親や育ての親",
+                    "学校の先生、師匠、上司などの導き手",
+                    "昔の友人やライバル、かつての恋人",
+                    "特にいない（自分自身の力で生きてきた）",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q7"
+            },
+            {
+                "text": "昔からずっと手元に残している思い出の品はある？",
+                "type": "select",
+                "options": [
+                    "大切な人からもらったプレゼントや形見",
+                    "幼少期から持っているぬいぐるみや日用品",
+                    "過去の功績を示す賞状やトロフィー、記録",
+                    "過去のものに執着はなく、何も持っていない",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q8"
+            },
+            {
+                "text": "過去の挫折や失敗への向き合い方は？",
+                "type": "select",
+                "options": [
+                    "糧にして乗り越え、強くなった",
+                    "今でも引きずっており、たまに思い出して苦しむ",
+                    "記憶の底に押し込めて見ないようにしている",
+                    "そもそも大きな挫折を経験したことがない",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q9"
+            },
+            {
+                "text": "もし過去の自分に一言だけ伝えられるとしたら？",
+                "type": "select",
+                "options": [
+                    "「そのまま諦めずに前を向け」と励ます",
+                    "「あの選択だけは絶対にするな」と警告する",
+                    "「未来は思っているより悪くないぞ」と安心させる",
+                    "何も言わずにただ見守る（歴史を変えたくない）",
+                    "その他（自由記入）"
+                ],
+                "id": "p1_q10"
+            }
+        ]
+    },
+    {
+        "title": "3. 人間関係・他PCへの印象",
+        "questions": [
+            {
+                "text": "他の自陣メンバーの「第一印象」はどうだった？",
+                "type": "select",
+                "options": [
+                    "話しやすそう・好印象を持った",
+                    "近寄りがたい・警戒心を抱いた",
+                    "変わった人・面白そうな奴だと思った",
+                    "特に興味が湧かず無関心だった",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q1"
+            },
+            {
+                "text": "第一印象と現在の印象にギャップはある？",
+                "type": "select",
+                "options": [
+                    "全然違った（思っていたより親しみやすい/頼もしい等）",
+                    "予想以上に厄介・面倒な一面を知った",
+                    "最初の印象のまま特に変わらない",
+                    "見た目通りだが、より深く理解できた",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q2"
+            },
+            {
+                "text": "自陣メンバーの中で、自分が担っている立ち位置（役割）は？",
+                "type": "select",
+                "options": [
+                    "全体を引っ張るリーダー・旗振り役",
+                    "暴走を止めるストッパー・ツッコミ・常識人",
+                    "雰囲気を和ませるムードメーカー・癒やし枠",
+                    "一歩引いて状況を見守るサポーター・参謀",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q3"
+            },
+            {
+                "text": "自陣メンバーと二人きりになったときの空気感は？",
+                "type": "select",
+                "options": [
+                    "普段と変わらず気兼ねなく喋り続ける",
+                    "沈黙が続いても居心地が悪くない",
+                    "何を話せばいいか少し緊張・そわそわする",
+                    "普段は言えない深い話や本音を話し始める",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q4"
+            },
+            {
+                "text": "仲間に「弱み」や「悩み」を見せられる？",
+                "type": "select",
+                "options": [
+                    "すぐに相談して頼る・甘える",
+                    "聞かれたら話すが、自分からは言わない",
+                    "心配をかけたくないので絶対に隠し通す",
+                    "弱みを見せるくらいなら冗談にして誤魔化す",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q5"
+            },
+            {
+                "text": "仲間と意見が対立したときの態度は？",
+                "type": "select",
+                "options": [
+                    "自分の意見を曲げずに徹底的に議論する",
+                    "場の空気を優先して相手に譲る",
+                    "論理的に折衷案を探して歩み寄る",
+                    "口論になるのを嫌ってその場を立ち去る",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q6"
+            },
+            {
+                "text": "自陣メンバーに対する「信頼度」はどれくらい？",
+                "type": "select",
+                "options": [
+                    "背中も命も完全に預けられる",
+                    "能力や人柄は信じているが、命までは預けられない",
+                    "信頼したいとは思っているが、まだどこか警戒がある",
+                    "利害が一致しているだけのビジネスライクな関係",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q7"
+            },
+            {
+                "text": "仲間が理不尽に傷つけられたらどうする？",
+                "type": "select",
+                "options": [
+                    "激怒して相手にやり返しにいく",
+                    "冷静に事態を収拾しつつ、裏で報復を企む",
+                    "まず傷ついた仲間の介抱とメンタルケアに徹する",
+                    "動揺してオロオロしてしまう",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q8"
+            },
+            {
+                "text": "仲間の「ここだけは直してほしい」と思う部分は？",
+                "type": "select",
+                "options": [
+                    "無茶や無謀な行動を平気でするところ",
+                    "本音を隠して一人で抱え込みがちなところ",
+                    "ルーズな生活態度やだらしない部分",
+                    "特にない（今のままで満足している）",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q9"
+            },
+            {
+                "text": "自陣の仲間を一言で表すならどんな存在？",
+                "type": "select",
+                "options": [
+                    "かけがえのない「家族」",
+                    "背中を預け合える「戦友・相棒」",
+                    "気の置けない「悪友・友人」",
+                    "奇妙な縁で結ばれた「運命共同体」",
+                    "その他（自由記入）"
+                ],
+                "id": "p2_q10"
+            }
+        ]
+    },
+    {
+        "title": "4. 価値観・モラル",
+        "questions": [
+            {
+                "text": "「正義」と「悪」の境界線についてどう考えている？",
+                "type": "select",
+                "options": [
+                    "法律やルールこそが絶対的な正義",
+                    "自分の信念や心が正しいと思うものが正義",
+                    "立場や視点によって変わるため、絶対的な正義などない",
+                    "そもそも善悪に興味がなく、損得で判断する",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q1"
+            },
+            {
+                "text": "「多数を救うために少数を犠牲にする」選択を迫られたら？",
+                "type": "select",
+                "options": [
+                    "迷わず多数を救う道を選ぶ（合理主義）",
+                    "誰一人見捨てない道を限界まで模索する（理想主義）",
+                    "助ける対象の中に「自分の大切な人」がいればそちらを優先する",
+                    "重圧に耐えかねて選択を放棄・他人に委ねる",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q2"
+            },
+            {
+                "text": "「嘘」をつくことに対するスタンスは？",
+                "type": "select",
+                "options": [
+                    "どんな理由があっても嘘は絶対に許せない",
+                    "相手を傷つけないための「優しい嘘」なら肯定する",
+                    "目的を達成するためなら嘘や騙し討ちも平気で使う",
+                    "嘘をつくのが下手ですぐに顔に出てしまう",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q3"
+            },
+            {
+                "text": "人生において最も優先したい価値基準は？",
+                "type": "select",
+                "options": [
+                    "自身の生存・安心・平穏",
+                    "名誉・信念・プライド",
+                    "愛情・絆・大切な人の幸福",
+                    "好奇心・真理の探求・スリル",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q4"
+            },
+            {
+                "text": "許せない「人間の悪性」はどれ？",
+                "type": "select",
+                "options": [
+                    "弱者を虐げること・理不尽な暴力",
+                    "裏切り・信頼を踏みにじること",
+                    "恩知らず・傲慢な態度",
+                    "思考停止・他人に責任を押し付けること",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q5"
+            },
+            {
+                "text": "目の前で困っている見知らぬ人がいたらどうする？",
+                "type": "select",
+                "options": [
+                    "見返りを求めず反射的に助けに入る",
+                    "罠やリスクがないか観察してから手を貸す",
+                    "警察や専門機関に通報して自分は直接関わらない",
+                    "関わり合いになりたくないので見て見ぬ振りをする",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q6"
+            },
+            {
+                "text": "自分自身が「罪」を犯してしまったときの対処は？",
+                "type": "select",
+                "options": [
+                    "自首するか、生涯かけて贖罪を続ける",
+                    "誰にもバレないように隠蔽し、墓場まで持っていく",
+                    "必要な犠牲だったと自分を正当化して割り切る",
+                    "罪悪感に押しつぶされて自暴自棄になる",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q7"
+            },
+            {
+                "text": "お金や物質的な富に対する執着は？",
+                "type": "select",
+                "options": [
+                    "お金が全て、あればあるほど安心する",
+                    "贅沢は望まないが、生きていける分は欲しい",
+                    "趣味や大切な人のためなら惜しみなく使う",
+                    "物質的な豊かさにはほとんど執着がない",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q8"
+            },
+            {
+                "text": "「約束」を交わすことへの重みは？",
+                "type": "select",
+                "options": [
+                    "命に代えても絶対に果たすべき誓い",
+                    "極力守るが、状況次第では破ることもある",
+                    "守れる自信がないので最初から約束はしない",
+                    "口約束程度ならその場のノリで簡単に破る",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q9"
+            },
+            {
+                "text": "もし神や絶対的な存在から「世界の命運」を託されたら？",
+                "type": "select",
+                "options": [
+                    "使命感を持って全力で世界を救う",
+                    "荷が重すぎるので丁重に辞退する",
+                    "自分と大切な人たちの安全だけを守って逃げる",
+                    "いっそ世界を自分の都合の良いように創り変える",
+                    "その他（自由記入）"
+                ],
+                "id": "p3_q10"
+            }
+        ]
+    },
+    {
+        "title": "5. 弱点・コンプレックス",
+        "questions": [
+            {
+                "text": "生理的にどうしても受け付けない苦手なものは？",
+                "type": "select",
+                "options": [
+                    "虫・爬虫類などの特定の生き物",
+                    "お化け・怪談・オカルト全般",
+                    "閉所・高所・暗闇などの特定の空間",
+                    "人混み・騒音・汚い場所",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q1"
+            },
+            {
+                "text": "自分自身の「性格的な欠点」だと自覚している部分は？",
+                "type": "select",
+                "options": [
+                    "頑固で融通が利かないところ",
+                    "優柔不断で流されやすいところ",
+                    "短気で感情が表に出やすいところ",
+                    "他人に素直になれず冷淡に見えるところ",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q2"
+            },
+            {
+                "text": "自分の「外見や能力」にコンプレックスはある？",
+                "type": "select",
+                "options": [
+                    "体格や顔立ちなど身体的な特徴に不満がある",
+                    "頭の回転や要領の悪さに劣等感を抱いている",
+                    "体力や運動神経のなさを気にしている",
+                    "特にコンプレックスはなく、今の自分が好き",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q3"
+            },
+            {
+                "text": "他人から言われて一番グサッとくる言葉は？",
+                "type": "select",
+                "options": [
+                    "「役に立たない」「邪魔だ」",
+                    "「冷たい奴」「人間味がない」",
+                    "「重い」「面倒くさい」",
+                    "「期待外れ」「失望した」",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q4"
+            },
+            {
+                "text": "誰にも言えない「隠している秘密」はある？",
+                "type": "select",
+                "options": [
+                    "墓場まで持っていくと決めている重大な秘密がある",
+                    "知られたら少し恥ずかしい程度の秘密（趣味など）がある",
+                    "仲間には秘密にしているが、いつか話したい",
+                    "隠し事は一切なく、完全にオープン",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q5"
+            },
+            {
+                "text": "精神的に追い詰められたときに出る「防衛反応」は？",
+                "type": "select",
+                "options": [
+                    "攻撃的になり、周囲に当たり散らす",
+                    "感情をシャットアウトして無表情・無口になる",
+                    "空元気を出してヘラヘラ笑い、誤魔化す",
+                    "パニックを起こして過呼吸や涙が止まらなくなる",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q6"
+            },
+            {
+                "text": "他人に対して抱きがちな「嫉妬」や「羨望」は？",
+                "type": "select",
+                "options": [
+                    "才能や器用さを持っている人への嫉妬",
+                    "誰からも愛される人当たりの良さへの羨望",
+                    "恵まれた環境や生まれに対するコンプレックス",
+                    "他人に嫉妬することは滅多にない",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q7"
+            },
+            {
+                "text": "人間関係において「最も恐れていること」は？",
+                "type": "select",
+                "options": [
+                    "大切な人から嫌われる・拒絶されること",
+                    "誰からも必要とされず孤立すること",
+                    "相手を裏切ってしまう、または傷つけること",
+                    "相手に依存しすぎて自分を見失うこと",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q8"
+            },
+            {
+                "text": "自分の「泣き所（ウィークポイント）」はどこ？",
+                "type": "select",
+                "options": [
+                    "家族や親しい仲間の人質・身の危険",
+                    "過去のトラウマを刺激されること",
+                    "真正面からの情や熱意に訴えかけられること",
+                    "美味しいものや金銭的な誘惑",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q9"
+            },
+            {
+                "text": "自分の弱さを克服したいと思っている？",
+                "type": "select",
+                "options": [
+                    "強くありたいので全力で克服したい",
+                    "弱さも含めて自分だと受け入れている",
+                    "克服は諦めているので他人に補ってもらう",
+                    "弱みを見せないように武装して隠し続ける",
+                    "その他（自由記入）"
+                ],
+                "id": "p4_q10"
+            }
+        ]
+    },
+    {
+        "title": "6. 感情・リアクション",
+        "questions": [
+            {
+                "text": "滅多に怒らない探索者が「激怒」するトリガーは？",
+                "type": "select",
+                "options": [
+                    "大切な人や仲間を侮辱・危害を加えられたとき",
+                    "自分の信念や誇りを踏みにじられたとき",
+                    "理不尽な暴力や不正を目撃したとき",
+                    "嘘をつかれて騙されていたと知ったとき",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q1"
+            },
+            {
+                "text": "怒ったときの態度はどうなる？",
+                "type": "select",
+                "options": [
+                    "声を荒らげて感情的に怒鳴り散らす",
+                    "静かに冷たい声になり、目が据わる",
+                    "笑顔のまま言葉でじわじわと追い詰める",
+                    "怒りを表に出せず一人で耐えて引きずる",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q2"
+            },
+            {
+                "text": "人前で「涙」を見せることはある？",
+                "type": "select",
+                "options": [
+                    "感受性が豊かで、映画や嬉しいことでもすぐ泣く",
+                    "悔しいときや怒りが極限に達したときだけ泣く",
+                    "人前では絶対に泣かず、一人きりで泣く",
+                    "生まれてこの方、滅多に泣いたことがない",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q3"
+            },
+            {
+                "text": "他人から褒められたり好意を向けられたりしたときの反応は？",
+                "type": "select",
+                "options": [
+                    "素直に満面の笑みで喜ぶ",
+                    "照れ隠しでツンツンしたり茶化したりする",
+                    "「裏があるのでは」と警戒して疑ってしまう",
+                    "恐縮して「自分なんて…」と卑下してしまう",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q4"
+            },
+            {
+                "text": "サプライズ（驚きのプレゼントやドッキリ）を仕掛けられたら？",
+                "type": "select",
+                "options": [
+                    "大喜びして全力でリアクションをとる",
+                    "びっくりして一瞬固まるが、徐々に嬉しがる",
+                    "驚かされたことに少し不機嫌・むっとする",
+                    "勘が良すぎて仕掛けられる前に気づいてしまう",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q5"
+            },
+            {
+                "text": "危機的状況（戦闘やトラップ）で最初に湧き上がる感情は？",
+                "type": "select",
+                "options": [
+                    "「やるしかない」という闘志・アドレナリン",
+                    "「どう対処すべきか」という冷静な計算",
+                    "「死ぬかもしれない」という恐怖や焦り",
+                    "「面倒なことになった」という呆れや諦観",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q6"
+            },
+            {
+                "text": "面白いことや嬉しいことがあったときの笑い方は？",
+                "type": "select",
+                "options": [
+                    "声を出して豪快にお腹を抱えて笑う",
+                    "口元を手で隠して上品・控えめに笑う",
+                    "フッと鼻で笑うようなクールな笑い",
+                    "ニヤニヤと悪戯っぽく笑う",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q7"
+            },
+            {
+                "text": "罪悪感や申し訳なさを感じたときのリアクションは？",
+                "type": "select",
+                "options": [
+                    "すぐに頭を下げて謝罪と弁償を申し出る",
+                    "気まずそうに目を逸らしつつ小声で謝る",
+                    "態度や行動（プレゼント等）で埋め合わせようとする",
+                    "プライドが邪魔して素直に謝れない",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q8"
+            },
+            {
+                "text": "自分の感情を「言葉」にして伝えるのは得意？",
+                "type": "select",
+                "options": [
+                    "ストレートに思ったことをそのまま言葉にできる",
+                    "感情を言語化するのが苦手で態度で示しがち",
+                    "相手に合わせて取り繕った言葉を選んでしまう",
+                    "そもそも感情を他人に伝える必要性を感じない",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q9"
+            },
+            {
+                "text": "心から「幸せだ」と感じる瞬間はどんなとき？",
+                "type": "select",
+                "options": [
+                    "美味しいものを食べてゆっくり休んでいるとき",
+                    "仲間や大切な人と他愛もない会話をしているとき",
+                    "困難な目標を達成したり謎を解き明かしたりしたとき",
+                    "誰かの役に立ち、感謝されたとき",
+                    "その他（自由記入）"
+                ],
+                "id": "p5_q10"
+            }
+        ]
+    },
+    {
+        "title": "7. 恋愛・親愛観",
+        "questions": [
+            {
+                "text": "好きになる相手のタイプ（惹かれる要素）は？",
+                "type": "select",
+                "options": [
+                    "明るくて一緒にいて楽しい太陽のような人",
+                    "落ち着いていて包容力・知性のある大人な人",
+                    "どこか放っておけなくて守ってあげたくなる人",
+                    "自分にない才能や確固たる信念を持っている人",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q1"
+            },
+            {
+                "text": "誰かに「好意」を抱いたときの態度の変化は？",
+                "type": "select",
+                "options": [
+                    "露骨に優しくなったり構いに行ったりする",
+                    "意識しすぎて逆に不自然によそよそしくなる",
+                    "からかったり意地悪を言ったりしてしまう",
+                    "自分でも自覚するまで態度に一切出ない",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q2"
+            },
+            {
+                "text": "スキンシップに対する距離感や許容度は？",
+                "type": "select",
+                "options": [
+                    "ハグや肩組みなどスキンシップは日常茶飯事",
+                    "親しい間柄であれば触れられるのは嫌じゃない",
+                    "恋人や家族など特別な相手以外は触れられたくない",
+                    "誰であっても体に触られるのは苦手",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q3"
+            },
+            {
+                "text": "恋愛における「独占欲・嫉妬深さ」の度合いは？",
+                "type": "select",
+                "options": [
+                    "かなり強い（自分だけを見ていてほしい・束縛気味）",
+                    "表には出さないが、内心めちゃくちゃ嫉妬している",
+                    "相手を信じているのでほとんど嫉妬しない",
+                    "そもそも独占欲という感情がよくわからない",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q4"
+            },
+            {
+                "text": "「恋愛」と「友情」の境界線はどこにある？",
+                "type": "select",
+                "options": [
+                    "キスやそれ以上の接触をしたいと思えるかどうか",
+                    "自分の中で「一番の優先順位」に置けるかどうか",
+                    "独占欲（他の人に取られたくない）が湧くかどうか",
+                    "境界線が曖昧で、友情の延長線上に恋愛がある",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q5"
+            },
+            {
+                "text": "告白や好意を伝えるシチュエーションの理想は？",
+                "type": "select",
+                "options": [
+                    "自分の言葉でストレートにはっきり伝える",
+                    "相手から言ってくれるように遠回しに誘導する",
+                    "ロマンチックな雰囲気や場所を整えて伝える",
+                    "言葉にせずとも空気感で自然と伝わればいい",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q6"
+            },
+            {
+                "text": "恋人やパートナーに求める最も重要な条件は？",
+                "type": "select",
+                "options": [
+                    "価値観や金銭感覚の一致",
+                    "一緒にいて気を使わない居心地の良さ",
+                    "精神的な自立とお互いを高め合える関係",
+                    "自分を一番に愛し、裏切らない誠実さ",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q7"
+            },
+            {
+                "text": "失恋したり大切な関係が終わったりしたときの立ち直り方は？",
+                "type": "select",
+                "options": [
+                    "友達に泣きついて愚痴り、パーッと遊んで忘れる",
+                    "仕事や趣味に没頭して気を紛らわせる",
+                    "何ヶ月も何年も引きずって立ち直れない",
+                    "「縁がなかった」と案外あっさり割り切る",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q8"
+            },
+            {
+                "text": "理想のデートプランはどんな過ごし方？",
+                "type": "select",
+                "options": [
+                    "遊園地やショッピングなどアクティブに遊ぶ",
+                    "お互いの家で映画を見たりダラダラ過ごしたりする",
+                    "お洒落なレストランや夜景を見に行く王道デート",
+                    "旅先で未知の場所を巡るアドベンチャーデート",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q9"
+            },
+            {
+                "text": "あなたにとって「愛」とは何？",
+                "type": "select",
+                "options": [
+                    "相手のために自分のすべてを捧げる自己犠牲",
+                    "相手の幸福をただ願い、見守ること",
+                    "互いに支え合い、共に生きていく契約",
+                    "理屈では説明できない衝動・執着",
+                    "その他（自由記入）"
+                ],
+                "id": "p6_q10"
+            }
+        ]
+    },
+    {
+        "title": "8. もしも（IFの世界線）",
+        "questions": [
+            {
+                "text": "もし「怪異や事件（探索者）」に関わらない平凡な世界線だったら？",
+                "type": "select",
+                "options": [
+                    "夢を叶えて順風満帆に幸せな人生を送っている",
+                    "退屈な日々に刺激を求めて燻っている",
+                    "普通の会社員・学生として平穏に暮らしている",
+                    "別の形で何かしらのトラブルに巻き込まれている",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q1"
+            },
+            {
+                "text": "もし自陣メンバーと「別の形（学校・職場など）」で出会っていたら？",
+                "type": "select",
+                "options": [
+                    "今と変わらずすぐに意気投合して親友になっている",
+                    "性格が合わずに険悪・犬猿の仲になっている",
+                    "クラスや部署が違って接点すら持たなかった",
+                    "気になる存在として遠くから眺めている",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q2"
+            },
+            {
+                "text": "もし性別が逆（異性）に生まれていたらどんな人物になっていた？",
+                "type": "select",
+                "options": [
+                    "中身や性格は今のままと全く変わらない",
+                    "もっとあざとく、または要領よく生きていた",
+                    "今よりもっと大人しく、控えめになっていた",
+                    "異性関係や進路が大きく変わっていた",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q3"
+            },
+            {
+                "text": "もしファンタジーRPGの世界に転生したら、就きたいクラス（職業）は？",
+                "type": "select",
+                "options": [
+                    "前線で剣や槍を振るう「戦士・騎士」",
+                    "後方から強力な術を放つ「魔法使い・賢者」",
+                    "仲間を癒やす「僧侶・回復術士」",
+                    "罠解除や情報収集を担う「盗賊・レンジャー」",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q4"
+            },
+            {
+                "text": "もし自陣で「学園モノ」パロディをやるなら、どんなポジション？",
+                "type": "select",
+                "options": [
+                    "生徒会長・学級委員長などの優等生",
+                    "部活に打ち込むスポーツ推薦のエース",
+                    "屋上や保健室に入り浸る不良・サボり魔",
+                    "奇行を繰り返す学校の有名人・変人枠",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q5"
+            },
+            {
+                "text": "もし宝くじで「3億円」が当たったらどうする？",
+                "type": "select",
+                "options": [
+                    "誰にも言わず全額貯金・資産運用に回す",
+                    "豪邸や高級車、欲しいものを爆買いして豪遊する",
+                    "仲間や大切な人に配ったり奢ったりする",
+                    "仕事を辞めて世界一周旅行に出る",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q6"
+            },
+            {
+                "text": "もし1日だけ「自陣の別のメンバー」と体が入れ替わったら何をする？",
+                "type": "select",
+                "options": [
+                    "相手の生活や部屋を興味津々で探索する",
+                    "相手の体を使って美味しいものを食べまくる",
+                    "バレないように粗相のないよう静かに過ごす",
+                    "相手の弱みや黒歴史を探そうとする",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q7"
+            },
+            {
+                "text": "もし超能力を1つだけ手に入れられるとしたら？",
+                "type": "select",
+                "options": [
+                    "瞬間移動（テレポート）",
+                    "他人の心を読む（テレパシー）",
+                    "時間を止める、または巻き戻す",
+                    "どんな傷や病気も治す超回復能力",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q8"
+            },
+            {
+                "text": "もし自分が「ヴィラン（敵・悪役）」側に回るとしたらどんな理由？",
+                "type": "select",
+                "options": [
+                    "大切な人を奪われ、世界に復讐するため",
+                    "自分の信じる大義や理想を成し遂げるため",
+                    "圧倒的な力や狂気に魅了されて堕ちる",
+                    "仲間の命を人質に取られて脅迫されたため",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q9"
+            },
+            {
+                "text": "もし明日「世界が滅亡する」としたら、最後の日は誰と何をする？",
+                "type": "select",
+                "options": [
+                    "自陣メンバーと集まっていつも通り笑って乾杯する",
+                    "家族や一番大切な人と静かに抱き合って過ごす",
+                    "一人きりで好きな音楽を聴きながら最後を迎える",
+                    "諦めずに世界を救う方法を最後まで探す",
+                    "その他（自由記入）"
+                ],
+                "id": "p7_q10"
+            }
+        ]
+    },
+    {
+        "title": "9. 生死観・神話的恐怖への向き合い方",
+        "questions": [
+            {
+                "text": "自分自身の「命」に対する執着はどれくらい？",
+                "type": "select",
+                "options": [
+                    "何をしてでも生き汚く生き延びたい",
+                    "生への執着はあるが、尊厳や信念を捨ててまでは生きたくない",
+                    "仲間のためなら自分の命を投げ出しても構わない",
+                    "いつ死んでもいいと心のどこかで諦めている",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q1"
+            },
+            {
+                "text": "未知の怪物や狂気に直面したとき、精神はどう反応する？",
+                "type": "select",
+                "options": [
+                    "恐怖で足がすくみ、パニックに陥る",
+                    "恐怖を好奇心が上回り、観察・分析しようとする",
+                    "現実逃避して「夢だ」と思い込もうとする",
+                    "感情を完全に遮断して機械のように行動する",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q2"
+            },
+            {
+                "text": "「死後の世界」についてどう考えている？",
+                "type": "select",
+                "options": [
+                    "天国や地獄、魂の行く場所があると信じている",
+                    "輪廻転生してまた別の命に生まれ変わると思う",
+                    "死んだら無になるだけで、何も残らないと思う",
+                    "怪異を知ってしまった以上、恐ろしい冥府があると怯えている",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q3"
+            },
+            {
+                "text": "自分がもし「発狂（精神崩壊）」するとしたら、どんな症状が出そう？",
+                "type": "select",
+                "options": [
+                    "見境なく暴力を振るう殺人癖・暴走",
+                    "恐怖から逃げ惑い叫び続けるパニック",
+                    "現実を拒絶して幼児退行・妄想の世界に引きこもる",
+                    "感情を一切失い、無気力な人形のようになる",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q4"
+            },
+            {
+                "text": "仲間が狂気に囚われ、怪異に成り果ててしまったらどうする？",
+                "type": "select",
+                "options": [
+                    "元に戻す方法を諦めずに探し続ける",
+                    "苦しませないよう、自分の手で引導を渡す",
+                    "受け入れられず、一緒に狂気に堕ちることを選ぶ",
+                    "恐怖でその場から逃げ出してしまう",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q5"
+            },
+            {
+                "text": "「人間を辞めて不死の怪物になれば助かる」と言われたら？",
+                "type": "select",
+                "options": [
+                    "人間として死ぬことを選ぶ",
+                    "化け物になってでも生き延びることを選ぶ",
+                    "仲間を救えるなら喜んで怪異を受け入れる",
+                    "迷いに迷って決断できない",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q6"
+            },
+            {
+                "text": "どんな死に方を「理想（本望）」だと思う？",
+                "type": "select",
+                "options": [
+                    "天寿を全うし、畳の上で安らかに老衰",
+                    "大切な人や世界を守って散る英雄的な死",
+                    "志半ばであっても、戦い抜いて果てる死",
+                    "誰にも知られず、静かに消え去るような死",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q7"
+            },
+            {
+                "text": "探索行を続ける中で、最も「恐ろしい」と感じるものは？",
+                "type": "select",
+                "options": [
+                    "圧倒的な力を持つ神話生物そのもの",
+                    "狂気に蝕まれて自分が自分でなくなること",
+                    "仲間が次々と目の前で死んでいくこと",
+                    "自分が怪異を日常に持ち帰ってしまうこと",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q8"
+            },
+            {
+                "text": "自分の「遺書」を書くとしたら、誰に何を残す？",
+                "type": "select",
+                "options": [
+                    "家族や仲間に感謝と「幸せに生きてくれ」という言葉",
+                    "自分の資産や持ち物の処分方法だけを事務的に書く",
+                    "自分の死の真相や怪異に関する警告を残す",
+                    "遺書なんて縁起でもないものは書かない",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q9"
+            },
+            {
+                "text": "狂気の世界から日常に生還したとき、心に去来する思いは？",
+                "type": "select",
+                "options": [
+                    "「また生きて帰れてよかった」という安堵",
+                    "失ったものの大きさに苛まれる虚無感・罪悪感",
+                    "「いつかまた日常が壊れるのでは」という消えない疑心暗鬼",
+                    "次の脅威に備えなければという強い警戒心",
+                    "その他（自由記入）"
+                ],
+                "id": "p8_q10"
+            }
+        ]
+    },
+    {
+        "title": "10. 未来・エピローグ",
+        "questions": [
+            {
+                "text": "全ての事件・シナリオを乗り越えた後の「叶えたい夢」は？",
+                "type": "select",
+                "options": [
+                    "昔からの夢だった仕事や趣味に打ち込む",
+                    "誰も知らない静かな場所で穏やかに暮らす",
+                    "大切な人と家庭を築き、温かい日常を過ごす",
+                    "新たな刺激や真理を求めて世界中を旅する",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q1"
+            },
+            {
+                "text": "探索者としての活動から「引退」する日は来ると思う？",
+                "type": "select",
+                "options": [
+                    "今回の件が片付いたらきっぱり引退する",
+                    "体力が続く限り、または必要とされる限り続ける",
+                    "死ぬまでこの道から降りることはできない",
+                    "そもそも引退という概念がなく、日常の一部になっている",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q2"
+            },
+            {
+                "text": "10年後、自分はどんな大人（人物）になっていると思う？",
+                "type": "select",
+                "options": [
+                    "今よりずっと頼もしく成熟した人物",
+                    "心身に傷を負いながらも、なんとか生き延びている姿",
+                    "今と何一つ変わらないマイペースな姿",
+                    "10年後まで生きている自信がない",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q3"
+            },
+            {
+                "text": "事件がすべて終わった後、自陣メンバーとの関係はどうなる？",
+                "type": "select",
+                "options": [
+                    "頻繁に集まって飲み食いする一生の親友になる",
+                    "たまに近況報告をする程度の程よい距離感になる",
+                    "日常に帰るため、連絡を絶ってお互い別々の道を歩む",
+                    "一緒に住む、または同じ職場で働き続ける",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q4"
+            },
+            {
+                "text": "もし自陣の誰かが命を落として自分だけが生き残ったら？",
+                "type": "select",
+                "options": [
+                    "その仲間の遺志を継ぎ、前を向いて生き抜く",
+                    "強い後悔と喪失感を抱え、一生引きずりながら生きる",
+                    "後を追うように自暴自棄・復讐の道へ進む",
+                    "悲しみを押し殺して普段通りを演じ続ける",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q5"
+            },
+            {
+                "text": "老後の理想の生活スタイルは？",
+                "type": "select",
+                "options": [
+                    "庭付きの平屋でペットや植物を育ててスローライフ",
+                    "仲間たちと近所に住んで賑やかに老後を過ごす",
+                    "都会の便利なマンションで趣味三昧",
+                    "老後を迎える前に散ると思っている",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q6"
+            },
+            {
+                "text": "自分の人生を振り返ったとき、「良い人生だった」と思える条件は？",
+                "type": "select",
+                "options": [
+                    "自分の信念を曲げずに貫き通せたこと",
+                    "誰かを心から愛し、愛されたこと",
+                    "後悔のないよう、やりたいことをやり尽くしたこと",
+                    "誰かの役に立ち、生きた証を遺せたこと",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q7"
+            },
+            {
+                "text": "もし後世に何かを「遺せる」としたら何を残したい？",
+                "type": "select",
+                "options": [
+                    "自分が成し遂げた記録・研究・創作物",
+                    "自分が稼いだ財産や血筋（子孫）",
+                    "仲間の記憶の中に残る「楽しい思い出」",
+                    "何も残さず、風のように忘れ去られたい",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q8"
+            },
+            {
+                "text": "物語の結末（エンドロール）の瞬間に流れていてほしい曲の雰囲気は？",
+                "type": "select",
+                "options": [
+                    "明るく希望に満ちたアップテンポな曲",
+                    "静かで温かく、少し切ないアコースティックな曲",
+                    "壮大でドラマチックなオーケストラ曲",
+                    "静寂（無音）のまま暗転してほしい",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q9"
+            },
+            {
+                "text": "全ての物語を終えた自分自身へ、最後にかける言葉は？",
+                "type": "select",
+                "options": [
+                    "「よく頑張ったな、お疲れ様」",
+                    "「これでやっと休めるね」",
+                    "「後悔はないか？」",
+                    "「お前の物語はここからだ」",
+                    "その他（自由記入）"
+                ],
+                "id": "p9_q10"
+            }
+        ]
+    }
+];
+
+        function initPresetDropdown() {
+            const select = document.getElementById('presetThemeSelect');
+            presetThemes.forEach((theme, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = theme.title;
+                select.appendChild(opt);
+            });
+        }
+
+        function loadPresetTheme(indexStr) {
+            if (indexStr === '') return;
+            if (!confirm('プリセットの質問をエディタに展開します。よろしいですか？\n※「お題リストを保存する」を押すまで実際のデータは変更されません。')) {
+                document.getElementById('presetThemeSelect').value = '';
+                return;
+            }
+            
+            const index = parseInt(indexStr);
+            const theme = presetThemes[index];
+            
+            editingQuestions = [];
+            theme.questions.forEach(q => {
+                editingQuestions.push({
+                    id: q.id,
+                    type: q.type,
+                    question: q.text,
+                    options: q.options ? [...q.options] : []
+                });
+            });
+            renderThemeEditorList();
+            document.getElementById('presetThemeSelect').value = '';
+        }
+
+function loadThemes() {
+            if (window.uchiyosoRoomId) return;
+            const data = localStorage.getItem('weby_theme_questions');
+            if (data) {
+                try {
+                    questions = JSON.parse(data);
+                } catch(e) {
+                    questions = [...defaultQuestions];
+                }
+            } else {
+                questions = [...defaultQuestions];
+            }
+            buildQuestionsForm();
+        }
+
+        function switchTab(tabName) {
+            ['comparison', 'answers', 'summary'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.remove('active');
+                document.getElementById(`content-${t}`).classList.add('hidden');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+
+            if (tabName === 'summary') {
+                renderSummary();
+            }
+        }
+
+        function loadTargets() {
+            if (window.uchiyosoRoomId) {
+                if (targets.length === 0) {
+                    document.getElementById('noDataMessage').classList.remove('hidden');
+                    document.getElementById('contentGrid').classList.add('hidden');
+                    document.getElementById('characterList').innerHTML = '';
+                } else {
+                    document.getElementById('noDataMessage').classList.add('hidden');
+                    document.getElementById('contentGrid').classList.remove('hidden');
+                    syncWithGlobalData();
+                    renderList();
+                    renderComparison();
+                }
+                return;
+            }
+            const data = localStorage.getItem('weby_profile_targets');
+            if (data) {
+                try {
+                    targets = JSON.parse(data);
+                } catch (e) {
+                    console.error("データの読み込みに失敗", e);
+                }
+            }
+
+            if (targets.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                document.getElementById('contentGrid').classList.add('hidden'); // ? Wait, let's keep grid visible so we can register manually
+                document.getElementById('characterList').innerHTML = '';
+            } else {
+                document.getElementById('noDataMessage').classList.add('hidden');
+                document.getElementById('contentGrid').classList.remove('hidden');
+                syncWithGlobalData();
+                renderList();
+                renderComparison();
+            }
+        }
+
+        function syncWithGlobalData() {
+            try {
+                const globalData = localStorage.getItem('weby_trpg_characters');
+                if (globalData) {
+                    const allChars = JSON.parse(globalData);
+                    targets.forEach(char => {
+                        const globalChar = allChars.find(c => c.id === char.id);
+                        if (globalChar) {
+                            // Fetch stats only if they exist globally
+                            if(globalChar.params && globalChar.params.length > 0) char.params = globalChar.params;
+                            if(globalChar.status && globalChar.status.length > 0) char.status = globalChar.status;
+                            if(globalChar.profile) char.profile = { ...(char.profile || {}), ...(globalChar.profile) };
+                            char.name = globalChar.name || char.name;
+                            if(globalChar.iconUrl) char.iconUrl = globalChar.iconUrl;
+                        }
+                        if (!char.themeAnswers) {
+                            char.themeAnswers = {};
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('characterList');
+            listEl.innerHTML = '';
+            
+            if (targets.length > 0) {
+                document.getElementById('noDataMessage').classList.add('hidden');
+                document.getElementById('contentGrid').classList.remove('hidden');
+            } else {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                document.getElementById('contentGrid').classList.remove('hidden'); // Keep UI up for buttons
+            }
+
+            targets.forEach(char => {
+                const item = document.createElement('div');
+                item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-amber-950/40 border-amber-700/60' : 'bg-transparent border-transparent hover:bg-[#1a1511]'}`;
+                item.onclick = () => selectCharacter(char.id);
+
+                const imgUrl = char.iconUrl || defaultSvg;
+                const lockIcon = (window.uchiyosoRoomId && char.ownerId !== window.uchiyosoUserId) ? '<i data-lucide="lock" class="w-3 h-3 text-stone-500 ml-1 inline"></i>' : '';
+
+                item.innerHTML = `
+                    <img src="${imgUrl}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover object-top shrink-0">
+                    <div class="overflow-hidden">
+                        <div class="text-sm font-bold text-stone-200 truncate font-header">${char.name}${lockIcon}</div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function getParamValue(char, label) {
+            if (char.params) {
+                const p = char.params.find(x => x.label.toUpperCase() === label.toUpperCase());
+                if (p) return parseInt(p.value) || 0;
+            }
+            return 0;
+        }
+
+        function getStatusValue(char, label) {
+            if (char.status) {
+                const s = char.status.find(x => x.label.toUpperCase() === label.toUpperCase());
+                if (s) return parseInt(s.value) || 0;
+            }
+            return 0;
+        }
+
+        function getHeight(char) {
+            if (char.profile && char.profile.height) {
+                const num = parseFloat(String(char.profile.height).replace(/[^0-9.]/g, ''));
+                if (!isNaN(num)) return num;
+            }
+            return 0;
+        }
+
+        function renderComparison() {
+            const tbody = document.getElementById('statusComparisonTable');
+            tbody.innerHTML = '';
+
+            const chartArea = document.getElementById('heightComparisonChart');
+            chartArea.innerHTML = '';
+            
+            const heightSortedTargets = [...targets].sort((a,b) => getHeight(a) - getHeight(b));
+            let maxHeight = Math.max(...heightSortedTargets.map(t => getHeight(t)));
+            if (maxHeight < 180) maxHeight = 200; 
+            
+            targets.forEach(char => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-[#14100c] hover:bg-[#1a1511] transition-colors";
+                tr.innerHTML = `
+                    <td class="p-3 border-r border-amber-950/50 font-bold text-stone-200 flex items-center gap-2">
+                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-6 h-6 rounded-full object-cover">
+                        <span class="truncate max-w-[100px]">${char.name}</span>
+                    </td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'STR') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'CON') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'POW') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'DEX') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'APP') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'SIZ') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'INT') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'EDU') || '-'}</td>
+                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-emerald-400">${getStatusValue(char, 'HP') || '-'}</td>
+                    <td class="p-3 text-center font-mono text-blue-400">${getStatusValue(char, 'MP') || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            heightSortedTargets.forEach(char => {
+                const h = getHeight(char);
+                if (h > 0) {
+                    const heightPercent = (h / (maxHeight + 20)) * 100;
+                    const barContainer = document.createElement('div');
+                    barContainer.className = "flex flex-col items-center justify-end h-full gap-2 shrink-0 group relative";
+                    barContainer.style.width = "80px";
+                    
+                    barContainer.innerHTML = `
+                        <div class="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-amber-900 text-amber-100 text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-10">${char.name} : ${h}cm</div>
+                        <div class="text-xs font-mono text-stone-400">${h}cm</div>
+                        <div class="w-12 bg-gradient-to-t from-stone-800 to-amber-900/80 rounded-t-sm border-t border-l border-r border-amber-700/50 shadow-[0_0_10px_rgba(217,119,6,0.1)] relative" style="height: ${heightPercent}%">
+                            <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="absolute -top-6 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full border border-amber-600/50 object-cover z-0 shadow-lg">
+                        </div>
+                        <div class="text-[10px] font-bold text-stone-300 truncate w-full text-center mt-1 font-header">${char.name}</div>
+                    `;
+                    chartArea.appendChild(barContainer);
+                }
+            });
+        }
+
+        function buildQuestionsForm() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = "bg-[#1a1511] p-4 rounded-lg border border-amber-950/60";
+                
+                const label = document.createElement('label');
+                label.className = "block text-sm font-bold text-amber-500 font-header mb-2";
+                label.textContent = q.question;
+                div.appendChild(label);
+
+                if (q.type === 'select') {
+                    const select = document.createElement('select');
+                    select.id = `input-${q.id}`;
+                    select.className = "form-input appearance-none bg-[#0a0806] cursor-pointer";
+                    select.innerHTML = `<option value="">-- 選択してください --</option>` + 
+                        (q.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                    div.appendChild(select);
+                    
+                    const otherInput = document.createElement('input');
+                    otherInput.type = "text";
+                    otherInput.id = `input-other-${q.id}`;
+                    otherInput.className = "form-input mt-2 hidden";
+                    otherInput.placeholder = "内容を入力してください...";
+                    div.appendChild(otherInput);
+
+                    select.addEventListener('change', (e) => {
+                        if (e.target.value.includes('その他')) {
+                            otherInput.classList.remove('hidden');
+                        } else {
+                            otherInput.classList.add('hidden');
+                        }
+                    });
+                } else if (q.type === 'text') {
+                    const input = document.createElement('textarea');
+                    input.id = `input-${q.id}`;
+                    input.rows = 2;
+                    input.className = "form-input resize-y";
+                    input.placeholder = "回答を入力...";
+                    div.appendChild(input);
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        function selectCharacter(id) {
+            currentEditingId = id;
+            renderList();
+
+            const char = targets.find(c => c.id === id);
+            if (!char) return;
+
+            document.getElementById('emptyAnswersState').classList.add('hidden');
+            document.getElementById('answersForm').classList.remove('hidden');
+            document.getElementById('answersForm').classList.add('flex');
+
+            document.getElementById('answerIcon').src = char.iconUrl || defaultSvg;
+            document.getElementById('answerIcon').onerror = function() { this.src = defaultSvg; };
+            document.getElementById('answerName').textContent = char.name;
+
+            const answers = char.themeAnswers || {};
+            const isOwner = !window.uchiyosoRoomId || char.ownerId === window.uchiyosoUserId;
+            
+            // Hide Edit Theme button if not host
+            const editBtn = document.querySelector('button[onclick="openModal(\'editThemesModal\')"]');
+            if (editBtn) {
+                if (window.uchiyosoRoomId && !window.isHost) {
+                    editBtn.classList.add('hidden');
+                } else {
+                    editBtn.classList.remove('hidden');
+                }
+            }
+
+            // Hide Save Answers button if not owner
+            const saveBtn = document.querySelector('button[onclick="saveAnswers()"]');
+            if (saveBtn) {
+                if (!isOwner) saveBtn.classList.add('hidden');
+                else saveBtn.classList.remove('hidden');
+            }
+
+            questions.forEach(q => {
+                const el = document.getElementById(`input-${q.id}`);
+                if (el) {
+                    el.disabled = !isOwner;
+                    if (q.type === 'select') {
+                        const val = answers[q.id] || "";
+                        if (val === "") {
+                            el.value = "";
+                        } else if (q.options && q.options.includes(val)) {
+                            el.value = val;
+                        } else {
+                            const otherOption = q.options ? q.options.find(o => o.includes('その他')) : null;
+                            if (otherOption) {
+                                el.value = otherOption;
+                            } else {
+                                el.value = val;
+                            }
+                        }
+                        
+                        el.dispatchEvent(new Event('change'));
+                        
+                        const otherEl = document.getElementById(`input-other-${q.id}`);
+                        if (otherEl && el.value.includes('その他')) {
+                            otherEl.value = (val !== el.value) ? val : "";
+                        }
+                        if (otherEl) otherEl.disabled = !isOwner;
+                    } else {
+                        el.value = answers[q.id] || "";
+                    }
+                }
+            });
+            
+            switchTab('answers');
+        }
+
+        function saveAnswers() {
+            if (!currentEditingId) return;
+
+            const char = targets.find(c => c.id === currentEditingId);
+            if (!char) return;
+
+            if (!char.themeAnswers) char.themeAnswers = {};
+
+            questions.forEach(q => {
+                const el = document.getElementById(`input-${q.id}`);
+                if (el) {
+                    if (q.type === 'select' && el.value.includes('その他')) {
+                        const otherEl = document.getElementById(`input-other-${q.id}`);
+                        if (otherEl && otherEl.value.trim() !== "") {
+                            char.themeAnswers[q.id] = otherEl.value.trim();
+                        } else {
+                            char.themeAnswers[q.id] = el.value.trim();
+                        }
+                    } else {
+                        char.themeAnswers[q.id] = el.value.trim();
+                    }
+                }
+            });
+
+            window.saveDataToStorageOrCloud();
+            showToast(`「${char.name}」の回答を保存しました。`, "success");
+            renderSummary();
+        }
+
+        function renderSummary() {
+            const container = document.getElementById('summaryContainer');
+            container.innerHTML = '';
+
+            questions.forEach(q => {
+                const qDiv = document.createElement('div');
+                qDiv.className = "bg-[#14100c] rounded-xl border border-amber-950/60 overflow-hidden shadow-lg";
+
+                const qHeader = document.createElement('div');
+                qHeader.className = "bg-gradient-to-r from-[#211913] to-[#1a1511] p-4 border-b border-amber-900/40";
+                qHeader.innerHTML = `<h4 class="text-base font-bold text-amber-500 font-header">${q.question}</h4>`;
+                qDiv.appendChild(qHeader);
+
+                const answersGrid = document.createElement('div');
+                answersGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-amber-950/30";
+
+                targets.forEach(char => {
+                    const answerText = (char.themeAnswers && char.themeAnswers[q.id]) ? char.themeAnswers[q.id] : '<span class="text-stone-600 italic">未回答</span>';
+                    
+                    const aCell = document.createElement('div');
+                    aCell.className = "bg-[#1a1511] p-4 flex gap-4";
+                    aCell.innerHTML = `
+                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover shrink-0">
+                        <div class="overflow-hidden w-full">
+                            <div class="text-[11px] font-bold text-stone-500 font-header mb-1">${char.name}</div>
+                            <div class="text-sm text-stone-200 whitespace-pre-wrap leading-relaxed">${answerText}</div>
+                        </div>
+                    `;
+                    answersGrid.appendChild(aCell);
+                });
+
+                if (targets.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = "bg-[#1a1511] p-4 text-stone-500 text-xs italic text-center";
+                    empty.textContent = "参加キャラクターがいません";
+                    answersGrid.appendChild(empty);
+                }
+
+                qDiv.appendChild(answersGrid);
+                container.appendChild(qDiv);
+            });
+        }
+
+
+        /* ===== モーダル・新機能系 ===== */
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
+            if (id === 'editThemesModal') buildThemeEditor();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function registerNewCharacter() {
+            const name = document.getElementById('newCharName').value.trim();
+            if (!name) {
+                showToast("キャラクター名を入力してください", "error");
+                return;
+            }
+
+            const id = 'char_' + Date.now() + Math.random().toString(36).substr(2, 9);
+            const iconUrl = document.getElementById('newCharIcon').value.trim();
+            const height = document.getElementById('newCharHeight').value.trim();
+
+            const getVal = (id) => document.getElementById(id).value.trim();
+            
+            const newChar = {
+                id: id,
+                name: name,
+                iconUrl: iconUrl,
+                params: [
+                    { label: "STR", value: getVal('newCharSTR') },
+                    { label: "CON", value: getVal('newCharCON') },
+                    { label: "POW", value: getVal('newCharPOW') },
+                    { label: "DEX", value: getVal('newCharDEX') },
+                    { label: "APP", value: getVal('newCharAPP') },
+                    { label: "SIZ", value: getVal('newCharSIZ') },
+                    { label: "INT", value: getVal('newCharINT') },
+                    { label: "EDU", value: getVal('newCharEDU') }
+                ],
+                status: [
+                    { label: "HP", value: getVal('newCharHP') },
+                    { label: "MP", value: getVal('newCharPOW') } // Simplified MP = POW
+                ],
+                profile: {
+                    height: height ? height + "cm" : ""
+                },
+                themeAnswers: {}
+            };
+
+            newChar.ownerId = window.uchiyosoUserId;
+            targets.push(newChar);
+            window.saveDataToStorageOrCloud();
+            
+            // clear form
+            ['Name','Icon','Height','STR','CON','POW','DEX','APP','SIZ','INT','EDU','HP'].forEach(k => {
+                const el = document.getElementById(`newChar${k}`);
+                if(el) el.value = '';
+            });
+
+            closeModal('newCharModal');
+            showToast(`${name} を追加しました`, "success");
+            
+            renderList();
+            renderComparison();
+            renderSummary();
+        }
+
+        function exportData() {
+            const exportObj = {
+                version: "1.0",
+                type: "uchiyoso_party_data",
+                questions: questions,
+                targets: targets
+            };
+            const jsonStr = JSON.stringify(exportObj, null, 2);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "uchiyoso_party.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("データをエクスポートしました", "success");
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showToast("ファイルを選択してください", "error");
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.type === "uchiyoso_party_data") {
+                        questions = data.questions || [];
+                        targets = data.targets || [];
+                        
+                        // Save to local storage
+                        localStorage.setItem('weby_theme_questions', JSON.stringify(questions));
+                        localStorage.setItem('weby_profile_targets', JSON.stringify(targets));
+                        
+                        closeModal('ioModal');
+                        showToast("データをインポートしました！", "success");
+                        
+                        // Reload UI
+                        buildQuestionsForm();
+                        renderList();
+                        renderComparison();
+                        renderSummary();
+                        currentEditingId = null;
+                        switchTab('comparison');
+
+                    } else {
+                        showToast("無効なファイル形式です", "error");
+                    }
+                } catch(err) {
+                    showToast("ファイルのパースに失敗しました", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /* ===== Theme Editor ===== */
+        let editingQuestions = [];
+
+        function buildThemeEditor() {
+            editingQuestions = JSON.parse(JSON.stringify(questions)); // Deep copy
+            renderThemeEditorList();
+        }
+
+        function renderThemeEditorList() {
+            const container = document.getElementById('themeEditorList');
+            container.innerHTML = '';
+            
+            editingQuestions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-[#1a1511] p-4 rounded-lg border border-amber-900/40 relative";
+                
+                div.innerHTML = `
+                    <button onclick="removeThemeField(${index})" class="absolute top-2 right-2 p-1 text-stone-500 hover:text-rose-500 transition-colors" title="削除">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <div class="mb-3">
+                        <label class="block text-xs font-semibold text-amber-600/80 mb-1">質問文</label>
+                        <input type="text" value="${q.question}" onchange="updateThemeQuestion(${index}, this.value)" class="form-input text-sm font-bold text-amber-100" placeholder="質問を入力">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <label class="block text-xs font-semibold text-amber-600/80">回答形式:</label>
+                        <select onchange="updateThemeType(${index}, this.value)" class="form-input w-auto text-xs py-1 cursor-pointer">
+                            <option value="text" ${q.type === 'text' ? 'selected' : ''}>自由記述 (テキストエリア)</option>
+                            <option value="select" ${q.type === 'select' ? 'selected' : ''}>選択肢 (ドロップダウン)</option>
+                        </select>
+                    </div>
+                    ${q.type === 'select' ? `
+                        <div class="mt-3">
+                            <label class="block text-xs font-semibold text-amber-600/80 mb-1">選択肢 (カンマ区切りで入力)</label>
+                            <input type="text" value="${(q.options || []).join(',')}" onchange="updateThemeOptions(${index}, this.value)" class="form-input text-xs" placeholder="選択肢1,選択肢2,選択肢3...">
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function updateThemeQuestion(index, val) {
+            editingQuestions[index].question = val.trim();
+        }
+        function updateThemeType(index, val) {
+            editingQuestions[index].type = val;
+            if (val === 'select' && !editingQuestions[index].options) {
+                editingQuestions[index].options = ["選択肢1", "選択肢2"];
+            }
+            renderThemeEditorList();
+        }
+        function updateThemeOptions(index, val) {
+            editingQuestions[index].options = val.split(',').map(s => s.trim()).filter(s => s !== "");
+        }
+        function removeThemeField(index) {
+            editingQuestions.splice(index, 1);
+            renderThemeEditorList();
+        }
+        function addNewThemeField() {
+            editingQuestions.push({
+                id: 'q_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                type: 'text',
+                question: `新規の質問 ${editingQuestions.length + 1}`
+            });
+            renderThemeEditorList();
+        }
+
+        function saveThemes() {
+            questions = JSON.parse(JSON.stringify(editingQuestions));
+            window.saveDataToStorageOrCloud(true);
+            closeModal('editThemesModal');
+            showToast("お題リストを保存しました", "success");
+            
+            buildQuestionsForm();
+            renderSummary();
+            
+            if (currentEditingId) {
+                selectCharacter(currentEditingId);
+            }
+        }
+
+
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconWrapper = document.getElementById('toast-icon-wrapper');
+            
+            msgEl.textContent = message;
+            
+            if (type === "success") {
+                iconWrapper.className = "p-1 rounded-full bg-emerald-950 text-emerald-500";
+                iconWrapper.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i>';
+                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-emerald-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+            } else if (type === "error") {
+                iconWrapper.className = "p-1 rounded-full bg-rose-950 text-rose-500";
+                iconWrapper.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
+                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-rose-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+            }
+            
+            lucide.createIcons();
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize application on load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initPresetDropdown();
+            loadThemes();
+            loadTargets();
+        });
+    </script>
+    <script type="module" src="js/uchiyoso_firebase.js"></script>
+</body>
+</html>
