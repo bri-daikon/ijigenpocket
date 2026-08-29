@@ -28,6 +28,7 @@
                     <button onclick="switchMainTab('iconmaker')" id="main-tab-iconmaker" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">丸形アイコン</button>
                     <button onclick="switchMainTab('texteditor')" id="main-tab-texteditor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">文字入れ・画像編集</button>
                     <button onclick="switchMainTab('compressor')" id="main-tab-compressor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">画像圧縮</button>
+                    <button onclick="switchMainTab('splitter')" id="main-tab-splitter" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">画像分割</button>
                 </div>
             </header>
 
@@ -548,6 +549,74 @@
                                     <!-- 隠しCanvas (処理用) -->
                                     <canvas id="compressor-canvas" class="hidden"></canvas>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: IMAGE SPLITTER -->
+                <div id="view-splitter" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-5xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 分割したい画像を選択</label>
+                                    <div id="splitter-dropzone" class="relative h-28 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="splitter-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-sm">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. 分割設定 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. 分割設定</label>
+                                    
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-2">分割方向:</span>
+                                        <div class="flex space-x-2">
+                                            <button id="splitter-dir-horizontal" onclick="setSplitterDirection('horizontal')" class="flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all">横方向に分割<br><span class="text-[10px] font-normal">(縦線でスライス)</span></button>
+                                            <button id="splitter-dir-vertical" onclick="setSplitterDirection('vertical')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">縦方向に分割<br><span class="text-[10px] font-normal">(横線でスライス)</span></button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-1">分割数:</span>
+                                        <select id="splitter-count-select" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none text-sm font-bold text-slate-600">
+                                            <option value="2">2分割</option>
+                                            <option value="3">3分割</option>
+                                            <option value="4" selected>4分割</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- 3. 実行ボタン -->
+                                <div class="pt-4 border-t border-slate-200">
+                                    <button id="splitter-download-btn" class="hidden w-full btn-hover bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed">
+                                        すべて保存（個別ダウンロード）
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-start bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
+                                <div id="splitter-placeholder" class="text-center my-auto">
+                                    <p class="text-slate-400 text-sm font-bold">ここに分割プレビューが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に画像を選択してください</p>
+                                </div>
+
+                                <div id="splitter-preview-container" class="w-full hidden overflow-hidden">
+                                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-200">
+                                        <span class="text-sm font-bold text-slate-600">プレビュー</span>
+                                        <span id="splitter-info" class="text-xs font-bold text-slate-400"></span>
+                                    </div>
+                                    <!-- プレビュー画像が追加される -->
+                                    <div id="splitter-pieces" class="flex gap-2 overflow-x-auto pb-4 justify-center"></div>
+                                </div>
+                                <!-- 隠し要素 (処理用) -->
+                                <img id="splitter-original-img" src="" class="hidden">
                             </div>
                         </div>
                     </div>
