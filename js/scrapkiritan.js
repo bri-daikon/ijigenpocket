@@ -81,6 +81,8 @@ document.addEventListener('paste', (e) => {
                 loadTextEditorFile(blob);
             } else if (activeTab === 'main-tab-compressor') {
                 loadCompressorFile(blob);
+            } else if (activeTab === 'main-tab-splitter') {
+                loadSplitterFile(blob);
             }
         }
     }
@@ -1355,3 +1357,151 @@ function setTextEditorCanvasBg(bg) {
 window.setTextEditorCanvasBg = setTextEditorCanvasBg;
 
 
+// --- SECTION: IMAGE SPLITTER ---
+let splitterOriginalImage = null;
+let splitterDirection = 'horizontal'; // horizontal or vertical
+
+const splitterFileInput = document.getElementById('splitter-file-input');
+const splitterDropzone = document.getElementById('splitter-dropzone');
+const splitterDownloadBtn = document.getElementById('splitter-download-btn');
+const splitterPreviewContainer = document.getElementById('splitter-preview-container');
+const splitterPiecesContainer = document.getElementById('splitter-pieces');
+const splitterPlaceholder = document.getElementById('splitter-placeholder');
+const splitterOriginalImgEl = document.getElementById('splitter-original-img');
+const splitterCountSelect = document.getElementById('splitter-count-select');
+
+function setSplitterDirection(dir) {
+    splitterDirection = dir;
+    
+    const btnHoriz = document.getElementById('splitter-dir-horizontal');
+    const btnVert = document.getElementById('splitter-dir-vertical');
+    
+    if (dir === 'horizontal') {
+        if(btnHoriz) btnHoriz.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+        if(btnVert) btnVert.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+    } else {
+        if(btnHoriz) btnHoriz.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+        if(btnVert) btnVert.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+    }
+    
+    // Auto-update preview if image is loaded
+    if (splitterOriginalImage) {
+        updateSplitterPreview();
+    }
+}
+window.setSplitterDirection = setSplitterDirection;
+
+if (splitterCountSelect) {
+    splitterCountSelect.addEventListener('change', () => {
+        if (splitterOriginalImage) {
+            updateSplitterPreview();
+        }
+    });
+}
+
+function loadSplitterFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        splitterOriginalImage = new Image();
+        splitterOriginalImage.onload = () => {
+            if(splitterOriginalImgEl) splitterOriginalImgEl.src = splitterOriginalImage.src;
+            
+            if(splitterPlaceholder) splitterPlaceholder.classList.add('hidden');
+            
+            // Auto-generate preview
+            updateSplitterPreview();
+        };
+        splitterOriginalImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (splitterFileInput) {
+    splitterFileInput.addEventListener('change', (e) => loadSplitterFile(e.target.files[0]));
+}
+if (splitterDropzone) {
+    splitterDropzone.addEventListener('dragover', (e) => { e.preventDefault(); splitterDropzone.classList.add('bg-slate-50'); });
+    splitterDropzone.addEventListener('dragleave', () => splitterDropzone.classList.remove('bg-slate-50'));
+    splitterDropzone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        splitterDropzone.classList.remove('bg-slate-50'); 
+        loadSplitterFile(e.dataTransfer.files[0]); 
+    });
+}
+
+function updateSplitterPreview() {
+    if (!splitterOriginalImage) return;
+    
+    const count = parseInt(splitterCountSelect.value) || 4;
+    const width = splitterOriginalImage.naturalWidth;
+    const height = splitterOriginalImage.naturalHeight;
+    
+    splitterPiecesContainer.innerHTML = '';
+    
+    if (splitterDirection === 'horizontal') {
+        // 横方向に分割 = 縦線でスライス = 幅を分割
+        splitterPiecesContainer.classList.remove('flex-col', 'items-center');
+        splitterPiecesContainer.classList.add('flex-row');
+        
+        const chunkWidth = Math.floor(width / count);
+        for (let i = 0; i < count; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = chunkWidth;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(splitterOriginalImage, i * chunkWidth, 0, chunkWidth, height, 0, 0, chunkWidth, height);
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = "max-h-[300px] object-contain border border-slate-200 rounded shadow-sm";
+            splitterPiecesContainer.appendChild(img);
+        }
+    } else {
+        // 縦方向に分割 = 横線でスライス = 高さを分割
+        splitterPiecesContainer.classList.remove('flex-row');
+        splitterPiecesContainer.classList.add('flex-col', 'items-center');
+        
+        const chunkHeight = Math.floor(height / count);
+        for (let i = 0; i < count; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = chunkHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(splitterOriginalImage, 0, i * chunkHeight, width, chunkHeight, 0, 0, width, chunkHeight);
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = "max-w-[400px] object-contain border border-slate-200 rounded shadow-sm";
+            splitterPiecesContainer.appendChild(img);
+        }
+    }
+    
+    const info = document.getElementById('splitter-info');
+    if (info) info.textContent = `元サイズ: ${width}x${height}px → ${count}分割`;
+    
+    splitterPreviewContainer.classList.remove('hidden');
+    if (splitterDownloadBtn) {
+        splitterDownloadBtn.classList.remove('hidden', 'opacity-20', 'cursor-not-allowed');
+        splitterDownloadBtn.disabled = false;
+    }
+}
+
+if (splitterDownloadBtn) {
+    splitterDownloadBtn.addEventListener('click', () => {
+        const images = splitterPiecesContainer.querySelectorAll('img');
+        if (images.length === 0) return;
+        
+        let i = 0;
+        const downloadNext = () => {
+            if (i >= images.length) return;
+            const link = document.createElement('a');
+            link.download = `split_${Date.now()}_${i+1}.png`;
+            link.href = images[i].src;
+            link.click();
+            i++;
+            setTimeout(downloadNext, 300); // 連続ダウンロードブロック対策
+        };
+        downloadNext();
+    });
+}
