@@ -1399,6 +1399,16 @@ if (splitterCountSelect) {
     });
 }
 
+const splitterGapInput = document.getElementById('splitter-gap-input');
+const splitterGapVal = document.getElementById('splitter-gap-val');
+
+if (splitterGapInput) {
+    splitterGapInput.addEventListener('input', (e) => {
+        if (splitterGapVal) splitterGapVal.textContent = e.target.value + 'px';
+        if (splitterOriginalImage) updateSplitterPreview();
+    });
+}
+
 function loadSplitterFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
@@ -1439,18 +1449,23 @@ function updateSplitterPreview() {
     
     splitterPiecesContainer.innerHTML = '';
     
+    const gap = splitterGapInput ? (parseInt(splitterGapInput.value) || 0) : 0;
+
     if (splitterDirection === 'horizontal') {
         // 横方向に分割 = 縦線でスライス = 幅を分割
         splitterPiecesContainer.classList.remove('flex-col', 'items-center');
         splitterPiecesContainer.classList.add('flex-row');
         
-        const chunkWidth = Math.floor(width / count);
+        const totalEffectiveWidth = width - (count - 1) * gap;
+        const chunkWidth = Math.floor(totalEffectiveWidth / count);
+        
         for (let i = 0; i < count; i++) {
             const canvas = document.createElement('canvas');
             canvas.width = chunkWidth;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(splitterOriginalImage, i * chunkWidth, 0, chunkWidth, height, 0, 0, chunkWidth, height);
+            const sx = i * chunkWidth + i * gap;
+            ctx.drawImage(splitterOriginalImage, sx, 0, chunkWidth, height, 0, 0, chunkWidth, height);
             
             const img = document.createElement('img');
             img.src = canvas.toDataURL('image/png');
@@ -1462,13 +1477,16 @@ function updateSplitterPreview() {
         splitterPiecesContainer.classList.remove('flex-row');
         splitterPiecesContainer.classList.add('flex-col', 'items-center');
         
-        const chunkHeight = Math.floor(height / count);
+        const totalEffectiveHeight = height - (count - 1) * gap;
+        const chunkHeight = Math.floor(totalEffectiveHeight / count);
+        
         for (let i = 0; i < count; i++) {
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = chunkHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(splitterOriginalImage, 0, i * chunkHeight, width, chunkHeight, 0, 0, width, chunkHeight);
+            const sy = i * chunkHeight + i * gap;
+            ctx.drawImage(splitterOriginalImage, 0, sy, width, chunkHeight, 0, 0, width, chunkHeight);
             
             const img = document.createElement('img');
             img.src = canvas.toDataURL('image/png');
@@ -1478,7 +1496,7 @@ function updateSplitterPreview() {
     }
     
     const info = document.getElementById('splitter-info');
-    if (info) info.textContent = `元サイズ: ${width}x${height}px → ${count}分割`;
+    if (info) info.textContent = `元サイズ: ${width}x${height}px → ${count}分割 (隙間: ${gap}px考慮)`;
     
     splitterPreviewContainer.classList.remove('hidden');
     if (splitterDownloadBtn) {
