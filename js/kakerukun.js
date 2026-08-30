@@ -3188,3 +3188,145 @@ function updateColorPaletteUI(colors) {
 }
 
 window.addEventListener('load', loadColorPalette);
+
+/* --- ポモドーロタイマー機能 --- */
+let pomodoroTimer = null;
+let pomodoroTimeRemaining = 25 * 60;
+let isPomodoroWorking = true;
+let isPomodoroRunning = false;
+
+function togglePomodoroVisibility() {
+    const pTimer = document.getElementById('pomodoro-timer');
+    if (pTimer) {
+        if (pTimer.style.display === 'none') {
+            pTimer.style.display = 'block';
+        } else {
+            pTimer.style.display = 'none';
+        }
+    }
+}
+
+function togglePomodoroSettings() {
+    const settings = document.getElementById('pomodoro-settings');
+    if (settings) {
+        settings.classList.toggle('hidden');
+    }
+}
+
+function updatePomodoroDisplay() {
+    const min = Math.floor(pomodoroTimeRemaining / 60);
+    const sec = pomodoroTimeRemaining % 60;
+    const display = document.getElementById('pomodoro-time-display');
+    if (display) {
+        display.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+}
+
+function playBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+    } catch(e) {
+        console.log("Audio API not supported");
+    }
+}
+
+function updatePomodoroSettings() {
+    if (isPomodoroRunning) return;
+    const workMin = parseInt(document.getElementById('pomo-work-time').value) || 25;
+    const breakMin = parseInt(document.getElementById('pomo-break-time').value) || 5;
+    pomodoroTimeRemaining = (isPomodoroWorking ? workMin : breakMin) * 60;
+    updatePomodoroDisplay();
+}
+
+function startPomodoro() {
+    if (isPomodoroRunning) return;
+    isPomodoroRunning = true;
+    document.getElementById('pomodoro-start-btn').classList.add('hidden');
+    document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
+    
+    pomodoroTimer = setInterval(() => {
+        pomodoroTimeRemaining--;
+        if (pomodoroTimeRemaining <= 0) {
+            playBeep();
+            isPomodoroWorking = !isPomodoroWorking;
+            const workMin = parseInt(document.getElementById('pomo-work-time').value) || 25;
+            const breakMin = parseInt(document.getElementById('pomo-break-time').value) || 5;
+            pomodoroTimeRemaining = (isPomodoroWorking ? workMin : breakMin) * 60;
+            const statusEl = document.getElementById('pomodoro-status');
+            if (statusEl) {
+                statusEl.textContent = isPomodoroWorking ? "作業中" : "休憩中";
+                statusEl.className = isPomodoroWorking ? "text-xs text-rose-500 font-bold mt-1" : "text-xs text-emerald-500 font-bold mt-1";
+            }
+        }
+        updatePomodoroDisplay();
+    }, 1000);
+}
+
+function pausePomodoro() {
+    if (!isPomodoroRunning) return;
+    isPomodoroRunning = false;
+    clearInterval(pomodoroTimer);
+    document.getElementById('pomodoro-start-btn').classList.remove('hidden');
+    document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+}
+
+function resetPomodoro() {
+    pausePomodoro();
+    isPomodoroWorking = true;
+    const statusEl = document.getElementById('pomodoro-status');
+    if (statusEl) {
+        statusEl.textContent = "作業中";
+        statusEl.className = "text-xs text-slate-500 font-bold mt-1";
+    }
+    updatePomodoroSettings();
+}
+
+// Drag functionality for Pomodoro Timer
+document.addEventListener('DOMContentLoaded', () => {
+    const pTimer = document.getElementById('pomodoro-timer');
+    if (!pTimer) return;
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    pTimer.addEventListener('mousedown', dragStart);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('mousemove', drag);
+
+    function dragStart(e) {
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+        if (e.target === pTimer || pTimer.contains(e.target)) {
+            isDragging = true;
+        }
+    }
+    function dragEnd(e) {
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+    }
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            xOffset = currentX;
+            yOffset = currentY;
+            pTimer.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+        }
+    }
+});
