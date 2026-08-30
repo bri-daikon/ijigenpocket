@@ -300,6 +300,7 @@
                             <button onclick="exportHTML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-3 rounded shadow transition">HTML</button>
                         </div>
                         <div class="flex gap-1">
+                            <button onclick="togglePomodoroVisibility()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-2 px-3 rounded shadow transition" title="ポモドーロタイマー">🍅</button>
                             <button onclick="openModal('export-settings-modal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 px-3 rounded shadow transition" title="出力設定">⚙️ 設定</button>
                             <button onclick="exportWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">Word</button>
                             <button onclick="exportGoogleDocs()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow transition">GDocs</button>
@@ -440,6 +441,36 @@
         </div>
     </div>
 
+
+    <!-- ポモドーロタイマー -->
+    <div id="pomodoro-timer" class="no-print bg-white rounded-xl shadow-2xl border border-slate-200 p-4 fixed z-50 text-slate-900" style="bottom: 20px; right: 20px; width: 250px; cursor: move; user-select: none; display: none;">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-sm font-bold text-rose-500 flex items-center gap-1">🍅 ポモドーロ</h3>
+            <div class="flex gap-2">
+                <button onclick="togglePomodoroSettings()" class="text-xs text-slate-400 hover:text-slate-600">⚙️</button>
+                <button onclick="togglePomodoroVisibility()" class="text-xs text-slate-400 hover:text-slate-600">✖</button>
+            </div>
+        </div>
+        <div class="text-center mb-3">
+            <div id="pomodoro-time-display" class="text-4xl font-mono font-bold text-slate-700">25:00</div>
+            <div id="pomodoro-status" class="text-xs text-slate-500 font-bold mt-1">作業中</div>
+        </div>
+        <div class="flex justify-center gap-2 mb-3">
+            <button onclick="startPomodoro()" id="pomodoro-start-btn" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-xs font-bold transition">開始</button>
+            <button onclick="pausePomodoro()" id="pomodoro-pause-btn" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-bold transition hidden">停止</button>
+            <button onclick="resetPomodoro()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-xs font-bold transition">リセット</button>
+        </div>
+        <div id="pomodoro-settings" class="hidden border-t border-slate-100 pt-3 mt-2">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-slate-500 font-bold">作業 (分)</label>
+                <input type="number" id="pomo-work-time" value="25" min="1" max="120" class="w-16 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none text-center" onchange="updatePomodoroSettings()">
+            </div>
+            <div class="flex items-center justify-between">
+                <label class="text-xs text-slate-500 font-bold">休憩 (分)</label>
+                <input type="number" id="pomo-break-time" value="5" min="1" max="60" class="w-16 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none text-center" onchange="updatePomodoroSettings()">
+            </div>
+        </div>
+    </div>
 
     <!-- マスコットキャラクターの表示要素 -->
     <div class="mascot-container no-print">
