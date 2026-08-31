@@ -138,6 +138,9 @@
 
             <!-- 操作パネル（上部フローティング） -->
             <div class="absolute top-4 right-4 flex gap-2">
+                <button onclick="toggleRelationListPanel()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#14100c]/80 backdrop-blur border border-amber-900/60 text-amber-500 hover:text-amber-300 hover:bg-amber-900/40 rounded-lg transition-all shadow-lg">
+                    <i data-lucide="list" class="w-4 h-4"></i> 関係性の管理
+                </button>
                 <button onclick="toggleGroupPanel()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#14100c]/80 backdrop-blur border border-amber-900/60 text-amber-500 hover:text-amber-300 hover:bg-amber-900/40 rounded-lg transition-all shadow-lg">
                     <i data-lucide="layers" class="w-4 h-4"></i> 枠の管理
                 </button>
@@ -165,6 +168,14 @@
                 </div>
             </div>
 
+            <!-- 関係性（エッジ）管理パネル -->
+            <div class="absolute top-14 right-4 bg-[#14100c]/90 backdrop-blur-md border border-amber-900/60 p-3 rounded-xl shadow-lg w-72 z-10 hidden" id="relationListPanel">
+                <h4 class="text-xs font-bold text-amber-500 mb-2 border-b border-amber-900/50 pb-1 flex items-center gap-1"><i data-lucide="list" class="w-3.5 h-3.5"></i> 関係性の一覧</h4>
+                <div class="max-h-80 overflow-y-auto space-y-2" id="relationListArea">
+                    <!-- 関係性一覧 -->
+                </div>
+            </div>
+
             <!-- 関係性追加パネル（下部） -->
             <div class="bg-[#0c0a09]/95 backdrop-blur-md border-t border-amber-900/40 p-4 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.5)]">
                 <h3 class="text-xs font-bold text-amber-600 font-header tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="link-2" class="w-4 h-4"></i> 関係性を結ぶ</h3>
@@ -187,7 +198,14 @@
                         <input type="color" id="relColor" value="#ea580c" class="w-8 h-8 bg-transparent cursor-pointer rounded" title="線の色">
                     </div>
                     <div class="shrink-0">
-                        <select id="relStyle" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none cursor-pointer">
+                        <select id="relArrow" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none cursor-pointer" title="矢印の種類">
+                            <option value="to">片道矢印(→)</option>
+                            <option value="both">両矢印(↔)</option>
+                            <option value="none">直線(矢印なし)</option>
+                        </select>
+                    </div>
+                    <div class="shrink-0">
+                        <select id="relStyle" class="w-full bg-[#14100c] border border-amber-950/60 focus:border-amber-600 rounded-lg py-2 px-3 text-xs text-amber-200 focus:outline-none cursor-pointer" title="線の種類">
                             <option value="solid">実線</option>
                             <option value="dashed">点線</option>
                             <option value="thick">太線</option>
@@ -233,6 +251,48 @@
                 <div class="flex gap-2 pt-2">
                     <button onclick="closeGuestModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded border border-stone-600">キャンセル</button>
                     <button onclick="addGuestCharacter()" class="flex-1 py-2 bg-amber-900 hover:bg-amber-800 text-amber-100 text-xs rounded border border-amber-700">追加する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 関係性編集モーダル -->
+    <div id="editEdgeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-[#14100c] border border-amber-900/60 p-5 rounded-xl shadow-2xl w-80 max-w-full">
+            <h3 class="text-sm font-bold text-amber-500 font-header tracking-wider mb-3"><i data-lucide="edit-3" class="w-4 h-4 inline-block mr-1"></i> 関係性の編集</h3>
+            <input type="hidden" id="editEdgeId">
+            <div class="space-y-3">
+                <div class="text-xs text-stone-400 font-bold mb-1" id="editEdgeNodesLabel">A -> B</div>
+                <div>
+                    <label class="block text-xs text-stone-400 mb-1">関係性</label>
+                    <input type="text" id="editEdgeLabel" class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-2 text-xs text-amber-200 focus:outline-none focus:border-amber-600">
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-grow">
+                        <label class="block text-xs text-stone-400 mb-1">線の色</label>
+                        <input type="color" id="editEdgeColor" class="w-full h-8 bg-transparent cursor-pointer rounded">
+                    </div>
+                    <div class="flex-grow">
+                        <label class="block text-xs text-stone-400 mb-1">矢印の種類</label>
+                        <select id="editEdgeArrow" class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-1.5 text-xs text-amber-200 focus:outline-none">
+                            <option value="to">片道矢印(→)</option>
+                            <option value="both">両矢印(↔)</option>
+                            <option value="none">直線(矢印なし)</option>
+                        </select>
+                    </div>
+                    <div class="flex-grow">
+                        <label class="block text-xs text-stone-400 mb-1">線の種類</label>
+                        <select id="editEdgeStyle" class="w-full bg-[#0a0806] border border-amber-950/60 rounded p-1.5 text-xs text-amber-200 focus:outline-none">
+                            <option value="solid">実線</option>
+                            <option value="dashed">点線</option>
+                            <option value="thick">太線</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="deleteEditEdge()" class="px-3 py-2 bg-red-900/40 hover:bg-red-800 text-red-200 text-xs rounded border border-red-900/60 transition-colors" title="削除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="closeEditEdgeModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded border border-stone-600">キャンセル</button>
+                    <button onclick="saveEditEdge()" class="flex-1 py-2 bg-amber-900 hover:bg-amber-800 text-amber-100 text-xs rounded border border-amber-700">保存する</button>
                 </div>
             </div>
         </div>
