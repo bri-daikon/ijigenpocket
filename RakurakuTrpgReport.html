@@ -784,8 +784,26 @@
             updateCharCount();
         }
 
+        function getTwitterCharCount(text) {
+            let count = 0;
+            for (let i = 0; i < text.length; i++) {
+                const codePoint = text.codePointAt(i);
+                if (codePoint > 0xFFFF) {
+                    i++; // Skip surrogate pair's second character
+                    count += 2; // Emoji etc. counts as full-width equivalent
+                } else if (codePoint <= 0x007f || (codePoint >= 0xFF61 && codePoint <= 0xFF9F)) {
+                    // ASCII or Half-width Kana
+                    count += 1;
+                } else {
+                    // Full-width (Kanji, Kana, etc.)
+                    count += 2;
+                }
+            }
+            return Math.ceil(count / 2);
+        }
+
         function updateCharCount() {
-            const count = previewTextarea.value.length;
+            const count = getTwitterCharCount(previewTextarea.value);
             charCount.textContent = `${count} / 140 (全角目安)`;
         }
 
