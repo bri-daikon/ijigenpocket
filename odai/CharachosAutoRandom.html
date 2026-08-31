@@ -24,15 +24,24 @@
         
         <!-- 左側：選択エリア -->
         <div class="flex-1 space-y-6 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-            <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+            <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-xl shadow-lg mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide">🎲 キャラちょすおーとらんだむ</h1>
                     <p class="text-indigo-100 text-xs md:text-sm mt-1">TRPGキャラクターの性格・設定を自動生成</p>
-                    <p class="text-indigo-200 text-xs mt-2">※ 項目を「指定なし」にすると出力されないので、いらない項目は指定なしにしてください。</p>
+                    <p class="text-indigo-200 text-xs mt-2 mb-2">※ 項目を「指定なし」にすると出力されないので、いらない項目は指定なしにしてください。</p>
+                    <label class="inline-flex items-center gap-2 text-indigo-100 text-sm cursor-pointer bg-slate-800/30 px-3 py-1.5 rounded-lg hover:bg-slate-800/50 transition">
+                        <input type="checkbox" id="romanceToggle" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" onchange="toggleRomance()" checked>
+                        恋愛・性的の質問を表示する
+                    </label>
                 </div>
-                <button type="button" onclick="randomizeAll()" class="px-4 py-2 font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 transition-colors shadow-lg flex items-center gap-2">
-                    🎲 全てランダム
-                </button>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="randomizeAll()" class="px-4 py-2 font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 transition-colors shadow-lg flex items-center justify-center gap-2">
+                        🎲 全てランダム
+                    </button>
+                    <button type="button" onclick="randomizeLight()" class="px-4 py-2 font-bold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-900 transition-colors shadow-lg flex items-center justify-center gap-2">
+                        🎲 ライト版ランダム
+                    </button>
+                </div>
             </header>
 
             <div id="optionsContainer" class="space-y-4">
@@ -4674,6 +4683,29 @@
     </footer>
 
     <script>
+        const lightExcludedCategories = [
+            "職業", "SNSでのアイコン", "笑い上戸/いじられ適性", "口の堅さ・秘密保持", "物持ち・物の扱い方", "他人からの第一印象とのギャップ", "座右の銘・行動理念", "名前の由来・こだわり", "自己肯定感の高さ", "家族構成と関係性", "笑い方", "怒った時の態度", "泣く時の様子", "子供の頃の性格", "兄弟・姉妹の中での立ち位置", "SNSの利用傾向", "人生の転機・トラウマ", "師匠・恩人・尊敬する人物", "友人・ライバルの有無", "初恋・過去の恋愛経験", "金銭感覚・浪費癖", "譲れないこだわり・美学", "喜怒哀楽の出やすさ", "倫理観・法に対する態度", "生死観・恐怖の対象", "神仏・ジンクスへの信仰", "怒りのスイッチ", "ピンチの時の行動パターン", "他人に頼れるか", "秘密・隠し事", "野望・叶えたい夢", "大切な所持品・お守り", "他人に対する「許せるライン／許せないライン」", "得意分野・特技", "才能", "決断力", "論理/直感", "理系/文系", "勝負事", "知識の幅", "試験勉強", "試験結果", "トラブル対応", "話術", "他人の呼び方", "怒られた時の反応", "褒められた時の反応", "連絡の返信速度（LINEやメール）", "笑いのツボ", "体調を崩した時の行動", "集団の中での役割"
+        ];
+
+        const romanceCategories = [
+            "SM", "恋愛性志向", "性経験", "ポジション", "セックス好み", "好きな体位", "性感帯", "性欲", "体の硬さ", "フェチ・癖（へき）", "恋人に求めるエロス・雰囲気", "濡れ場・シチュエーションの好み", "嫉妬・独占欲の表現", "ボディタッチの頻度・傾向", "甘え方・甘えられ方", "キスに対するこだわり", "夜の主導権（リード）", "言葉責め・おねだり", "事後（アフターケア）の過ごし方", "フェロモンの出やすさ・色気", "ベッドの上でのギャップ", "脱がせ方・脱ぎ方", "理性の強さ・限界突破", "エッチなシチュエーションへの耐性・知識"
+        ];
+
+        function toggleRomance() {
+            const isChecked = document.getElementById('romanceToggle').checked;
+            const groups = document.querySelectorAll('#optionsContainer > section > div[data-category]');
+            groups.forEach(group => {
+                const categoryName = group.getAttribute('data-category');
+                if (romanceCategories.includes(categoryName)) {
+                    group.closest('section').style.display = isChecked ? '' : 'none';
+                    if (!isChecked) {
+                        const noValueBtn = group.querySelector('button[data-value=""]');
+                        if (noValueBtn) selectChip(noValueBtn);
+                    }
+                }
+            });
+        }
+
         function selectChip(btn) {
             const group = btn.parentElement;
             const buttons = group.querySelectorAll('button');
@@ -4683,8 +4715,28 @@
         }
 
         function randomizeAll() {
+            randomizeWithExclusion([]);
+        }
+
+        function randomizeLight() {
+            randomizeWithExclusion(lightExcludedCategories);
+        }
+
+        function randomizeWithExclusion(excludedCategories) {
             const groups = document.querySelectorAll('#optionsContainer > section > div[data-category]');
+            const isRomanceOn = document.getElementById('romanceToggle').checked;
+            
             groups.forEach(group => {
+                const categoryName = group.getAttribute('data-category');
+                
+                if (!isRomanceOn && romanceCategories.includes(categoryName)) {
+                    return;
+                }
+                
+                if (excludedCategories.includes(categoryName)) {
+                    return;
+                }
+
                 const buttons = group.querySelectorAll('button:not([data-value=""])');
                 if (buttons.length > 0) {
                     const randomIndex = Math.floor(Math.random() * buttons.length);
