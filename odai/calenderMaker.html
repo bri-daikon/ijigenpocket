@@ -177,6 +177,16 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- スマホ用ガイドライン (出力時は data-html2canvas-ignore で無視される ＋ jsで非表示化) -->
+                        <div id="safeAreaGuide" class="absolute w-full h-full pointer-events-none z-30" style="display: none;" data-html2canvas-ignore="true">
+                            <div class="absolute bottom-0 left-0 w-full h-[350px] border-t-8 border-dashed border-pink-500 flex items-center justify-center text-pink-600 font-bold text-4xl opacity-50 bg-pink-50/30 backdrop-blur-sm">
+                                📱 アプリアイコン・ドック配置エリア
+                            </div>
+                            <div class="absolute top-0 left-0 w-full h-[140px] border-b-8 border-dashed border-pink-500 flex items-center justify-center text-pink-600 font-bold text-4xl opacity-50 bg-pink-50/30 backdrop-blur-sm">
+                                🕒 時計・通知エリア
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -276,6 +286,7 @@
 
             if (selection.startsWith('mobile')) {
                 targetWidth = 720; targetHeight = 1560;
+                document.getElementById('safeAreaGuide').style.display = 'block';
                 document.getElementById('calendarContainer').style.transformOrigin = 'center';
                 if (selection === 'mobile-img-top') {
                     layoutClass = 'flex-col justify-end items-center';
@@ -289,6 +300,7 @@
                     layoutClass = 'flex-col justify-center items-center';
                 }
             } else if (selection.startsWith('pc') || selection.startsWith('tablet')) {
+                document.getElementById('safeAreaGuide').style.display = 'none';
                 if (selection.startsWith('pc')) {
                     targetWidth = 1280; targetHeight = 720;
                 } else {
@@ -398,6 +410,10 @@
             const prevText = btn.textContent;
             btn.textContent = '保存中...';
             
+            const safeAreaGuide = document.getElementById('safeAreaGuide');
+            const prevSafeAreaDisplay = safeAreaGuide ? safeAreaGuide.style.display : 'none';
+            if (safeAreaGuide) safeAreaGuide.style.display = 'none';
+            
             const prevBorder = captureArea.style.border;
             captureArea.style.border = 'none';
             
@@ -450,6 +466,7 @@
                 console.error(err);
                 btn.textContent = prevText;
             } finally {
+                if (safeAreaGuide) safeAreaGuide.style.display = prevSafeAreaDisplay;
                 captureArea.style.border = prevBorder;
                 captureArea.style.transform = prevTransform;
                 previewWrapper.style.overflow = prevOverflow;
