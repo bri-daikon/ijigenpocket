@@ -117,7 +117,7 @@
                 item.className = `flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors mb-1 border relative ${isSelected ? 'bg-amber-900/20 border-amber-700/50' : 'hover:bg-stone-900 border-transparent'}`;
                 
                 const iconHtml = c.iconUrl 
-                    ? `<img src="${c.iconUrl}" class="w-8 h-8 rounded-full object-cover border border-amber-900/50 shrink-0">` 
+                    ? `<img src="${c.iconUrl}" class="w-8 h-8 rounded-full object-cover object-top border border-amber-900/50 shrink-0">` 
                     : `<div class="w-8 h-8 rounded-full bg-stone-800 border border-amber-900/50 flex items-center justify-center shrink-0"><i data-lucide="user" class="w-4 h-4 text-stone-500"></i></div>`;
                 
                 const checkboxHtml = `
@@ -126,17 +126,16 @@
                     </div>
                 `;
                 
-                // 名前の最初の部分だけ表示（スペース区切り）
+                // 名前の全表示
                 const nameStr = c.name || '名無し';
-                const shortName = nameStr.split(/[\s　]+/)[0];
 
-                const guestBadge = isGuest ? `<span class="text-[9px] bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 px-1 py-0.5 rounded ml-1 font-mono">GUEST</span>` : '';
-                const deleteBtn = isGuest ? `<button onclick="deleteGuest('${c.id}'); event.stopPropagation();" class="absolute right-2 text-stone-600 hover:text-red-400" title="ゲスト削除"><i data-lucide="x" class="w-4 h-4"></i></button>` : '';
+                const guestBadge = isGuest ? `<span class="text-[9px] bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 px-1 py-0.5 rounded ml-1 font-mono shrink-0">GUEST</span>` : '';
+                const deleteBtn = isGuest ? `<button onclick="deleteGuest('${c.id}'); event.stopPropagation();" class="absolute right-2 text-stone-600 hover:text-red-400 shrink-0 bg-[#0e0b08]/80 p-0.5 rounded" title="ゲスト削除"><i data-lucide="x" class="w-4 h-4"></i></button>` : '';
 
                 item.innerHTML = `
                     ${checkboxHtml}
                     ${iconHtml}
-                    <div class="text-xs font-bold ${isSelected ? 'text-amber-200' : 'text-stone-400'} truncate" title="${c.name}">${shortName}${guestBadge}</div>
+                    <div class="text-xs font-bold ${isSelected ? 'text-amber-200' : 'text-stone-400'} break-words whitespace-normal pr-6 leading-tight" title="${c.name}">${nameStr}${guestBadge}</div>
                     ${deleteBtn}
                 `;
                 
@@ -361,9 +360,9 @@
                         const c = allChars.find(ch => ch.id === nodeId);
                         if (c) {
                             nodesHtml += `
-                                <span class="inline-flex items-center gap-1 bg-stone-800 text-[10px] px-1.5 py-0.5 rounded text-stone-300 border border-stone-700 mr-1 mb-1">
-                                    ${c.name.split(/[\s　]+/)[0]}
-                                    <button onclick="removeNodeFromGroup('${group.id}', '${nodeId}')" class="text-stone-500 hover:text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                <span class="inline-flex items-center gap-1 bg-stone-800 text-[10px] px-1.5 py-0.5 rounded text-stone-300 border border-stone-700 mr-1 mb-1 max-w-full">
+                                    <span class="truncate">${c.name}</span>
+                                    <button onclick="removeNodeFromGroup('${group.id}', '${nodeId}')" class="text-stone-500 hover:text-red-400 shrink-0"><i data-lucide="x" class="w-3 h-3"></i></button>
                                 </span>
                             `;
                         }
@@ -507,13 +506,20 @@
                 }
             });
 
-            // ダブルクリックで関係性削除
+            // ダブルクリックで関係性編集
             relationNetwork.on("doubleClick", function (params) {
                 if (params.edges.length > 0 && params.nodes.length === 0) {
-                    if (confirm("選択した関係性を削除しますか？")) {
-                        relationEdges.remove(params.edges[0]);
-                        saveRelationData();
-                    }
+                    openEditEdgeModal(params.edges[0]);
+                }
+            });
+
+            // 右クリックで関係性編集
+            relationNetwork.on("oncontext", function (params) {
+                const edgeId = relationNetwork.getEdgeAt(params.pointer.DOM);
+                const nodeId = relationNetwork.getNodeAt(params.pointer.DOM);
+                if (edgeId && !nodeId) {
+                    params.event.preventDefault();
+                    openEditEdgeModal(edgeId);
                 }
             });
 
@@ -556,11 +562,28 @@
             }
         }
 
+        function processAndCropImage(id, dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const size = Math.min(img.width, img.height);
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                // Landscapeの場合は中央、Portraitの場合は上部(顔周辺)を基準にクロップ
+                const sx = img.width > img.height ? (img.width - size) / 2 : 0;
+                const sy = 0; 
+                ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+                relationNodes.update({ id: id, image: canvas.toDataURL('image/png') });
+            };
+            img.src = dataUrl;
+        }
+
         // Base64に変換してCanvas汚染を防ぐ非同期関数
         async function loadSafeImage(id, url) {
             if (!url) return;
             if (url.startsWith('data:')) {
-                relationNodes.update({ id: id, image: url });
+                processAndCropImage(id, url);
                 return;
             }
 
@@ -571,7 +594,7 @@
                     const blob = await response.blob();
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        relationNodes.update({ id: id, image: reader.result });
+                        processAndCropImage(id, reader.result);
                     };
                     reader.readAsDataURL(blob);
                     return; // 成功したら終了
@@ -594,7 +617,7 @@
                         const blob = await response.blob();
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                            relationNodes.update({ id: id, image: reader.result });
+                            processAndCropImage(id, reader.result);
                         };
                         reader.readAsDataURL(blob);
                         return;
@@ -606,7 +629,7 @@
 
             console.warn("All image loading methods failed, falling back to direct URL. Canvas WILL be tainted.");
             // 失敗した場合はCanvas汚染覚悟で直接画像を読み込む（画像は表示されるが保存時にエラーになる）
-            relationNodes.update({ id: id, image: url });
+            processAndCropImage(id, url);
         }
 
         function syncRelationNodes() {
@@ -636,10 +659,13 @@
                     addedIds.add(strId);
                     let originalImg = c.iconUrl || noImgSvg;
                     const nameStr = c.name || '名無し';
+                    
+                    // 名前のスペースを改行に変換して、キャンバス上で折り返して表示
+                    const formattedName = nameStr.replace(/[\s　]+/g, '\n');
 
                     let nodeObj = {
                         id: strId, // 強制的に文字列にする
-                        label: `<b>${nameStr.split(/[\s　]+/)[0]}</b>`,
+                        label: `*${formattedName}*`,
                         brokenImage: noImgSvg
                     };
 
@@ -727,6 +753,7 @@
             const label = document.getElementById('relLabel').value;
             const color = document.getElementById('relColor').value;
             const style = document.getElementById('relStyle').value;
+            const arrow = document.getElementById('relArrow').value;
 
             if (!idA || !idB || !label) {
                 showToast("キャラクターA、B、および関係性をすべて入力してください。", "error");
@@ -744,6 +771,7 @@
                 id: `${idA}_${idB}_${Date.now()}`,
                 color: { color: color, highlight: color },
                 font: { color: '#d6d3d1' }, // label color
+                arrows: arrow === 'none' ? '' : (arrow === 'both' ? 'to, from' : arrow)
             };
             
             if (style === 'dashed') {
@@ -790,6 +818,156 @@
                 console.error("Canvas export failed:", err);
                 showToast("画像保存に失敗しました。外部アイコン画像によるセキュリティ制限(CORS)の可能性があります。スクリーンショット機能をご利用ください。", "error");
             }
+        }
+
+        // ==========================
+        // 関係性（エッジ）管理機能
+        // ==========================
+        function toggleRelationListPanel() {
+            const panel = document.getElementById('relationListPanel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderRelationList();
+            }
+        }
+
+        function renderRelationList() {
+            const container = document.getElementById('relationListArea');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const edges = relationEdges.get();
+            if (edges.length === 0) {
+                container.innerHTML = '<div class="text-[10px] text-stone-500 text-center mt-2">結ばれた関係性はありません</div>';
+                return;
+            }
+            
+            const allChars = getAllAvailableCharacters();
+            
+            edges.forEach(edge => {
+                const nodeA = allChars.find(c => String(c.id) === String(edge.from));
+                const nodeB = allChars.find(c => String(c.id) === String(edge.to));
+                if(!nodeA || !nodeB) return;
+
+                const nameA = (nodeA.name || '名無し').split(/[\s　]+/)[0];
+                const nameB = (nodeB.name || '名無し').split(/[\s　]+/)[0];
+                let arrowText = '->';
+                if(edge.arrows && edge.arrows.includes('from') && edge.arrows.includes('to')) arrowText = '<->';
+                else if(!edge.arrows) arrowText = '-';
+
+                const div = document.createElement('div');
+                div.className = 'bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center justify-between';
+                
+                div.innerHTML = `
+                    <div class="flex-grow truncate pr-2">
+                        <div class="text-[10px] text-stone-400 font-bold mb-0.5">${nameA} ${arrowText} ${nameB}</div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${edge.color ? (edge.color.color || edge.color) : '#ea580c'}"></div>
+                            <span class="text-xs text-amber-200 truncate">${edge.label}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        <button onclick="openEditEdgeModal('${edge.id}')" class="p-1.5 text-stone-400 hover:text-amber-400 bg-stone-800 hover:bg-stone-700 rounded transition-colors" title="編集">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteRelationship('${edge.id}')" class="p-1.5 text-stone-400 hover:text-red-400 bg-stone-800 hover:bg-stone-700 rounded transition-colors" title="削除">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons({root: container});
+        }
+
+        function deleteRelationship(edgeId) {
+            if (confirm("この関係性を削除しますか？")) {
+                relationEdges.remove(edgeId);
+                saveRelationData();
+                renderRelationList();
+            }
+        }
+
+        function openEditEdgeModal(edgeId) {
+            const edge = relationEdges.get(edgeId);
+            if (!edge) return;
+            
+            const allChars = getAllAvailableCharacters();
+            const nodeA = allChars.find(c => String(c.id) === String(edge.from));
+            const nodeB = allChars.find(c => String(c.id) === String(edge.to));
+            const nameA = nodeA ? (nodeA.name || '名無し').split(/[\s　]+/)[0] : '不明';
+            const nameB = nodeB ? (nodeB.name || '名無し').split(/[\s　]+/)[0] : '不明';
+
+            document.getElementById('editEdgeId').value = edge.id;
+            document.getElementById('editEdgeNodesLabel').textContent = `${nameA} - ${nameB}`;
+            document.getElementById('editEdgeLabel').value = edge.label;
+            document.getElementById('editEdgeColor').value = edge.color ? (edge.color.color || edge.color) : '#ea580c';
+            
+            let arrowVal = 'none';
+            if (edge.arrows) {
+                if (edge.arrows.includes('to') && edge.arrows.includes('from')) arrowVal = 'both';
+                else if (edge.arrows.includes('to') || edge.arrows === 'to') arrowVal = 'to';
+            }
+            document.getElementById('editEdgeArrow').value = arrowVal;
+            
+            let styleVal = 'solid';
+            if (edge.width === 5) styleVal = 'thick';
+            else if (edge.dashes) styleVal = 'dashed';
+            document.getElementById('editEdgeStyle').value = styleVal;
+
+            document.getElementById('editEdgeModal').classList.remove('hidden');
+        }
+
+        function closeEditEdgeModal() {
+            document.getElementById('editEdgeModal').classList.add('hidden');
+        }
+
+        function deleteEditEdge() {
+            const edgeId = document.getElementById('editEdgeId').value;
+            if (confirm("この関係性を削除しますか？")) {
+                relationEdges.remove(edgeId);
+                saveRelationData();
+                renderRelationList();
+                closeEditEdgeModal();
+                showToast("関係性を削除しました。");
+            }
+        }
+
+        function saveEditEdge() {
+            const edgeId = document.getElementById('editEdgeId').value;
+            const label = document.getElementById('editEdgeLabel').value;
+            const color = document.getElementById('editEdgeColor').value;
+            const arrow = document.getElementById('editEdgeArrow').value;
+            const style = document.getElementById('editEdgeStyle').value;
+
+            if (!label) {
+                showToast("関係性を入力してください。", "error");
+                return;
+            }
+
+            const edgeObj = relationEdges.get(edgeId);
+            if (!edgeObj) return;
+
+            edgeObj.label = label;
+            edgeObj.color = { color: color, highlight: color };
+            edgeObj.arrows = arrow === 'none' ? '' : (arrow === 'both' ? 'to, from' : arrow);
+
+            if (style === 'dashed') {
+                edgeObj.dashes = [5, 5];
+                edgeObj.width = 2;
+            } else if (style === 'thick') {
+                edgeObj.width = 5;
+                edgeObj.dashes = false;
+            } else {
+                edgeObj.width = 2;
+                edgeObj.dashes = false;
+            }
+
+            relationEdges.update(edgeObj);
+            saveRelationData();
+            renderRelationList();
+            closeEditEdgeModal();
+            showToast("関係性を更新しました。");
         }
 
         // ==========================
