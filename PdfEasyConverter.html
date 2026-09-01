@@ -19,6 +19,12 @@
       pointer-events: none;
     }
 
+    /* パフォーマンス最適化：画面外カードのレンダリングをブラウザにスキップさせる */
+    .card-container {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 120px;
+    }
+
     body {
       font-family: 'Noto Sans JP', sans-serif;
     }
@@ -726,9 +732,9 @@
             <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5 flex-shrink-0"></i>
             <input type="text" id="card-search-input" placeholder="検索..."
               class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-40 transition-all"
-              oninput="renderList(); document.getElementById('btn-clear-search').classList.toggle('hidden', !this.value)">
+              oninput="handleSearchInput(this.value)">
             <button id="btn-clear-search"
-              onclick="document.getElementById('card-search-input').value = ''; renderList(); this.classList.add('hidden')"
+              onclick="document.getElementById('card-search-input').value = ''; handleSearchInput(''); this.classList.add('hidden')"
               class="hidden text-slate-400 hover:text-rose-500 ml-1 outline-none flex-shrink-0 transition-colors"
               title="検索をクリア">
               <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -1644,9 +1650,15 @@
                 height: pageHeight,
                 items: pageItems
               });
+
+              // メインスレッドのフリーズ（「応答がありません」）を防ぐためUIスレッドに定期的に制御を戻す
+              if (pageNum % 3 === 0 || pageNum === maxPages) {
+                await new Promise(r => setTimeout(r, 0));
+              }
             }
 
             updateStatus('success', 'ロード完了！');
+            await new Promise(r => setTimeout(r, 0));
 
             // 1. 本紙プレビューの初回描画
             renderPreviewPage(1);
@@ -2286,6 +2298,17 @@
     }
 
 
+    // 検索入力のデバウンス処理（タイピング中の過剰な再描画を抑制）
+    let searchDebounceTimer = null;
+    function handleSearchInput(value) {
+      const clearBtn = document.getElementById('btn-clear-search');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !value);
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        renderList();
+      }, 150);
+    }
+
     // リストのHTMLレンダリング
     function renderList() {
       const container = document.getElementById('text-list');
@@ -2337,6 +2360,8 @@
         }
         return escaped;
       };
+
+      const newlyRenderedCards = [];
 
       processedItems.forEach((item, index) => {
         if (item.isToc) {
@@ -2567,7 +2592,6 @@
         if (cardBgStyle && card.style.cssText !== cardBgStyle) card.style.cssText = cardBgStyle;
         if (card.style.marginLeft !== expectedMarginLeft) card.style.marginLeft = expectedMarginLeft;
         card.setAttribute('data-page', item.page || '');
-        card.setAttribute('data-page', item.page || '');
 
         // イベントリスナーの再設定
         if (globalMode === 'edit' && !item.isEditing) {
@@ -2592,7 +2616,7 @@
         if (card._cachedHTML !== expectedHTML) {
           card.innerHTML = expectedHTML;
           card._cachedHTML = expectedHTML;
-          lucide.createIcons({ root: card });
+          newlyRenderedCards.push(card);
         }
 
         // DOMツリーの順番を調整
@@ -2610,6 +2634,13 @@
           container.removeChild(currentChild);
         }
         currentChild = next;
+      }
+
+      // 新しく描画されたカードのみアイコンを初期化（大幅な高速化）
+      if (newlyRenderedCards.length > 0 && typeof lucide !== 'undefined' && lucide.createIcons) {
+        newlyRenderedCards.forEach(card => {
+          lucide.createIcons({ root: card });
+        });
       }
 
       updateBookmarkAndNoteLists();
@@ -3342,9 +3373,13 @@
               item.furiganaHtml = escapeHtml(item.text);
             }
             count++;
-            updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
+            if (count % 5 === 0 || count === toProcess.length) {
+              updateStatus('loading', `ふりがな生成中... (${count}/${toProcess.length})`);
+              await new Promise(r => setTimeout(r, 0));
+            }
           }
           updateStatus('success', 'ふりがな生成完了！');
+          await new Promise(r => setTimeout(r, 0));
         }
 
         if (document.getElementById('chk-furigana').checked) {
