@@ -1050,6 +1050,7 @@
     let pdfDoc = null; // プレビュー用のPDFドキュメントインスタンス
     let currentPreviewPage = 1; // 現在プレビュー表示中のページ
     let previewScale = 0.55; // プレビューの拡大率倍率（初期は横幅が収まる55%）
+    let currentRenderTask = null; // 描画中のPDF renderTaskインスタンス
     let pdfOutline = []; // PDFのしおりツリー
 
     // ドラッグ＆ドロップのモード（'move' または 'merge'）
@@ -1695,6 +1696,14 @@
       placeholder.classList.add('hidden');
       canvas.classList.remove('hidden');
 
+      // 描画中に別の描画要求が来た場合は前回の描画処理をキャンセル
+      if (currentRenderTask) {
+        try {
+          currentRenderTask.cancel();
+        } catch (err) {}
+        currentRenderTask = null;
+      }
+
       try {
         const page = await pdfDoc.getPage(pageNum);
         const ctx = canvas.getContext('2d');
@@ -1709,7 +1718,10 @@
           viewport: viewport
         };
 
-        await page.render(renderContext).promise;
+        const renderTask = page.render(renderContext);
+        currentRenderTask = renderTask;
+        await renderTask.promise;
+        currentRenderTask = null;
 
         // 【カイゼン】ページ遷移時に、プレビューのスクロール位置を一番上にリセットします
         if (container) {
@@ -1726,6 +1738,10 @@
         document.getElementById('btn-prev-page').disabled = (pageNum <= 1);
         document.getElementById('btn-next-page').disabled = (pageNum >= pdfDoc.numPages);
       } catch (e) {
+        if (e && e.name === 'RenderingCancelledException') {
+          // キャンセル時の正常例外は無視
+          return;
+        }
         console.error("PDFプレビュー描画中にエラーが発生しました", e);
       }
     }
@@ -1790,11 +1806,15 @@
     // ※ splitIntoParagraphs は下部（701行付近）に新アルゴリズム版として定義されています
 
     // 指定されたページ番号へジャンプ（連動用）
-    function jumpToPreviewPage(pageNum) {
+    function jumpToPreviewPage(pageNum, showNotification = false) {
       if (!pdfDoc) return;
       if (pageNum >= 1 && pageNum <= pdfDoc.numPages) {
-        renderPreviewPage(pageNum);
-        showToast(`プレビュー切替`, `本紙プレビューの P. ${pageNum} に移動しました。`, 'info');
+        if (currentPreviewPage !== pageNum) {
+          renderPreviewPage(pageNum);
+        }
+        if (showNotification) {
+          showToast(`プレビュー切替`, `本紙プレビューの P. ${pageNum} に移動しました。`, 'info');
+        }
       }
     }
 
@@ -2439,7 +2459,7 @@
                   <i data-lucide="check" class="w-3 h-3 ${isSelected ? 'text-white' : 'hidden group-hover:block text-teal-400'}"></i>
                 </div>
               ` : ''}
-              <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
+              <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page}, true)" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
                 P. ${item.page}
               </button>
               ${item.isToc ? `
