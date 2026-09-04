@@ -19,9 +19,8 @@
       pointer-events: none;
     }
 
-    /* パフォーマンス最適化：画面外カードのレンダリングをブラウザにスキップさせる */
+    /* パフォーマンス最適化：画面外カードのレンダリング最適化 */
     .card-container {
-      content-visibility: auto;
       contain-intrinsic-size: auto 120px;
     }
 
@@ -2514,7 +2513,7 @@
                   <button onclick="toggleColorPalette(${item.id}, event)" class="text-slate-400 hover:text-indigo-500 p-0.5 rounded transition-all">
                     <i data-lucide="palette" class="w-4 h-4"></i>
                   </button>
-                  <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg p-2 hidden gap-1.5 z-10 w-[160px] flex-wrap">
+                  <div id="palette-popup-${item.id}" class="absolute right-0 top-full mt-1 bg-white border border-slate-200 shadow-2xl rounded-lg p-2 hidden gap-1.5 z-50 w-[160px] flex-wrap">
                     ${getSortedPaletteColors().map(c => {
           if (c.isCustom) return '';
           const linkedTab = Object.keys(tabColorMapping).find(k => tabColorMapping[k] === c.id);
@@ -4660,12 +4659,15 @@
     function toggleColorPalette(id, event) {
       if (event) event.stopPropagation();
       const popup = document.getElementById(`palette-popup-${id}`);
+      const parentCard = popup ? popup.closest('.card-container') : null;
 
       if (openPaletteId !== null && openPaletteId !== id) {
         const oldPopup = document.getElementById(`palette-popup-${openPaletteId}`);
         if (oldPopup) {
           oldPopup.classList.add('hidden');
           oldPopup.classList.remove('flex');
+          const oldCard = oldPopup.closest('.card-container');
+          if (oldCard) oldCard.style.zIndex = '';
         }
       }
 
@@ -4674,21 +4676,25 @@
           popup.classList.remove('hidden');
           popup.classList.add('flex');
           openPaletteId = id;
+          if (parentCard) parentCard.style.zIndex = '30';
         } else {
           popup.classList.add('hidden');
           popup.classList.remove('flex');
           openPaletteId = null;
+          if (parentCard) parentCard.style.zIndex = '';
         }
       }
     }
 
-    // 外側クリックでパレットを閉じる
+    // 外側クリックおよびスクロールでパレットを閉じる
     document.addEventListener('click', (e) => {
       if (openPaletteId !== null) {
         const popup = document.getElementById(`palette-popup-${openPaletteId}`);
         if (popup && !popup.contains(e.target)) {
           popup.classList.add('hidden');
           popup.classList.remove('flex');
+          const oldCard = popup.closest('.card-container');
+          if (oldCard) oldCard.style.zIndex = '';
           openPaletteId = null;
         }
       }
