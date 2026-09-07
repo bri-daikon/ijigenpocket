@@ -2883,38 +2883,22 @@ video {
       background: #f0fdfa;
     }
 
-    /* 技能一覧 (洗練された2カラムピルチップ) */
+    /* 技能一覧 (全表示・スクロール不要) */
     .char-skill-list {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 5px;
-      max-height: 220px;
-      overflow-y: auto;
-      padding-right: 3px;
+      padding-right: 0;
     }
 
-    /* 縦並び（1カラムリスト）時の技能一覧は3〜4カラムに自動拡張して見やすく */
+    /* 縦並び（1カラムリスト）時の技能一覧は3〜4カラムに自動拡張 */
     .layout-vertical .char-skill-list {
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      max-height: 260px;
     }
 
     /* 縦並び（1カラムリスト）時の能力値グリッド */
     .layout-vertical .char-stats-grid {
       grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    }
-
-    .char-skill-list::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .char-skill-list::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .char-skill-list::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 999px;
     }
 
     .char-skill-item {
@@ -2960,13 +2944,13 @@ video {
       font-feature-settings: "tnum";
     }
 
-    /* チャットパレットアコーディオン */
-    .char-palette-container {
+    /* 探索者メモ・備考（折り畳み可能） */
+    .char-memo-container {
       border-top: 1px dashed #e2e8f0;
       padding-top: 8px;
     }
 
-    .char-palette-toggle {
+    .char-memo-toggle {
       width: 100%;
       display: flex;
       align-items: center;
@@ -2982,25 +2966,40 @@ video {
       transition: all 0.15s ease;
     }
 
-    .char-palette-toggle:hover {
+    .char-memo-toggle:hover {
       background: #f0fdfa;
       border-color: #99f6e4;
     }
 
-    .char-palette-text {
+    .char-memo-toggle.has-content {
+      color: #0f766e;
+      background: #f0fdfa;
+      border-color: #ccfbf1;
+    }
+
+    .char-memo-content {
       margin-top: 6px;
+    }
+
+    .char-memo-textarea {
+      width: 100%;
+      min-height: 80px;
       padding: 8px 10px;
-      max-height: 160px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      border: 1px solid #334155;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
-      background: #0f172a;
-      color: #e2e8f0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 11px;
-      line-height: 1.45;
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 11.5px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      font-family: inherit;
+    }
+
+    .char-memo-textarea:focus {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
     }
 
     /* ダークモード対応 */
@@ -3120,14 +3119,30 @@ video {
       color: #fb7185 !important;
     }
 
-    body[data-theme="dark"] .char-palette-container {
+    body[data-theme="dark"] .char-memo-container {
       border-color: #334155 !important;
     }
 
-    body[data-theme="dark"] .char-palette-toggle {
+    body[data-theme="dark"] .char-memo-toggle {
       background: #0f172a !important;
       border-color: #334155 !important;
       color: #5eead4 !important;
+    }
+
+    body[data-theme="dark"] .char-memo-toggle.has-content {
+      background: rgba(13, 148, 136, 0.2) !important;
+      border-color: rgba(13, 148, 136, 0.4) !important;
+      color: #5eead4 !important;
+    }
+
+    body[data-theme="dark"] .char-memo-textarea {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #e2e8f0 !important;
+    }
+
+    body[data-theme="dark"] .char-memo-textarea:focus {
+      border-color: #0d9488 !important;
     }
 
     /* ベージュモード対応 */
@@ -3144,6 +3159,15 @@ video {
       background: #eee8d5 !important;
       border-color: #d2cbb5 !important;
     }
+    body[data-theme="beige"] .char-memo-toggle {
+      background: #eee8d5 !important;
+      border-color: #d2cbb5 !important;
+    }
+    body[data-theme="beige"] .char-memo-textarea {
+      background: #fdf6e3 !important;
+      border-color: #d2cbb5 !important;
+      color: #586e75 !important;
+    }
 
     /* 薄いグリーンモード対応 */
     body[data-theme="light-green"] .character-card {
@@ -3158,6 +3182,15 @@ video {
     body[data-theme="light-green"] .char-skill-item {
       background: #e6f7ec !important;
       border-color: #c0e0cc !important;
+    }
+    body[data-theme="light-green"] .char-memo-toggle {
+      background: #e6f7ec !important;
+      border-color: #c0e0cc !important;
+    }
+    body[data-theme="light-green"] .char-memo-textarea {
+      background: #ffffff !important;
+      border-color: #c0e0cc !important;
+      color: #166534 !important;
     }
   </style>
 </head>
@@ -4001,6 +4034,7 @@ function normalizeCharacter(item, index) {
   const resources = readResources(rawStatus, data, abilities);
   const damageBonus = readDamageBonus(rawParams, commands, abilities);
   const skills = parseCommands(commands, abilities);
+  const memo = String(data.memo || item.memo || data.remark || item.remark || "").trim();
 
   return {
     id: Date.now() + Math.floor(Math.random() * 10000) + index,
@@ -4008,6 +4042,7 @@ function normalizeCharacter(item, index) {
     furigana: splitName.furigana || "",
     portrait: showCharIcons ? (data.iconUrl || item.iconUrl || "") : "",
     externalUrl: data.externalUrl || item.externalUrl || "",
+    memo: memo,
     commands: commands,
     resources: {
       ...resources,
@@ -4313,10 +4348,8 @@ function renderExplorerCards() {
       body.appendChild(renderCharSkillSection(char));
     }
 
-    // 3. Chat Palette Toggle
-    if (char.commands) {
-      body.appendChild(renderCharPalette(char));
-    }
+    // 3. Collapsible Memo field
+    body.appendChild(renderCharMemo(char, index));
 
     card.appendChild(body);
 
@@ -4447,31 +4480,50 @@ function renderCharSkillSection(char) {
   return wrap;
 }
 
-function renderCharPalette(char) {
+function renderCharMemo(char, index) {
   const wrap = document.createElement("div");
-  wrap.className = "char-palette-container";
+  wrap.className = "char-memo-container";
+
+  const hasContent = Boolean(char.memo && char.memo.trim().length > 0);
   const btn = document.createElement("button");
-  btn.className = "char-palette-toggle";
-  btn.innerHTML = `<i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>チャットパレット表示</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i>`;
-  const text = document.createElement("div");
-  text.className = "char-palette-text hidden";
-  text.textContent = char.commands;
+  btn.className = `char-memo-toggle ${hasContent ? "has-content" : ""}`;
+  btn.innerHTML = `<i data-lucide="file-edit" class="w-3.5 h-3.5"></i><span>メモ・備考${hasContent ? " (入力あり)" : ""}</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i>`;
+
+  const content = document.createElement("div");
+  content.className = "char-memo-content hidden";
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "char-memo-textarea";
+  textarea.placeholder = "探索者のメモ、設定、持ち物、状態変化などを記入...";
+  textarea.value = char.memo || "";
+  textarea.oninput = (e) => {
+    updateCharMemo(index, e.target.value);
+  };
+
+  content.appendChild(textarea);
 
   btn.onclick = () => {
-    const isHidden = text.classList.contains("hidden");
+    const isHidden = content.classList.contains("hidden");
     if (isHidden) {
-      text.classList.remove("hidden");
+      content.classList.remove("hidden");
       btn.querySelector('[data-lucide="chevron-down"]')?.setAttribute("data-lucide", "chevron-up");
+      textarea.focus();
     } else {
-      text.classList.add("hidden");
+      content.classList.add("hidden");
       btn.querySelector('[data-lucide="chevron-up"]')?.setAttribute("data-lucide", "chevron-down");
     }
     if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons({ root: btn });
   };
 
   wrap.appendChild(btn);
-  wrap.appendChild(text);
+  wrap.appendChild(content);
   return wrap;
+}
+
+function updateCharMemo(index, value) {
+  if (index >= 0 && index < explorerCharacters.length) {
+    explorerCharacters[index].memo = value;
+  }
 }
 
 function copyCharRoll(val, skillName, charName) {
