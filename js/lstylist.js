@@ -1,6 +1,6 @@
 /**
  * LogStylist Pro 
- * メインロジック（修正版）
+ * メインロジック（新HTML・JSON・顔アイコン対応版）
  */
 document.addEventListener('DOMContentLoaded', () => {
     let logData = [];
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userControls = document.getElementById('userControls');
     const darkModeToggle = document.getElementById('darkModeToggle');
     const syncColorToggle = document.getElementById('syncColorToggle');
+    const showAvatarToggle = document.getElementById('showAvatarToggle');
     const statsArea = document.getElementById('statsArea');
     const logTitleInput = document.getElementById('logTitle');
     const bulkPanel = document.getElementById('bulkPanel');
@@ -36,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (syncColorToggle) {
         syncColorToggle.addEventListener('change', () => render());
+    }
+
+    if (showAvatarToggle) {
+        showAvatarToggle.addEventListener('change', () => render());
     }
 
     // ドラッグ＆ドロップ設定
@@ -89,71 +94,178 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // ファイル処理
+    // ファイル処理（HTML / JSON自動判別）
     async function processFile(file) {
         try {
             if (logTitleInput) {
                 logTitleInput.value = file.name.replace(/\.[^/.]+$/, "");
             }
             const text = await file.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-            const paragraphs = Array.from(doc.querySelectorAll('p'));
+            
+            if (file.name.endsWith('.json') || text.trim().startsWith('{')) {
+                parseJsonLog(text);
+            } else {
+                parseHtmlLog(text);
+            }
 
-            if (paragraphs.length === 0) {
+            if (logData.length === 0) {
                 console.warn("ログが見つかりませんでした。");
                 return;
             }
 
-            logData = [];
-            const tabs = new Set();
-            const users = new Set();
-
-            paragraphs.forEach((p) => {
-                const spans = p.querySelectorAll('span');
-                if (spans.length < 3) return;
-                
-                let rawTab = spans[0].innerText.trim().replace(/[\[\]]/g, '');
-                if (rawTab === 'おはらい' || rawTab === 'お祓い') return;
-                if (rawTab.toLowerCase() === 'other') rawTab = '雑談';
-                
-                const user = spans[1].innerText.trim().replace(/\s*:\s*$/, '');
-                const content = spans[2].innerHTML.trim();
-                const color = p.style.color || '#333';
-                
-                logData.push({ tab: rawTab, user, content, color });
-                tabs.add(rawTab);
-                users.add(user);
-            });
-
-            // タブ設定の初期化
-            let otherTabIdx = 0;
-            tabs.forEach(t => {
-                if (!tabSettings[t]) {
-                    let priority = 'other-tab';
-                    let bgColor = 'rgba(0,0,0,0)';
-                    const lowerT = t.toLowerCase();
-                    if (lowerT === 'main') priority = 'main';
-                    else if (lowerT === 'info') { priority = 'info'; bgColor = '#fffde7'; }
-                    else if (lowerT === '雑談' || lowerT === 'other') { priority = 'lowest'; bgColor = '#f5f5f5'; }
-                    else { bgColor = COLOR_PALETTE[otherTabIdx % COLOR_PALETTE.length]; otherTabIdx++; }
-                    tabSettings[t] = { color: bgColor, priority, visible: true };
-                }
-            });
-
-            // ユーザー設定の初期化
-            users.forEach(u => {
-                if (!userSettings[u]) {
-                    const firstColor = logData.find(d => d.user === u)?.color || '#333';
-                    userSettings[u] = { visible: true, color: firstColor, displayName: u };
-                }
-            });
-
+            // タブ設定・ユーザー設定の初期化
+            initSettings();
             updateControlUI();
             render();
         } catch (err) {
             console.error("ファイル処理中にエラーが発生しました:", err);
         }
+    }
+
+    // 新旧HTMLログのパース
+    function parseHtmlLog(text) {
+        logData = [];
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+
+        // 新形式: <article class="message">
+        const articles = Array.from(doc.querySelectorAll('article.message'));
+        if (articles.length > 0) {
+            // CSSスタイルから .avatar-image-X の background-image をマップ化
+            const avatarMap = {};
+            const styleTags = doc.querySelectorAll('style');
+            styleTags.forEach(style => {
+                const content = style.textContent;
+                const re = /\.avatar-image-(\d+)\s*\{\s*background-image:\s*url\(["']?([^"'\)]+)["']?\)/g;
+                let match;
+                while ((match = re.exec(content)) !== null) {
+                    avatarMap[`avatar-image-${match[1]}`] = match[2];
+                }
+            });
+
+            articles.forEach(article => {
+                let rawTab = article.getAttribute('data-channel') || '';
+                const channelNameEl = article.querySelector('.channel-name');
+                if (!rawTab && channelNameEl) {
+                    rawTab = channelNameEl.innerText.trim().replace(/[\[\]]/g, '');
+                }
+                if (!rawTab) rawTab = 'main';
+
+                if (rawTab === 'おはらい' || rawTab === 'お祓い') return;
+                if (rawTab.toLowerCase() === 'other') rawTab = '雑談';
+
+                const speakerEl = article.querySelector('.speaker');
+                const user = speakerEl ? speakerEl.innerText.trim() : 'system';
+                
+                // カラー取得
+                let color = '#333';
+                if (speakerEl) {
+                    const styleAttr = speakerEl.getAttribute('style') || '';
+                    const colorMatch = styleAttr.match(/--speaker-color:\s*([^;]+)/);
+                    if (colorMatch) color = colorMatch[1].trim();
+                    else if (speakerEl.style.color) color = speakerEl.style.color;
+                }
+
+                // 本文 & ダイス
+                const msgTextEl = article.querySelector('.message-text');
+                const rollEl = article.querySelector('.roll-result');
+                let content = msgTextEl ? msgTextEl.innerHTML.trim() : '';
+                if (rollEl) {
+                    content += (content ? '<br>' : '') + `<span class="roll-text">${rollEl.innerHTML.trim()}</span>`;
+                }
+
+                // アイコン取得
+                let avatarUrl = '';
+                const avatarEl = article.querySelector('.avatar');
+                if (avatarEl) {
+                    avatarEl.classList.forEach(cls => {
+                        if (avatarMap[cls]) avatarUrl = avatarMap[cls];
+                    });
+                    if (!avatarUrl && avatarEl.style.backgroundImage) {
+                        const m = avatarEl.style.backgroundImage.match(/url\(["']?([^"'\)]+)["']?\)/);
+                        if (m) avatarUrl = m[1];
+                    }
+                }
+
+                logData.push({ tab: rawTab, user, content, color, avatarUrl });
+            });
+            return;
+        }
+
+        // 旧形式: <p><span>[tab]</span> <span>name:</span> <span>content</span></p>
+        const paragraphs = Array.from(doc.querySelectorAll('p'));
+        paragraphs.forEach((p) => {
+            const spans = p.querySelectorAll('span');
+            if (spans.length < 3) return;
+            
+            let rawTab = spans[0].innerText.trim().replace(/[\[\]]/g, '');
+            if (rawTab === 'おはらい' || rawTab === 'お祓い') return;
+            if (rawTab.toLowerCase() === 'other') rawTab = '雑談';
+            
+            const user = spans[1].innerText.trim().replace(/\s*:\s*$/, '');
+            const content = spans[2].innerHTML.trim();
+            const color = p.style.color || '#333';
+            
+            logData.push({ tab: rawTab, user, content, color, avatarUrl: '' });
+        });
+    }
+
+    // JSONログのパース
+    function parseJsonLog(text) {
+        logData = [];
+        const json = JSON.parse(text);
+        const messages = json.messages || [];
+        const images = json.images || {};
+
+        messages.forEach(msg => {
+            let rawTab = msg.channel || msg.channelName || 'main';
+            if (rawTab === 'おはらい' || rawTab === 'お祓い') return;
+            if (rawTab.toLowerCase() === 'other') rawTab = '雑談';
+
+            const user = msg.name || 'system';
+            const color = msg.color || '#333';
+            let content = (msg.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+            // ダイス結果などのextend
+            if (msg.extend && msg.extend.roll && msg.extend.roll.result) {
+                content += (content ? '<br>' : '') + `<span class="roll-text">${msg.extend.roll.result}</span>`;
+            }
+
+            let avatarUrl = '';
+            if (msg.iconImage && images[msg.iconImage]) {
+                avatarUrl = images[msg.iconImage];
+            }
+
+            logData.push({ tab: rawTab, user, content, color, avatarUrl });
+        });
+    }
+
+    // 設定の初期化
+    function initSettings() {
+        const tabs = new Set(logData.map(d => d.tab));
+        const users = new Set(logData.map(d => d.user));
+
+        let otherTabIdx = 0;
+        tabs.forEach(t => {
+            if (!tabSettings[t]) {
+                let priority = 'other-tab';
+                let bgColor = 'rgba(0,0,0,0)';
+                const lowerT = t.toLowerCase();
+                if (lowerT === 'main') priority = 'main';
+                else if (lowerT === 'info') { priority = 'info'; bgColor = '#fffde7'; }
+                else if (lowerT === '雑談' || lowerT === 'other') { priority = 'lowest'; bgColor = '#f5f5f5'; }
+                else { bgColor = COLOR_PALETTE[otherTabIdx % COLOR_PALETTE.length]; otherTabIdx++; }
+                tabSettings[t] = { color: bgColor, priority, visible: true };
+            }
+        });
+
+        users.forEach(u => {
+            if (!userSettings[u]) {
+                const firstColor = logData.find(d => d.user === u)?.color || '#333';
+                const firstAvatar = logData.find(d => d.user === u && d.avatarUrl)?.avatarUrl || '';
+                userSettings[u] = { visible: true, color: firstColor, displayName: u, avatarUrl: firstAvatar };
+            }
+        });
     }
 
     // 設定UIの更新
@@ -204,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex items-center gap-2 truncate flex-1">
                         <input type="checkbox" class="bulk-check accent-indigo-500" ${isSelected ? 'checked' : ''}>
                         <input type="checkbox" ${setting.visible ? 'checked' : ''} class="user-vis accent-indigo-500">
+                        ${setting.avatarUrl ? `<div class="w-4 h-4 rounded-full bg-cover bg-center shrink-0" style="background-image: url('${setting.avatarUrl}')"></div>` : ''}
                         <span class="truncate font-medium" style="color:${setting.color}">${setting.displayName}</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -234,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logContentArea.innerHTML = '';
         const stats = {};
         const syncColor = syncColorToggle ? syncColorToggle.checked : false;
+        const showAvatar = showAvatarToggle ? showAvatarToggle.checked : true;
         const visibleLogs = logData.filter(item => tabSettings[item.tab]?.visible && userSettings[item.user]?.visible);
 
         visibleLogs.forEach(item => {
@@ -248,12 +362,27 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (isSpec) stats[item.user].specials.push(item);
 
             const line = document.createElement('div');
-            line.className = `log-line prio-${tabSettings[item.tab].priority} log-row`;
+            line.className = `log-line prio-${tabSettings[item.tab].priority} log-row ${showAvatar ? '' : 'no-avatar'}`;
             line.setAttribute('data-tab', item.tab);
             line.setAttribute('data-user', setting.displayName);
             line.style.backgroundColor = tabSettings[item.tab].color;
+
+            // アバターHTML
+            let avatarHtml = '';
+            if (showAvatar) {
+                const avatar = item.avatarUrl || setting.avatarUrl;
+                if (avatar) {
+                    avatarHtml = `<div class="log-avatar" style="background-image: url('${avatar}');"></div>`;
+                } else {
+                    avatarHtml = `<div class="log-avatar-spacer"></div>`;
+                }
+            }
+
             line.innerHTML = `
-                <div class="user-name" style="color: ${setting.color}">${setting.displayName}</div>
+                <div class="speaker-col">
+                    ${avatarHtml}
+                    <div class="user-name" style="color: ${setting.color}">${setting.displayName}</div>
+                </div>
                 <div class="content-text" style="color: ${syncColor ? setting.color : 'inherit'}">${highlight(item.content)}</div>
             `;
             logContentArea.appendChild(line);
@@ -334,6 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.onclick = function() {
             const title = (logTitleInput ? logTitleInput.value : '') || 'SessionLog';
             const isDark = (darkModeToggle && darkModeToggle.checked);
+            const showAvatar = (showAvatarToggle && showAvatarToggle.checked);
             const logContentHtml = logContentArea ? logContentArea.innerHTML : '';
             const statsContentHtml = (statsArea && !statsArea.classList.contains('hidden')) ? statsArea.innerHTML : '';
             
@@ -350,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .filter(u => userSettings[u].visible)
                 .map(u => userSettings[u].displayName);
             
-            // 重複名を排除したユニークなリストを作成
             const uniqueUsers = Array.from(new Set(activeUsers));
 
             const html = `<!DOCTYPE html>
@@ -365,12 +494,17 @@ document.addEventListener('DOMContentLoaded', () => {
         .filter-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
         .filter-chip { padding: 4px 12px; border-radius: 20px; border: 1px solid #ccc; cursor: pointer; transition: 0.2s; }
         .filter-chip.active { background: #6c5ce7; color: white; border-color: #6c5ce7; }
-        .log-line { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px; display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: baseline; }
+        .log-line { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px; display: grid; grid-template-columns: ${showAvatar ? '240px' : '200px'} 1fr; gap: 16px; align-items: flex-start; }
         .prio-main { padding-left: 20px; font-size: 1.0em; }
         .prio-info { padding-left: 40px; font-size: 0.9em; opacity: 0.9; }
         .prio-other-tab { padding-left: 60px; font-size: 0.8em; opacity: 0.75; }
         .prio-lowest { padding-left: 80px; font-size: 0.7em; opacity: 0.6; }
-        .user-name { font-weight: bold; padding-right: 1em; }
+        .speaker-col { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .log-avatar { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 1px 3px rgba(0,0,0,0.15); background-color: rgba(0,0,0,0.05); }
+        .log-avatar-spacer { width: 36px; min-width: 36px; height: 36px; }
+        .user-name { font-weight: bold; padding-right: 0.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .content-text { line-height: 1.8; word-break: break-all; text-align: left; }
+        .roll-text { display: block; color: #888; font-size: 0.95em; margin-top: 4px; }
         .critical { color: #e84393; font-weight: bold; text-decoration: underline; }
         .fumble { color: #0984e3; font-weight: bold; text-decoration: underline; }
         .special { color: #6c5ce7; font-weight: bold; }
