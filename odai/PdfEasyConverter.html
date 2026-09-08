@@ -3754,6 +3754,53 @@ video {
       background: #d3f0de !important;
       color: #166534 !important;
     }
+
+    /* --- NPCココフォリア設定チェックボックス用スタイル --- */
+    .npc-checkbox-group {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 16px !important;
+    }
+
+    .npc-checkbox-label {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      cursor: pointer !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      white-space: nowrap !important;
+      user-select: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .npc-checkbox-input {
+      width: 15px !important;
+      height: 15px !important;
+      min-width: 15px !important;
+      max-width: 15px !important;
+      flex: 0 0 15px !important;
+      padding: 0 !important;
+      margin: 0 6px 0 0 !important;
+      cursor: pointer !important;
+      display: inline-block !important;
+      vertical-align: middle !important;
+      accent-color: #6366f1 !important;
+    }
+
+    body[data-theme="dark"] .npc-checkbox-label {
+      color: #cbd5e1 !important;
+    }
+    body[data-theme="beige"] .npc-checkbox-label {
+      color: #586e75 !important;
+    }
+    body[data-theme="light-green"] .npc-checkbox-label {
+      color: #334b3e !important;
+    }
   </style>
 </head>
 
@@ -4902,7 +4949,34 @@ video {
         <!-- メモ（自由入力） -->
         <div class="npc-form-group">
           <label class="npc-form-label">メモ・設定・備考（自由入力）</label>
-          <textarea id="npc-form-memo" rows="3" class="npc-form-textarea" placeholder="NPCの特徴、秘密、設定、所持品などを記入..."></textarea>
+          <textarea id="npc-form-memo" rows="2" class="npc-form-textarea" placeholder="NPCの特徴、秘密、設定、所持品などを記入..."></textarea>
+        </div>
+
+        <!-- チャットパレット (追加コマンド / 自由記入欄) -->
+        <div class="npc-form-group">
+          <label class="npc-form-label">チャットパレット (追加コマンド / 自由記入欄)</label>
+          <textarea id="npc-form-custom-commands" rows="3" class="npc-form-textarea font-mono text-[11px]" placeholder="CCB<={SAN} 【正気度ロール】&#10;1D6+1D4 【ダメージ】&#10;ここに記述したコマンドがチャットパレット末尾に追加されます"></textarea>
+        </div>
+
+        <!-- ココフォリア非公開・NPC設定 (チェックボックス) -->
+        <div class="npc-modal-section">
+          <div class="npc-modal-section-title">
+            <span>🎭 ココフォリア設定 (NPC・秘匿用)</span>
+          </div>
+          <div class="npc-checkbox-group">
+            <label class="npc-checkbox-label">
+              <input type="checkbox" id="npc-form-secret" class="npc-checkbox-input">
+              <span>ステータスを非公開にする</span>
+            </label>
+            <label class="npc-checkbox-label">
+              <input type="checkbox" id="npc-form-invisible" class="npc-checkbox-input">
+              <span>発言時キャラクターを表示しない</span>
+            </label>
+            <label class="npc-checkbox-label">
+              <input type="checkbox" id="npc-form-hidestatus" class="npc-checkbox-input">
+              <span>盤面キャラクター一覧に表示しない</span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -5183,6 +5257,10 @@ function normalizeCharacter(item, index) {
     bld: bldVal,
     mov: movVal,
     commands: commands,
+    secret: data.secret === true || item.secret === true || false,
+    invisible: data.invisible === true || item.invisible === true || false,
+    hideStatus: data.hideStatus === true || item.hideStatus === true || false,
+    customCommands: data.customCommands || item.customCommands || "",
     resources: {
       ...resources,
       db: damageBonus || resources.db || "-"
@@ -6752,6 +6830,10 @@ function openNpcEditorModal(editIndex = -1) {
     document.getElementById("npc-form-know").value = bc.know !== undefined ? bc.know : "";
 
     document.getElementById("npc-form-memo").value = char.memo || "";
+    document.getElementById("npc-form-custom-commands").value = char.customCommands || "";
+    document.getElementById("npc-form-secret").checked = char.secret === true;
+    document.getElementById("npc-form-invisible").checked = char.invisible === true;
+    document.getElementById("npc-form-hidestatus").checked = char.hideStatus === true;
 
     if (Array.isArray(char.skills)) {
       npcModalSkillRows = char.skills.map(s => ({ name: s.name, val: s.value }));
@@ -6787,6 +6869,10 @@ function openNpcEditorModal(editIndex = -1) {
     document.getElementById("npc-form-know").value = "";
 
     document.getElementById("npc-form-memo").value = "";
+    document.getElementById("npc-form-custom-commands").value = "";
+    document.getElementById("npc-form-secret").checked = false;
+    document.getElementById("npc-form-invisible").checked = false;
+    document.getElementById("npc-form-hidestatus").checked = false;
 
     // Default common skills for quick setup
     npcModalSkillRows = [
@@ -7015,6 +7101,10 @@ function saveNpcFromModal() {
   const ho = document.getElementById("npc-form-ho").value.trim();
   const furigana = document.getElementById("npc-form-furigana").value.trim();
   const memo = document.getElementById("npc-form-memo").value.trim();
+  const customCommands = document.getElementById("npc-form-custom-commands") ? document.getElementById("npc-form-custom-commands").value.trim() : "";
+  const isSecret = document.getElementById("npc-form-secret") ? document.getElementById("npc-form-secret").checked : false;
+  const isInvisible = document.getElementById("npc-form-invisible") ? document.getElementById("npc-form-invisible").checked : false;
+  const isHideStatus = document.getElementById("npc-form-hidestatus") ? document.getElementById("npc-form-hidestatus").checked : false;
 
   const getNumVal = (id) => {
     const v = parseInt(document.getElementById(id)?.value, 10);
@@ -7137,6 +7227,10 @@ function saveNpcFromModal() {
     cmdLines.push(`//db = ${cleanDb}`);
   }
 
+  if (customCommands) {
+    cmdLines.push(customCommands);
+  }
+
   const editIndex = parseInt(document.getElementById("npc-form-edit-index").value, 10);
   const npcObj = {
     id: editIndex >= 0 && npcCharacters[editIndex]?.id ? npcCharacters[editIndex].id : Date.now() + Math.floor(Math.random() * 10000),
@@ -7150,6 +7244,10 @@ function saveNpcFromModal() {
     bld: bldVal,
     mov: movVal,
     commands: cmdLines.join("\n"),
+    customCommands: customCommands,
+    secret: isSecret,
+    invisible: isInvisible,
+    hideStatus: isHideStatus,
     resources: {
       hp: hpVal,
       mp: mpVal,
@@ -7238,6 +7336,9 @@ function generateCcfoliaPieceJson(char) {
       if (cleanDb.startsWith("+")) cleanDb = cleanDb.substring(1).trim();
       lines.push(`//db = ${cleanDb}`);
     }
+    if (char.customCommands) {
+      lines.push(char.customCommands);
+    }
     commands = lines.join("\n");
   } else {
     // If commands exist but //db is not yet present and DB is valid, append //db
@@ -7248,18 +7349,30 @@ function generateCcfoliaPieceJson(char) {
     }
   }
 
+  const pieceData = {
+    name: char.furigana ? `${char.name} (${char.furigana})` : char.name,
+    memo: char.memo || "",
+    initiative: abs.DEX !== undefined && abs.DEX !== "-" ? Number(abs.DEX) : 0,
+    externalUrl: char.externalUrl || "",
+    iconUrl: char.portrait || "",
+    status: status,
+    params: params,
+    commands: commands
+  };
+
+  if (char.secret === true) {
+    pieceData.secret = true;
+  }
+  if (char.invisible === true) {
+    pieceData.invisible = true;
+  }
+  if (char.hideStatus === true) {
+    pieceData.hideStatus = true;
+  }
+
   const piece = {
     kind: "character",
-    data: {
-      name: char.furigana ? `${char.name} (${char.furigana})` : char.name,
-      memo: char.memo || "",
-      initiative: abs.DEX !== undefined && abs.DEX !== "-" ? Number(abs.DEX) : 0,
-      externalUrl: char.externalUrl || "",
-      iconUrl: char.portrait || "",
-      status: status,
-      params: params,
-      commands: commands
-    }
+    data: pieceData
   };
 
   return JSON.stringify(piece, null, 2);
