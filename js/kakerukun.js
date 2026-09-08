@@ -2762,6 +2762,31 @@ function insertCharacterSheet() {
                         </div>
                     </div>
                 </div>
+
+                <!-- チャットパレット（自由記入欄） -->
+                <div>
+                    <span class="block text-xs font-bold text-slate-400 mb-1">チャットパレット (追加コマンド / 自由記入欄)</span>
+                    <textarea class="char-custom-commands text-[11px] font-mono border border-slate-200 rounded p-2 w-full outline-none resize-y" rows="3" placeholder="CCB<={SAN} 【正気度ロール】&#10;1D6+1D4 【ダメージ】" oninput="this.textContent = this.value; autoUpdateUI();"></textarea>
+                </div>
+
+                <!-- ココフォリア非公開・NPC設定 (チェックボックス) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <span class="block text-[11px] font-bold text-slate-500 mb-2">🎭 ココフォリア設定 (NPC・秘匿用)</span>
+                    <div class="char-checkbox-group">
+                        <label class="char-checkbox-label">
+                            <input type="checkbox" class="char-secret-toggle" onchange="this.checked ? this.setAttribute('checked', 'checked') : this.removeAttribute('checked'); autoUpdateUI();">
+                            <span>ステータスを非公開にする</span>
+                        </label>
+                        <label class="char-checkbox-label">
+                            <input type="checkbox" class="char-invisible-toggle" onchange="this.checked ? this.setAttribute('checked', 'checked') : this.removeAttribute('checked'); autoUpdateUI();">
+                            <span>発言時キャラクターを表示しない</span>
+                        </label>
+                        <label class="char-checkbox-label">
+                            <input type="checkbox" class="char-hidestatus-toggle" onchange="this.checked ? this.setAttribute('checked', 'checked') : this.removeAttribute('checked'); autoUpdateUI();">
+                            <span>盤面キャラクター一覧に表示しない</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
         <p><br></p>
@@ -2877,6 +2902,17 @@ function copyToCcfolia(sheetId) {
             commands.push(`CCB<=${parseInt(sVal) || 0} 【${sName}】`);
         }
     });
+
+    // 自由記入チャットパレットの追加
+    const customCommandsEl = sheet.querySelector('.char-custom-commands');
+    if (customCommandsEl && customCommandsEl.value.trim()) {
+        commands.push(customCommandsEl.value.trim());
+    }
+
+    // 非公開・NPC設定の取得
+    const isSecret = sheet.querySelector('.char-secret-toggle')?.checked || false;
+    const isInvisible = sheet.querySelector('.char-invisible-toggle')?.checked || false;
+    const isHideStatus = sheet.querySelector('.char-hidestatus-toggle')?.checked || false;
     
     // ココフォリア互換JSONオブジェクト
     const ccfoliaData = {
@@ -2887,6 +2923,9 @@ function copyToCcfolia(sheetId) {
             initiatives: {
                 "DEX": parseInt(dex) || 0
             },
+            secret: isSecret,
+            invisible: isInvisible,
+            hideStatus: isHideStatus,
             params: [
                 { label: "STR", value: str },
                 { label: "CON", value: con },
