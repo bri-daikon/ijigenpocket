@@ -3,14 +3,105 @@ const gridSize = 50;
 let backgroundImageObject = null; // 背景画像を保持
 let objectSequence = 0; // 重ね順管理用の連番
 
-window.onload = function () {
-    initCanvas();
-    const loader = document.getElementById('imageLoader');
-    if (loader) loader.addEventListener('change', handleImageUpload);
+// アンドゥ・リドゥ履歴管理
+let undoStack = [];
+let redoStack = [];
+let isUndoRedoing = false;
+let isBatchAdding = false;
+const MAX_HISTORY = 30;
 
-    // ウィンドウリサイズ時にズームを更新
+function setupApp() {
+    initCanvas();
     window.addEventListener('resize', updateCanvasZoom);
-};
+    window.addEventListener('keydown', handleKeydown);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupApp);
+} else {
+    setupApp();
+}
+
+function saveState() {
+    if (isUndoRedoing || isBatchAdding || !canvas) return;
+    const json = JSON.stringify(canvas.toJSON(['name', 'zIndex', 'selectable', 'evented', 'lockUniScaling', 'transparentCorners', 'cornerColor', 'cornerSize', 'cornerStrokeColor', 'cornerStyle']));
+    undoStack.push(json);
+    if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+    }
+    redoStack = []; // 新しい操作時はリドゥスタックをクリア
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    if (undoBtn) undoBtn.disabled = (undoStack.length <= 1);
+    if (redoBtn) redoBtn.disabled = (redoStack.length === 0);
+}
+
+function undo() {
+    if (undoStack.length <= 1 || isUndoRedoing) return;
+    isUndoRedoing = true;
+    const currentState = undoStack.pop();
+    redoStack.push(currentState);
+    const prevState = undoStack[undoStack.length - 1];
+
+    loadCanvasState(prevState, () => {
+        isUndoRedoing = false;
+        updateUndoRedoButtons();
+    });
+}
+window.undo = undo;
+
+function redo() {
+    if (redoStack.length === 0 || isUndoRedoing) return;
+    isUndoRedoing = true;
+    const nextState = redoStack.pop();
+    undoStack.push(nextState);
+
+    loadCanvasState(nextState, () => {
+        isUndoRedoing = false;
+        updateUndoRedoButtons();
+    });
+}
+window.redo = redo;
+
+function loadCanvasState(jsonState, callback) {
+    canvas.loadFromJSON(jsonState, () => {
+        canvas.getObjects().forEach(obj => {
+            if (obj.name !== 'gridLine') {
+                setupObjectControls(obj);
+            }
+        });
+        canvas.renderAll();
+        if (document.getElementById('zoomFitToggle').checked) {
+            updateCanvasZoom();
+        }
+        if (callback) callback();
+    });
+}
+
+function handleKeydown(e) {
+    // 入力フォーム等の中でのキー押下は無視
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undo();
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+            e.preventDefault();
+            redo();
+        }
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        const active = canvas.getActiveObject();
+        if (active && !active.isEditing) {
+            e.preventDefault();
+            deleteSelected();
+        }
+    }
+}
 
 function initCanvas() {
     canvas = new fabric.Canvas('mainCanvas', {
@@ -38,6 +129,21 @@ function initCanvas() {
                 obj.zIndex = objectSequence++;
             }
         }
+        if (!isBatchAdding) {
+            saveState();
+        }
+    });
+
+    canvas.on('object:modified', function () {
+        if (!isBatchAdding) {
+            saveState();
+        }
+    });
+
+    canvas.on('object:removed', function (e) {
+        if (e.target && e.target.name !== 'gridLine' && !isBatchAdding) {
+            saveState();
+        }
     });
 
     // スナップ機能
@@ -52,6 +158,9 @@ function initCanvas() {
 
     canvas.on('selection:created', updateFontDropdown);
     canvas.on('selection:updated', updateFontDropdown);
+
+    // 初期状態を保存
+    saveState();
 
     // 初期ズーム状態を適用
     setTimeout(updateCanvasZoom, 100);
@@ -184,59 +293,127 @@ window.selectAll = selectAll;
 
 function changeCanvasSize() {
     const sizeValue = document.getElementById('canvasSizeSelect').value;
-    const [width, height] = sizeValue.split('x').map(Number);
-    canvas.setWidth(width);
-    canvas.setHeight(height);
+    const [newWidth, newHeight] = sizeValue.split('x').map(Number);
+    const oldWidth = canvas.width;
+    const oldHeight = canvas.height;
+
+    if (oldWidth === newWidth && oldHeight === newHeight) return;
+
+    // キャンバスの内部解像度（実描画領域）を更新（画像の実ピクセルサイズは維持）
+    canvas.setDimensions({
+        width: newWidth,
+        height: newHeight
+    }, { backstoreOnly: true });
+
+    canvas.width = newWidth;
+    canvas.height = newHeight;
 
     applyBackground();
 
     if (document.getElementById('gridToggle').checked) toggleGrid(true);
     canvas.renderAll();
-    updateCanvasZoom(); // サイズ変更後にズームを更新
-    alertBox(`サイズを ${width} x ${height} に変更しました`);
+    saveState();
+    
+    // 全体表示がONなら全体フィット、OFFなら現在のズーム倍率でキャンバスを再描画
+    if (document.getElementById('zoomFitToggle').checked) {
+        fitCanvasToView();
+    } else {
+        updateCanvasZoom();
+    }
+    alertBox(`サイズを ${newWidth} x ${newHeight} に変更しました`);
 }
 window.changeCanvasSize = changeCanvasSize;
+
+// ズーム倍率を適用するコア関数
+function applyCanvasScale(scale) {
+    if (!canvas) return;
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (!wrapper) return;
+
+    scale = Math.max(0.05, Math.min(3.0, scale));
+
+    // Fabric.jsの内部ズームを設定
+    canvas.setZoom(scale);
+
+    // CSS上の表示サイズのみを変更（内部バッファ解像度は変更しない）
+    canvas.setDimensions({
+        width: Math.round(canvas.width * scale),
+        height: Math.round(canvas.height * scale)
+    }, { cssOnly: true });
+
+    // UIのパーセント表示とスライダーの数値を同期
+    const percent = Math.round(scale * 100);
+    const label = document.getElementById('zoomPercentLabel');
+    const slider = document.getElementById('zoomSlider');
+    if (label) label.innerText = `${percent}%`;
+    if (slider) slider.value = Math.min(200, Math.max(10, percent));
+
+    // キャンバスコンテナのスタイル
+    const container = canvas.getElement().parentElement;
+    if (container) {
+        container.style.margin = 'auto';
+    }
+
+    canvas.renderAll();
+}
+
+// 画面枠に合わせて自動フィット
+function fitCanvasToView() {
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (!wrapper || !canvas) return;
+
+    const paddingX = 40;
+    const paddingY = 40;
+    const availableWidth = Math.max(50, wrapper.clientWidth - paddingX);
+    const availableHeight = Math.max(50, wrapper.clientHeight - paddingY);
+
+    const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height);
+    applyCanvasScale(scale);
+    wrapper.style.overflow = 'hidden';
+}
 
 function updateCanvasZoom() {
     const isFit = document.getElementById('zoomFitToggle').checked;
     const wrapper = document.getElementById('canvas-wrapper');
-    const container = canvas.getElement().parentElement;
-
     if (isFit) {
-        // ラッパーのサイズに合わせて倍率を計算
-        const padding = 40;
-        const availableWidth = wrapper.clientWidth - padding;
-        const availableHeight = wrapper.clientHeight - padding;
-
-        const scale = Math.min(availableWidth / canvas.width, availableHeight / canvas.height, 1);
-
-        // Fabric.jsのズームを設定（座標計算を正しく保つ）
-        canvas.setZoom(scale);
-
-        // CSS上の表示サイズのみを変更（画質は落とさない）
-        canvas.setDimensions({
-            width: canvas.width * scale,
-            height: canvas.height * scale
-        }, { cssOnly: true });
-
-        // スクロールバーを消して中央寄せ
-        wrapper.style.overflow = 'hidden';
-        wrapper.style.display = 'flex';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.justifyContent = 'center';
+        fitCanvasToView();
     } else {
-        // 元に戻す
-        canvas.setZoom(1);
-        canvas.setDimensions({
-            width: canvas.width,
-            height: canvas.height
-        }, { cssOnly: true });
-
-        wrapper.style.overflow = 'auto';
-        wrapper.style.display = 'block';
+        const slider = document.getElementById('zoomSlider');
+        const scale = slider ? parseInt(slider.value, 10) / 100 : 1;
+        applyCanvasScale(scale);
+        if (wrapper) wrapper.style.overflow = 'auto';
     }
 }
 window.updateCanvasZoom = updateCanvasZoom;
+
+function toggleZoomFit() {
+    const isFit = document.getElementById('zoomFitToggle').checked;
+    if (isFit) {
+        fitCanvasToView();
+    } else {
+        resetZoom100();
+    }
+}
+window.toggleZoomFit = toggleZoomFit;
+
+function handleManualZoom(val) {
+    const isFitCheckbox = document.getElementById('zoomFitToggle');
+    if (isFitCheckbox) isFitCheckbox.checked = false;
+    const scale = parseFloat(val) / 100;
+    applyCanvasScale(scale);
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (wrapper) wrapper.style.overflow = 'auto';
+}
+window.handleManualZoom = handleManualZoom;
+
+function resetZoom100() {
+    const isFitCheckbox = document.getElementById('zoomFitToggle');
+    if (isFitCheckbox) isFitCheckbox.checked = false;
+    applyCanvasScale(1.0);
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (wrapper) wrapper.style.overflow = 'auto';
+}
+window.resetZoom100 = resetZoom100;
 
 function toggleGrid(forceRefresh = false) {
     const isGridVisible = document.getElementById('gridToggle').checked;
@@ -267,8 +444,6 @@ async function handleImageUpload(e) {
     if (files.length === 0) return;
 
     const showName = document.getElementById('filenameToggle').checked;
-    const margin_default = 20;
-    const labelHeight_default = 30;
 
     const loadPromises = files.map(file => {
         return new Promise((resolve) => {
@@ -290,59 +465,77 @@ async function handleImageUpload(e) {
     const labelHeight = showName ? 18 : 0;
     const targetHeight = 250; // 基準となる画像の高さ
 
+    // 既存のオブジェクトの位置を調べて、次の配置位置を決める
+    const existingObjects = canvas.getObjects().filter(o => o.name !== 'gridLine');
     let currentX = margin;
     let currentY = margin;
     let rowMaxHeight = 0;
 
-    // 全体を中央寄せするための計算用
-    const groups = [];
+    if (existingObjects.length > 0) {
+        // 最も下にあるオブジェクトの行を見つける
+        let maxBottom = 0;
+        existingObjects.forEach(obj => {
+            const b = obj.getBoundingRect(true);
+            maxBottom = Math.max(maxBottom, b.top + b.height);
+        });
+        currentX = margin;
+        currentY = maxBottom + margin;
+    }
+
+    isBatchAdding = true; // 追加中の個別saveStateを抑止
 
     imageDataList.forEach((data, i) => {
         const img = data.img;
-        // 基準の高さに合わせてリサイズ（横長すぎたり縦長すぎる場合は調整が入る）
+        // 基準の高さに合わせてリサイズ
         const scale = targetHeight / img.height;
         img.scale(scale);
 
-        const textLabel = new fabric.Text(data.fileName, {
-            fontSize: 14,
-            fontFamily: 'sans-serif',
-            originX: 'center',
-            fill: '#555555',
-            visible: showName,
-            name: 'filenameLabel',
-            top: img.getScaledHeight() + 5,
-            left: img.getScaledWidth() / 2
-        });
-
-        const group = new fabric.Group([img, textLabel], {
-            name: 'imageGroup',
-            originX: 'left',
-            originY: 'top'
-        });
+        const imgWidth = img.getScaledWidth();
+        const imgHeight = img.getScaledHeight();
 
         // 1行に収まらない場合は改行
-        if (currentX + group.getScaledWidth() + margin > canvas.width) {
+        if (currentX + imgWidth + margin > canvas.width && currentX > margin) {
             currentX = margin;
             currentY += rowMaxHeight + margin + labelHeight;
             rowMaxHeight = 0;
         }
 
-        group.set({
+        img.set({
             left: currentX,
-            top: currentY
+            top: currentY,
+            name: 'userImage',
+            customFileName: data.fileName
         });
+        img.setCoords();
+        canvas.add(img);
 
-        group.setCoords();
-        canvas.add(group);
-        groups.push(group);
+        if (showName) {
+            const textLabel = new fabric.Text(data.fileName, {
+                fontSize: 14,
+                fontFamily: 'sans-serif',
+                originX: 'center',
+                fill: '#555555',
+                name: 'filenameLabel',
+                left: currentX + imgWidth / 2,
+                top: currentY + imgHeight + 5
+            });
+            canvas.add(textLabel);
+        }
 
-        currentX += group.getScaledWidth() + margin;
-        rowMaxHeight = Math.max(rowMaxHeight, group.getScaledHeight());
+        currentX += imgWidth + margin;
+        rowMaxHeight = Math.max(rowMaxHeight, imgHeight);
     });
+
+    isBatchAdding = false;
+    saveState(); // 一括追加後に1回だけ履歴保存
 
     // 読み込み後にズームを更新して全体が見えるようにする
     canvas.renderAll();
-    if (document.getElementById('zoomFitToggle').checked) updateCanvasZoom();
+    if (document.getElementById('zoomFitToggle').checked) {
+        fitCanvasToView();
+    } else {
+        updateCanvasZoom();
+    }
 
     e.target.value = '';
     alertBox(`${count}枚の画像を読み込み、整列しました`);
@@ -351,12 +544,27 @@ window.handleImageUpload = handleImageUpload;
 
 function toggleFilenameVisibility() {
     const isVisible = document.getElementById('filenameToggle').checked;
-    canvas.getObjects().forEach(obj => {
-        if (obj.name === 'imageGroup') {
-            const label = obj.item(1);
-            if (label && label.name === 'filenameLabel') label.set('visible', isVisible);
-        }
-    });
+    
+    // 既存のファイル名ラベルを一旦削除
+    const labels = canvas.getObjects().filter(obj => obj.name === 'filenameLabel');
+    labels.forEach(l => canvas.remove(l));
+
+    if (isVisible) {
+        // 画像オブジェクトの下にファイル名ラベルを再生成
+        const images = canvas.getObjects().filter(obj => obj.name === 'userImage' && obj.customFileName);
+        images.forEach(img => {
+            const textLabel = new fabric.Text(img.customFileName, {
+                fontSize: 14,
+                fontFamily: 'sans-serif',
+                originX: 'center',
+                fill: '#555555',
+                name: 'filenameLabel',
+                left: img.left + img.getScaledWidth() / 2,
+                top: img.top + img.getScaledHeight() + 5
+            });
+            canvas.add(textLabel);
+        });
+    }
     canvas.renderAll();
 }
 window.toggleFilenameVisibility = toggleFilenameVisibility;
