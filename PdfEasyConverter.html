@@ -2794,6 +2794,13 @@ video {
       gap: 10px;
     }
 
+    /* 各セクションブロック */
+    .char-section-block {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
     /* セクションヘッダー */
     .char-section-title {
       font-size: 10.5px;
@@ -2806,12 +2813,52 @@ video {
       margin-bottom: 6px;
       padding-bottom: 3px;
       border-bottom: 1px dashed #e2e8f0;
+      gap: 6px;
+    }
+
+    .char-section-title-left {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .char-section-title-right {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
     }
 
     .char-section-hint {
       font-size: 9.5px;
       font-weight: normal;
       color: #94a3b8;
+    }
+
+    .char-section-order-btn {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.12s ease;
+    }
+
+    .char-section-order-btn:hover:not(:disabled) {
+      background: #f0fdfa;
+      border-color: #99f6e4;
+      color: #0d9488;
+    }
+
+    .char-section-order-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
     }
 
     /* 能力値 & 基本判定 (同一グリッド＆同一サイズ) */
@@ -2862,20 +2909,20 @@ video {
       font-feature-settings: "tnum";
     }
 
-    /* 基本チェック (アイデア/幸運/知識) ハイライトバッジ */
+    /* 基本チェック (アイデア/幸運/知識) */
     .char-stat-chip.is-check {
       background: #f8fafc;
       border-color: #e2e8f0;
     }
 
     .char-stat-chip.is-check .stat-label {
-      color: #0f766e;
-      font-weight: 700;
+      color: #64748b;
+      font-weight: 600;
     }
 
     .char-stat-chip.is-check .stat-value {
-      color: #e11d48;
-      font-weight: 800;
+      color: #1e293b;
+      font-weight: 700;
     }
 
     .char-stat-chip.is-check:hover {
@@ -2937,7 +2984,7 @@ video {
     }
 
     .char-skill-value {
-      color: #e11d48;
+      color: #1e293b;
       font-weight: 700;
       flex: 0 0 auto;
       font-size: 11.5px;
@@ -2946,12 +2993,21 @@ video {
 
     /* 探索者メモ・備考（折り畳み可能） */
     .char-memo-container {
-      border-top: 1px dashed #e2e8f0;
-      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .char-memo-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 2px;
     }
 
     .char-memo-toggle {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -3093,16 +3149,16 @@ video {
     }
 
     body[data-theme="dark"] .char-stat-chip.is-check {
-      background: rgba(13, 148, 136, 0.12) !important;
-      border-color: rgba(13, 148, 136, 0.35) !important;
+      background: #0f172a !important;
+      border-color: #334155 !important;
     }
 
     body[data-theme="dark"] .char-stat-chip.is-check .stat-label {
-      color: #5eead4 !important;
+      color: #94a3b8 !important;
     }
 
     body[data-theme="dark"] .char-stat-chip.is-check .stat-value {
-      color: #fb7185 !important;
+      color: #f1f5f9 !important;
     }
 
     body[data-theme="dark"] .char-stat-chip:hover,
@@ -3116,7 +3172,7 @@ video {
     }
 
     body[data-theme="dark"] .char-skill-value {
-      color: #fb7185 !important;
+      color: #f1f5f9 !important;
     }
 
     body[data-theme="dark"] .char-memo-container {
@@ -3191,6 +3247,100 @@ video {
       background: #ffffff !important;
       border-color: #c0e0cc !important;
       color: #166534 !important;
+    }
+
+    .char-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .char-ho-input {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0d9488;
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
+      border-radius: 5px;
+      padding: 1.5px 6px;
+      width: 75px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .char-ho-input:focus {
+      background: #ffffff;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    }
+
+    .char-ho-input::placeholder {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    body[data-theme="dark"] .char-ho-input {
+      background: rgba(13, 148, 136, 0.2) !important;
+      border-color: rgba(13, 148, 136, 0.4) !important;
+      color: #5eead4 !important;
+    }
+
+    body[data-theme="dark"] .char-ho-input:focus {
+      background: #0f172a !important;
+      border-color: #0d9488 !important;
+    }
+
+    /* 卓報告タブ用スタイル */
+    .report-field-input {
+      width: 100%;
+      font-size: 12px;
+      padding: 6px 9px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      color: #1e293b;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .report-field-input:focus {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    }
+
+    .report-preview-box {
+      width: 100%;
+      min-height: 240px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #0f172a;
+      resize: vertical;
+      outline: none;
+      white-space: pre-wrap;
+    }
+
+    .report-preview-box:focus {
+      border-color: #0d9488;
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    }
+
+    body[data-theme="dark"] .report-field-input {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+
+    body[data-theme="dark"] .report-preview-box {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
     }
   </style>
 </head>
@@ -3459,6 +3609,11 @@ video {
                 <span id="chars-count"
                   class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-bold ml-1">0人</span>
               </button>
+              <button id="tab-switch-report" onclick="switchCentralTab('report')"
+                class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5">
+                <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+                卓報告作成
+              </button>
             </div>
           </div>
           <div class="flex items-center gap-4">
@@ -3670,6 +3825,185 @@ video {
               ファイルから読み込む
               <input type="file" accept=".json, application/json" class="hidden" onchange="handleCharFileSelect(event)" multiple>
             </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 卓報告作成コンテナ -->
+      <div id="report-view-container" class="hidden flex-col flex-grow overflow-hidden relative">
+        <div class="flex-grow overflow-y-auto p-2">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- 左ペイン：卓情報入力 -->
+            <div class="flex flex-col gap-3">
+              <!-- ココフォリア部屋URL・KP・シナリオ情報 -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-col gap-2.5 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-teal-600"></i>
+                    セッション基本情報
+                  </span>
+                  <button type="button" onclick="syncReportFromExplorer()" class="text-[11px] font-bold text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-md border border-teal-200 transition-all flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                    探索者ビューアからPC/HOを同期
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">システム名</label>
+                    <input type="text" id="reportSystemName" class="report-field-input" placeholder="クトゥルフ神話TRPG" value="クトゥルフ神話TRPG" oninput="generateReportPreview()">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">シナリオ名</label>
+                    <input type="text" id="reportScenarioName" class="report-field-input" placeholder="シナリオ名" oninput="generateReportPreview()">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">作者名</label>
+                    <input type="text" id="reportAuthorName" class="report-field-input" placeholder="作者名（任意）" oninput="generateReportPreview()">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">END結果 / 生死</label>
+                    <input type="text" id="reportEndResult" class="report-field-input" placeholder="例: END-A 全員生還" oninput="generateReportPreview()">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1 flex items-center justify-between">
+                      <span>ココフォリア部屋URL</span>
+                      <a id="reportRoomOpenBtn" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-teal-600 hover:underline flex items-center gap-0.5">
+                        <i data-lucide="external-link" class="w-3 h-3"></i>部屋を開く
+                      </a>
+                    </label>
+                    <input type="text" id="reportRoomUrl" class="report-field-input" placeholder="https://ccfolia.com/rooms/..." oninput="updateRoomUrlLink(this.value); generateReportPreview()">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">セッション日付</label>
+                    <input type="text" id="reportSessionDate" class="report-field-input" placeholder="2026.09.08" oninput="generateReportPreview()">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 進行役 (KP / GM) -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-4 h-4 text-purple-600"></i>
+                    進行役 (KP / GM / 等)
+                  </label>
+                  <button type="button" onclick="addReportGm()" class="text-[11px] text-teal-600 hover:text-teal-800 font-bold flex items-center gap-0.5">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>KP追加
+                  </button>
+                </div>
+                <div id="reportGmList" class="space-y-1.5"></div>
+              </div>
+
+              <!-- 参加者 (HO / PC名 / PL名) -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="users" class="w-4 h-4 text-teal-600"></i>
+                    参加者 (HO / PC名 / PL名)
+                  </label>
+                  <button type="button" onclick="addReportPl()" class="text-[11px] text-teal-600 hover:text-teal-800 font-bold flex items-center gap-0.5">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>PL追加
+                  </button>
+                </div>
+                <div id="reportPlList" class="space-y-1.5"></div>
+              </div>
+
+              <!-- 卓中メモ欄 / 感想 -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="file-edit" class="w-4 h-4 text-amber-600"></i>
+                  卓中メモ欄 / 感想・ひとこと
+                </label>
+                <textarea id="reportFreeMemo" rows="3" class="report-field-input" placeholder="セッション中の重要メモや、感想などを記入..." oninput="generateReportPreview()"></textarea>
+              </div>
+            </div>
+
+            <!-- 右ペイン：デザイン設定・プレビュー・投稿 -->
+            <div class="flex flex-col gap-3">
+              <!-- デザイン＆テンプレート設定 -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2.5">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                  <i data-lucide="layout" class="w-4 h-4 text-teal-600"></i>
+                  報告フォーマット＆スタイル設定
+                </span>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">テンプレート</label>
+                    <select id="reportTemplateSelect" class="report-field-input cursor-pointer" onchange="generateReportPreview()">
+                      <option value="classic">クラシック (王道)</option>
+                      <option value="simple">シンプル (記号つき)</option>
+                      <option value="emo">エモ (装飾重視)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">英数字フォント</label>
+                    <select id="reportFontStyleSelect" class="report-field-input cursor-pointer" onchange="generateReportPreview()">
+                      <option value="normal">標準</option>
+                      <option value="sans-bold">Bold (太字)</option>
+                      <option value="sans-italic">Italic (斜体)</option>
+                      <option value="serif-bold-italic">Serif (明朝太斜)</option>
+                      <option value="monospace">Monospace (等幅)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">区切り線</label>
+                    <select id="reportDecLineSelect" class="report-field-input cursor-pointer" onchange="generateReportPreview()">
+                      <option value="----------------">----------------</option>
+                      <option value="───────">───────</option>
+                      <option value="═══════">═══════</option>
+                      <option value="✦ ✦ ✦ ✦ ✦">✦ ✦ ✦ ✦ ✦</option>
+                      <option value="///////////////">///////////////</option>
+                      <option value=" ">（なし）</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">リスト記号</label>
+                    <select id="reportDecMarkSelect" class="report-field-input cursor-pointer" onchange="generateReportPreview()">
+                      <option value="">（なし）</option>
+                      <option value="✦">✦ ✧</option>
+                      <option value="◆">◆ ◇</option>
+                      <option value="🎲">🎲 📖</option>
+                      <option value="⚙️">⚙️ 💡</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- プレビュー＆文字数カウント -->
+              <div class="flex-grow flex flex-col bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="eye" class="w-4 h-4 text-teal-600"></i>
+                    報告プレビュー（直接編集可）
+                  </span>
+                  <span id="reportCharCounter" class="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                    0 / 140 (全角目安)
+                  </span>
+                </div>
+
+                <textarea id="reportPreviewText" class="report-preview-box flex-grow" spellcheck="false" oninput="handleReportUserEdit()"></textarea>
+
+                <div class="flex items-center gap-2 pt-1">
+                  <button type="button" onclick="copyReportToClipboard()" class="flex-1 bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    クリップボードにコピー
+                  </button>
+                  <button type="button" onclick="postReportToX()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    𝕏 に投稿
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3939,46 +4273,83 @@ function switchCentralTab(tab) {
   currentCentralTab = tab;
   const tabTextBtn = document.getElementById("tab-switch-text");
   const tabCharsBtn = document.getElementById("tab-switch-chars");
+  const tabReportBtn = document.getElementById("tab-switch-report");
   const textContainer = document.getElementById("text-cards-view-container");
   const charsContainer = document.getElementById("explorer-view-container");
+  const reportContainer = document.getElementById("report-view-container");
   const cardToolbar = document.getElementById("card-toolbar");
   const charsToolbar = document.getElementById("chars-toolbar");
   const textZoomControls = document.getElementById("text-zoom-controls");
 
+  // Reset tab buttons
+  const inactiveBtnClass = "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5";
+  const activeBtnClass = "px-3 py-1 text-xs font-bold rounded-md bg-white text-teal-700 shadow-sm transition-all flex items-center gap-1.5";
+  if (tabTextBtn) tabTextBtn.className = inactiveBtnClass;
+  if (tabCharsBtn) tabCharsBtn.className = inactiveBtnClass;
+  if (tabReportBtn) tabReportBtn.className = inactiveBtnClass;
+
+  // Hide all containers
+  if (textContainer) { textContainer.classList.add("hidden"); textContainer.classList.remove("flex"); }
+  if (charsContainer) { charsContainer.classList.add("hidden"); charsContainer.classList.remove("flex"); }
+  if (reportContainer) { reportContainer.classList.add("hidden"); reportContainer.classList.remove("flex"); }
+
+  // Hide toolbars by default
+  if (cardToolbar) cardToolbar.style.display = "none";
+  if (charsToolbar) { charsToolbar.classList.add("hidden"); charsToolbar.classList.remove("flex"); }
+  if (textZoomControls) textZoomControls.classList.add("hidden");
+
   if (tab === "text") {
-    tabTextBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-teal-700 shadow-sm transition-all flex items-center gap-1.5";
-    tabCharsBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5";
-    textContainer.classList.remove("hidden");
-    textContainer.classList.add("flex");
-    charsContainer.classList.add("hidden");
-    charsContainer.classList.remove("flex");
-    if (isCardToolbarOpen) {
+    if (tabTextBtn) tabTextBtn.className = activeBtnClass;
+    if (textContainer) { textContainer.classList.remove("hidden"); textContainer.classList.add("flex"); }
+    if (isCardToolbarOpen && cardToolbar) {
       cardToolbar.style.display = "flex";
     }
-    charsToolbar.classList.add("hidden");
-    charsToolbar.classList.remove("flex");
     if (textZoomControls) textZoomControls.classList.remove("hidden");
-  } else {
-    tabCharsBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-teal-700 shadow-sm transition-all flex items-center gap-1.5";
-    tabTextBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1.5";
-    charsContainer.classList.remove("hidden");
-    charsContainer.classList.add("flex");
-    textContainer.classList.add("hidden");
-    textContainer.classList.remove("flex");
-    cardToolbar.style.display = "none";
-    charsToolbar.classList.remove("hidden");
-    charsToolbar.classList.add("flex");
-    if (textZoomControls) textZoomControls.classList.add("hidden");
+  } else if (tab === "chars") {
+    if (tabCharsBtn) tabCharsBtn.className = activeBtnClass;
+    if (charsContainer) { charsContainer.classList.remove("hidden"); charsContainer.classList.add("flex"); }
+    if (charsToolbar) { charsToolbar.classList.remove("hidden"); charsToolbar.classList.add("flex"); }
     renderExplorerCards();
+  } else if (tab === "report") {
+    if (tabReportBtn) tabReportBtn.className = activeBtnClass;
+    if (reportContainer) { reportContainer.classList.remove("hidden"); reportContainer.classList.add("flex"); }
+    initReportDataIfNeeded();
+    generateReportPreview();
+  }
+
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons();
   }
 }
 
 let charLayout = localStorage.getItem("pdf_tool_char_layout") || "grid";
 
+let charSectionOrder = ["stats", "skills", "memo"];
+try {
+  const savedOrder = JSON.parse(localStorage.getItem("pdf_tool_char_section_order"));
+  if (Array.isArray(savedOrder) && savedOrder.length === 3 && ["stats", "skills", "memo"].every(k => savedOrder.includes(k))) {
+    charSectionOrder = savedOrder;
+  }
+} catch (e) {}
+
 function setCharLayout(layout) {
   charLayout = layout === "vertical" ? "vertical" : "grid";
   localStorage.setItem("pdf_tool_char_layout", charLayout);
   updateCharLayoutButtons();
+  renderExplorerCards();
+}
+
+function moveCharSection(sectionKey, direction) {
+  const idx = charSectionOrder.indexOf(sectionKey);
+  if (idx === -1) return;
+  const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= charSectionOrder.length) return;
+
+  const temp = charSectionOrder[idx];
+  charSectionOrder[idx] = charSectionOrder[targetIdx];
+  charSectionOrder[targetIdx] = temp;
+
+  localStorage.setItem("pdf_tool_char_section_order", JSON.stringify(charSectionOrder));
   renderExplorerCards();
 }
 
@@ -4036,6 +4407,7 @@ function normalizeCharacter(item, index) {
   const damageBonus = readDamageBonus(rawParams, commands, abilities, is7th);
   const skills = parseCommands(commands, abilities, is7th, rawStatus);
   const memo = String(data.memo || item.memo || data.remark || item.remark || "").trim();
+  const ho = String(data.ho || item.ho || "").trim();
 
   // Extract explicit basic check values (アイデア, 幸運, 知識) if defined in status or commands
   let luckVal = undefined;
@@ -4104,6 +4476,7 @@ function normalizeCharacter(item, index) {
     portrait: showCharIcons ? (data.iconUrl || item.iconUrl || "") : "",
     externalUrl: data.externalUrl || item.externalUrl || "",
     memo: memo,
+    ho: ho,
     is7th: is7th,
     bld: bldVal,
     mov: movVal,
@@ -4420,10 +4793,26 @@ function renderExplorerCards() {
     const info = document.createElement("div");
     info.className = "char-info";
 
+    const nameRow = document.createElement("div");
+    nameRow.className = "char-name-row";
+
     const nameEl = document.createElement("h3");
     nameEl.className = "char-name";
     nameEl.textContent = char.name;
-    info.appendChild(nameEl);
+    nameRow.appendChild(nameEl);
+
+    const hoInput = document.createElement("input");
+    hoInput.type = "text";
+    hoInput.className = "char-ho-input";
+    hoInput.placeholder = "HO...";
+    hoInput.value = char.ho || "";
+    hoInput.title = "ハンドアウト / 役割 (例: HO1, HO皇帝)";
+    hoInput.oninput = (e) => {
+      updateCharHo(index, e.target.value);
+    };
+    nameRow.appendChild(hoInput);
+
+    info.appendChild(nameRow);
 
     if (char.furigana) {
       const furiEl = document.createElement("div");
@@ -4471,20 +4860,21 @@ function renderExplorerCards() {
     head.appendChild(actionsDiv);
     card.appendChild(head);
 
-    // Card Body
+    // Card Body - rendered according to charSectionOrder
     const body = document.createElement("div");
     body.className = "char-card-body";
 
-    // 1. Unified Abilities & Basic Checks (STR, CON, POW, DEX, APP, SIZ, INT, EDU + アイデア, 幸運, 知識)
-    body.appendChild(renderCharStatsSection(char));
-
-    // 2. Skills List
-    if (char.skills && char.skills.length > 0) {
-      body.appendChild(renderCharSkillSection(char));
-    }
-
-    // 3. Collapsible Memo field
-    body.appendChild(renderCharMemo(char, index));
+    charSectionOrder.forEach(secKey => {
+      if (secKey === "stats") {
+        body.appendChild(renderCharStatsSection(char));
+      } else if (secKey === "skills") {
+        if (char.skills && char.skills.length > 0) {
+          body.appendChild(renderCharSkillSection(char));
+        }
+      } else if (secKey === "memo") {
+        body.appendChild(renderCharMemo(char, index));
+      }
+    });
 
     card.appendChild(body);
 
@@ -4530,13 +4920,53 @@ function renderCharResources(res) {
   return g;
 }
 
+function createSectionOrderControls(sectionKey) {
+  const container = document.createElement("div");
+  container.className = "char-section-title-right";
+
+  const idx = charSectionOrder.indexOf(sectionKey);
+  const isFirst = idx <= 0;
+  const isLast = idx >= charSectionOrder.length - 1;
+
+  const upBtn = document.createElement("button");
+  upBtn.className = "char-section-order-btn";
+  upBtn.title = "この項目を上に移動";
+  upBtn.innerHTML = `<i data-lucide="chevron-up" class="w-3 h-3"></i>`;
+  upBtn.disabled = isFirst;
+  upBtn.onclick = (e) => {
+    e.stopPropagation();
+    moveCharSection(sectionKey, "up");
+  };
+
+  const downBtn = document.createElement("button");
+  downBtn.className = "char-section-order-btn";
+  downBtn.title = "この項目を下に移動";
+  downBtn.innerHTML = `<i data-lucide="chevron-down" class="w-3 h-3"></i>`;
+  downBtn.disabled = isLast;
+  downBtn.onclick = (e) => {
+    e.stopPropagation();
+    moveCharSection(sectionKey, "down");
+  };
+
+  container.appendChild(upBtn);
+  container.appendChild(downBtn);
+  return container;
+}
+
 function renderCharStatsSection(char) {
   const wrap = document.createElement("div");
+  wrap.className = "char-section-block";
 
   const title = document.createElement("div");
   title.className = "char-section-title";
   const rollCommandPrefix = char.is7th ? "CC" : "CCB";
-  title.innerHTML = `<span>能力値 / 基本判定</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
+
+  const left = document.createElement("div");
+  left.className = "char-section-title-left";
+  left.innerHTML = `<span>能力値 / 基本判定</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
+
+  title.appendChild(left);
+  title.appendChild(createSectionOrderControls("stats"));
   wrap.appendChild(title);
 
   const grid = document.createElement("div");
@@ -4625,10 +5055,18 @@ function renderCharStatsSection(char) {
 
 function renderCharSkillSection(char) {
   const wrap = document.createElement("div");
+  wrap.className = "char-section-block";
+
   const title = document.createElement("div");
   title.className = "char-section-title";
   const rollCommandPrefix = char.is7th ? "CC" : "CCB";
-  title.innerHTML = `<span>技能一覧 (${char.skills.length})</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
+
+  const left = document.createElement("div");
+  left.className = "char-section-title-left";
+  left.innerHTML = `<span>技能一覧 (${char.skills.length})</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
+
+  title.appendChild(left);
+  title.appendChild(createSectionOrderControls("skills"));
   wrap.appendChild(title);
 
   const list = document.createElement("div");
@@ -4651,12 +5089,20 @@ function renderCharSkillSection(char) {
 
 function renderCharMemo(char, index) {
   const wrap = document.createElement("div");
-  wrap.className = "char-memo-container";
+  wrap.className = "char-memo-container char-section-block";
+
+  const head = document.createElement("div");
+  head.className = "char-memo-head flex items-center justify-between gap-1 mb-1.5";
 
   const hasContent = Boolean(char.memo && char.memo.trim().length > 0);
   const btn = document.createElement("button");
   btn.className = `char-memo-toggle ${hasContent ? "has-content" : ""}`;
   btn.innerHTML = `<i data-lucide="file-edit" class="w-3.5 h-3.5"></i><span>メモ・備考${hasContent ? " (入力あり)" : ""}</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i>`;
+
+  const orderControls = createSectionOrderControls("memo");
+
+  head.appendChild(btn);
+  head.appendChild(orderControls);
 
   const content = document.createElement("div");
   content.className = "char-memo-content hidden";
@@ -4684,7 +5130,7 @@ function renderCharMemo(char, index) {
     if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons({ root: btn });
   };
 
-  wrap.appendChild(btn);
+  wrap.appendChild(head);
   wrap.appendChild(content);
   return wrap;
 }
@@ -4695,10 +5141,474 @@ function updateCharMemo(index, value) {
   }
 }
 
-function copyCharRoll(val, skillName, charName, is7th = false) {
-  const prefix = is7th ? "CC" : "CCB";
-  const rollText = `${prefix}<=${val} 【${charName}：${skillName}】`;
-  copyText(rollText, `${charName}の「${skillName}」判定コマンド`);
+function updateCharHo(index, value) {
+  if (index >= 0 && index < explorerCharacters.length) {
+    explorerCharacters[index].ho = value;
+    // If currently on report tab or report data has been initialized, sync HO
+    if (typeof syncHoToReportPls === "function") {
+      syncHoToReportPls(index, value);
+    }
+  }
+}
+
+// --- 卓報告作成 (TRPG Session Report) 制御ロジック ---
+let reportGms = [{ role: "KP", name: "" }];
+let reportPls = [];
+let reportUserEditedText = null;
+let reportInitialized = false;
+
+function initReportDataIfNeeded() {
+  if (reportInitialized) return;
+  reportInitialized = true;
+  loadReportSettings();
+  if (reportPls.length === 0 && explorerCharacters.length > 0) {
+    syncReportFromExplorer(false);
+  } else {
+    renderReportGmList();
+    renderReportPlList();
+  }
+}
+
+function loadReportSettings() {
+  try {
+    const saved = localStorage.getItem("pdf_tool_session_report");
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.system) document.getElementById("reportSystemName").value = data.system;
+      if (data.scenario) document.getElementById("reportScenarioName").value = data.scenario;
+      if (data.author) document.getElementById("reportAuthorName").value = data.author;
+      if (data.end) document.getElementById("reportEndResult").value = data.end;
+      if (data.roomUrl) {
+        document.getElementById("reportRoomUrl").value = data.roomUrl;
+        updateRoomUrlLink(data.roomUrl);
+      }
+      if (data.date) document.getElementById("reportSessionDate").value = data.date;
+      if (data.memo) document.getElementById("reportFreeMemo").value = data.memo;
+      if (data.template) document.getElementById("reportTemplateSelect").value = data.template;
+      if (data.fontStyle) document.getElementById("reportFontStyleSelect").value = data.fontStyle;
+      if (data.line) document.getElementById("reportDecLineSelect").value = data.line;
+      if (data.mark !== undefined) document.getElementById("reportDecMarkSelect").value = data.mark;
+      if (Array.isArray(data.gms) && data.gms.length > 0) reportGms = data.gms;
+      if (Array.isArray(data.pls) && data.pls.length > 0) reportPls = data.pls;
+    } else {
+      // Set default today's date
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      const dateEl = document.getElementById("reportSessionDate");
+      if (dateEl && !dateEl.value) dateEl.value = `${yyyy}.${mm}.${dd}`;
+    }
+  } catch (e) {
+    console.error("卓報告設定の読み込みエラー:", e);
+  }
+}
+
+function saveReportSettings() {
+  try {
+    const data = {
+      system: document.getElementById("reportSystemName")?.value || "",
+      scenario: document.getElementById("reportScenarioName")?.value || "",
+      author: document.getElementById("reportAuthorName")?.value || "",
+      end: document.getElementById("reportEndResult")?.value || "",
+      roomUrl: document.getElementById("reportRoomUrl")?.value || "",
+      date: document.getElementById("reportSessionDate")?.value || "",
+      memo: document.getElementById("reportFreeMemo")?.value || "",
+      template: document.getElementById("reportTemplateSelect")?.value || "classic",
+      fontStyle: document.getElementById("reportFontStyleSelect")?.value || "normal",
+      line: document.getElementById("reportDecLineSelect")?.value || "----------------",
+      mark: document.getElementById("reportDecMarkSelect")?.value || "",
+      gms: reportGms,
+      pls: reportPls
+    };
+    localStorage.setItem("pdf_tool_session_report", JSON.stringify(data));
+  } catch (e) {}
+}
+
+function updateRoomUrlLink(url) {
+  const btn = document.getElementById("reportRoomOpenBtn");
+  if (!btn) return;
+  const trimmed = (url || "").trim();
+  if (trimmed && (trimmed.startsWith("http://") || trimmed.startsWith("https://"))) {
+    btn.href = trimmed;
+    btn.classList.remove("hidden");
+  } else {
+    btn.classList.add("hidden");
+  }
+}
+
+function syncReportFromExplorer(showNotification = true) {
+  if (explorerCharacters.length === 0) {
+    if (showNotification) showToast("通知", "探索者ビューアにキャラクターが登録されていません。", "info");
+    return;
+  }
+  reportPls = explorerCharacters.map((char, i) => {
+    // Preserve existing PL name if matched by PC name or index
+    let existingPlName = "";
+    if (reportPls[i] && reportPls[i].pcName === char.name) {
+      existingPlName = reportPls[i].plName || "";
+    } else {
+      const match = reportPls.find(p => p.pcName === char.name);
+      if (match) existingPlName = match.plName || "";
+    }
+    return {
+      ho: char.ho || (explorerCharacters.length > 1 ? `HO${i + 1}` : ""),
+      pcName: char.name || "",
+      plName: existingPlName
+    };
+  });
+  renderReportPlList();
+  reportUserEditedText = null;
+  generateReportPreview();
+  if (showNotification) {
+    showToast("同期完了", `探索者ビューアから ${explorerCharacters.length} 人の探索者（HO・名前）を取り込みました！`, "success");
+  }
+}
+
+function syncHoToReportPls(index, value) {
+  if (index >= 0 && index < reportPls.length) {
+    reportPls[index].ho = value;
+    const input = document.querySelector(`.report-pl-ho-input[data-index="${index}"]`);
+    if (input) input.value = value;
+    reportUserEditedText = null;
+    generateReportPreview();
+  }
+}
+
+function renderReportGmList() {
+  const container = document.getElementById("reportGmList");
+  if (!container) return;
+  container.innerHTML = "";
+  reportGms.forEach((gm, idx) => {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-1.5";
+    row.innerHTML = `
+      <input type="text" class="report-field-input text-xs" style="width: 80px; flex-shrink: 0;" placeholder="KP" value="${escapeHtml(gm.role || "")}" oninput="updateReportGm(${idx}, 'role', this.value)">
+      <input type="text" class="report-field-input text-xs flex-grow" placeholder="KP名 / GM名" value="${escapeHtml(gm.name || "")}" oninput="updateReportGm(${idx}, 'name', this.value)">
+      <button type="button" onclick="removeReportGm(${idx})" class="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors flex-shrink-0" title="削除">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons({ root: container });
+  }
+}
+
+function renderReportPlList() {
+  const container = document.getElementById("reportPlList");
+  if (!container) return;
+  container.innerHTML = "";
+  if (reportPls.length === 0) {
+    container.innerHTML = `<div class="text-[11px] text-slate-400 py-2 text-center">参加者が未設定です。「+PL追加」または「探索者ビューアから同期」を押してください。</div>`;
+    return;
+  }
+  reportPls.forEach((pl, idx) => {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-1.5";
+    row.innerHTML = `
+      <input type="text" data-index="${idx}" class="report-field-input report-pl-ho-input text-xs" style="width: 75px; flex-shrink: 0;" placeholder="HO1" value="${escapeHtml(pl.ho || "")}" oninput="updateReportPl(${idx}, 'ho', this.value)">
+      <input type="text" class="report-field-input text-xs flex-1" placeholder="PC名 (探索者)" value="${escapeHtml(pl.pcName || "")}" oninput="updateReportPl(${idx}, 'pcName', this.value)">
+      <input type="text" class="report-field-input text-xs flex-1" placeholder="PL名 (プレイヤー)" value="${escapeHtml(pl.plName || "")}" oninput="updateReportPl(${idx}, 'plName', this.value)">
+      <button type="button" onclick="removeReportPl(${idx})" class="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors flex-shrink-0" title="削除">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons({ root: container });
+  }
+}
+
+function addReportGm() {
+  reportGms.push({ role: "KP", name: "" });
+  renderReportGmList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function removeReportGm(index) {
+  if (reportGms.length > 1) {
+    reportGms.splice(index, 1);
+  } else {
+    reportGms[0] = { role: "KP", name: "" };
+  }
+  renderReportGmList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function updateReportGm(index, field, value) {
+  if (reportGms[index]) {
+    reportGms[index][field] = value;
+    reportUserEditedText = null;
+    generateReportPreview();
+  }
+}
+
+function addReportPl() {
+  const lastHo = reportPls.length > 0 ? reportPls[reportPls.length - 1].ho : "";
+  let nextHo = "";
+  const match = (lastHo || "").match(/^(HO|ho|Ho)(\d+)$/i);
+  if (match) {
+    nextHo = match[1].toUpperCase() + (parseInt(match[2], 10) + 1);
+  } else if (reportPls.length === 0) {
+    nextHo = "HO1";
+  }
+  reportPls.push({ ho: nextHo, pcName: "", plName: "" });
+  renderReportPlList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function removeReportPl(index) {
+  reportPls.splice(index, 1);
+  renderReportPlList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function updateReportPl(index, field, value) {
+  if (reportPls[index]) {
+    reportPls[index][field] = value;
+    // If updating ho or pcName, also reflect back to explorerCharacters if matched
+    if (field === "ho" && explorerCharacters[index]) {
+      explorerCharacters[index].ho = value;
+      const cardHoInput = document.querySelector(`.character-card[data-index="${index}"] .char-ho-input`);
+      if (cardHoInput) cardHoInput.value = value;
+    }
+    reportUserEditedText = null;
+    generateReportPreview();
+  }
+}
+
+function getReportMarks(markType) {
+  switch (markType) {
+    case "✦": return { main: "✦", sub: "✧" };
+    case "◆": return { main: "◆", sub: "◇" };
+    case "🎲": return { main: "🎲", sub: "📖" };
+    case "⚙️": return { main: "⚙️", sub: "💡" };
+    default: return { main: "", sub: "" };
+  }
+}
+
+function formatReportPlLine(pl, mark) {
+  let line = "";
+  if (pl.ho) line += `${pl.ho} `;
+  if (mark) line += `${mark} `;
+  if (pl.pcName && pl.plName) {
+    line += `${pl.pcName} / ${pl.plName}`;
+  } else if (pl.pcName) {
+    line += pl.pcName;
+  } else if (pl.plName) {
+    line += `PL: ${pl.plName}`;
+  }
+  return line.trim();
+}
+
+function convertReportFont(text, style) {
+  if (style === "normal" || !text) return text;
+  const maps = {
+    "sans-bold": {
+      upper: 0x1D5D4 - 0x41, lower: 0x1D5EE - 0x61, digit: 0x1D7EC - 0x30
+    },
+    "sans-italic": {
+      upper: 0x1D608 - 0x41, lower: 0x1D622 - 0x61, digit: 0
+    },
+    "serif-bold-italic": {
+      upper: 0x1D468 - 0x41, lower: 0x1D482 - 0x61, digit: 0
+    },
+    "monospace": {
+      upper: 0x1D670 - 0x41, lower: 0x1D68A - 0x61, digit: 0x1D7F6 - 0x30
+    }
+  };
+  const m = maps[style];
+  if (!m) return text;
+  return Array.from(text).map(char => {
+    const code = char.charCodeAt(0);
+    if (code >= 0x41 && code <= 0x5A) return String.fromCodePoint(code + m.upper);
+    if (code >= 0x61 && code <= 0x7A) return String.fromCodePoint(code + m.lower);
+    if (m.digit && code >= 0x30 && code <= 0x39) return String.fromCodePoint(code + m.digit);
+    return char;
+  }).join("");
+}
+
+const reportTemplates = {
+  classic: (data) => {
+    let text = `【${data.system}】\n`;
+    if (data.scenario) text += `「${data.scenario}」\n`;
+    if (data.author) text += `作：${data.author}\n`;
+    text += `\n`;
+
+    if (data.line && data.line !== " ") text += `${data.line}\n`;
+    if (data.end) text += `${data.end}\n`;
+    if (data.line && data.line !== " ") text += `${data.line}\n\n`;
+
+    const marks = getReportMarks(data.mark);
+    const gmMark = marks.main ? marks.main + " " : "";
+
+    data.gms.forEach(gm => {
+      if (gm.name) text += `${gm.role}: ${gmMark}${gm.name}\n`;
+    });
+
+    if (data.gms.some(g => g.name) && data.pls.some(p => p.pcName || p.plName)) {
+      text += `\n`;
+    }
+
+    data.pls.forEach(pl => {
+      if (pl.pcName || pl.plName) {
+        text += formatReportPlLine(pl, marks.sub) + `\n`;
+      }
+    });
+
+    text += `\n`;
+    if (data.date) text += `(${data.date})\n`;
+    if (data.memo) text += `\n${data.memo}\n`;
+
+    return text;
+  },
+  simple: (data) => {
+    let text = `🎲 ${data.system}\n`;
+    if (data.scenario) text += `📖 ${data.scenario}\n`;
+    if (data.author) text += `🖊️ ${data.author}\n`;
+    if (data.date) text += `📅 ${data.date}\n`;
+    text += `\n`;
+
+    let gmLines = data.gms.filter(gm => gm.name).map(gm => `${gm.role}: ${gm.name}`);
+    if (gmLines.length) text += gmLines.join(" / ") + `\n`;
+
+    let plLines = data.pls.filter(pl => pl.pcName || pl.plName).map(pl => {
+      let parts = [];
+      if (pl.pcName) parts.push(pl.pcName);
+      if (pl.plName) parts.push(pl.plName);
+      return pl.ho ? `${pl.ho}.${parts.join("/")}` : parts.join("/");
+    });
+    if (plLines.length) text += `PL: ` + plLines.join(" / ") + `\n`;
+
+    if (data.end || data.memo) text += `\n`;
+    if (data.line && data.line !== " " && data.end) text += `${data.line}\n`;
+    if (data.end) text += `[ ${data.end} ]\n`;
+    if (data.line && data.line !== " " && data.end) text += `${data.line}\n`;
+    if (data.memo) text += `\n${data.memo}\n`;
+
+    return text;
+  },
+  emo: (data) => {
+    const marks = getReportMarks(data.mark) || { main: "✦", sub: "✧" };
+    const m1 = marks.main || "✦";
+    const m2 = marks.sub || "✧";
+
+    let text = `${m1} ${data.system}\n`;
+    if (data.scenario) text += `『${data.scenario}』\n`;
+    if (data.author) text += `作：${data.author}\n`;
+    text += `\n`;
+
+    const line = (data.line && data.line !== " ") ? data.line : "───────";
+
+    if (data.end) text += `${line}\n${data.end}\n${line}\n\n`;
+
+    data.gms.forEach(gm => {
+      if (gm.name) text += `${gm.role} ${m1} ${gm.name}\n`;
+    });
+    data.pls.forEach(pl => {
+      if (pl.pcName || pl.plName) {
+        text += formatReportPlLine(pl, m2) + `\n`;
+      }
+    });
+
+    text += `\n`;
+    if (data.date) text += `${data.date}\n`;
+    if (data.memo) text += `\n${data.memo}\n`;
+
+    return text;
+  }
+};
+
+function generateReportPreview() {
+  saveReportSettings();
+  const previewBox = document.getElementById("reportPreviewText");
+  if (!previewBox) return;
+
+  if (reportUserEditedText !== null) {
+    updateReportCharCount();
+    return;
+  }
+
+  const tpl = document.getElementById("reportTemplateSelect")?.value || "classic";
+  const fontStyle = document.getElementById("reportFontStyleSelect")?.value || "normal";
+
+  const data = {
+    system: document.getElementById("reportSystemName")?.value || "クトゥルフ神話TRPG",
+    author: document.getElementById("reportAuthorName")?.value || "",
+    scenario: document.getElementById("reportScenarioName")?.value || "",
+    end: document.getElementById("reportEndResult")?.value || "",
+    roomUrl: document.getElementById("reportRoomUrl")?.value || "",
+    date: document.getElementById("reportSessionDate")?.value || "",
+    memo: document.getElementById("reportFreeMemo")?.value || "",
+    line: document.getElementById("reportDecLineSelect")?.value || "----------------",
+    mark: document.getElementById("reportDecMarkSelect")?.value || "",
+    gms: reportGms,
+    pls: reportPls
+  };
+
+  const templateFn = reportTemplates[tpl] || reportTemplates.classic;
+  let text = templateFn(data);
+  text = convertReportFont(text, fontStyle);
+
+  previewBox.value = text;
+  updateReportCharCount();
+}
+
+function handleReportUserEdit() {
+  const previewBox = document.getElementById("reportPreviewText");
+  if (previewBox) {
+    reportUserEditedText = previewBox.value;
+    updateReportCharCount();
+  }
+}
+
+function getTwitterCharCount(text) {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    const codePoint = text.codePointAt(i);
+    if (codePoint > 0xFFFF) {
+      i++;
+      count += 2;
+    } else if (codePoint <= 0x007f || (codePoint >= 0xFF61 && codePoint <= 0xFF9F)) {
+      count += 1;
+    } else {
+      count += 2;
+    }
+  }
+  return Math.ceil(count / 2);
+}
+
+function updateReportCharCount() {
+  const previewBox = document.getElementById("reportPreviewText");
+  const counterEl = document.getElementById("reportCharCounter");
+  if (!previewBox || !counterEl) return;
+  const count = getTwitterCharCount(previewBox.value || "");
+  counterEl.textContent = `${count} / 140 (全角目安)`;
+  if (count > 140) {
+    counterEl.className = "text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200";
+  } else {
+    counterEl.className = "text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200";
+  }
+}
+
+function copyReportToClipboard() {
+  const previewBox = document.getElementById("reportPreviewText");
+  if (!previewBox) return;
+  copyText(previewBox.value, "卓報告テキスト");
+}
+
+function postReportToX() {
+  const previewBox = document.getElementById("reportPreviewText");
+  if (!previewBox) return;
+  const text = encodeURIComponent(previewBox.value);
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
 }
 
 function deleteCharacter(index) {
@@ -4860,7 +5770,7 @@ function initCharExplorerDropAndPaste() {
   });
 }
 
-window.onload=function(){initTheme();renderSpeakerSettings();renderTabColorSettings();if(typeof renderBulkColorPalette==="function")renderBulkColorPalette();initResizer();initCharExplorerDropAndPaste();renderExplorerCards();lucide.createIcons()};
+window.onload=function(){initTheme();renderSpeakerSettings();renderTabColorSettings();if(typeof renderBulkColorPalette==="function")renderBulkColorPalette();initResizer();initCharExplorerDropAndPaste();renderExplorerCards();initReportDataIfNeeded();lucide.createIcons()};
 </script>
 </body>
 </html>
