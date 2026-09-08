@@ -4031,10 +4031,71 @@ function normalizeCharacter(item, index) {
   const rawParams = Array.isArray(data.params) ? data.params : Array.isArray(item.params) ? item.params : [];
   const rawStatus = Array.isArray(data.status) ? data.status : Array.isArray(item.status) ? item.status : [];
   const abilities = readAbilities(rawParams, commands);
-  const resources = readResources(rawStatus, data, abilities);
-  const damageBonus = readDamageBonus(rawParams, commands, abilities);
-  const skills = parseCommands(commands, abilities);
+  const is7th = detectCoCVersion(rawParams, commands, abilities, rawStatus) === 7;
+  const resources = readResources(rawStatus, data, abilities, is7th);
+  const damageBonus = readDamageBonus(rawParams, commands, abilities, is7th);
+  const skills = parseCommands(commands, abilities, is7th, rawStatus);
   const memo = String(data.memo || item.memo || data.remark || item.remark || "").trim();
+
+  // Extract explicit basic check values (アイデア, 幸運, 知識) if defined in status or commands
+  let luckVal = undefined;
+  const luckStatus = rawStatus.find(s => s && s.label && (s.label.includes("幸運") || s.label.toUpperCase().includes("LUCK")));
+  if (luckStatus && luckStatus.value !== undefined && luckStatus.value !== "") {
+    luckVal = luckStatus.value;
+  }
+  const luckCmd = commands.match(/(?:CCB?|CC|CBRB|1D100)\s*<=\s*([0-9]+)\s*【幸運】/i);
+  if (luckVal === undefined && luckCmd) {
+    luckVal = luckCmd[1];
+  }
+
+  let ideaVal = undefined;
+  const ideaCmd = commands.match(/(?:CCB?|CC|CBRB|1D100)\s*<=\s*([0-9]+)\s*【アイデア】/i);
+  if (ideaCmd) ideaVal = ideaCmd[1];
+
+  let knowVal = undefined;
+  const knowCmd = commands.match(/(?:CCB?|CC|CBRB|1D100)\s*<=\s*([0-9]+)\s*【知識】/i);
+  if (knowCmd) knowVal = knowCmd[1];
+
+  const basicChecks = {
+    idea: ideaVal,
+    luck: luckVal,
+    know: knowVal
+  };
+
+  let bldVal = undefined;
+  let movVal = undefined;
+  if (is7th) {
+    const bldParam = rawParams.find(p => p && p.label && /^(BLD|ビルド|体格)$/i.test(p.label.trim()));
+    if (bldParam && bldParam.value !== undefined && bldParam.value !== "") {
+      bldVal = String(bldParam.value).trim();
+    }
+    const movParam = rawParams.find(p => p && p.label && /^(MOV|移動率|移動)$/i.test(p.label.trim()));
+    if (movParam && movParam.value !== undefined && movParam.value !== "") {
+      movVal = String(movParam.value).trim();
+    }
+    // Calculate BLD if missing in 7th
+    if (bldVal === undefined && abilities.STR !== "-" && abilities.SIZ !== "-") {
+      const total = Number(abilities.STR) + Number(abilities.SIZ);
+      if (total <= 64) bldVal = "-2";
+      else if (total <= 84) bldVal = "-1";
+      else if (total <= 124) bldVal = "0";
+      else if (total <= 164) bldVal = "+1";
+      else if (total <= 204) bldVal = "+2";
+      else if (total <= 284) bldVal = "+3";
+      else if (total <= 364) bldVal = "+4";
+      else if (total <= 444) bldVal = "+5";
+      else if (total <= 524) bldVal = "+6";
+    }
+    // Calculate MOV if missing in 7th
+    if (movVal === undefined && abilities.STR !== "-" && abilities.DEX !== "-" && abilities.SIZ !== "-") {
+      const str = Number(abilities.STR);
+      const dex = Number(abilities.DEX);
+      const siz = Number(abilities.SIZ);
+      if (dex < siz && str < siz) movVal = "7";
+      else if (dex > siz && str > siz) movVal = "9";
+      else movVal = "8";
+    }
+  }
 
   return {
     id: Date.now() + Math.floor(Math.random() * 10000) + index,
@@ -4043,12 +4104,16 @@ function normalizeCharacter(item, index) {
     portrait: showCharIcons ? (data.iconUrl || item.iconUrl || "") : "",
     externalUrl: data.externalUrl || item.externalUrl || "",
     memo: memo,
+    is7th: is7th,
+    bld: bldVal,
+    mov: movVal,
     commands: commands,
     resources: {
       ...resources,
       db: damageBonus || resources.db || "-"
     },
     abilities: abilities,
+    basicChecks: basicChecks,
     skills: skills
   };
 }
@@ -4105,7 +4170,38 @@ function readAbilities(params, commands) {
   return result;
 }
 
-function readResources(status, data, abilities) {
+function detectCoCVersion(params, commands, abilities, status) {
+  // Check if any ability is > 30 (CoC 7th edition uses full percentile 0-100 for abilities)
+  const abs = ["STR", "CON", "POW", "DEX", "APP", "SIZ", "INT", "EDU"];
+  let hasHighAbility = false;
+  let hasNormalAbility = false;
+  abs.forEach(k => {
+    const v = parseInt(abilities[k], 10);
+    if (!Number.isNaN(v)) {
+      if (v > 30) hasHighAbility = true;
+      if (v <= 30 && v > 0) hasNormalAbility = true;
+    }
+  });
+
+  // Check params for 7th edition specific params like BLD, MOV
+  const has7thParams = params.some(p => p && p.label && /^(BLD|MOV|ビルド|移動率)$/i.test(p.label.trim()));
+
+  // Check commands for 7th edition patterns (e.g., CC<={STR}, CC<=75 【アイデア】, without *5)
+  let has7thCommands = false;
+  if (commands) {
+    if (/(?:CCB?|CC)\s*<=\s*\{?(?:STR|CON|POW|DEX|APP|SIZ|INT|EDU)\}?\s*【/i.test(commands) &&
+        !/(?:CCB?|CC)\s*<=\s*\{?(?:STR|CON|POW|DEX|APP|SIZ|INT|EDU)\}?\s*[*×]\s*5/i.test(commands)) {
+      has7thCommands = true;
+    }
+  }
+
+  if (has7thParams || (hasHighAbility && !hasNormalAbility) || has7thCommands) {
+    return 7;
+  }
+  return 6;
+}
+
+function readResources(status, data, abilities, is7th = false) {
   const res = { hp: "-", mp: "-", san: "-", db: "-" };
   status.forEach(s => {
     if (!s || !s.label) return;
@@ -4117,18 +4213,26 @@ function readResources(status, data, abilities) {
     if (label.includes("SAN") || label.includes("正気度")) res.san = val;
   });
   if (res.hp === "-" && abilities.CON !== "-" && abilities.SIZ !== "-") {
-    res.hp = Math.ceil((Number(abilities.CON) + Number(abilities.SIZ)) / 2);
+    const con = Number(abilities.CON);
+    const siz = Number(abilities.SIZ);
+    if (is7th) {
+      res.hp = Math.floor((con + siz) / 10);
+    } else {
+      res.hp = Math.ceil((con + siz) / 2);
+    }
   }
   if (res.mp === "-" && abilities.POW !== "-") {
-    res.mp = Number(abilities.POW);
+    const pow = Number(abilities.POW);
+    res.mp = is7th ? Math.floor(pow / 5) : pow;
   }
   if (res.san === "-" && abilities.POW !== "-") {
-    res.san = Number(abilities.POW) * 5;
+    const pow = Number(abilities.POW);
+    res.san = is7th ? pow : pow * 5;
   }
   return res;
 }
 
-function readDamageBonus(params, commands, abilities) {
+function readDamageBonus(params, commands, abilities, is7th = false) {
   let dbParam = params.find(p => p && p.label && (p.label.toUpperCase().includes("DB") || p.label.includes("ダメージボーナス")));
   if (dbParam && dbParam.value !== undefined && dbParam.value !== "") {
     return String(dbParam.value).trim();
@@ -4136,16 +4240,35 @@ function readDamageBonus(params, commands, abilities) {
   const match = commands.match(/DB[：:\s]*([+\-]?\d+d\d+|[+\-]?\d+|0)/i);
   if (match) return match[1];
 
+  // 7th edition damage dice or build check from commands e.g. "1d4+1D4 【ダメージ判定】" or "1D4"
+  const matchDice = commands.match(/\+([1-9]\d*D\d+)\s*【(?:ダメージ|近接|格闘|DB)/i);
+  if (matchDice) return `+${matchDice[1]}`;
+
   if (abilities.STR !== "-" && abilities.SIZ !== "-") {
-    const total = Number(abilities.STR) + Number(abilities.SIZ);
-    if (total <= 12) return "-1D6";
-    if (total <= 16) return "-1D4";
-    if (total <= 24) return "+0";
-    if (total <= 32) return "+1D4";
-    if (total <= 40) return "+1D6";
-    if (total <= 56) return "+2D6";
-    if (total <= 72) return "+3D6";
-    if (total <= 88) return "+4D6";
+    let str = Number(abilities.STR);
+    let siz = Number(abilities.SIZ);
+    if (is7th) {
+      const total = str + siz;
+      if (total <= 64) return "-2";
+      if (total <= 84) return "-1";
+      if (total <= 124) return "+0";
+      if (total <= 164) return "+1D4";
+      if (total <= 204) return "+1D6";
+      if (total <= 284) return "+2D6";
+      if (total <= 364) return "+3D6";
+      if (total <= 444) return "+4D6";
+      if (total <= 524) return "+5D6";
+    } else {
+      const total = str + siz;
+      if (total <= 12) return "-1D6";
+      if (total <= 16) return "-1D4";
+      if (total <= 24) return "+0";
+      if (total <= 32) return "+1D4";
+      if (total <= 40) return "+1D6";
+      if (total <= 56) return "+2D6";
+      if (total <= 72) return "+3D6";
+      if (total <= 88) return "+4D6";
+    }
   }
   return "-";
 }
@@ -4163,24 +4286,23 @@ function normalizeParamLabel(label) {
   return l;
 }
 
-function parseCommands(commands, abilities) {
+function parseCommands(commands, abilities, is7th = false, status = []) {
   if (!commands) return [];
   const lines = commands.split("\n");
   const parsed = [];
   const known = new Set();
-  const basicCheckNames = new Set(["アイデア", "幸運", "知識", "STR*5", "CON*5", "POW*5", "DEX*5", "APP*5", "SIZ*5", "INT*5", "EDU*5"]);
 
   lines.forEach(line => {
     const trimmed = line.trim();
     if (!trimmed) return;
-    // Format: CCB<=70 【目星】 or 1D100<=50 【回避】 or CCB<={DEX}*5 【DEX*5】
-    const regex = /(?:CCB?|CC|CBRB|1D100)\s*<=\s*([0-9+\-*\/\{\}A-Za-z]+)\s*【([^】]+)】/i;
+    // Format: CCB<=70 【目星】 or 1D100<=50 【回避】 or CCB<={DEX}*5 【DEX*5】 or CC<={STR} 【STR】
+    const regex = /(?:CCB?|CC|CBRB|1D100)\s*<=\s*([0-9+\-*\/\{\}A-Za-z\u3040-\u30FF\u4E00-\u9FA5]+)\s*【([^】]+)】/i;
     const m = trimmed.match(regex);
     if (m) {
       let rawVal = m[1];
       let name = m[2].trim();
       if (isBasicCheck(name)) return;
-      let evaluated = evaluateDiceExpression(rawVal, abilities);
+      let evaluated = evaluateDiceExpression(rawVal, abilities, status);
       if (evaluated !== null && !known.has(name)) {
         known.add(name);
         parsed.push({ name: name, value: evaluated, command: trimmed });
@@ -4191,13 +4313,26 @@ function parseCommands(commands, abilities) {
   return sortSkills(parsed);
 }
 
-function evaluateDiceExpression(expr, abilities) {
+function evaluateDiceExpression(expr, abilities, status = []) {
   let str = expr;
+  // Replace ability values
   Object.keys(abilities).forEach(k => {
     const val = abilities[k] !== "-" ? abilities[k] : 0;
     str = str.replace(new RegExp(`\\{${k}\\}`, "gi"), val);
     str = str.replace(new RegExp(`\\b${k}\\b`, "gi"), val);
   });
+  // Replace status values like {SAN}, {幸運}, {HP}, {MP}
+  if (Array.isArray(status)) {
+    status.forEach(s => {
+      if (s && s.label) {
+        const val = s.value !== undefined ? s.value : s.max;
+        if (val !== undefined && val !== null && val !== "") {
+          const l = s.label.trim();
+          str = str.replace(new RegExp(`\\{${l}\\}`, "gi"), val);
+        }
+      }
+    });
+  }
   if (/^[0-9+\-*\/ ]+$/.test(str)) {
     try {
       return Function(`'use strict'; return (${str})`)();
@@ -4211,16 +4346,16 @@ function evaluateDiceExpression(expr, abilities) {
 
 function isBasicCheck(name) {
   const n = name.trim();
-  return /^(アイデア|幸運|知識|STR\s*[*×]\s*5|CON\s*[*×]\s*5|POW\s*[*×]\s*5|DEX\s*[*×]\s*5|APP\s*[*×]\s*5|SIZ\s*[*×]\s*5|INT\s*[*×]\s*5|EDU\s*[*×]\s*5)$/i.test(n);
+  return /^(アイデア|幸運|知識|正気度ロール|SAN値チェック|STR(\s*[*×]\s*5)?|CON(\s*[*×]\s*5)?|POW(\s*[*×]\s*5)?|DEX(\s*[*×]\s*5)?|APP(\s*[*×]\s*5)?|SIZ(\s*[*×]\s*5)?|INT(\s*[*×]\s*5)?|EDU(\s*[*×]\s*5)?)$/i.test(n);
 }
 
 function sortSkills(skills) {
   const coc6Order = [
-    "回避", "キック", "組み付き", "パンチ", "頭突き", "投擲", "マーシャルアーツ", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル",
-    "応急手当", "鍵開け", "隠す", "隠れる", "聞き耳", "忍び歩き", "写真術", "精神分析", "追跡", "登攀", "図書館", "目星",
-    "運転", "機械修理", "重機械操作", "乗馬", "水泳", "製作", "操縦", "跳躍", "電気修理", "ナビゲート", "変装",
-    "言いくるめ", "信用", "説得", "値切り", "母国語",
-    "医学", "オカルト", "化学", "クトゥルフ神話", "芸術", "経理", "考古学", "コンピューター", "心理学", "人類学", "生物学", "地質学", "電子工学", "天文学", "博物学", "物理学", "法律", "薬学", "歴史"
+    "回避", "キック", "近接戦闘", "組み付き", "パンチ", "こぶし", "頭突き", "投擲", "マーシャルアーツ", "射撃", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル",
+    "応急手当", "鍵開け", "隠す", "隠密", "隠れる", "聞き耳", "忍び歩き", "写真術", "精神分析", "手さばき", "追跡", "登攀", "図書館", "目星",
+    "運転", "機械修理", "重機械操作", "乗馬", "水泳", "製作", "芸術/製作", "操縦", "跳躍", "電気修理", "ナビゲート", "変装",
+    "言いくるめ", "信用", "説得", "威嚇", "魅惑", "値切り", "母国語", "ほかの言語",
+    "医学", "オカルト", "化学", "クトゥルフ神話", "芸術", "経理", "考古学", "コンピューター", "心理学", "人類学", "生物学", "地質学", "電子工学", "天文学", "自然", "サバイバル", "鑑定", "瞑想", "博物学", "物理学", "法律", "薬学", "歴史"
   ];
   return skills.sort((a, b) => {
     let ia = coc6Order.findIndex(k => a.name.includes(k));
@@ -4400,7 +4535,8 @@ function renderCharStatsSection(char) {
 
   const title = document.createElement("div");
   title.className = "char-section-title";
-  title.innerHTML = `<span>能力値 / 基本判定</span><span class="char-section-hint">クリックでCCBコピー</span>`;
+  const rollCommandPrefix = char.is7th ? "CC" : "CCB";
+  title.innerHTML = `<span>能力値 / 基本判定</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
   wrap.appendChild(title);
 
   const grid = document.createElement("div");
@@ -4412,25 +4548,57 @@ function renderCharStatsSection(char) {
     const val = char.abilities[k] || "-";
     const d = document.createElement("div");
     d.className = "char-stat-chip";
-    d.title = `クリックして「CCB<=${val !== "-" ? Number(val)*5 : ""} 【${char.name}：${k}*5】」をコピー`;
+    const targetVal = val !== "-" ? (char.is7th ? Number(val) : Number(val) * 5) : "";
+    const rollLabel = char.is7th ? `${k}` : `${k}*5`;
+    d.title = `クリックして「${rollCommandPrefix}<=${targetVal} 【${char.name}：${rollLabel}】」をコピー`;
     d.innerHTML = `<span class="stat-label">${k}</span><span class="stat-value">${escapeHtml(String(val))}</span>`;
     d.onclick = () => {
       if (val !== "-") {
-        const checkVal = Number(val) * 5;
-        copyCharRoll(checkVal, `${k}*5`, char.name);
+        copyCharRoll(targetVal, rollLabel, char.name, char.is7th);
       }
     };
     grid.appendChild(d);
   });
 
-  // 3 Basic Checks (アイデア, 幸運, 知識) in the same size & style
-  const intVal = parseInt(char.abilities.INT, 10);
-  const powVal = parseInt(char.abilities.POW, 10);
-  const eduVal = parseInt(char.abilities.EDU, 10);
+  // 7th Edition: BLD & MOV chips between EDU and basic checks
+  if (char.is7th) {
+    const specials = [
+      { name: "BLD", val: char.bld !== undefined ? char.bld : "-" },
+      { name: "MOV", val: char.mov !== undefined ? char.mov : "-" }
+    ];
+    specials.forEach(s => {
+      const d = document.createElement("div");
+      d.className = "char-stat-chip";
+      d.title = `${char.name}の【${s.name}】：${s.val}`;
+      d.innerHTML = `<span class="stat-label">${s.name}</span><span class="stat-value">${escapeHtml(String(s.val))}</span>`;
+      d.onclick = () => {
+        if (s.val !== "-") {
+          copyText(String(s.val), `${char.name}の「${s.name}」`);
+        }
+      };
+      grid.appendChild(d);
+    });
+  }
 
-  const idea = !Number.isNaN(intVal) ? intVal * 5 : "-";
-  const luck = !Number.isNaN(powVal) ? powVal * 5 : "-";
-  const know = !Number.isNaN(eduVal) ? eduVal * 5 : "-";
+  // 3 Basic Checks (アイデア, 幸運, 知識) in the same size & style
+  let idea = "-";
+  let luck = "-";
+  let know = "-";
+
+  if (char.is7th) {
+    // In 7th edition, Idea = INT, Knowledge = EDU, Luck = status['幸運'] or commands or POW
+    idea = char.basicChecks && char.basicChecks.idea !== undefined ? char.basicChecks.idea : (char.abilities.INT !== "-" ? char.abilities.INT : "-");
+    luck = char.basicChecks && char.basicChecks.luck !== undefined ? char.basicChecks.luck : (char.abilities.POW !== "-" ? char.abilities.POW : "-");
+    know = char.basicChecks && char.basicChecks.know !== undefined ? char.basicChecks.know : (char.abilities.EDU !== "-" ? char.abilities.EDU : "-");
+  } else {
+    // In 6th edition, Idea = INT * 5, Luck = POW * 5, Knowledge = EDU * 5
+    const intVal = parseInt(char.abilities.INT, 10);
+    const powVal = parseInt(char.abilities.POW, 10);
+    const eduVal = parseInt(char.abilities.EDU, 10);
+    idea = !Number.isNaN(intVal) ? intVal * 5 : "-";
+    luck = !Number.isNaN(powVal) ? powVal * 5 : "-";
+    know = !Number.isNaN(eduVal) ? eduVal * 5 : "-";
+  }
 
   const checks = [
     { name: "アイデア", val: idea },
@@ -4441,11 +4609,11 @@ function renderCharStatsSection(char) {
   checks.forEach(c => {
     const d = document.createElement("div");
     d.className = "char-stat-chip is-check";
-    d.title = `クリックして「CCB<=${c.val} 【${char.name}：${c.name}】」をコピー`;
+    d.title = `クリックして「${rollCommandPrefix}<=${c.val} 【${char.name}：${c.name}】」をコピー`;
     d.innerHTML = `<span class="stat-label">${c.name}</span><span class="stat-value">${c.val}</span>`;
     d.onclick = () => {
       if (c.val !== "-") {
-        copyCharRoll(c.val, c.name, char.name);
+        copyCharRoll(c.val, c.name, char.name, char.is7th);
       }
     };
     grid.appendChild(d);
@@ -4459,7 +4627,8 @@ function renderCharSkillSection(char) {
   const wrap = document.createElement("div");
   const title = document.createElement("div");
   title.className = "char-section-title";
-  title.innerHTML = `<span>技能一覧 (${char.skills.length})</span><span class="char-section-hint">クリックでCCBコピー</span>`;
+  const rollCommandPrefix = char.is7th ? "CC" : "CCB";
+  title.innerHTML = `<span>技能一覧 (${char.skills.length})</span><span class="char-section-hint">クリックで${rollCommandPrefix}コピー</span>`;
   wrap.appendChild(title);
 
   const list = document.createElement("div");
@@ -4468,10 +4637,10 @@ function renderCharSkillSection(char) {
   char.skills.forEach(s => {
     const item = document.createElement("div");
     item.className = "char-skill-item";
-    item.title = `クリックして「CCB<=${s.value} 【${char.name}：${s.name}】」をコピー`;
+    item.title = `クリックして「${rollCommandPrefix}<=${s.value} 【${char.name}：${s.name}】」をコピー`;
     item.innerHTML = `<span class="char-skill-name">${escapeHtml(s.name)}</span><span class="char-skill-value">${s.value}</span>`;
     item.onclick = () => {
-      copyCharRoll(s.value, s.name, char.name);
+      copyCharRoll(s.value, s.name, char.name, char.is7th);
     };
     list.appendChild(item);
   });
@@ -4526,8 +4695,9 @@ function updateCharMemo(index, value) {
   }
 }
 
-function copyCharRoll(val, skillName, charName) {
-  const rollText = `CCB<=${val} 【${charName}：${skillName}】`;
+function copyCharRoll(val, skillName, charName, is7th = false) {
+  const prefix = is7th ? "CC" : "CCB";
+  const rollText = `${prefix}<=${val} 【${charName}：${skillName}】`;
   copyText(rollText, `${charName}の「${skillName}」判定コマンド`);
 }
 
