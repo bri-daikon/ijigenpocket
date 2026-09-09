@@ -6806,10 +6806,10 @@ function openNpcEditorModal(editIndex = -1) {
     document.getElementById("npc-form-ho").value = char.ho || "";
     document.getElementById("npc-form-furigana").value = char.furigana || "";
 
-    document.getElementById("npc-form-hp").value = char.resources.hp !== "-" ? char.resources.hp : "";
-    document.getElementById("npc-form-mp").value = char.resources.mp !== "-" ? char.resources.mp : "";
-    document.getElementById("npc-form-san").value = char.resources.san !== "-" ? char.resources.san : "";
-    document.getElementById("npc-form-db").value = char.resources.db !== "-" ? char.resources.db : "";
+    document.getElementById("npc-form-hp").value = (char.resources.hp !== "-" && char.resources.hp !== undefined) ? char.resources.hp : "";
+    document.getElementById("npc-form-mp").value = (char.resources.mp !== "-" && char.resources.mp !== undefined) ? char.resources.mp : "";
+    document.getElementById("npc-form-san").value = (char.resources.san !== "-" && char.resources.san !== undefined) ? char.resources.san : "";
+    document.getElementById("npc-form-db").value = (char.resources.db !== "-" && char.resources.db !== undefined) ? char.resources.db : "";
 
     const abs = char.abilities || {};
     document.getElementById("npc-form-str").value = abs.STR !== "-" ? abs.STR : "";
@@ -7136,10 +7136,10 @@ function saveNpcFromModal() {
   mpVal = mpVal ? (isNaN(mpVal) ? mpVal : Number(mpVal)) : "-";
 
   let sanVal = document.getElementById("npc-form-san").value.trim();
-  if (!sanVal && abilities.POW !== "-") {
+  if (sanVal === "" && abilities.POW !== "-") {
     sanVal = is7th ? abilities.POW : abilities.POW * 5;
   }
-  sanVal = sanVal ? (isNaN(sanVal) ? sanVal : Number(sanVal)) : "-";
+  sanVal = sanVal !== "" ? (isNaN(sanVal) ? sanVal : Number(sanVal)) : "-";
 
   let dbVal = document.getElementById("npc-form-db").value.trim();
   if (!dbVal && abilities.STR !== "-" && abilities.SIZ !== "-") {
@@ -7203,7 +7203,7 @@ function saveNpcFromModal() {
   // Build commands
   const prefix = is7th ? "CC" : "CCB";
   let cmdLines = [];
-  if (sanVal !== "-") cmdLines.push(`${prefix}<=${sanVal} 【正気度ロール】`);
+  if (sanVal !== "-") cmdLines.push(`1d100<=${sanVal} 【正気度ロール】`);
   if (basicChecks.idea !== undefined) cmdLines.push(`${prefix}<=${basicChecks.idea} 【アイデア】`);
   if (basicChecks.luck !== undefined) cmdLines.push(`${prefix}<=${basicChecks.luck} 【幸運】`);
   if (basicChecks.know !== undefined) cmdLines.push(`${prefix}<=${basicChecks.know} 【知識】`);
@@ -7290,9 +7290,6 @@ function generateCcfoliaPieceJson(char) {
     const v = Number(res.san) || 0;
     status.push({ label: "SAN", value: v, max: v });
   }
-  if (res.db !== undefined && res.db !== "-") {
-    status.push({ label: "DB", value: String(res.db), max: String(res.db) });
-  }
 
   const params = [];
   const abs = char.abilities || {};
@@ -7315,7 +7312,7 @@ function generateCcfoliaPieceJson(char) {
   if (!commands) {
     const prefix = char.is7th ? "CC" : "CCB";
     const lines = [];
-    if (res.san !== undefined && res.san !== "-") lines.push(`${prefix}<=${res.san} 【正気度ロール】`);
+    if (res.san !== undefined && res.san !== "-") lines.push(`1d100<=${res.san} 【正気度ロール】`);
     if (char.basicChecks?.idea) lines.push(`${prefix}<=${char.basicChecks.idea} 【アイデア】`);
     if (char.basicChecks?.luck) lines.push(`${prefix}<=${char.basicChecks.luck} 【幸運】`);
     if (char.basicChecks?.know) lines.push(`${prefix}<=${char.basicChecks.know} 【知識】`);
