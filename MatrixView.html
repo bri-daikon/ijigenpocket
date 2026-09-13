@@ -105,16 +105,43 @@
         
         .matrix-label {
             position: absolute;
-            font-size: 40px;
+            font-size: 38px;
             font-weight: bold;
-            color: #000;
+            color: #ffffff;
             white-space: nowrap;
+            letter-spacing: 0.05em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .label-top { top: 2%; left: 50%; transform: translateX(-50%); }
-        .label-bottom { bottom: 2%; left: 50%; transform: translateX(-50%); }
-        .label-left { top: 50%; left: 2%; transform: translateY(-50%); }
-        .label-right { top: 50%; right: 2%; transform: translateY(-50%); }
+        .label-top { 
+            top: 2.5%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+        }
+        .label-bottom { 
+            bottom: 2.5%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+        }
+        .label-left { 
+            top: 50%; 
+            left: 2.5%; 
+            transform: translateY(-50%); 
+            writing-mode: vertical-rl; 
+            text-orientation: upright;
+            letter-spacing: 0.15em;
+        }
+        .label-right { 
+            top: 50%; 
+            right: 2.5%; 
+            transform: translateY(-50%); 
+            writing-mode: vertical-rl; 
+            text-orientation: upright;
+            letter-spacing: 0.15em;
+        }
 
         /* 探索者のドラッグ要素 */
         :root {
@@ -278,19 +305,19 @@
 
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-stone-800">
                     <div>
-                        <label class="block text-stone-400 text-xs mb-1">背景色</label>
+                        <label class="block text-stone-400 text-xs mb-1">外側背景色</label>
                         <input type="color" id="genBgColor" value="#0f766e" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
                     </div>
                     <div>
-                        <label class="block text-stone-400 text-xs mb-1">内側背景色</label>
+                        <label class="block text-stone-400 text-xs mb-1">枠内背景色</label>
                         <input type="color" id="genInnerColor" value="#ffffff" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
                     </div>
                     <div>
-                        <label class="block text-stone-400 text-xs mb-1">線・文字色</label>
+                        <label class="block text-stone-400 text-xs mb-1">枠外文字色</label>
                         <input type="color" id="genTextColor" value="#ffffff" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
                     </div>
                     <div>
-                        <label class="block text-stone-400 text-xs mb-1">内側線・文字色</label>
+                        <label class="block text-stone-400 text-xs mb-1">十字線の色</label>
                         <input type="color" id="genInnerTextColor" value="#000000" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
                     </div>
                 </div>
@@ -311,15 +338,17 @@
                 
                 <!-- ジェネレーター用マトリクス（HTML/CSS製） -->
                 <div id="generatedMatrix">
-                    <!-- 色分け用の内側コンテナ -->
+                    <!-- 色分け用の内側コンテナ（枠内） -->
                     <div id="genInnerBox" style="position: absolute; top: 10%; bottom: 10%; left: 10%; right: 10%; background-color: #fff;">
                         <div class="axis-line-h" id="genAxisH"></div>
                         <div class="axis-line-v" id="genAxisV"></div>
-                        <div class="matrix-label label-top" id="lblTop">厚い</div>
-                        <div class="matrix-label label-bottom" id="lblBottom">薄い</div>
-                        <div class="matrix-label label-left" id="lblLeft">硬い</div>
-                        <div class="matrix-label label-right" id="lblRight">柔らかい</div>
                     </div>
+                    
+                    <!-- 枠外（背景色エリア）に配置するラベル群 -->
+                    <div class="matrix-label label-top" id="lblTop">厚い</div>
+                    <div class="matrix-label label-bottom" id="lblBottom">薄い</div>
+                    <div class="matrix-label label-left" id="lblLeft">硬い</div>
+                    <div class="matrix-label label-right" id="lblRight">柔らかい</div>
                     <div class="matrix-title" id="lblTitle">体型教えて！</div>
                 </div>
 
@@ -594,13 +623,14 @@
             const textColor = document.getElementById('genTextColor').value;
             const innerTextColor = document.getElementById('genInnerTextColor').value;
             
+            // 枠外の文字色（タイトル・上下左右のラベル）
             document.getElementById('lblTitle').style.color = textColor;
+            document.getElementById('lblTop').style.color = textColor;
+            document.getElementById('lblBottom').style.color = textColor;
+            document.getElementById('lblLeft').style.color = textColor;
+            document.getElementById('lblRight').style.color = textColor;
             
-            // 内側の文字色と線の色
-            document.getElementById('lblTop').style.color = innerTextColor;
-            document.getElementById('lblBottom').style.color = innerTextColor;
-            document.getElementById('lblLeft').style.color = innerTextColor;
-            document.getElementById('lblRight').style.color = innerTextColor;
+            // 枠内の十字線色
             axisH.style.backgroundColor = innerTextColor;
             axisV.style.backgroundColor = innerTextColor;
         }
