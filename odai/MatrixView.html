@@ -150,7 +150,21 @@
         /* 探索者のドラッグ要素 */
         :root {
             --char-scale: 1;
+            --char-bg: rgba(20, 16, 12, 0.88);
+            --char-border: rgba(217, 119, 6, 0.5);
+            --char-shadow: rgba(0, 0, 0, 0.8);
+            --char-name-color: #fcd34d;
+            --char-name-shadow: 1px 1px 2px black;
         }
+
+        .char-theme-white {
+            --char-bg: rgba(255, 255, 255, 0.92);
+            --char-border: rgba(180, 83, 9, 0.4);
+            --char-shadow: rgba(0, 0, 0, 0.25);
+            --char-name-color: #78350f;
+            --char-name-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
         .character-node {
             position: absolute;
             cursor: grab;
@@ -159,10 +173,10 @@
             align-items: center;
             justify-content: center;
             padding: 4px;
-            background: rgba(20, 16, 12, 0.85);
-            border: 1px solid rgba(217, 119, 6, 0.5); /* amber-600 */
+            background: var(--char-bg);
+            border: 1px solid var(--char-border);
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 10px var(--char-shadow);
             user-select: none;
             backdrop-filter: blur(4px);
             transition: box-shadow 0.2s, transform 0.1s;
@@ -199,19 +213,13 @@
             border-radius: 0;
             border: none;
             pointer-events: none;
-            transition: transform 0.2s;
-        }
-
-        /* 顔アップ用（全身立ち絵から頭部・顔周りを中央拡大） */
-        .character-node.crop-face .char-avatar img {
-            transform: scale(1.6);
-            transform-origin: top center;
+            display: block;
         }
 
         .character-node .char-name {
             font-size: 11px;
             line-height: 1.3;
-            color: #fcd34d; /* amber-300 */
+            color: var(--char-name-color);
             font-weight: 700;
             margin-top: 4px;
             padding-bottom: 2px;
@@ -222,7 +230,7 @@
             white-space: nowrap;
             pointer-events: none;
             font-family: 'M PLUS Rounded 1c', sans-serif;
-            text-shadow: 1px 1px 2px black;
+            text-shadow: var(--char-name-shadow);
         }
     </style>
 </head>
@@ -338,6 +346,18 @@
                         <input type="color" id="genInnerTextColor" value="#000000" class="w-full h-8 bg-transparent cursor-pointer" oninput="updateGeneratedMatrix()">
                     </div>
                 </div>
+
+                <div class="pt-2 border-t border-stone-800">
+                    <label class="block text-stone-400 text-xs mb-1">キャラカードの背景色</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setCharCardTheme('dark')" id="btnThemeDark" class="px-3 py-1.5 text-xs rounded border border-amber-600 bg-amber-950/80 text-amber-200 font-bold flex items-center justify-center gap-1.5 transition-all">
+                            <i data-lucide="moon" class="w-3.5 h-3.5"></i> 黒背景
+                        </button>
+                        <button type="button" onclick="setCharCardTheme('white')" id="btnThemeWhite" class="px-3 py-1.5 text-xs rounded border border-stone-700 bg-[#1a1511] text-stone-400 hover:text-stone-200 flex items-center justify-center gap-1.5 transition-all">
+                            <i data-lucide="sun" class="w-3.5 h-3.5"></i> 白背景
+                        </button>
+                    </div>
+                </div>
                 
                 <button onclick="applyGeneratedMatrixSize()" class="w-full mt-4 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs py-2 rounded border border-stone-600">
                     サイズを画面にフィットさせる
@@ -450,6 +470,62 @@
             }
         }
 
+        // --- キャッシュ＆顔部分クロップ（Canvas処理） ---
+        const croppedImageCache = new Map();
+
+        function getCroppedFaceImage(url, callback) {
+            if (!url) return;
+            const cacheKey = `${url}_face`;
+            if (croppedImageCache.has(cacheKey)) {
+                callback(croppedImageCache.get(cacheKey));
+                return;
+            }
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const size = 120; // 充分な高解像度アイコン
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    const nw = img.naturalWidth || img.width;
+                    const nh = img.naturalHeight || img.height;
+
+                    let cropWidth, cropHeight, srcX, srcY;
+
+                    if (nh >= nw) {
+                        // 縦長画像（全身・立ち絵）：頭部〜顔（上部35%程度）を正方形でトリミング
+                        const cropSize = nw * 0.75;
+                        cropWidth = cropSize;
+                        cropHeight = cropSize;
+                        srcX = (nw - cropSize) / 2;
+                        srcY = 0; // 最上部から顔部分を切り出し
+                    } else {
+                        // 横長画像：中央上部を正方形でトリミング
+                        cropWidth = nh;
+                        cropHeight = nh;
+                        srcX = (nw - nh) / 2;
+                        srcY = 0;
+                    }
+
+                    ctx.drawImage(img, srcX, srcY, cropWidth, cropHeight, 0, 0, size, size);
+                    const croppedUrl = canvas.toDataURL('image/png');
+                    croppedImageCache.set(cacheKey, croppedUrl);
+                    callback(croppedUrl);
+                } catch(e) {
+                    // CORS制限等のフォールバック
+                    callback(url);
+                }
+            };
+            img.onerror = () => {
+                callback(url);
+            };
+            img.src = url;
+        }
+
         // --- キャラクターノードの生成 ---
         function renderCharacters(targets) {
             dragContainer.innerHTML = ''; // クリア
@@ -460,7 +536,7 @@
 
             targets.forEach((char, index) => {
                 const node = document.createElement('div');
-                node.className = `character-node ${isFaceCropMode ? 'crop-face' : ''}`;
+                node.className = `character-node`;
                 node.id = `char_node_${char.id}`;
                 
                 // 位置の決定 (重ならないように少しずつずらす)
@@ -474,7 +550,7 @@
 
                 // アイコン画像（デフォルト画像フォールバック付き）
                 const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
-                const imgUrl = char.iconUrl || defaultSvg;
+                const originalUrl = char.iconUrl || defaultSvg;
                 
                 // 名前
                 const nameText = char.name || '名無しの探索者';
@@ -484,9 +560,18 @@
                 avatarEl.className = 'char-avatar';
 
                 const imgEl = document.createElement('img');
-                imgEl.src = imgUrl;
+                imgEl.src = originalUrl;
                 imgEl.alt = nameText;
+                imgEl.dataset.originalSrc = originalUrl;
                 imgEl.onerror = function() { this.src = defaultSvg; };
+
+                if (isFaceCropMode && char.iconUrl) {
+                    getCroppedFaceImage(char.iconUrl, (croppedUrl) => {
+                        if (isFaceCropMode) {
+                            imgEl.src = croppedUrl;
+                        }
+                    });
+                }
 
                 avatarEl.appendChild(imgEl);
 
@@ -680,17 +765,47 @@
         }
 
         let isFaceCropMode = true; // デフォルトで顔アップモード
+        let charCardTheme = 'dark'; // デフォルトは黒背景
+
+        function setCharCardTheme(theme) {
+            charCardTheme = theme;
+            const btnDark = document.getElementById('btnThemeDark');
+            const btnWhite = document.getElementById('btnThemeWhite');
+
+            if (theme === 'white') {
+                dragContainer.classList.add('char-theme-white');
+                if (btnWhite && btnDark) {
+                    btnWhite.className = 'px-3 py-1.5 text-xs rounded border border-amber-600 bg-amber-100 text-amber-900 font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm';
+                    btnDark.className = 'px-3 py-1.5 text-xs rounded border border-stone-700 bg-[#1a1511] text-stone-400 hover:text-stone-200 flex items-center justify-center gap-1.5 transition-all';
+                }
+            } else {
+                dragContainer.classList.remove('char-theme-white');
+                if (btnWhite && btnDark) {
+                    btnDark.className = 'px-3 py-1.5 text-xs rounded border border-amber-600 bg-amber-950/80 text-amber-200 font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm';
+                    btnWhite.className = 'px-3 py-1.5 text-xs rounded border border-stone-700 bg-[#1a1511] text-stone-400 hover:text-stone-200 flex items-center justify-center gap-1.5 transition-all';
+                }
+            }
+            lucide.createIcons();
+        }
 
         function toggleFaceCropMode() {
             isFaceCropMode = !isFaceCropMode;
-            const nodes = dragContainer.querySelectorAll('.character-node');
-            nodes.forEach(node => {
+            const images = dragContainer.querySelectorAll('.character-node .char-avatar img');
+            images.forEach(img => {
+                const originalSrc = img.dataset.originalSrc;
+                if (!originalSrc) return;
+
                 if (isFaceCropMode) {
-                    node.classList.add('crop-face');
+                    getCroppedFaceImage(originalSrc, (croppedUrl) => {
+                        if (isFaceCropMode) {
+                            img.src = croppedUrl;
+                        }
+                    });
                 } else {
-                    node.classList.remove('crop-face');
+                    img.src = originalSrc;
                 }
             });
+
             const btnText = document.getElementById('faceCropBtnText');
             if (btnText) {
                 btnText.textContent = isFaceCropMode ? '顔アップ: ON' : '顔アップ: OFF';
@@ -890,7 +1005,16 @@
             const imgEl = document.createElement('img');
             imgEl.src = imgUrl;
             imgEl.alt = char.name;
+            imgEl.dataset.originalSrc = imgUrl;
             imgEl.onerror = function() { this.src = defaultSvg; };
+
+            if (isFaceCropMode && char.iconUrl) {
+                getCroppedFaceImage(char.iconUrl, (croppedUrl) => {
+                    if (isFaceCropMode) {
+                        imgEl.src = croppedUrl;
+                    }
+                });
+            }
 
             avatarEl.appendChild(imgEl);
 
