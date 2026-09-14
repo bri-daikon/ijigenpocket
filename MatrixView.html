@@ -914,6 +914,8 @@
             document.removeEventListener('touchend', endDrag);
         }
 
+        let savedCharacterPositions = new Map(); // 外したキャラの配置座標を記憶
+
         // --- 探索者管理機能 ---
         function toggleCharacterManager() {
             const modal = document.getElementById('characterManagerModal');
@@ -955,7 +957,9 @@
                 return `
                     <div class="flex items-center justify-between p-3 bg-[#110d0a] border border-amber-900/30 rounded-xl">
                         <div class="flex items-center gap-3">
-                            <img src="${imgUrl}" alt="${char.name}" class="w-10 h-10 rounded-full object-cover border border-amber-900/50" onerror="this.src='${defaultSvg}'">
+                            <div class="w-10 h-10 rounded-full border border-amber-900/50 overflow-hidden bg-[#1c1510] flex-shrink-0 flex items-start justify-center">
+                                <img src="${imgUrl}" alt="${char.name}" id="manager_char_img_${char.id}" class="w-full h-full object-cover object-top" onerror="this.src='${defaultSvg}'">
+                            </div>
                             <div class="text-sm font-bold text-stone-200 font-header truncate max-w-[120px]" title="${char.name}">${char.name}</div>
                         </div>
                         <div>
@@ -967,6 +971,19 @@
                     </div>
                 `;
             }).join('');
+
+            // 管理画面内のアイコンも顔アップトリミングを適用
+            allChars.forEach(char => {
+                if (char.iconUrl) {
+                    const imgEl = document.getElementById(`manager_char_img_${char.id}`);
+                    if (imgEl) {
+                        getCroppedFaceImage(char.iconUrl, (croppedUrl) => {
+                            if (imgEl) imgEl.src = croppedUrl;
+                        });
+                    }
+                }
+            });
+
             lucide.createIcons();
         }
 
@@ -983,18 +1000,23 @@
             node.className = `character-node ${isFaceCropMode ? 'crop-face' : ''}`;
             node.id = `char_node_${char.id}`;
             
-            // 画面中央付近に少しランダムにずらして配置
-            const offsetX = Math.random() * 100 - 50;
-            const offsetY = Math.random() * 100 - 50;
-            const containerWidth = dragContainer.offsetWidth || window.innerWidth;
-            const containerHeight = dragContainer.offsetHeight || window.innerHeight;
-            
-            // ノードの中心が合うように少し調整 (-24pxはアイコンのおおよその半径)
-            const leftPx = (containerWidth / 2) + offsetX - 24;
-            const topPx = (containerHeight / 2) + offsetY - 24;
-            
-            node.style.left = `${leftPx}px`;
-            node.style.top = `${topPx}px`;
+            // 以前配置されていた位置があれば復元、なければ中央付近に配置
+            if (savedCharacterPositions.has(id)) {
+                const pos = savedCharacterPositions.get(id);
+                node.style.left = pos.left;
+                node.style.top = pos.top;
+            } else {
+                const offsetX = Math.random() * 100 - 50;
+                const offsetY = Math.random() * 100 - 50;
+                const containerWidth = dragContainer.offsetWidth || window.innerWidth;
+                const containerHeight = dragContainer.offsetHeight || window.innerHeight;
+                
+                const leftPx = (containerWidth / 2) + offsetX - 24;
+                const topPx = (containerHeight / 2) + offsetY - 24;
+                
+                node.style.left = `${leftPx}px`;
+                node.style.top = `${topPx}px`;
+            }
 
             const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
             const imgUrl = char.iconUrl || defaultSvg;
@@ -1039,6 +1061,11 @@
         function removeCharacterFromBoard(id) {
             const node = document.getElementById(`char_node_${id}`);
             if (node) {
+                // 外す前の位置（left / top）を記憶
+                savedCharacterPositions.set(id, {
+                    left: node.style.left,
+                    top: node.style.top
+                });
                 node.remove();
                 updateCharCountDisplay();
                 updateWebyMatrixTargets();
@@ -1048,6 +1075,14 @@
 
         function clearAllCharacters() {
             if(confirm("マトリクス上のすべての探索者をクリアしますか？")) {
+                const activeNodes = dragContainer.querySelectorAll('.character-node');
+                activeNodes.forEach(node => {
+                    const id = node.id.replace('char_node_', '');
+                    savedCharacterPositions.set(id, {
+                        left: node.style.left,
+                        top: node.style.top
+                    });
+                });
                 dragContainer.innerHTML = '';
                 updateCharCountDisplay();
                 updateWebyMatrixTargets();
