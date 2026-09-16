@@ -421,11 +421,24 @@
                     </button>
                 </div>
                 
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-3">
                     <div class="text-xs text-stone-400">※現在の配置状態を維持したまま、キャラの追加・削除ができます。</div>
                     <button onclick="clearAllCharacters()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-all border border-rose-900/50 hover:border-rose-700 shadow-md">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 一括クリア
                     </button>
+                </div>
+
+                <!-- タグ絞り込みバー -->
+                <div class="flex items-center justify-between gap-3 mb-3 bg-[#110d0a] px-3 py-2 rounded-xl border border-amber-900/40">
+                    <div class="flex items-center gap-2 flex-grow max-w-sm">
+                        <i data-lucide="tag" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                        <select id="managerTagFilter" onchange="onManagerTagFilterChange()" class="w-full bg-[#1c1510] border border-amber-900/60 focus:border-amber-500 rounded-lg py-1.5 px-2 text-xs text-amber-200 focus:outline-none transition-all cursor-pointer">
+                            <option value="">すべてのタグ</option>
+                        </select>
+                    </div>
+                    <div id="managerFilterCount" class="text-xs text-stone-400 shrink-0 font-mono">
+                        表示中: 0名
+                    </div>
                 </div>
 
                 <div id="characterManagerList" class="flex-grow overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 pr-2">
@@ -915,12 +928,75 @@
         }
 
         let savedCharacterPositions = new Map(); // 外したキャラの配置座標を記憶
+        let selectedManagerTag = ''; // 探索者管理画面の選択中タグ
+
+        function getCharTags(char) {
+            if (!char || !char.tags) return [];
+            if (Array.isArray(char.tags)) return char.tags.map(t => String(t).trim()).filter(Boolean);
+            if (typeof char.tags === 'string') return char.tags.split(',').map(t => t.trim()).filter(Boolean);
+            return [];
+        }
+
+        function populateManagerTagOptions(allChars) {
+            const filterEl = document.getElementById('managerTagFilter');
+            if (!filterEl) return;
+
+            const tagCounts = new Map();
+            allChars.forEach(char => {
+                const tags = getCharTags(char);
+                tags.forEach(t => {
+                    tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+                });
+            });
+
+            const currentVal = selectedManagerTag || filterEl.value || '';
+            const sortedTags = Array.from(tagCounts.keys()).sort((a, b) => a.localeCompare(b, 'ja'));
+
+            filterEl.innerHTML = `<option value="">すべてのタグ (全${allChars.length}名)</option>`;
+            sortedTags.forEach(tag => {
+                const opt = document.createElement('option');
+                opt.value = tag;
+                opt.textContent = `${tag} (${tagCounts.get(tag)}名)`;
+                filterEl.appendChild(opt);
+            });
+
+            if (tagCounts.has(currentVal)) {
+                filterEl.value = currentVal;
+                selectedManagerTag = currentVal;
+            } else {
+                filterEl.value = '';
+                selectedManagerTag = '';
+            }
+        }
+
+        function onManagerTagFilterChange() {
+            const filterEl = document.getElementById('managerTagFilter');
+            selectedManagerTag = filterEl ? filterEl.value : '';
+            renderCharacterManagerList();
+        }
+
+        function selectManagerTag(tag) {
+            selectedManagerTag = (selectedManagerTag === tag) ? '' : tag;
+            const filterEl = document.getElementById('managerTagFilter');
+            if (filterEl) {
+                filterEl.value = selectedManagerTag;
+            }
+            renderCharacterManagerList();
+        }
 
         // --- 探索者管理機能 ---
         function toggleCharacterManager() {
             const modal = document.getElementById('characterManagerModal');
             if (modal.classList.contains('hidden')) {
                 modal.classList.remove('hidden');
+                const data = localStorage.getItem('weby_trpg_characters');
+                let allChars = [];
+                if (data) {
+                    try {
+                        allChars = JSON.parse(data);
+                    } catch(e){}
+                }
+                populateManagerTagOptions(allChars);
                 renderCharacterManagerList();
             } else {
                 modal.classList.add('hidden');
@@ -929,6 +1005,7 @@
 
         function renderCharacterManagerList() {
             const listEl = document.getElementById('characterManagerList');
+            const counterEl = document.getElementById('managerFilterCount');
             const data = localStorage.getItem('weby_trpg_characters');
             let allChars = [];
             if (data) {
@@ -946,23 +1023,56 @@
 
             if (allChars.length === 0) {
                 listEl.innerHTML = '<div class="col-span-full py-10 text-center text-stone-500 text-xs">登録されている探索者がいません。<br>「探索者比較の儀」から探索者を召喚してください。</div>';
+                if (counterEl) counterEl.textContent = '表示中: 0名';
                 return;
             }
 
-            listEl.innerHTML = allChars.map(char => {
+            // タグによるフィルタリング
+            const filteredChars = selectedManagerTag
+                ? allChars.filter(char => getCharTags(char).includes(selectedManagerTag))
+                : allChars;
+
+            if (counterEl) {
+                counterEl.textContent = selectedManagerTag
+                    ? `該当: ${filteredChars.length} / ${allChars.length}名`
+                    : `表示中: ${allChars.length}名`;
+            }
+
+            if (filteredChars.length === 0) {
+                listEl.innerHTML = '<div class="col-span-full py-10 text-center text-stone-500 text-xs">選択したタグに一致する探索者はいません。</div>';
+                return;
+            }
+
+            listEl.innerHTML = filteredChars.map(char => {
                 const isActive = activeIds.has(char.id);
                 const defaultSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%2378350f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
                 const imgUrl = char.iconUrl || defaultSvg;
+                const tags = getCharTags(char);
                 
                 return `
-                    <div class="flex items-center justify-between p-3 bg-[#110d0a] border border-amber-900/30 rounded-xl">
-                        <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-between p-3 bg-[#110d0a] border border-amber-900/30 rounded-xl gap-2">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-10 h-10 rounded-full border border-amber-900/50 overflow-hidden bg-[#1c1510] flex-shrink-0 flex items-start justify-center">
                                 <img src="${imgUrl}" alt="${char.name}" id="manager_char_img_${char.id}" class="w-full h-full object-cover object-top" onerror="this.src='${defaultSvg}'">
                             </div>
-                            <div class="text-sm font-bold text-stone-200 font-header truncate max-w-[120px]" title="${char.name}">${char.name}</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="text-sm font-bold text-stone-200 font-header truncate" title="${char.name}">${char.name}</div>
+                                ${tags.length > 0 ? `
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        ${tags.map(t => {
+                                            const isSelected = t === selectedManagerTag;
+                                            const safeTag = t.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+                                            return `
+                                                <button type="button" onclick="selectManagerTag('${safeTag}')" class="text-[10px] px-1.5 py-0.5 rounded transition-all ${isSelected ? 'bg-amber-600 text-stone-900 font-bold shadow-sm' : 'bg-[#1e1711] text-amber-300/80 hover:bg-amber-900/40 hover:text-amber-200'} border border-amber-900/40 truncate max-w-[110px]" title="タグ: ${t}">
+                                                    #${t}
+                                                </button>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
-                        <div>
+                        <div class="shrink-0">
                             ${isActive 
                                 ? `<button onclick="removeCharacterFromBoard('${char.id}')" class="px-3 py-1.5 text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-300 rounded border border-stone-600 transition-colors">外す</button>`
                                 : `<button onclick="addCharacterToBoard('${char.id}')" class="px-3 py-1.5 text-xs font-semibold bg-amber-900 hover:bg-amber-800 text-amber-100 rounded border border-amber-700 transition-colors">追加</button>`
@@ -973,7 +1083,7 @@
             }).join('');
 
             // 管理画面内のアイコンも顔アップトリミングを適用
-            allChars.forEach(char => {
+            filteredChars.forEach(char => {
                 if (char.iconUrl) {
                     const imgEl = document.getElementById(`manager_char_img_${char.id}`);
                     if (imgEl) {
