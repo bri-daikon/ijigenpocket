@@ -358,9 +358,175 @@
       animation: spinDice 0.6s linear infinite;
     }
 
-    @keyframes spinDice {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    /* Limits (Cap) Settings Accordion */
+    .limits-container {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .limits-toggle-btn {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .limits-toggle-btn:hover {
+      background: rgba(30, 41, 59, 0.7);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .limits-toggle-btn .arrow-icon {
+      transition: transform 0.3s ease;
+    }
+
+    .limits-toggle-btn.open .arrow-icon {
+      transform: rotate(180deg);
+    }
+
+    .limits-panel {
+      display: none;
+      margin-top: 12px;
+      padding: 16px;
+      background: rgba(10, 15, 30, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .limits-panel.show {
+      display: flex;
+    }
+
+    .limits-quick-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .limits-quick-bar .quick-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .limits-quick-bar input[type="number"] {
+      width: 65px;
+      padding: 5px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: var(--text-main);
+    }
+
+    .limits-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .limit-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .limit-item label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #93c5fd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .custom-formula-select {
+      width: 100%;
+      padding: 5px 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: rgba(5, 8, 20, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #38bdf8;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .custom-formula-select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .custom-formula-select option {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    .limit-item input {
+      width: 100%;
+      padding: 5px 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(5, 8, 20, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: var(--accent-gold);
+    }
+
+    .limit-item input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    .limit-totals-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .limit-total-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .limit-total-field input {
+      width: 75px;
+      padding: 5px 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(5, 8, 20, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: var(--accent-gold);
     }
 
     /* Section Title */
@@ -907,6 +1073,60 @@
           </button>
         </div>
       </div>
+
+      <!-- 5. Advanced Limits (Cap) & Custom Formula Settings Accordion -->
+      <div class="limits-container">
+        <button type="button" class="limits-toggle-btn" id="btnToggleLimits">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>⚙️ 卓ルール・カスタム設定（ダイス計算式変更・上限制限）</span>
+            <span id="limitsBadge" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--text-muted);">標準ルール</span>
+          </div>
+          <svg class="arrow-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        <div class="limits-panel" id="limitsPanel">
+          <!-- Quick Toolbar -->
+          <div class="limits-quick-bar">
+            <label class="custom-checkbox" style="margin-right: 8px;">
+              <input type="checkbox" id="chkEnableLimits">
+              <span style="font-weight: 700; color: var(--accent-cyan);">上限制限を有効にする</span>
+            </label>
+
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap;">
+              <span class="quick-label">上限一括指定:</span>
+              <input type="number" id="inputBatchLimit" min="1" max="100" placeholder="例:15">
+              <button class="btn-copy" type="button" id="btnApplyBatchLimit" style="font-size:0.75rem; padding: 4px 10px;">上限一括適用</button>
+              <button class="btn-copy" type="button" id="btnClearLimits" style="font-size:0.75rem; padding: 4px 10px;">上限クリア</button>
+              <button class="btn-copy" type="button" id="btnResetFormulas" style="font-size:0.75rem; padding: 4px 10px; border-color: rgba(99,102,241,0.4);" title="ダイス式をルールブック標準に戻します">式を標準に戻す</button>
+            </div>
+          </div>
+
+          <!-- Individual Stat Limits Grid -->
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            各能力値のダイス計算式（例: APPを2D6+6、SIZを2D6に変更等）と個別上限:
+          </div>
+          <div class="limits-stats-grid" id="limitsStatsGrid">
+            <!-- Dynamically rendered per edition -->
+          </div>
+
+          <!-- Total Limits Row -->
+          <div class="limit-totals-row">
+            <div class="limit-total-field">
+              <label for="limitMaxTotal">全体合計の上限:</label>
+              <input type="number" id="limitMaxTotal" min="10" max="1000" placeholder="制限なし">
+            </div>
+            <div class="limit-total-field">
+              <label for="limitMaxNoEdu">EDU除外合計の上限:</label>
+              <input type="number" id="limitMaxNoEdu" min="10" max="1000" placeholder="制限なし">
+            </div>
+            <div style="margin-left: auto; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center;">
+              ※ダイスロール時、指定上限を超える出目は上限値以下になるまで自動再ロールされます
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Adopted Character Status Section -->
@@ -1097,6 +1317,46 @@
       ]
     };
 
+    // Formula Options Presets
+    const FORMULA_PRESETS = {
+      ed6: [
+        { label: '3D6 (標準 3-18)', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1 },
+        { label: '2D6+6 (体格/知性/美形 8-18)', formula: '2D6+6', dice: 2, sides: 6, bonus: 6, mult: 1 },
+        { label: '2D6 (子供/小柄 2-12)', formula: '2D6', dice: 2, sides: 6, bonus: 0, mult: 1 },
+        { label: '3D6+3 (教育標準 6-21)', formula: '3D6+3', dice: 3, sides: 6, bonus: 3, mult: 1 },
+        { label: '1D6+6 (小柄型 7-12)', formula: '1D6+6', dice: 1, sides: 6, bonus: 6, mult: 1 },
+        { label: '2D6+3 (特殊 5-15)', formula: '2D6+3', dice: 2, sides: 6, bonus: 3, mult: 1 },
+        { label: '1D10+8 (特殊 9-18)', formula: '1D10+8', dice: 1, sides: 10, bonus: 8, mult: 1 }
+      ],
+      ed7: [
+        { label: '3D6×5 (標準 15-90)', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5 },
+        { label: '(2D6+6)×5 (体格/知性/美形 40-90)', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5 },
+        { label: '2D6×5 (子供/小柄 10-60)', formula: '2D6×5', dice: 2, sides: 6, bonus: 0, mult: 5 },
+        { label: '(3D6+3)×5 (教育標準 30-105)', formula: '(3D6+3)×5', dice: 3, sides: 6, bonus: 3, mult: 5 },
+        { label: '(1D6+6)×5 (小柄型 35-60)', formula: '(1D6+6)×5', dice: 1, sides: 6, bonus: 6, mult: 5 },
+        { label: '(2D6+3)×5 (特殊 25-75)', formula: '(2D6+3)×5', dice: 2, sides: 6, bonus: 3, mult: 5 }
+      ]
+    };
+
+    // Helper to get active stat definitions including custom formulas
+    function getActiveStatDefs() {
+      const baseDefs = STAT_DEFS[state.edition];
+      return baseDefs.map(def => {
+        const custom = state.customFormulas && state.customFormulas[state.edition] && state.customFormulas[state.edition][def.key];
+        if (custom) {
+          return {
+            ...def,
+            formula: custom.formula,
+            dice: custom.dice,
+            sides: custom.sides,
+            bonus: custom.bonus,
+            mult: custom.mult
+          };
+        }
+        return { ...def };
+      });
+    }
+
     // State
     const state = {
       edition: 'ed6', // 'ed6' or 'ed7'
@@ -1105,7 +1365,17 @@
       rollHistory: [], // Array of roll set objects
       adoptedStats: {}, // { STR: { value, diceDetails, originSetIndex }, ... }
       selectedSetIndex: -1, // if a whole set is selected
-      swapFirstKey: null // For stat swapping
+      swapFirstKey: null, // For stat swapping
+      limits: {
+        enabled: false,
+        stats: {}, // { STR: 15, ... }
+        maxTotal: null,
+        maxNoEdu: null
+      },
+      customFormulas: {
+        ed6: {},
+        ed7: {}
+      }
     };
 
     // DOM Elements
@@ -1144,7 +1414,7 @@
     function generateIacharaUrl() {
       if (Object.keys(state.adoptedStats).length === 0) return '';
       const s = {};
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       defs.forEach(d => {
         s[d.key] = state.adoptedStats[d.key]?.value || 0;
       });
@@ -1179,51 +1449,77 @@
       return { rolls, sum };
     }
 
-    // Roll single stat based on definition
+    // Roll single stat based on definition (with limits check)
     function rollSingleStat(def) {
-      const { rolls, sum } = rollDice(def.dice, def.sides);
-      const raw = sum + def.bonus;
-      const finalValue = raw * def.mult;
-      let detailStr = `[${rolls.join(',')}]`;
-      if (def.bonus > 0) detailStr += `+${def.bonus}`;
-      if (def.mult > 1) detailStr += `×${def.mult}`;
-      return {
-        value: finalValue,
-        rolls: rolls,
-        rawSum: raw,
-        detailStr: detailStr
-      };
+      let attempts = 0;
+      let res = null;
+      const cap = (state.limits && state.limits.enabled && state.limits.stats[def.key]) ? state.limits.stats[def.key] : null;
+
+      while (attempts < 200) {
+        attempts++;
+        const { rolls, sum } = rollDice(def.dice, def.sides);
+        const raw = sum + def.bonus;
+        const finalValue = raw * def.mult;
+        let detailStr = `[${rolls.join(',')}]`;
+        if (def.bonus > 0) detailStr += `+${def.bonus}`;
+        if (def.mult > 1) detailStr += `×${def.mult}`;
+        res = {
+          value: finalValue,
+          rolls: rolls,
+          rawSum: raw,
+          detailStr: detailStr
+        };
+
+        if (cap === null || res.value <= cap) {
+          break;
+        }
+      }
+      return res;
     }
 
-    // Perform rolls for N sets
+    // Perform rolls for N sets (with total limits check)
     function performRolls(count) {
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       const newHistory = [];
 
       for (let i = 0; i < count; i++) {
-        const setObj = {
-          index: i + 1,
-          stats: {},
-          total: 0,
-          totalNoEdu: 0
-        };
+        let setAttempts = 0;
+        let setObj = null;
 
-        let sumAll = 0;
-        let sumNoEdu = 0;
+        while (setAttempts < 150) {
+          setAttempts++;
+          setObj = {
+            index: i + 1,
+            stats: {},
+            total: 0,
+            totalNoEdu: 0
+          };
 
-        defs.forEach(def => {
-          const res = rollSingleStat(def);
-          setObj.stats[def.key] = res;
-          if (def.key !== 'LUK') {
-            sumAll += res.value;
-            if (def.key !== 'EDU') {
-              sumNoEdu += res.value;
+          let sumAll = 0;
+          let sumNoEdu = 0;
+
+          defs.forEach(def => {
+            const res = rollSingleStat(def);
+            setObj.stats[def.key] = res;
+            if (def.key !== 'LUK') {
+              sumAll += res.value;
+              if (def.key !== 'EDU') {
+                sumNoEdu += res.value;
+              }
             }
-          }
-        });
+          });
 
-        setObj.total = sumAll;
-        setObj.totalNoEdu = sumNoEdu;
+          setObj.total = sumAll;
+          setObj.totalNoEdu = sumNoEdu;
+
+          // Check total limits if enabled
+          if (state.limits && state.limits.enabled) {
+            if (state.limits.maxTotal && setObj.total > state.limits.maxTotal) continue;
+            if (state.limits.maxNoEdu && setObj.totalNoEdu > state.limits.maxNoEdu) continue;
+          }
+          break;
+        }
+
         newHistory.push(setObj);
       }
 
@@ -1235,7 +1531,7 @@
     function applyAdoptionMode() {
       if (state.rollHistory.length === 0) return;
 
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       state.adoptedStats = {};
       state.swapFirstKey = null;
       btnResetSwap.style.display = 'none';
@@ -1300,7 +1596,7 @@
       const set = state.rollHistory[setIndex];
       if (!set) return;
 
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       state.selectedSetIndex = setIndex;
       state.swapFirstKey = null;
       btnResetSwap.style.display = 'none';
@@ -1344,7 +1640,7 @@
 
     // Re-roll single stat
     function rerollSingleStat(key) {
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       const def = defs.find(d => d.key === key);
       if (!def) return;
 
@@ -1469,7 +1765,7 @@
 
     // Render Stat Cards
     function renderStatCards() {
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       statCardsGrid.innerHTML = '';
 
       let total = 0;
@@ -1536,7 +1832,7 @@
 
     // Render Table
     function renderTable() {
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
 
       // Header
       let headHtml = `
@@ -1632,7 +1928,7 @@
         return;
       }
 
-      const defs = STAT_DEFS[state.edition];
+      const defs = getActiveStatDefs();
       const derived = calculateDerivedStats();
       const s = {};
       defs.forEach(d => {
@@ -1753,6 +2049,7 @@
       editionBadge.textContent = '第6版';
       const linkHokanjo = document.getElementById('linkHokanjo');
       if (linkHokanjo) linkHokanjo.href = 'https://charasheet.vampire-blood.net/coc_pc_making.html';
+      renderLimitsInputs();
       performRolls(state.rollCount);
     });
 
@@ -1764,6 +2061,7 @@
       editionBadge.textContent = '第7版';
       const linkHokanjo = document.getElementById('linkHokanjo');
       if (linkHokanjo) linkHokanjo.href = 'https://charasheet.vampire-blood.net/coc7_pc_making.html';
+      renderLimitsInputs();
       performRolls(state.rollCount);
     });
 
@@ -1845,6 +2143,191 @@
     // Open Iachara Buttons
     btnOpenIachara.addEventListener('click', openIachara);
     btnOpenIacharaTop.addEventListener('click', openIachara);
+
+    // Limits & Custom Formula Elements & Logic
+    const btnToggleLimits = document.getElementById('btnToggleLimits');
+    const limitsPanel = document.getElementById('limitsPanel');
+    const limitsBadge = document.getElementById('limitsBadge');
+    const chkEnableLimits = document.getElementById('chkEnableLimits');
+    const inputBatchLimit = document.getElementById('inputBatchLimit');
+    const btnApplyBatchLimit = document.getElementById('btnApplyBatchLimit');
+    const btnClearLimits = document.getElementById('btnClearLimits');
+    const btnResetFormulas = document.getElementById('btnResetFormulas');
+    const limitsStatsGrid = document.getElementById('limitsStatsGrid');
+    const limitMaxTotal = document.getElementById('limitMaxTotal');
+    const limitMaxNoEdu = document.getElementById('limitMaxNoEdu');
+
+    // Render Limits & Formula Inputs for current edition
+    function renderLimitsInputs() {
+      const defs = getActiveStatDefs();
+      const presets = FORMULA_PRESETS[state.edition] || [];
+      limitsStatsGrid.innerHTML = '';
+
+      defs.forEach(def => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'limit-item';
+        const currentVal = state.limits.stats[def.key] || '';
+        const defaultCap = state.edition === 'ed6' ? (def.key === 'EDU' ? 21 : 18) : 90;
+
+        // Formula options
+        let optionsHtml = '';
+        presets.forEach(p => {
+          const isSelected = p.formula === def.formula;
+          optionsHtml += `<option value="${p.formula}" ${isSelected ? 'selected' : ''}>${p.label}</option>`;
+        });
+
+        itemDiv.innerHTML = `
+          <label>
+            <span>${def.name}</span>
+            <span style="font-size:0.68rem; color:var(--text-dim);">${def.desc}</span>
+          </label>
+          <select class="custom-formula-select" data-key="${def.key}" title="${def.name}のダイス計算式を変更">
+            ${optionsHtml}
+          </select>
+          <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+            <span style="font-size:0.68rem; color:var(--text-muted);">上限:</span>
+            <input type="number" data-key="${def.key}" min="1" max="100" value="${currentVal}" placeholder="${defaultCap}" title="${def.name}の上限値">
+          </div>
+        `;
+
+        // Formula Select Event
+        const selectEl = itemDiv.querySelector('select');
+        selectEl.addEventListener('change', (e) => {
+          const chosenFormula = e.target.value;
+          const chosenPreset = presets.find(p => p.formula === chosenFormula);
+          if (chosenPreset) {
+            if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
+            state.customFormulas[state.edition][def.key] = chosenPreset;
+            updateLimitsBadge();
+            performRolls(state.rollCount);
+            showToast(`${def.name} のダイス式を【${chosenPreset.formula}】に変更しました`);
+          }
+        });
+
+        // Limit Input Event
+        const inputEl = itemDiv.querySelector('input');
+        inputEl.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          if (!isNaN(val) && val > 0) {
+            state.limits.stats[def.key] = val;
+            if (!state.limits.enabled) {
+              chkEnableLimits.checked = true;
+              state.limits.enabled = true;
+            }
+          } else {
+            delete state.limits.stats[def.key];
+          }
+          updateLimitsBadge();
+        });
+
+        limitsStatsGrid.appendChild(itemDiv);
+      });
+
+      updateLimitsBadge();
+    }
+
+    function updateLimitsBadge() {
+      const customFormulaCount = Object.keys(state.customFormulas[state.edition] || {}).length;
+      const limitCount = Object.keys(state.limits.stats).length + (state.limits.maxTotal ? 1 : 0) + (state.limits.maxNoEdu ? 1 : 0);
+
+      const parts = [];
+      if (customFormulaCount > 0) {
+        parts.push(`式カスタム:${customFormulaCount}`);
+      }
+      if (state.limits.enabled && limitCount > 0) {
+        parts.push(`上限設定:${limitCount}`);
+      }
+
+      if (parts.length > 0) {
+        limitsBadge.textContent = parts.join(' | ');
+        limitsBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        limitsBadge.style.color = '#34d399';
+      } else {
+        limitsBadge.textContent = '標準ルール';
+        limitsBadge.style.background = 'rgba(255,255,255,0.08)';
+        limitsBadge.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // Toggle Limits Accordion
+    btnToggleLimits.addEventListener('click', () => {
+      btnToggleLimits.classList.toggle('open');
+      limitsPanel.classList.toggle('show');
+    });
+
+    // Enable/Disable Limits Checkbox
+    chkEnableLimits.addEventListener('change', () => {
+      state.limits.enabled = chkEnableLimits.checked;
+      updateLimitsBadge();
+      if (state.limits.enabled) {
+        showToast('上限制限を有効にしました。次回ロールから適用されます。');
+      } else {
+        showToast('上限制限を無効にしました。');
+      }
+    });
+
+    // Batch Apply Limit
+    btnApplyBatchLimit.addEventListener('click', () => {
+      const val = parseInt(inputBatchLimit.value, 10);
+      if (isNaN(val) || val <= 0) {
+        showToast('有効な数値を入力してください');
+        return;
+      }
+      const defs = getActiveStatDefs();
+      defs.forEach(d => {
+        state.limits.stats[d.key] = val;
+      });
+      // Auto-enable limits
+      chkEnableLimits.checked = true;
+      state.limits.enabled = true;
+      renderLimitsInputs();
+      showToast(`全能力値の上限を ${val} に一括設定しました`);
+    });
+
+    // Clear Limits
+    btnClearLimits.addEventListener('click', () => {
+      state.limits.stats = {};
+      state.limits.maxTotal = null;
+      state.limits.maxNoEdu = null;
+      limitMaxTotal.value = '';
+      limitMaxNoEdu.value = '';
+      inputBatchLimit.value = '';
+      renderLimitsInputs();
+      showToast('上限設定をすべてクリアしました');
+    });
+
+    // Reset Formulas to default
+    if (btnResetFormulas) {
+      btnResetFormulas.addEventListener('click', () => {
+        state.customFormulas[state.edition] = {};
+        renderLimitsInputs();
+        performRolls(state.rollCount);
+        showToast('すべてのダイス計算式を標準ルールに戻しました');
+      });
+    }
+
+    limitMaxTotal.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.limits.maxTotal = (!isNaN(val) && val > 0) ? val : null;
+      if (state.limits.maxTotal && !state.limits.enabled) {
+        chkEnableLimits.checked = true;
+        state.limits.enabled = true;
+      }
+      updateLimitsBadge();
+    });
+
+    limitMaxNoEdu.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.limits.maxNoEdu = (!isNaN(val) && val > 0) ? val : null;
+      if (state.limits.maxNoEdu && !state.limits.enabled) {
+        chkEnableLimits.checked = true;
+        state.limits.enabled = true;
+      }
+      updateLimitsBadge();
+    });
+
+    // Initial Limits & Formulas Setup
+    renderLimitsInputs();
 
     // Initial Roll on Load
     performRolls(state.rollCount);
