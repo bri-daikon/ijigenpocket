@@ -997,6 +997,115 @@
         grid-template-columns: repeat(3, 1fr);
       }
     }
+
+    /* Dice Formula Custom Modal */
+    .dice-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 4, 8, 0.78);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .dice-modal-overlay.show {
+      display: flex;
+    }
+    .dice-modal-card {
+      background: #0f172a;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), var(--accent-glow);
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .dice-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .dice-modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .btn-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+      transition: var(--transition);
+    }
+    .btn-modal-close:hover {
+      color: var(--accent-rose);
+    }
+    .modal-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .modal-field label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .modal-field input, .modal-field select {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      outline: none;
+      width: 100%;
+    }
+    .modal-field input:focus, .modal-field select:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
+    .modal-preview-box {
+      margin-top: 6px;
+      padding: 12px;
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px dashed rgba(6, 182, 212, 0.35);
+      border-radius: 8px;
+      font-size: 0.86rem;
+      color: var(--text-main);
+      text-align: center;
+    }
+    .modal-preview-box strong {
+      color: var(--accent-cyan);
+      font-size: 1rem;
+    }
+    .dice-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 14px;
+    }
   </style>
 </head>
 <body>
@@ -1096,7 +1205,7 @@
 
             <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap;">
               <span class="quick-label">上限一括指定:</span>
-              <input type="number" id="inputBatchLimit" min="1" max="100" placeholder="例:15">
+              <input type="number" id="inputBatchLimit" min="1" max="1000" placeholder="例:15 / 24" title="18以上の高い上限値も設定可能です">
               <button class="btn-copy" type="button" id="btnApplyBatchLimit" style="font-size:0.75rem; padding: 4px 10px;">上限一括適用</button>
               <button class="btn-copy" type="button" id="btnClearLimits" style="font-size:0.75rem; padding: 4px 10px;">上限クリア</button>
               <button class="btn-copy" type="button" id="btnResetFormulas" style="font-size:0.75rem; padding: 4px 10px; border-color: rgba(99,102,241,0.4);" title="ダイス式をルールブック標準に戻します">式を標準に戻す</button>
@@ -1105,7 +1214,7 @@
 
           <!-- Individual Stat Limits Grid -->
           <div style="font-size: 0.78rem; color: var(--text-muted);">
-            各能力値のダイス計算式（例: APPを2D6+6、SIZを2D6に変更等）と個別上限:
+            各能力値のダイス計算式（4D6, 5D6などダイス増加・人外用・自由入力）と個別上限（18以上も対応）:
           </div>
           <div class="limits-stats-grid" id="limitsStatsGrid">
             <!-- Dynamically rendered per edition -->
@@ -1115,11 +1224,11 @@
           <div class="limit-totals-row">
             <div class="limit-total-field">
               <label for="limitMaxTotal">全体合計の上限:</label>
-              <input type="number" id="limitMaxTotal" min="10" max="1000" placeholder="制限なし">
+              <input type="number" id="limitMaxTotal" min="10" max="2000" placeholder="制限なし">
             </div>
             <div class="limit-total-field">
               <label for="limitMaxNoEdu">EDU除外合計の上限:</label>
-              <input type="number" id="limitMaxNoEdu" min="10" max="1000" placeholder="制限なし">
+              <input type="number" id="limitMaxNoEdu" min="10" max="2000" placeholder="制限なし">
             </div>
             <div style="margin-left: auto; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center;">
               ※ダイスロール時、指定上限を超える出目は上限値以下になるまで自動再ロールされます
@@ -1287,6 +1396,53 @@
   <!-- Toast Notification -->
   <div class="toast" id="toast">クリップボードにコピーしました！</div>
 
+  <!-- Dice Formula Custom Modal -->
+  <div id="diceCustomModal" class="dice-modal-overlay">
+    <div class="dice-modal-card">
+      <div class="dice-modal-header">
+        <h3 id="diceModalTitle">🎲 能力値のダイス式カスタム設定</h3>
+        <button type="button" class="btn-modal-close" id="btnCloseDiceModal" aria-label="閉じる">&times;</button>
+      </div>
+      <div class="dice-modal-body">
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+          18以上の高い上限や神話生物・大型怪物用など、ダイスの個数・面数・加算値を自由に指定できます。
+        </p>
+        <div class="modal-form-grid">
+          <div class="modal-field">
+            <label for="modalDiceCount">ダイス数 (個)</label>
+            <input type="number" id="modalDiceCount" min="1" max="30" value="4">
+          </div>
+          <div class="modal-field">
+            <label for="modalDiceSides">ダイス面数</label>
+            <select id="modalDiceSides">
+              <option value="6" selected>D6 (6面体)</option>
+              <option value="10">D10 (10面体)</option>
+              <option value="4">D4 (4面体)</option>
+              <option value="8">D8 (8面体)</option>
+              <option value="12">D12 (12面体)</option>
+              <option value="20">D20 (20面体)</option>
+              <option value="100">D100 (100面体)</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label for="modalDiceBonus">固定加算値 (+)</label>
+            <input type="number" id="modalDiceBonus" min="0" max="100" value="0">
+          </div>
+        </div>
+        <div id="modalEd7MultiplyRow" style="margin-top:10px; font-size:0.82rem; color:var(--accent-cyan); display:none;">
+          ※第7版のため、結果はルール通り自動的に <strong>×5</strong> されます。
+        </div>
+        <div class="modal-preview-box" id="modalFormulaPreview">
+          プレビュー: <strong>4D6</strong> (出目範囲: 4 〜 24)
+        </div>
+      </div>
+      <div class="dice-modal-footer">
+        <button type="button" class="btn-copy" id="btnCancelDiceModal" style="padding: 6px 14px;">キャンセル</button>
+        <button type="button" class="btn-roll" id="btnApplyDiceModal" style="padding: 8px 18px; font-size: 0.88rem;">この式を適用する</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ============================================================
        CoC Dice Roller Logic
@@ -1317,26 +1473,86 @@
       ]
     };
 
-    // Formula Options Presets
+    // Formula Options Presets with Categories (Supporting 18+ and Extra Dice)
     const FORMULA_PRESETS = {
       ed6: [
-        { label: '3D6 (標準 3-18)', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1 },
-        { label: '2D6+6 (体格/知性/美形 8-18)', formula: '2D6+6', dice: 2, sides: 6, bonus: 6, mult: 1 },
-        { label: '2D6 (子供/小柄 2-12)', formula: '2D6', dice: 2, sides: 6, bonus: 0, mult: 1 },
-        { label: '3D6+3 (教育標準 6-21)', formula: '3D6+3', dice: 3, sides: 6, bonus: 3, mult: 1 },
-        { label: '1D6+6 (小柄型 7-12)', formula: '1D6+6', dice: 1, sides: 6, bonus: 6, mult: 1 },
-        { label: '2D6+3 (特殊 5-15)', formula: '2D6+3', dice: 2, sides: 6, bonus: 3, mult: 1 },
-        { label: '1D10+8 (特殊 9-18)', formula: '1D10+8', dice: 1, sides: 10, bonus: 8, mult: 1 }
+        {
+          group: '人間・通常ルール (上限18〜21)',
+          items: [
+            { label: '3D6 (標準 3-18)', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1 },
+            { label: '2D6+6 (体格/知性/美形 8-18)', formula: '2D6+6', dice: 2, sides: 6, bonus: 6, mult: 1 },
+            { label: '3D6+3 (教育標準 6-21)', formula: '3D6+3', dice: 3, sides: 6, bonus: 3, mult: 1 },
+            { label: '2D6 (子供/小柄 2-12)', formula: '2D6', dice: 2, sides: 6, bonus: 0, mult: 1 },
+            { label: '1D6+6 (小柄型 7-12)', formula: '1D6+6', dice: 1, sides: 6, bonus: 6, mult: 1 },
+            { label: '2D6+3 (特殊 5-15)', formula: '2D6+3', dice: 2, sides: 6, bonus: 3, mult: 1 },
+            { label: '1D10+8 (特殊 9-18)', formula: '1D10+8', dice: 1, sides: 10, bonus: 8, mult: 1 },
+            { label: '1D6 (極小 1-6)', formula: '1D6', dice: 1, sides: 6, bonus: 0, mult: 1 }
+          ]
+        },
+        {
+          group: '🔥 上限18超・ダイス数増加 (人外/怪力/神格/大型)',
+          items: [
+            { label: '4D6 (ダイス4個 4-24)', formula: '4D6', dice: 4, sides: 6, bonus: 0, mult: 1 },
+            { label: '5D6 (ダイス5個 5-30)', formula: '5D6', dice: 5, sides: 6, bonus: 0, mult: 1 },
+            { label: '6D6 (ダイス6個 6-36)', formula: '6D6', dice: 6, sides: 6, bonus: 0, mult: 1 },
+            { label: '7D6 (ダイス7個 7-42)', formula: '7D6', dice: 7, sides: 6, bonus: 0, mult: 1 },
+            { label: '8D6 (ダイス8個 8-48)', formula: '8D6', dice: 8, sides: 6, bonus: 0, mult: 1 },
+            { label: '10D6 (ダイス10個 10-60)', formula: '10D6', dice: 10, sides: 6, bonus: 0, mult: 1 },
+            { label: '3D6+6 (ダイス3個+6 9-24)', formula: '3D6+6', dice: 3, sides: 6, bonus: 6, mult: 1 },
+            { label: '4D6+6 (ダイス4個+6 10-30)', formula: '4D6+6', dice: 4, sides: 6, bonus: 6, mult: 1 },
+            { label: '5D6+6 (ダイス5個+6 11-36)', formula: '5D6+6', dice: 5, sides: 6, bonus: 6, mult: 1 },
+            { label: '2D6+12 (ダイス2個+12 14-24)', formula: '2D6+12', dice: 2, sides: 6, bonus: 12, mult: 1 },
+            { label: '3D6+12 (ダイス3個+12 15-30)', formula: '3D6+12', dice: 3, sides: 6, bonus: 12, mult: 1 },
+            { label: '4D6+12 (ダイス4個+12 16-36)', formula: '4D6+12', dice: 4, sides: 6, bonus: 12, mult: 1 },
+            { label: '2D10 (10面ダイス2個 2-20)', formula: '2D10', dice: 2, sides: 10, bonus: 0, mult: 1 },
+            { label: '3D10 (10面ダイス3個 3-30)', formula: '3D10', dice: 3, sides: 10, bonus: 0, mult: 1 }
+          ]
+        }
       ],
       ed7: [
-        { label: '3D6×5 (標準 15-90)', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5 },
-        { label: '(2D6+6)×5 (体格/知性/美形 40-90)', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5 },
-        { label: '2D6×5 (子供/小柄 10-60)', formula: '2D6×5', dice: 2, sides: 6, bonus: 0, mult: 5 },
-        { label: '(3D6+3)×5 (教育標準 30-105)', formula: '(3D6+3)×5', dice: 3, sides: 6, bonus: 3, mult: 5 },
-        { label: '(1D6+6)×5 (小柄型 35-60)', formula: '(1D6+6)×5', dice: 1, sides: 6, bonus: 6, mult: 5 },
-        { label: '(2D6+3)×5 (特殊 25-75)', formula: '(2D6+3)×5', dice: 2, sides: 6, bonus: 3, mult: 5 }
+        {
+          group: '人間・通常ルール (上限90〜105)',
+          items: [
+            { label: '3D6×5 (標準 15-90)', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5 },
+            { label: '(2D6+6)×5 (体格/知性/美形 40-90)', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5 },
+            { label: '(3D6+3)×5 (教育標準 30-105)', formula: '(3D6+3)×5', dice: 3, sides: 6, bonus: 3, mult: 5 },
+            { label: '2D6×5 (子供/小柄 10-60)', formula: '2D6×5', dice: 2, sides: 6, bonus: 0, mult: 5 },
+            { label: '(1D6+6)×5 (小柄型 35-60)', formula: '(1D6+6)×5', dice: 1, sides: 6, bonus: 6, mult: 5 },
+            { label: '(2D6+3)×5 (特殊 25-75)', formula: '(2D6+3)×5', dice: 2, sides: 6, bonus: 3, mult: 5 },
+            { label: '1D6×5 (極小 5-30)', formula: '1D6×5', dice: 1, sides: 6, bonus: 0, mult: 5 }
+          ]
+        },
+        {
+          group: '🔥 上限90超・ダイス数増加 (人外/怪力/神格/大型)',
+          items: [
+            { label: '4D6×5 (ダイス4個 20-120)', formula: '4D6×5', dice: 4, sides: 6, bonus: 0, mult: 5 },
+            { label: '5D6×5 (ダイス5個 25-150)', formula: '5D6×5', dice: 5, sides: 6, bonus: 0, mult: 5 },
+            { label: '6D6×5 (ダイス6個 30-180)', formula: '6D6×5', dice: 6, sides: 6, bonus: 0, mult: 5 },
+            { label: '7D6×5 (ダイス7個 35-210)', formula: '7D6×5', dice: 7, sides: 6, bonus: 0, mult: 5 },
+            { label: '8D6×5 (ダイス8個 40-240)', formula: '8D6×5', dice: 8, sides: 6, bonus: 0, mult: 5 },
+            { label: '10D6×5 (ダイス10個 50-300)', formula: '10D6×5', dice: 10, sides: 6, bonus: 0, mult: 5 },
+            { label: '(3D6+6)×5 (ダイス3個+6 45-120)', formula: '(3D6+6)×5', dice: 3, sides: 6, bonus: 6, mult: 5 },
+            { label: '(4D6+6)×5 (ダイス4個+6 50-150)', formula: '(4D6+6)×5', dice: 4, sides: 6, bonus: 6, mult: 5 },
+            { label: '(5D6+6)×5 (ダイス5個+6 55-180)', formula: '(5D6+6)×5', dice: 5, sides: 6, bonus: 6, mult: 5 },
+            { label: '(2D6+12)×5 (ダイス2個+12 70-120)', formula: '(2D6+12)×5', dice: 2, sides: 6, bonus: 12, mult: 5 },
+            { label: '(3D6+12)×5 (ダイス3個+12 75-150)', formula: '(3D6+12)×5', dice: 3, sides: 6, bonus: 12, mult: 5 },
+            { label: '(4D6+12)×5 (ダイス4個+12 80-180)', formula: '(4D6+12)×5', dice: 4, sides: 6, bonus: 12, mult: 5 },
+            { label: '2D10×5 (10面ダイス2個 10-100)', formula: '2D10×5', dice: 2, sides: 10, bonus: 0, mult: 5 },
+            { label: '3D10×5 (10面ダイス3個 15-150)', formula: '3D10×5', dice: 3, sides: 10, bonus: 0, mult: 5 }
+          ]
+        }
       ]
     };
+
+    // Helper to find preset by formula across all groups
+    function findPresetByFormula(formula) {
+      const groups = FORMULA_PRESETS[state.edition] || [];
+      for (const grp of groups) {
+        const found = grp.items.find(p => p.formula === formula);
+        if (found) return found;
+      }
+      return null;
+    }
 
     // Helper to get active stat definitions including custom formulas
     function getActiveStatDefs() {
@@ -2157,10 +2373,122 @@
     const limitMaxTotal = document.getElementById('limitMaxTotal');
     const limitMaxNoEdu = document.getElementById('limitMaxNoEdu');
 
+    // Modal Elements & Custom Formula Controller
+    const diceCustomModal = document.getElementById('diceCustomModal');
+    const diceModalTitle = document.getElementById('diceModalTitle');
+    const btnCloseDiceModal = document.getElementById('btnCloseDiceModal');
+    const btnCancelDiceModal = document.getElementById('btnCancelDiceModal');
+    const btnApplyDiceModal = document.getElementById('btnApplyDiceModal');
+    const modalDiceCount = document.getElementById('modalDiceCount');
+    const modalDiceSides = document.getElementById('modalDiceSides');
+    const modalDiceBonus = document.getElementById('modalDiceBonus');
+    const modalEd7MultiplyRow = document.getElementById('modalEd7MultiplyRow');
+    const modalFormulaPreview = document.getElementById('modalFormulaPreview');
+
+    let currentModalTargetStat = null;
+
+    function openDiceCustomModal(statKey) {
+      currentModalTargetStat = statKey;
+      const defs = getActiveStatDefs();
+      const def = defs.find(d => d.key === statKey);
+      if (!def) return;
+
+      diceModalTitle.textContent = `🎲 ${def.name} のダイス式を自由カスタム設定`;
+      modalDiceCount.value = def.dice || 4;
+      modalDiceSides.value = def.sides || 6;
+      modalDiceBonus.value = def.bonus || 0;
+
+      if (state.edition === 'ed7') {
+        modalEd7MultiplyRow.style.display = 'block';
+      } else {
+        modalEd7MultiplyRow.style.display = 'none';
+      }
+
+      updateDiceModalPreview();
+      diceCustomModal.classList.add('show');
+    }
+
+    function closeDiceCustomModal() {
+      diceCustomModal.classList.remove('show');
+      currentModalTargetStat = null;
+      renderLimitsInputs();
+    }
+
+    function updateDiceModalPreview() {
+      const dice = Math.max(1, parseInt(modalDiceCount.value, 10) || 1);
+      const sides = parseInt(modalDiceSides.value, 10) || 6;
+      const bonus = Math.max(0, parseInt(modalDiceBonus.value, 10) || 0);
+      const mult = state.edition === 'ed7' ? 5 : 1;
+
+      let formulaBase = `${dice}D${sides}`;
+      if (bonus > 0) formulaBase += `+${bonus}`;
+
+      let displayFormula = formulaBase;
+      if (mult > 1) {
+        displayFormula = `(${formulaBase})×${mult}`;
+      }
+
+      const minVal = (dice * 1 + bonus) * mult;
+      const maxVal = (dice * sides + bonus) * mult;
+
+      modalFormulaPreview.innerHTML = `プレビュー: <strong>${displayFormula}</strong> (出目範囲: ${minVal} 〜 ${maxVal})`;
+    }
+
+    [modalDiceCount, modalDiceSides, modalDiceBonus].forEach(el => {
+      el.addEventListener('input', updateDiceModalPreview);
+      el.addEventListener('change', updateDiceModalPreview);
+    });
+
+    btnCloseDiceModal.addEventListener('click', closeDiceCustomModal);
+    btnCancelDiceModal.addEventListener('click', closeDiceCustomModal);
+
+    btnApplyDiceModal.addEventListener('click', () => {
+      if (!currentModalTargetStat) return;
+      const statKey = currentModalTargetStat;
+      const dice = Math.max(1, Math.min(50, parseInt(modalDiceCount.value, 10) || 1));
+      const sides = parseInt(modalDiceSides.value, 10) || 6;
+      const bonus = Math.max(0, parseInt(modalDiceBonus.value, 10) || 0);
+      const mult = state.edition === 'ed7' ? 5 : 1;
+
+      let formulaBase = `${dice}D${sides}`;
+      if (bonus > 0) formulaBase += `+${bonus}`;
+      let formula = mult > 1 ? `(${formulaBase})×${mult}` : formulaBase;
+
+      const minVal = (dice * 1 + bonus) * mult;
+      const maxVal = (dice * sides + bonus) * mult;
+      const label = `${formula} (カスタム ${minVal}-${maxVal})`;
+
+      const customObj = {
+        label,
+        formula,
+        dice,
+        sides,
+        bonus,
+        mult
+      };
+
+      if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
+      state.customFormulas[state.edition][statKey] = customObj;
+
+      diceCustomModal.classList.remove('show');
+      currentModalTargetStat = null;
+
+      renderLimitsInputs();
+      updateLimitsBadge();
+      performRolls(state.rollCount);
+      showToast(`${statKey} のダイス式を【${formula}】に設定しました！`);
+    });
+
+    diceCustomModal.addEventListener('click', (e) => {
+      if (e.target === diceCustomModal) {
+        closeDiceCustomModal();
+      }
+    });
+
     // Render Limits & Formula Inputs for current edition
     function renderLimitsInputs() {
       const defs = getActiveStatDefs();
-      const presets = FORMULA_PRESETS[state.edition] || [];
+      const groups = FORMULA_PRESETS[state.edition] || [];
       limitsStatsGrid.innerHTML = '';
 
       defs.forEach(def => {
@@ -2169,24 +2497,39 @@
         const currentVal = state.limits.stats[def.key] || '';
         const defaultCap = state.edition === 'ed6' ? (def.key === 'EDU' ? 21 : 18) : 90;
 
-        // Formula options
+        // Check if current formula matches any preset
+        let isMatchedInPresets = false;
         let optionsHtml = '';
-        presets.forEach(p => {
-          const isSelected = p.formula === def.formula;
-          optionsHtml += `<option value="${p.formula}" ${isSelected ? 'selected' : ''}>${p.label}</option>`;
+
+        groups.forEach(grp => {
+          optionsHtml += `<optgroup label="${grp.group}">`;
+          grp.items.forEach(p => {
+            const isSelected = p.formula === def.formula;
+            if (isSelected) isMatchedInPresets = true;
+            optionsHtml += `<option value="${p.formula}" ${isSelected ? 'selected' : ''}>${p.label}</option>`;
+          });
+          optionsHtml += `</optgroup>`;
         });
+
+        // Custom optgroup
+        optionsHtml += `<optgroup label="✏️ 自由カスタム（自由ダイス数・面数）">`;
+        if (!isMatchedInPresets) {
+          optionsHtml += `<option value="${def.formula}" selected>✏️ 現在のカスタム式: ${def.formula}</option>`;
+        }
+        optionsHtml += `<option value="__custom__">✏️ 自由入力（ダイス数を増やす・面数を指定）...</option>`;
+        optionsHtml += `</optgroup>`;
 
         itemDiv.innerHTML = `
           <label>
             <span>${def.name}</span>
             <span style="font-size:0.68rem; color:var(--text-dim);">${def.desc}</span>
           </label>
-          <select class="custom-formula-select" data-key="${def.key}" title="${def.name}のダイス計算式を変更">
+          <select class="custom-formula-select" data-key="${def.key}" title="${def.name}のダイス計算式を変更（4D6, 5D6など18超えも選択可）">
             ${optionsHtml}
           </select>
           <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
             <span style="font-size:0.68rem; color:var(--text-muted);">上限:</span>
-            <input type="number" data-key="${def.key}" min="1" max="100" value="${currentVal}" placeholder="${defaultCap}" title="${def.name}の上限値">
+            <input type="number" data-key="${def.key}" min="1" max="1000" value="${currentVal}" placeholder="${defaultCap}" title="${def.name}の上限値（18以上も設定可能）">
           </div>
         `;
 
@@ -2194,7 +2537,11 @@
         const selectEl = itemDiv.querySelector('select');
         selectEl.addEventListener('change', (e) => {
           const chosenFormula = e.target.value;
-          const chosenPreset = presets.find(p => p.formula === chosenFormula);
+          if (chosenFormula === '__custom__') {
+            openDiceCustomModal(def.key);
+            return;
+          }
+          const chosenPreset = findPresetByFormula(chosenFormula);
           if (chosenPreset) {
             if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
             state.customFormulas[state.edition][def.key] = chosenPreset;
