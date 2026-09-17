@@ -1106,6 +1106,43 @@
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       padding-top: 14px;
     }
+
+    /* Stat Card Lock & Direct Value Edit */
+    .btn-lock {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .btn-lock:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+    }
+    .btn-lock.locked {
+      background: rgba(245, 158, 11, 0.22);
+      border-color: rgba(245, 158, 11, 0.6);
+      color: var(--accent-gold);
+    }
+    .stat-card.locked-card {
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    }
+    .stat-value.editable-val {
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .stat-value.editable-val:hover {
+      color: var(--accent-cyan);
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -1507,6 +1544,22 @@
             { label: '2D10 (10面ダイス2個 2-20)', formula: '2D10', dice: 2, sides: 10, bonus: 0, mult: 1 },
             { label: '3D10 (10面ダイス3個 3-30)', formula: '3D10', dice: 3, sides: 10, bonus: 0, mult: 1 }
           ]
+        },
+        {
+          group: '📌 固定値設定 (ダイス不要・一定値)',
+          items: [
+            { label: '固定値: 9', formula: '固定: 9', dice: 0, sides: 0, bonus: 9, mult: 1 },
+            { label: '固定値: 10', formula: '固定: 10', dice: 0, sides: 0, bonus: 10, mult: 1 },
+            { label: '固定値: 11', formula: '固定: 11', dice: 0, sides: 0, bonus: 11, mult: 1 },
+            { label: '固定値: 12', formula: '固定: 12', dice: 0, sides: 0, bonus: 12, mult: 1 },
+            { label: '固定値: 13', formula: '固定: 13', dice: 0, sides: 0, bonus: 13, mult: 1 },
+            { label: '固定値: 14', formula: '固定: 14', dice: 0, sides: 0, bonus: 14, mult: 1 },
+            { label: '固定値: 15', formula: '固定: 15', dice: 0, sides: 0, bonus: 15, mult: 1 },
+            { label: '固定値: 16', formula: '固定: 16', dice: 0, sides: 0, bonus: 16, mult: 1 },
+            { label: '固定値: 17', formula: '固定: 17', dice: 0, sides: 0, bonus: 17, mult: 1 },
+            { label: '固定値: 18', formula: '固定: 18', dice: 0, sides: 0, bonus: 18, mult: 1 },
+            { label: '固定値: 20', formula: '固定: 20', dice: 0, sides: 0, bonus: 20, mult: 1 }
+          ]
         }
       ],
       ed7: [
@@ -1539,6 +1592,22 @@
             { label: '(4D6+12)×5 (ダイス4個+12 80-180)', formula: '(4D6+12)×5', dice: 4, sides: 6, bonus: 12, mult: 5 },
             { label: '2D10×5 (10面ダイス2個 10-100)', formula: '2D10×5', dice: 2, sides: 10, bonus: 0, mult: 5 },
             { label: '3D10×5 (10面ダイス3個 15-150)', formula: '3D10×5', dice: 3, sides: 10, bonus: 0, mult: 5 }
+          ]
+        },
+        {
+          group: '📌 固定値設定 (ダイス不要・一定値)',
+          items: [
+            { label: '固定値: 40', formula: '固定: 40', dice: 0, sides: 0, bonus: 40, mult: 1 },
+            { label: '固定値: 50', formula: '固定: 50', dice: 0, sides: 0, bonus: 50, mult: 1 },
+            { label: '固定値: 55', formula: '固定: 55', dice: 0, sides: 0, bonus: 55, mult: 1 },
+            { label: '固定値: 60', formula: '固定: 60', dice: 0, sides: 0, bonus: 60, mult: 1 },
+            { label: '固定値: 65', formula: '固定: 65', dice: 0, sides: 0, bonus: 65, mult: 1 },
+            { label: '固定値: 70', formula: '固定: 70', dice: 0, sides: 0, bonus: 70, mult: 1 },
+            { label: '固定値: 75', formula: '固定: 75', dice: 0, sides: 0, bonus: 75, mult: 1 },
+            { label: '固定値: 80', formula: '固定: 80', dice: 0, sides: 0, bonus: 80, mult: 1 },
+            { label: '固定値: 85', formula: '固定: 85', dice: 0, sides: 0, bonus: 85, mult: 1 },
+            { label: '固定値: 90', formula: '固定: 90', dice: 0, sides: 0, bonus: 90, mult: 1 },
+            { label: '固定値: 100', formula: '固定: 100', dice: 0, sides: 0, bonus: 100, mult: 1 }
           ]
         }
       ]
@@ -1582,6 +1651,7 @@
       adoptedStats: {}, // { STR: { value, diceDetails, originSetIndex }, ... }
       selectedSetIndex: -1, // if a whole set is selected
       swapFirstKey: null, // For stat swapping
+      lockedStats: {}, // { STR: true, ... } for locking stats to fixed values
       limits: {
         enabled: false,
         stats: {}, // { STR: 15, ... }
@@ -1667,6 +1737,16 @@
 
     // Roll single stat based on definition (with limits check)
     function rollSingleStat(def) {
+      if (def.dice === 0) {
+        const finalValue = def.bonus * def.mult;
+        return {
+          value: finalValue,
+          rolls: [],
+          rawSum: def.bonus,
+          detailStr: `[固定値: ${finalValue}]`
+        };
+      }
+
       let attempts = 0;
       let res = null;
       const cap = (state.limits && state.limits.enabled && state.limits.stats[def.key]) ? state.limits.stats[def.key] : null;
@@ -1748,6 +1828,7 @@
       if (state.rollHistory.length === 0) return;
 
       const defs = getActiveStatDefs();
+      const prevAdopted = { ...state.adoptedStats };
       state.adoptedStats = {};
       state.swapFirstKey = null;
       btnResetSwap.style.display = 'none';
@@ -1758,6 +1839,12 @@
         adoptedStatusDesc.textContent = `全${state.rollHistory.length}セット中から項目ごとの最高出目を採用`;
 
         defs.forEach(def => {
+          // If locked, preserve locked stat value
+          if (state.lockedStats[def.key] && prevAdopted[def.key]) {
+            state.adoptedStats[def.key] = prevAdopted[def.key];
+            return;
+          }
+
           let bestVal = -1;
           let bestObj = null;
           let bestSetIdx = 0;
@@ -1794,6 +1881,12 @@
         adoptedStatusDesc.textContent = `合計値が最も高いセット #${bestSet.index} を丸ごと採用中`;
 
         defs.forEach(def => {
+          // If locked, preserve locked stat value
+          if (state.lockedStats[def.key] && prevAdopted[def.key]) {
+            state.adoptedStats[def.key] = prevAdopted[def.key];
+            return;
+          }
+
           const item = bestSet.stats[def.key];
           state.adoptedStats[def.key] = {
             value: item.value,
@@ -1821,6 +1914,11 @@
       adoptedStatusDesc.textContent = `セット #${set.index} を手動採用中`;
 
       defs.forEach(def => {
+        // If locked, preserve locked stat value
+        if (state.lockedStats[def.key] && state.adoptedStats[def.key]) {
+          return;
+        }
+
         const item = set.stats[def.key];
         state.adoptedStats[def.key] = {
           value: item.value,
@@ -1856,6 +1954,12 @@
 
     // Re-roll single stat
     function rerollSingleStat(key) {
+      if (state.lockedStats[key]) {
+        const confirmUnlock = confirm(`${key} は現在固定（ロック）されています。ロックを解除して再ロールしますか？`);
+        if (!confirmUnlock) return;
+        state.lockedStats[key] = false;
+      }
+
       const defs = getActiveStatDefs();
       const def = defs.find(d => d.key === key);
       if (!def) return;
@@ -1872,6 +1976,46 @@
       adoptedStatusDesc.textContent = `${key} を個別に再ロールしました`;
       renderAll();
       showToast(`${key} を再ロールしました: ${res.value}`);
+    }
+
+    // Toggle Stat Lock (keep current value during roll)
+    function toggleStatLock(key) {
+      state.lockedStats[key] = !state.lockedStats[key];
+      const val = state.adoptedStats[key]?.value || 0;
+      if (state.lockedStats[key]) {
+        showToast(`🔒 ${key} を【${val}】で固定（ロック）しました！一括ロール時もこの数値が維持されます。`);
+      } else {
+        showToast(`🔓 ${key} の固定（ロック）を解除しました。`);
+      }
+      renderStatCards();
+    }
+
+    // Direct Manual Edit of Stat Value
+    function editStatValueManually(key) {
+      const currentVal = state.adoptedStats[key]?.value || 0;
+      const defs = getActiveStatDefs();
+      const def = defs.find(d => d.key === key);
+      const input = prompt(`【${key} (${def?.name || key})】の固定数値を入力してください:`, currentVal);
+      if (input === null) return;
+      const val = parseInt(input, 10);
+      if (isNaN(val) || val < 0) {
+        showToast('有効な数値を入力してください');
+        return;
+      }
+
+      state.adoptedStats[key] = {
+        value: val,
+        detailStr: `[固定値: ${val}]`,
+        originSetIndex: '手動固定',
+        isCustom: true
+      };
+      // Auto-lock so rerolls won't overwrite it
+      state.lockedStats[key] = true;
+
+      adoptedModeTag.textContent = '手動固定値';
+      adoptedStatusDesc.textContent = `${key} を固定値 ${val} に設定（🔒固定中）`;
+      renderAll();
+      showToast(`🔒 ${key} を固定値【${val}】に設定し、ロックしました！`);
     }
 
     // Stat Swap logic
@@ -1998,19 +2142,25 @@
 
         const card = document.createElement('div');
         const isSwapSelected = state.swapFirstKey === def.key;
-        card.className = `stat-card ${isSwapSelected ? 'swap-selected' : ''}`;
+        const isLocked = !!state.lockedStats[def.key];
+        card.className = `stat-card ${isSwapSelected ? 'swap-selected' : ''} ${isLocked ? 'locked-card' : ''}`;
 
         card.innerHTML = `
           <div class="card-head">
             <span class="stat-name">${def.name}</span>
-            <button class="btn-reroll" type="button" title="${def.name}のみ再ロール" onclick="rerollSingleStat('${def.key}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-              </svg>
-            </button>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-lock ${isLocked ? 'locked' : ''}" type="button" title="${isLocked ? '固定（ロック）中：一括ロール時もこの数値が維持されます（クリックで解除）' : 'この能力値を固定（ロック）する'}" onclick="toggleStatLock('${def.key}')">
+                ${isLocked ? '🔒 固定中' : '🔓 固定'}
+              </button>
+              <button class="btn-reroll" type="button" title="${def.name}のみ再ロール" onclick="rerollSingleStat('${def.key}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="stat-value" id="val-${def.key}">${item.value}</div>
-          <div class="stat-formula">${def.formula}</div>
+          <div class="stat-value editable-val" id="val-${def.key}" title="クリックして固定数値を直接入力" onclick="editStatValueManually('${def.key}')">${item.value}</div>
+          <div class="stat-formula">${isLocked ? '固定中 (ロック)' : def.formula}</div>
           <div class="stat-breakdown" title="出目の内訳">${item.detailStr}</div>
           <div class="swap-indicator" onclick="handleStatSwapClick('${def.key}')" title="他のステータスと値をスワップ">
             ${isSwapSelected ? '選択中...' : '🔄 入替'}
@@ -2415,10 +2565,16 @@
     }
 
     function updateDiceModalPreview() {
-      const dice = Math.max(1, parseInt(modalDiceCount.value, 10) || 1);
+      const dice = Math.max(0, parseInt(modalDiceCount.value, 10) || 0);
       const sides = parseInt(modalDiceSides.value, 10) || 6;
       const bonus = Math.max(0, parseInt(modalDiceBonus.value, 10) || 0);
       const mult = state.edition === 'ed7' ? 5 : 1;
+
+      if (dice === 0) {
+        const val = bonus * mult;
+        modalFormulaPreview.innerHTML = `プレビュー: <strong>固定: ${val}</strong> (ダイスなし・一定値)`;
+        return;
+      }
 
       let formulaBase = `${dice}D${sides}`;
       if (bonus > 0) formulaBase += `+${bonus}`;
@@ -2445,27 +2601,40 @@
     btnApplyDiceModal.addEventListener('click', () => {
       if (!currentModalTargetStat) return;
       const statKey = currentModalTargetStat;
-      const dice = Math.max(1, Math.min(50, parseInt(modalDiceCount.value, 10) || 1));
+      const dice = Math.max(0, Math.min(50, parseInt(modalDiceCount.value, 10) || 0));
       const sides = parseInt(modalDiceSides.value, 10) || 6;
       const bonus = Math.max(0, parseInt(modalDiceBonus.value, 10) || 0);
       const mult = state.edition === 'ed7' ? 5 : 1;
 
-      let formulaBase = `${dice}D${sides}`;
-      if (bonus > 0) formulaBase += `+${bonus}`;
-      let formula = mult > 1 ? `(${formulaBase})×${mult}` : formulaBase;
+      let customObj;
+      if (dice === 0) {
+        const val = bonus * mult;
+        customObj = {
+          label: `固定値: ${val}`,
+          formula: `固定: ${val}`,
+          dice: 0,
+          sides: 0,
+          bonus: val,
+          mult: 1
+        };
+      } else {
+        let formulaBase = `${dice}D${sides}`;
+        if (bonus > 0) formulaBase += `+${bonus}`;
+        let formula = mult > 1 ? `(${formulaBase})×${mult}` : formulaBase;
 
-      const minVal = (dice * 1 + bonus) * mult;
-      const maxVal = (dice * sides + bonus) * mult;
-      const label = `${formula} (カスタム ${minVal}-${maxVal})`;
+        const minVal = (dice * 1 + bonus) * mult;
+        const maxVal = (dice * sides + bonus) * mult;
+        const label = `${formula} (カスタム ${minVal}-${maxVal})`;
 
-      const customObj = {
-        label,
-        formula,
-        dice,
-        sides,
-        bonus,
-        mult
-      };
+        customObj = {
+          label,
+          formula,
+          dice,
+          sides,
+          bonus,
+          mult
+        };
+      }
 
       if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
       state.customFormulas[state.edition][statKey] = customObj;
@@ -2476,7 +2645,7 @@
       renderLimitsInputs();
       updateLimitsBadge();
       performRolls(state.rollCount);
-      showToast(`${statKey} のダイス式を【${formula}】に設定しました！`);
+      showToast(`${statKey} のダイス式を【${customObj.formula}】に設定しました！`);
     });
 
     diceCustomModal.addEventListener('click', (e) => {
@@ -2511,12 +2680,13 @@
           optionsHtml += `</optgroup>`;
         });
 
-        // Custom optgroup
-        optionsHtml += `<optgroup label="✏️ 自由カスタム（自由ダイス数・面数）">`;
+        // Custom & Fixed optgroup
+        optionsHtml += `<optgroup label="✏️ 自由カスタム・固定値">`;
         if (!isMatchedInPresets) {
           optionsHtml += `<option value="${def.formula}" selected>✏️ 現在のカスタム式: ${def.formula}</option>`;
         }
         optionsHtml += `<option value="__custom__">✏️ 自由入力（ダイス数を増やす・面数を指定）...</option>`;
+        optionsHtml += `<option value="__fixed_prompt__">📌 自由な固定値を指定（ダイスを振らない）...</option>`;
         optionsHtml += `</optgroup>`;
 
         itemDiv.innerHTML = `
@@ -2524,7 +2694,7 @@
             <span>${def.name}</span>
             <span style="font-size:0.68rem; color:var(--text-dim);">${def.desc}</span>
           </label>
-          <select class="custom-formula-select" data-key="${def.key}" title="${def.name}のダイス計算式を変更（4D6, 5D6など18超えも選択可）">
+          <select class="custom-formula-select" data-key="${def.key}" title="${def.name}のダイス計算式を変更（4D6や固定値なども選択可）">
             ${optionsHtml}
           </select>
           <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
@@ -2541,6 +2711,34 @@
             openDiceCustomModal(def.key);
             return;
           }
+          if (chosenFormula === '__fixed_prompt__') {
+            const input = prompt(`【${def.name}】の固定数値を入力してください:`, def.bonus || 10);
+            if (input === null) {
+              renderLimitsInputs();
+              return;
+            }
+            const val = parseInt(input, 10);
+            if (isNaN(val) || val < 0) {
+              showToast('有効な数値を入力してください');
+              renderLimitsInputs();
+              return;
+            }
+            const fixedPreset = {
+              label: `固定値: ${val}`,
+              formula: `固定: ${val}`,
+              dice: 0,
+              sides: 0,
+              bonus: val,
+              mult: 1
+            };
+            if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
+            state.customFormulas[state.edition][def.key] = fixedPreset;
+            updateLimitsBadge();
+            performRolls(state.rollCount);
+            showToast(`${def.name} を【固定値: ${val}】に設定しました！`);
+            return;
+          }
+
           const chosenPreset = findPresetByFormula(chosenFormula);
           if (chosenPreset) {
             if (!state.customFormulas[state.edition]) state.customFormulas[state.edition] = {};
