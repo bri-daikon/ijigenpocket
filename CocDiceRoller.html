@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クトゥルフ神話TRPG キャラクター一括ダイス決定ツール</title>
+  <meta name="description" content="クトゥルフ神話TRPG（6版・7版）対応。探索者のステータスを一括ロールし、最良出目の自動採用や個別振り直し、ココフォリア駒作成出力ができるWebツール。">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-card: rgba(16, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --glass-border: rgba(99, 102, 241, 0.2);
+      --glass-border-gold: rgba(245, 158, 11, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-gold: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --accent-glow: 0 0 20px rgba(6, 182, 212, 0.35);
+      --gold-glow: 0 0 16px rgba(245, 158, 11, 0.35);
+      --card-radius: 14px;
+      --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      background: radial-gradient(circle at 15% 15%, #13172e 0%, #080a14 50%, #030408 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Cosmic Particle / Glow Decorations */
+    .bg-glow {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.25;
+    }
+    .bg-glow-1 {
+      width: 500px;
+      height: 500px;
+      background: #4f46e5;
+      top: -100px;
+      right: -50px;
+    }
+    .bg-glow-2 {
+      width: 600px;
+      height: 600px;
+      background: #0f766e;
+      bottom: -150px;
+      left: -100px;
+    }
+    .bg-glow-3 {
+      width: 350px;
+      height: 350px;
+      background: #7e22ce;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-titles h1 {
+      font-family: 'Cinzel', 'Noto Sans JP', serif;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #e2e8f0 30%, #38bdf8 75%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-titles p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .badge-rules {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    /* Main Settings Card */
+    .panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+      padding: 22px 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+      transition: var(--transition);
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Segmented Button (Edition Switcher) */
+    .segmented-control {
+      display: flex;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .segmented-btn {
+      flex: 1;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .segmented-btn.active {
+      background: linear-gradient(135deg, #2563eb, #6366f1);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Quick count selectors */
+    .count-selector {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .count-btn {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .count-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .count-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .custom-count-input {
+      width: 65px;
+      padding: 8px 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: var(--text-main);
+    }
+
+    .custom-count-input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
+
+    /* Best selection checkboxes */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .custom-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text-main);
+    }
+
+    .custom-checkbox input[type="radio"],
+    .custom-checkbox input[type="checkbox"] {
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border: 1.5px solid var(--accent-cyan);
+      border-radius: 4px;
+      background: transparent;
+      display: grid;
+      place-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .custom-checkbox input[type="radio"] {
+      border-radius: 50%;
+    }
+
+    .custom-checkbox input[type="radio"]:checked,
+    .custom-checkbox input[type="checkbox"]:checked {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    }
+
+    .custom-checkbox input[type="radio"]:checked::before,
+    .custom-checkbox input[type="checkbox"]:checked::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    .custom-checkbox input[type="radio"]:checked::before {
+      border-radius: 50%;
+    }
+
+    /* Roll Action Button */
+    .roll-action-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .btn-roll {
+      padding: 14px 34px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1 70%, #a855f7);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition);
+      letter-spacing: 0.05em;
+    }
+
+    .btn-roll:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.55);
+    }
+
+    .btn-roll:active {
+      transform: translateY(1px);
+    }
+
+    .btn-roll svg {
+      transition: transform 0.4s ease;
+    }
+
+    .btn-roll.rolling svg {
+      animation: spinDice 0.6s linear infinite;
+    }
+
+    @keyframes spinDice {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Section Title */
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Adopted Character Card */
+    .adopted-panel {
+      background: linear-gradient(145deg, rgba(20, 27, 50, 0.85), rgba(12, 18, 36, 0.95));
+      border: 1px solid var(--glass-border-gold);
+      box-shadow: var(--gold-glow), 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .status-summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .stat-pill .label {
+      color: var(--text-muted);
+    }
+
+    .stat-pill .val {
+      font-weight: 700;
+      color: var(--accent-cyan);
+      font-size: 1.05rem;
+    }
+
+    .stat-pill.gold .val {
+      color: var(--accent-gold);
+    }
+
+    .stat-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .stat-card:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .stat-card.best-pick {
+      border-color: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    }
+
+    .stat-card .card-head {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .stat-card .stat-name {
+      font-family: 'Cinzel', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #93c5fd;
+    }
+
+    .stat-card .btn-reroll {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 3px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .stat-card .btn-reroll:hover {
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.15);
+      transform: rotate(30deg);
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
+      margin: 4px 0 6px;
+      transition: color 0.3s;
+    }
+
+    .stat-card .stat-formula {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+
+    .stat-card .stat-breakdown {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .stat-card .swap-indicator {
+      margin-top: 6px;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      transition: var(--transition);
+    }
+
+    .stat-card .swap-indicator:hover,
+    .stat-card.swap-selected .swap-indicator {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.15);
+    }
+
+    .stat-card.swap-selected {
+      border-color: var(--accent-gold) !important;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4) !important;
+    }
+
+    /* Sub Stats Section (HP, MP, SAN, DB, MOV, etc.) */
+    .substats-wrap {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .substat-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .substat-card .sub-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .substat-card .sub-value {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .substat-card .sub-calc {
+      font-size: 0.66rem;
+      color: var(--text-dim);
+    }
+
+    /* Multi-Roll Results Comparison Table */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .roll-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: center;
+      min-width: 760px;
+    }
+
+    .roll-table th {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 12px 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .roll-table th.highlight-col {
+      color: var(--accent-cyan);
+    }
+
+    .roll-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .roll-table tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .roll-table tr.selected-row td {
+      background: rgba(14, 165, 233, 0.12);
+    }
+
+    .roll-table td.is-max {
+      color: #34d399;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .roll-table td.is-chosen {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+
+    .roll-table .cell-val {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      cursor: pointer;
+    }
+
+    .roll-table .cell-num {
+      font-size: 0.95rem;
+    }
+
+    .roll-table .cell-dice {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .btn-apply-row {
+      padding: 5px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-apply-row:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+
+    .badge-best-total {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--accent-gold);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      margin-left: 4px;
+      font-weight: 600;
+    }
+
+    /* Export & Actions Section */
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .export-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .export-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .export-card-head h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .export-card textarea {
+      width: 100%;
+      height: 95px;
+      background: rgba(5, 8, 20, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      font-family: monospace;
+      resize: none;
+      outline: none;
+    }
+
+    .export-card textarea:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-copy {
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .btn-copy:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-copy.copied {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent-emerald);
+      color: #34d399;
+    }
+
+    .btn-iachara-direct {
+      padding: 8px 16px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #1e1b18;
+      border: 1px solid rgba(251, 191, 36, 0.6);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+      transition: var(--transition);
+      letter-spacing: 0.02em;
+    }
+
+    .btn-iachara-direct:hover {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+      color: #000;
+    }
+
+    .btn-iachara-direct:active {
+      transform: translateY(1px);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-cyan);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 999;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px 12px 40px;
+        gap: 16px;
+      }
+      header {
+        padding: 16px;
+      }
+      .panel {
+        padding: 16px;
+      }
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .roll-action-wrap {
+        justify-content: stretch;
+      }
+      .btn-roll {
+        width: 100%;
+        justify-content: center;
+      }
+      .stat-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-titles">
+        <h1>
+          <span>🎲 CoC キャラクター一括ダイス決定</span>
+          <span class="badge-rules" id="editionBadge">第6版</span>
+        </h1>
+        <p>クトゥルフ神話TRPGのキャラクター能力値を一括ロールし、最良の出目を簡単に選択・採用できます。</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span style="font-size: 0.8rem; color: var(--text-dim);">CoC Dice Roller</span>
+      </div>
+    </header>
+
+    <!-- Main Settings & Roll Controls -->
+    <section class="panel">
+      <div class="controls-grid">
+        <!-- 1. Edition Switcher -->
+        <div class="control-group">
+          <label>ルールブックの版</label>
+          <div class="segmented-control">
+            <button class="segmented-btn active" id="btnEd6" type="button">第6版 (Classic)</button>
+            <button class="segmented-btn" id="btnEd7" type="button">第7版 (新クトゥルフ)</button>
+          </div>
+        </div>
+
+        <!-- 2. Roll Count Selector -->
+        <div class="control-group">
+          <label>ロール回数（セット数）</label>
+          <div class="count-selector">
+            <button class="count-btn" type="button" data-count="1">1回</button>
+            <button class="count-btn active" type="button" data-count="3">3回</button>
+            <button class="count-btn" type="button" data-count="5">5回</button>
+            <button class="count-btn" type="button" data-count="10">10回</button>
+            <input type="number" id="customCountInput" class="custom-count-input" min="1" max="50" value="3" title="任意の回数を入力">
+          </div>
+        </div>
+
+        <!-- 3. Best Roll Mode Checkboxes -->
+        <div class="control-group">
+          <label>最良出目の採用ルール</label>
+          <div class="checkbox-group">
+            <label class="custom-checkbox">
+              <input type="radio" name="adoptionMode" id="modeBestItems" value="best-items" checked>
+              <span>各能力値の最高出目を自動採用（良いとこ取り）</span>
+            </label>
+            <label class="custom-checkbox">
+              <input type="radio" name="adoptionMode" id="modeBestTotal" value="best-total">
+              <span>合計値が最も高いセットを丸ごと採用</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4. Roll Action Button -->
+        <div class="roll-action-wrap">
+          <button class="btn-roll" id="btnRoll" type="button">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 8h.01"></path>
+              <path d="M8 8h.01"></path>
+              <path d="M8 16h.01"></path>
+              <path d="M16 16h.01"></path>
+              <path d="M12 12h.01"></path>
+            </svg>
+            <span>ダイスを一括で振る！</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Adopted Character Status Section -->
+    <section class="panel adopted-panel">
+      <div class="section-title">
+        <h2>
+          <span>🏆 採用キャラクター能力値</span>
+          <span id="adoptedModeTag" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px; background: rgba(245, 158, 11, 0.2); color: var(--accent-gold); font-weight: normal; margin-left: 8px;">各項目ベスト</span>
+        </h2>
+        <span class="desc">各カードの🎲ボタンで単体振り直し、🔄で能力値の入れ替えが可能です</span>
+      </div>
+
+      <!-- Total & Details Bar -->
+      <div class="status-summary-bar">
+        <div class="stat-pill gold">
+          <span class="label">能力値合計:</span>
+          <span class="val" id="sumTotal">0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">EDU除外合計:</span>
+          <span class="val" id="sumNoEdu">0</span>
+        </div>
+        <div class="stat-pill" id="pillLuckWrap" style="display:none;">
+          <span class="label">LUK(幸運):</span>
+          <span class="val" id="valLuckSingle">0</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">採用状態:</span>
+          <span style="font-size: 0.85rem; color: #e2e8f0;" id="adoptedStatusDesc">ロールを実行してください</span>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button class="btn-copy" id="btnResetSwap" type="button" style="display:none; font-size:0.75rem; padding:4px 8px;">入れ替えキャンセル</button>
+          <button class="btn-iachara-direct" id="btnOpenIacharaTop" type="button" title="この能力値でいあきゃらの新規キャラ作成画面を開きます">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>いあきゃらに出力</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Stat Cards Grid -->
+      <div class="stat-cards-grid" id="statCardsGrid">
+        <!-- Dynamically rendered stat cards -->
+      </div>
+
+      <!-- Sub Stats (HP, MP, SAN, DB, etc.) -->
+      <div class="substats-wrap" id="subStatsWrap">
+        <!-- Dynamically rendered derived stats -->
+      </div>
+    </section>
+
+    <!-- Multi-Roll Comparison Table -->
+    <section class="panel">
+      <div class="section-title">
+        <h2>
+          <span>📊 ロール結果一覧・比較</span>
+        </h2>
+        <span class="desc">「この行を採用」ボタンでセット一括採用、セルクリックでその出目だけを現在のステータスに適用できます</span>
+      </div>
+
+      <div class="table-container">
+        <table class="roll-table" id="rollTable">
+          <thead>
+            <tr id="rollTableHeader">
+              <!-- Dynamically populated -->
+            </tr>
+          </thead>
+          <tbody id="rollTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Export & Share Section -->
+    <section class="panel">
+      <div class="section-title">
+        <h2>
+          <span>📋 出力・クリップボード共有</span>
+        </h2>
+        <span class="desc">いあきゃらへの直接出力や、ココフォリア駒作成、各種保管所向けのテキストを生成します</span>
+      </div>
+
+      <div class="export-grid">
+        <!-- 0. Iachara Direct Integration -->
+        <div class="export-card" style="border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(145deg, rgba(30, 27, 20, 0.7), rgba(15, 23, 42, 0.75));">
+          <div class="export-card-head">
+            <h3 style="color: #fbbf24;">🦊 いあきゃらに出力 (公式連携)</h3>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-copy" id="btnCopyIacharaUrl" type="button" title="URLのみコピー">URLコピー</button>
+              <button class="btn-iachara-direct" id="btnOpenIachara" type="button" title="いあきゃらを新規タブで開く">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>いあきゃらを開く</span>
+              </button>
+            </div>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-muted);">
+            ボタンを押すと「いあきゃら」の新規作成画面が開き、決定した能力値が自動的に入力されます（6版・7版両対応）。
+          </p>
+          <textarea id="textIacharaUrl" readonly placeholder="ロール完了後に自動生成されます"></textarea>
+        </div>
+
+        <!-- 1. Ccfoflia Room Piece (JSON) -->
+        <div class="export-card">
+          <div class="export-card-head">
+            <h3>🎴 ココフォリア駒作成用 (JSON)</h3>
+            <button class="btn-copy" id="btnCopyCcfolia" type="button">コピーする</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-muted);">
+            クリップボードにコピー後、ココフォリアの盤面上で「Ctrl+V」を押すだけで、能力値とチャットパレットがセットされた駒を作成できます。
+          </p>
+          <textarea id="textCcfolia" readonly placeholder="ロール完了後に自動生成されます"></textarea>
+        </div>
+
+        <!-- 2. Text Summary for Character Sheet -->
+        <div class="export-card">
+          <div class="export-card-head">
+            <h3>📝 キャラシ用テキスト</h3>
+            <button class="btn-copy" id="btnCopyText" type="button">コピーする</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-muted);">
+            いあきゃら、キャラクター保管所、Discord、SNS等に貼り付けやすい整形済みステータステキストです。
+          </p>
+          <textarea id="textSummary" readonly placeholder="ロール完了後に自動生成されます"></textarea>
+        </div>
+
+        <!-- 3. Chat Palette -->
+        <div class="export-card">
+          <div class="export-card-head">
+            <h3>💬 チャットパレット</h3>
+            <button class="btn-copy" id="btnCopyPalette" type="button">コピーする</button>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-muted);">
+            各能力値の判定ダイスコマンド集です（6版: CCB / 7版: CC）。
+          </p>
+          <textarea id="textPalette" readonly placeholder="ロール完了後に自動生成されます"></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">クリップボードにコピーしました！</div>
+
+  <script>
+    /* ============================================================
+       CoC Dice Roller Logic
+       ============================================================ */
+
+    // Definition of stats per edition
+    const STAT_DEFS = {
+      ed6: [
+        { key: 'STR', name: 'STR', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1, desc: '筋力' },
+        { key: 'CON', name: 'CON', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1, desc: '体力' },
+        { key: 'POW', name: 'POW', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1, desc: '精神力' },
+        { key: 'DEX', name: 'DEX', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1, desc: '敏捷性' },
+        { key: 'APP', name: 'APP', formula: '3D6', dice: 3, sides: 6, bonus: 0, mult: 1, desc: '外見' },
+        { key: 'SIZ', name: 'SIZ', formula: '2D6+6', dice: 2, sides: 6, bonus: 6, mult: 1, desc: '体格' },
+        { key: 'INT', name: 'INT', formula: '2D6+6', dice: 2, sides: 6, bonus: 6, mult: 1, desc: '知性' },
+        { key: 'EDU', name: 'EDU', formula: '3D6+3', dice: 3, sides: 6, bonus: 3, mult: 1, desc: '教育' }
+      ],
+      ed7: [
+        { key: 'STR', name: 'STR', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '筋力' },
+        { key: 'CON', name: 'CON', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '体力' },
+        { key: 'POW', name: 'POW', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '精神力' },
+        { key: 'DEX', name: 'DEX', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '敏捷性' },
+        { key: 'APP', name: 'APP', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '外見' },
+        { key: 'SIZ', name: 'SIZ', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5, desc: '体格' },
+        { key: 'INT', name: 'INT', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5, desc: '知性' },
+        { key: 'EDU', name: 'EDU', formula: '(2D6+6)×5', dice: 2, sides: 6, bonus: 6, mult: 5, desc: '教育' },
+        { key: 'LUK', name: 'LUK', formula: '3D6×5', dice: 3, sides: 6, bonus: 0, mult: 5, desc: '幸運' }
+      ]
+    };
+
+    // State
+    const state = {
+      edition: 'ed6', // 'ed6' or 'ed7'
+      rollCount: 3,
+      adoptionMode: 'best-items', // 'best-items' or 'best-total'
+      rollHistory: [], // Array of roll set objects
+      adoptedStats: {}, // { STR: { value, diceDetails, originSetIndex }, ... }
+      selectedSetIndex: -1, // if a whole set is selected
+      swapFirstKey: null // For stat swapping
+    };
+
+    // DOM Elements
+    const btnEd6 = document.getElementById('btnEd6');
+    const btnEd7 = document.getElementById('btnEd7');
+    const editionBadge = document.getElementById('editionBadge');
+    const customCountInput = document.getElementById('customCountInput');
+    const countButtons = document.querySelectorAll('.count-btn');
+    const modeBestItems = document.getElementById('modeBestItems');
+    const modeBestTotal = document.getElementById('modeBestTotal');
+    const btnRoll = document.getElementById('btnRoll');
+    const statCardsGrid = document.getElementById('statCardsGrid');
+    const subStatsWrap = document.getElementById('subStatsWrap');
+    const sumTotalEl = document.getElementById('sumTotal');
+    const sumNoEduEl = document.getElementById('sumNoEdu');
+    const pillLuckWrap = document.getElementById('pillLuckWrap');
+    const valLuckSingle = document.getElementById('valLuckSingle');
+    const adoptedStatusDesc = document.getElementById('adoptedStatusDesc');
+    const adoptedModeTag = document.getElementById('adoptedModeTag');
+    const btnResetSwap = document.getElementById('btnResetSwap');
+    const rollTableHeader = document.getElementById('rollTableHeader');
+    const rollTableBody = document.getElementById('rollTableBody');
+    const textCcfolia = document.getElementById('textCcfolia');
+    const textSummary = document.getElementById('textSummary');
+    const textPalette = document.getElementById('textPalette');
+    const textIacharaUrl = document.getElementById('textIacharaUrl');
+    const btnCopyCcfolia = document.getElementById('btnCopyCcfolia');
+    const btnCopyText = document.getElementById('btnCopyText');
+    const btnCopyPalette = document.getElementById('btnCopyPalette');
+    const btnCopyIacharaUrl = document.getElementById('btnCopyIacharaUrl');
+    const btnOpenIachara = document.getElementById('btnOpenIachara');
+    const btnOpenIacharaTop = document.getElementById('btnOpenIacharaTop');
+    const toastEl = document.getElementById('toast');
+
+    // Generate Iachara URL
+    function generateIacharaUrl() {
+      if (Object.keys(state.adoptedStats).length === 0) return '';
+      const s = {};
+      const defs = STAT_DEFS[state.edition];
+      defs.forEach(d => {
+        s[d.key] = state.adoptedStats[d.key]?.value || 0;
+      });
+
+      if (state.edition === 'ed6') {
+        return `https://iachara.com/new/costom/webdice?var=6&STR=${s.STR || 0}&CON=${s.CON || 0}&POW=${s.POW || 0}&DEX=${s.DEX || 0}&APP=${s.APP || 0}&SIZ=${s.SIZ || 0}&INT=${s.INT || 0}&EDU=${s.EDU || 0}`;
+      } else {
+        return `https://iachara.com/new/costom/webdice?var=7&STR=${s.STR || 0}&CON=${s.CON || 0}&POW=${s.POW || 0}&DEX=${s.DEX || 0}&APP=${s.APP || 0}&SIZ=${s.SIZ || 0}&INT=${s.INT || 0}&EDU=${s.EDU || 0}&LUK=${s.LUK || 0}`;
+      }
+    }
+
+    // Open Iachara in new tab
+    function openIachara() {
+      const url = generateIacharaUrl();
+      if (!url) {
+        showToast('能力値データがありません。ダイスを振ってください。');
+        return;
+      }
+      window.open(url, '_blank');
+      showToast('いあきゃら新規作成画面を別タブで開きました！');
+    }
+
+    // Utility: Roll NdS
+    function rollDice(dice, sides) {
+      const rolls = [];
+      let sum = 0;
+      for (let i = 0; i < dice; i++) {
+        const val = Math.floor(Math.random() * sides) + 1;
+        rolls.push(val);
+        sum += val;
+      }
+      return { rolls, sum };
+    }
+
+    // Roll single stat based on definition
+    function rollSingleStat(def) {
+      const { rolls, sum } = rollDice(def.dice, def.sides);
+      const raw = sum + def.bonus;
+      const finalValue = raw * def.mult;
+      let detailStr = `[${rolls.join(',')}]`;
+      if (def.bonus > 0) detailStr += `+${def.bonus}`;
+      if (def.mult > 1) detailStr += `×${def.mult}`;
+      return {
+        value: finalValue,
+        rolls: rolls,
+        rawSum: raw,
+        detailStr: detailStr
+      };
+    }
+
+    // Perform rolls for N sets
+    function performRolls(count) {
+      const defs = STAT_DEFS[state.edition];
+      const newHistory = [];
+
+      for (let i = 0; i < count; i++) {
+        const setObj = {
+          index: i + 1,
+          stats: {},
+          total: 0,
+          totalNoEdu: 0
+        };
+
+        let sumAll = 0;
+        let sumNoEdu = 0;
+
+        defs.forEach(def => {
+          const res = rollSingleStat(def);
+          setObj.stats[def.key] = res;
+          if (def.key !== 'LUK') {
+            sumAll += res.value;
+            if (def.key !== 'EDU') {
+              sumNoEdu += res.value;
+            }
+          }
+        });
+
+        setObj.total = sumAll;
+        setObj.totalNoEdu = sumNoEdu;
+        newHistory.push(setObj);
+      }
+
+      state.rollHistory = newHistory;
+      applyAdoptionMode();
+    }
+
+    // Apply Adoption Mode (Best items vs Best total)
+    function applyAdoptionMode() {
+      if (state.rollHistory.length === 0) return;
+
+      const defs = STAT_DEFS[state.edition];
+      state.adoptedStats = {};
+      state.swapFirstKey = null;
+      btnResetSwap.style.display = 'none';
+
+      if (state.adoptionMode === 'best-items') {
+        state.selectedSetIndex = -1;
+        adoptedModeTag.textContent = '各項目ベスト採用';
+        adoptedStatusDesc.textContent = `全${state.rollHistory.length}セット中から項目ごとの最高出目を採用`;
+
+        defs.forEach(def => {
+          let bestVal = -1;
+          let bestObj = null;
+          let bestSetIdx = 0;
+
+          state.rollHistory.forEach((set, sIdx) => {
+            const item = set.stats[def.key];
+            if (item && item.value > bestVal) {
+              bestVal = item.value;
+              bestObj = item;
+              bestSetIdx = sIdx + 1;
+            }
+          });
+
+          state.adoptedStats[def.key] = {
+            value: bestObj.value,
+            detailStr: bestObj.detailStr,
+            originSetIndex: bestSetIdx,
+            isCustom: false
+          };
+        });
+      } else {
+        // best-total
+        let bestSet = state.rollHistory[0];
+        let bestIdx = 0;
+        state.rollHistory.forEach((set, idx) => {
+          if (set.total > bestSet.total) {
+            bestSet = set;
+            bestIdx = idx;
+          }
+        });
+
+        state.selectedSetIndex = bestIdx;
+        adoptedModeTag.textContent = `セット #${bestSet.index} (最高合計)`;
+        adoptedStatusDesc.textContent = `合計値が最も高いセット #${bestSet.index} を丸ごと採用中`;
+
+        defs.forEach(def => {
+          const item = bestSet.stats[def.key];
+          state.adoptedStats[def.key] = {
+            value: item.value,
+            detailStr: item.detailStr,
+            originSetIndex: bestSet.index,
+            isCustom: false
+          };
+        });
+      }
+
+      renderAll();
+    }
+
+    // Select a specific set manually
+    function selectSetManually(setIndex) {
+      const set = state.rollHistory[setIndex];
+      if (!set) return;
+
+      const defs = STAT_DEFS[state.edition];
+      state.selectedSetIndex = setIndex;
+      state.swapFirstKey = null;
+      btnResetSwap.style.display = 'none';
+
+      adoptedModeTag.textContent = `セット #${set.index} (手動選択)`;
+      adoptedStatusDesc.textContent = `セット #${set.index} を手動採用中`;
+
+      defs.forEach(def => {
+        const item = set.stats[def.key];
+        state.adoptedStats[def.key] = {
+          value: item.value,
+          detailStr: item.detailStr,
+          originSetIndex: set.index,
+          isCustom: false
+        };
+      });
+
+      renderAll();
+      showToast(`セット #${set.index} を採用しました`);
+    }
+
+    // Adopt single cell from table
+    function adoptSingleCell(statKey, setIndex) {
+      const set = state.rollHistory[setIndex];
+      if (!set) return;
+      const item = set.stats[statKey];
+      if (!item) return;
+
+      state.adoptedStats[statKey] = {
+        value: item.value,
+        detailStr: item.detailStr,
+        originSetIndex: set.index,
+        isCustom: true
+      };
+
+      adoptedModeTag.textContent = 'カスタム組み合わせ';
+      adoptedStatusDesc.textContent = `${statKey} にセット #${set.index} の出目を採用`;
+      renderAll();
+      showToast(`${statKey} にセット #${set.index} の値 (${item.value}) を採用しました`);
+    }
+
+    // Re-roll single stat
+    function rerollSingleStat(key) {
+      const defs = STAT_DEFS[state.edition];
+      const def = defs.find(d => d.key === key);
+      if (!def) return;
+
+      const res = rollSingleStat(def);
+      state.adoptedStats[key] = {
+        value: res.value,
+        detailStr: res.detailStr,
+        originSetIndex: '単体再振',
+        isCustom: true
+      };
+
+      adoptedModeTag.textContent = 'カスタム個別振り直し';
+      adoptedStatusDesc.textContent = `${key} を個別に再ロールしました`;
+      renderAll();
+      showToast(`${key} を再ロールしました: ${res.value}`);
+    }
+
+    // Stat Swap logic
+    function handleStatSwapClick(key) {
+      if (!state.swapFirstKey) {
+        state.swapFirstKey = key;
+        btnResetSwap.style.display = 'inline-block';
+        showToast(`入れ替え元: ${key} を選択しました。入れ替え先の能力値を選択してください。`);
+        renderStatCards();
+      } else if (state.swapFirstKey === key) {
+        // Cancel
+        state.swapFirstKey = null;
+        btnResetSwap.style.display = 'none';
+        renderStatCards();
+      } else {
+        // Swap!
+        const key1 = state.swapFirstKey;
+        const key2 = key;
+        const stat1 = state.adoptedStats[key1];
+        const stat2 = state.adoptedStats[key2];
+
+        state.adoptedStats[key1] = stat2;
+        state.adoptedStats[key2] = stat1;
+
+        state.swapFirstKey = null;
+        btnResetSwap.style.display = 'none';
+        adoptedModeTag.textContent = '能力値入れ替え済';
+        adoptedStatusDesc.textContent = `${key1} と ${key2} を入れ替えました`;
+        renderAll();
+        showToast(`${key1} と ${key2} の値を入れ替えました！`);
+      }
+    }
+
+    // Derived stats calculations
+    function calculateDerivedStats() {
+      const s = {};
+      Object.keys(state.adoptedStats).forEach(k => {
+        s[k] = state.adoptedStats[k] ? state.adoptedStats[k].value : 0;
+      });
+
+      if (state.edition === 'ed6') {
+        const hp = Math.ceil(((s.CON || 0) + (s.SIZ || 0)) / 2);
+        const mp = s.POW || 0;
+        const san = (s.POW || 0) * 5;
+        const idea = (s.INT || 0) * 5;
+        const luck = (s.POW || 0) * 5;
+        const know = (s.EDU || 0) * 5;
+
+        // DB calculation (6th ed)
+        const strSiz = (s.STR || 0) + (s.SIZ || 0);
+        let db = '0';
+        if (strSiz <= 12) db = '-1D6';
+        else if (strSiz <= 16) db = '-1D4';
+        else if (strSiz <= 24) db = '0';
+        else if (strSiz <= 32) db = '+1D4';
+        else if (strSiz <= 40) db = '+1D6';
+        else if (strSiz <= 56) db = '+2D6';
+        else db = '+3D6';
+
+        return [
+          { label: '耐久力 (HP)', value: hp, calc: '(CON + SIZ) ÷ 2' },
+          { label: 'マジックポイント (MP)', value: mp, calc: 'POW' },
+          { label: '初期正気度 (SAN)', value: san, calc: 'POW × 5' },
+          { label: 'アイデア', value: idea, calc: 'INT × 5' },
+          { label: '幸運', value: luck, calc: 'POW × 5' },
+          { label: '知識', value: know, calc: 'EDU × 5' },
+          { label: 'ダメージボーナス (DB)', value: db, calc: `STR+SIZ=${strSiz}` }
+        ];
+      } else {
+        // 7th edition
+        const hp = Math.floor(((s.CON || 0) + (s.SIZ || 0)) / 10);
+        const mp = Math.floor((s.POW || 0) / 5);
+        const san = s.POW || 0;
+        const luk = s.LUK || 0;
+
+        // MOV calculation (7th ed)
+        let mov = 8;
+        const str = s.STR || 0;
+        const dex = s.DEX || 0;
+        const siz = s.SIZ || 0;
+        if (dex < siz && str < siz) mov = 7;
+        else if (dex > siz && str > siz) mov = 9;
+        else mov = 8;
+
+        // DB & Build (7th ed)
+        const strSiz = str + siz;
+        let db = '0';
+        let build = '0';
+        if (strSiz <= 64) { db = '-2'; build = '-2'; }
+        else if (strSiz <= 84) { db = '-1'; build = '-1'; }
+        else if (strSiz <= 124) { db = '0'; build = '0'; }
+        else if (strSiz <= 164) { db = '+1D4'; build = '+1'; }
+        else if (strSiz <= 204) { db = '+1D6'; build = '+2'; }
+        else if (strSiz <= 284) { db = '+2D6'; build = '+3'; }
+        else { db = '+3D6'; build = '+4'; }
+
+        return [
+          { label: '耐久力 (HP)', value: hp, calc: '(CON + SIZ) ÷ 10' },
+          { label: 'マジックポイント (MP)', value: mp, calc: 'POW ÷ 5' },
+          { label: '初期正気度 (SAN)', value: san, calc: 'POW' },
+          { label: '移動力 (MOV)', value: mov, calc: 'STR/DEX vs SIZ' },
+          { label: 'ダメージボーナス (DB)', value: db, calc: `STR+SIZ=${strSiz}` },
+          { label: 'ビルド (体格)', value: build, calc: `体格規模` }
+        ];
+      }
+    }
+
+    // Render Stat Cards
+    function renderStatCards() {
+      const defs = STAT_DEFS[state.edition];
+      statCardsGrid.innerHTML = '';
+
+      let total = 0;
+      let totalNoEdu = 0;
+
+      defs.forEach(def => {
+        const item = state.adoptedStats[def.key] || { value: 0, detailStr: '-', originSetIndex: '-' };
+        if (def.key !== 'LUK') {
+          total += item.value;
+          if (def.key !== 'EDU') {
+            totalNoEdu += item.value;
+          }
+        }
+
+        const card = document.createElement('div');
+        const isSwapSelected = state.swapFirstKey === def.key;
+        card.className = `stat-card ${isSwapSelected ? 'swap-selected' : ''}`;
+
+        card.innerHTML = `
+          <div class="card-head">
+            <span class="stat-name">${def.name}</span>
+            <button class="btn-reroll" type="button" title="${def.name}のみ再ロール" onclick="rerollSingleStat('${def.key}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </button>
+          </div>
+          <div class="stat-value" id="val-${def.key}">${item.value}</div>
+          <div class="stat-formula">${def.formula}</div>
+          <div class="stat-breakdown" title="出目の内訳">${item.detailStr}</div>
+          <div class="swap-indicator" onclick="handleStatSwapClick('${def.key}')" title="他のステータスと値をスワップ">
+            ${isSwapSelected ? '選択中...' : '🔄 入替'}
+          </div>
+        `;
+        statCardsGrid.appendChild(card);
+      });
+
+      sumTotalEl.textContent = total;
+      sumNoEduEl.textContent = totalNoEdu;
+
+      if (state.edition === 'ed7') {
+        pillLuckWrap.style.display = 'flex';
+        valLuckSingle.textContent = state.adoptedStats['LUK'] ? state.adoptedStats['LUK'].value : 0;
+      } else {
+        pillLuckWrap.style.display = 'none';
+      }
+    }
+
+    // Render Sub Stats
+    function renderSubStats() {
+      const list = calculateDerivedStats();
+      subStatsWrap.innerHTML = '';
+      list.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'substat-card';
+        div.innerHTML = `
+          <span class="sub-label">${item.label}</span>
+          <span class="sub-value">${item.value}</span>
+          <span class="sub-calc">${item.calc}</span>
+        `;
+        subStatsWrap.appendChild(div);
+      });
+    }
+
+    // Render Table
+    function renderTable() {
+      const defs = STAT_DEFS[state.edition];
+
+      // Header
+      let headHtml = `
+        <th>#</th>
+        <th>採用</th>
+      `;
+      defs.forEach(def => {
+        headHtml += `<th class="highlight-col">${def.name}</th>`;
+      });
+      headHtml += `
+        <th>合計</th>
+        <th>EDU除外</th>
+      `;
+      rollTableHeader.innerHTML = headHtml;
+
+      // Find max values across sets for each stat
+      const maxValues = {};
+      defs.forEach(def => {
+        let max = -1;
+        state.rollHistory.forEach(set => {
+          const v = set.stats[def.key]?.value || 0;
+          if (v > max) max = v;
+        });
+        maxValues[def.key] = max;
+      });
+
+      // Find best total
+      let maxTotal = -1;
+      state.rollHistory.forEach(set => {
+        if (set.total > maxTotal) maxTotal = set.total;
+      });
+
+      // Body
+      rollTableBody.innerHTML = '';
+      if (state.rollHistory.length === 0) {
+        rollTableBody.innerHTML = `<tr><td colspan="${defs.length + 4}" style="padding:24px; color:var(--text-dim);">「ダイスを一括で振る！」ボタンを押してロールを開始してください。</td></tr>`;
+        return;
+      }
+
+      state.rollHistory.forEach((set, sIdx) => {
+        const isSelectedSet = state.selectedSetIndex === sIdx;
+        const isBestTotal = set.total === maxTotal && state.rollHistory.length > 1;
+
+        let rowHtml = `
+          <td><strong>#${set.index}</strong></td>
+          <td>
+            <button class="btn-apply-row" type="button" onclick="selectSetManually(${sIdx})">
+              ${isSelectedSet ? '採用中' : 'この行を採用'}
+            </button>
+          </td>
+        `;
+
+        defs.forEach(def => {
+          const item = set.stats[def.key];
+          const isMax = item.value === maxValues[def.key] && state.rollHistory.length > 1;
+          const isAdoptedThis = state.adoptedStats[def.key]?.value === item.value && state.adoptedStats[def.key]?.originSetIndex === set.index;
+
+          let cellClass = '';
+          if (isAdoptedThis) cellClass = 'is-chosen';
+          else if (isMax) cellClass = 'is-max';
+
+          rowHtml += `
+            <td class="${cellClass}" onclick="adoptSingleCell('${def.key}', ${sIdx})" title="クリックしてこの出目を採用">
+              <div class="cell-val">
+                <span class="cell-num">${item.value}</span>
+                <span class="cell-dice">${item.detailStr}</span>
+              </div>
+            </td>
+          `;
+        });
+
+        rowHtml += `
+          <td>
+            <strong>${set.total}</strong>
+            ${isBestTotal ? '<span class="badge-best-total">MAX</span>' : ''}
+          </td>
+          <td><span style="color:var(--text-muted);">${set.totalNoEdu}</span></td>
+        `;
+
+        const tr = document.createElement('tr');
+        if (isSelectedSet) tr.className = 'selected-row';
+        tr.innerHTML = rowHtml;
+        rollTableBody.appendChild(tr);
+      });
+    }
+
+    // Generate Export Texts
+    function updateExportTexts() {
+      if (Object.keys(state.adoptedStats).length === 0) {
+        textCcfolia.value = '';
+        textSummary.value = '';
+        textPalette.value = '';
+        return;
+      }
+
+      const defs = STAT_DEFS[state.edition];
+      const derived = calculateDerivedStats();
+      const s = {};
+      defs.forEach(d => {
+        s[d.key] = state.adoptedStats[d.key]?.value || 0;
+      });
+
+      const edLabel = state.edition === 'ed6' ? 'クトゥルフ神話TRPG（第6版）' : '新クトゥルフ神話TRPG（第7版）';
+
+      // 1. Text Summary
+      let summaryStr = `【${edLabel} キャラクター能力値】\n`;
+      defs.forEach(d => {
+        summaryStr += `${d.name}: ${s[d.key]} (${d.desc})  `;
+      });
+      summaryStr += `\n------------------------\n`;
+      summaryStr += `全体合計: ${sumTotalEl.textContent} / EDU除外合計: ${sumNoEduEl.textContent}\n`;
+      derived.forEach(item => {
+        summaryStr += `${item.label}: ${item.value}  `;
+      });
+      textSummary.value = summaryStr;
+
+      // 2. Chat Palette
+      let paletteStr = '';
+      if (state.edition === 'ed6') {
+        paletteStr += `1D100<= SANチェック\n`;
+        defs.forEach(d => {
+          paletteStr += `CCB<=${s[d.key]} 【${d.name}×1】\n`;
+          paletteStr += `CCB<=${s[d.key] * 2} 【${d.name}×2】\n`;
+          paletteStr += `CCB<=${s[d.key] * 5} 【${d.name}×5】\n`;
+        });
+        paletteStr += `CCB<=${(s.INT || 0) * 5} 【アイデア】\n`;
+        paletteStr += `CCB<=${(s.POW || 0) * 5} 【幸運】\n`;
+        paletteStr += `CCB<=${(s.EDU || 0) * 5} 【知識】\n`;
+      } else {
+        paletteStr += `1D100<= SANチェック\n`;
+        defs.forEach(d => {
+          const val = s[d.key];
+          const half = Math.floor(val / 2);
+          const fifth = Math.floor(val / 5);
+          paletteStr += `CC<=${val} 【${d.name}】\n`;
+          paletteStr += `CC<=${half} 【${d.name} ハード】\n`;
+          paletteStr += `CC<=${fifth} 【${d.name} イクストリーム】\n`;
+        });
+      }
+      textPalette.value = paletteStr;
+
+      // 3. Ccfolia JSON
+      const hpObj = derived.find(d => d.label.includes('HP'));
+      const mpObj = derived.find(d => d.label.includes('MP'));
+      const sanObj = derived.find(d => d.label.includes('SAN'));
+
+      const ccfoliaData = {
+        kind: "character",
+        data: {
+          name: "探索者",
+          memo: `${edLabel}\n合計: ${sumTotalEl.textContent} (EDU除外: ${sumNoEduEl.textContent})`,
+          initiative: state.edition === 'ed6' ? (s.DEX || 10) : Math.floor((s.DEX || 50) / 5),
+          status: [
+            { label: "HP", value: Number(hpObj ? hpObj.value : 10), max: Number(hpObj ? hpObj.value : 10) },
+            { label: "MP", value: Number(mpObj ? mpObj.value : 10), max: Number(mpObj ? mpObj.value : 10) },
+            { label: "SAN", value: Number(sanObj ? sanObj.value : 50), max: 99 }
+          ],
+          params: defs.map(d => ({ label: d.name, value: String(s[d.key]) })),
+          commands: paletteStr
+        }
+      };
+      textCcfolia.value = JSON.stringify(ccfoliaData, null, 2);
+
+      // 4. Iachara URL
+      textIacharaUrl.value = generateIacharaUrl();
+    }
+
+    // Render All Views
+    function renderAll() {
+      renderStatCards();
+      renderSubStats();
+      renderTable();
+      updateExportTexts();
+    }
+
+    // Show Toast
+    let toastTimer = null;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2600);
+    }
+
+    // Copy helper
+    function copyToClipboard(elementId, btnElement, label) {
+      const el = document.getElementById(elementId);
+      if (!el || !el.value) {
+        showToast('コピーする内容がありません。ダイスを振ってください。');
+        return;
+      }
+      navigator.clipboard.writeText(el.value).then(() => {
+        btnElement.classList.add('copied');
+        btnElement.textContent = 'コピー完了！';
+        showToast(`${label}をクリップボードにコピーしました！`);
+        setTimeout(() => {
+          btnElement.classList.remove('copied');
+          btnElement.textContent = 'コピーする';
+        }, 2000);
+      }).catch(err => {
+        showToast('コピーに失敗しました。');
+      });
+    }
+
+    // Event Listeners
+    // Edition Switch
+    btnEd6.addEventListener('click', () => {
+      if (state.edition === 'ed6') return;
+      state.edition = 'ed6';
+      btnEd6.classList.add('active');
+      btnEd7.classList.remove('active');
+      editionBadge.textContent = '第6版';
+      performRolls(state.rollCount);
+    });
+
+    btnEd7.addEventListener('click', () => {
+      if (state.edition === 'ed7') return;
+      state.edition = 'ed7';
+      btnEd7.classList.add('active');
+      btnEd6.classList.remove('active');
+      editionBadge.textContent = '第7版';
+      performRolls(state.rollCount);
+    });
+
+    // Count Buttons
+    countButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        countButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cnt = parseInt(btn.getAttribute('data-count'), 10);
+        state.rollCount = cnt;
+        customCountInput.value = cnt;
+        performRolls(state.rollCount);
+      });
+    });
+
+    customCountInput.addEventListener('change', () => {
+      let val = parseInt(customCountInput.value, 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > 50) val = 50;
+      customCountInput.value = val;
+      state.rollCount = val;
+      countButtons.forEach(b => {
+        if (parseInt(b.getAttribute('data-count'), 10) === val) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+      performRolls(state.rollCount);
+    });
+
+    // Adoption Mode
+    modeBestItems.addEventListener('change', () => {
+      if (modeBestItems.checked) {
+        state.adoptionMode = 'best-items';
+        applyAdoptionMode();
+      }
+    });
+
+    modeBestTotal.addEventListener('change', () => {
+      if (modeBestTotal.checked) {
+        state.adoptionMode = 'best-total';
+        applyAdoptionMode();
+      }
+    });
+
+    // Reset Swap Button
+    btnResetSwap.addEventListener('click', () => {
+      state.swapFirstKey = null;
+      btnResetSwap.style.display = 'none';
+      renderStatCards();
+      showToast('能力値の入れ替えをキャンセルしました。');
+    });
+
+    // Roll Button
+    btnRoll.addEventListener('click', () => {
+      btnRoll.classList.add('rolling');
+      setTimeout(() => {
+        performRolls(state.rollCount);
+        btnRoll.classList.remove('rolling');
+        showToast(`ダイスを一括ロールしました！（${state.rollCount}セット）`);
+      }, 250);
+    });
+
+    // Copy Buttons
+    btnCopyCcfolia.addEventListener('click', () => {
+      copyToClipboard('textCcfolia', btnCopyCcfolia, 'ココフォリア駒データ');
+    });
+    btnCopyText.addEventListener('click', () => {
+      copyToClipboard('textSummary', btnCopyText, 'キャラシ用テキスト');
+    });
+    btnCopyPalette.addEventListener('click', () => {
+      copyToClipboard('textPalette', btnCopyPalette, 'チャットパレット');
+    });
+    btnCopyIacharaUrl.addEventListener('click', () => {
+      copyToClipboard('textIacharaUrl', btnCopyIacharaUrl, 'いあきゃら連携URL');
+    });
+
+    // Open Iachara Buttons
+    btnOpenIachara.addEventListener('click', openIachara);
+    btnOpenIacharaTop.addEventListener('click', openIachara);
+
+    // Initial Roll on Load
+    performRolls(state.rollCount);
+  </script>
+</body>
+</html>
