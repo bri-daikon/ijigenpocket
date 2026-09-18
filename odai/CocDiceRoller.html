@@ -593,7 +593,7 @@
 
     .stat-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 12px;
     }
 
@@ -626,7 +626,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 4px;
       margin-bottom: 6px;
+      white-space: nowrap;
+    }
+
+    .stat-card .card-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .stat-card .stat-name {
@@ -635,6 +645,7 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       color: #93c5fd;
+      flex-shrink: 0;
     }
 
     .stat-card .btn-reroll {
@@ -1115,12 +1126,17 @@
       color: var(--text-muted);
       padding: 2px 6px;
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
+      font-weight: 500;
       transition: var(--transition);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 2px;
       line-height: 1;
+      white-space: nowrap !important;
+      flex-shrink: 0;
+      user-select: none;
     }
     .btn-lock:hover {
       background: rgba(255, 255, 255, 0.15);
@@ -1130,6 +1146,7 @@
       background: rgba(245, 158, 11, 0.22);
       border-color: rgba(245, 158, 11, 0.6);
       color: var(--accent-gold);
+      font-weight: 600;
     }
     .stat-card.locked-card {
       border-color: rgba(245, 158, 11, 0.45);
@@ -2148,9 +2165,9 @@
         card.innerHTML = `
           <div class="card-head">
             <span class="stat-name">${def.name}</span>
-            <div style="display: flex; gap: 4px; align-items: center;">
+            <div class="card-head-actions">
               <button class="btn-lock ${isLocked ? 'locked' : ''}" type="button" title="${isLocked ? '固定（ロック）中：一括ロール時もこの数値が維持されます（クリックで解除）' : 'この能力値を固定（ロック）する'}" onclick="toggleStatLock('${def.key}')">
-                ${isLocked ? '🔒 固定中' : '🔓 固定'}
+                ${isLocked ? '🔒固定' : '🔓固定'}
               </button>
               <button class="btn-reroll" type="button" title="${def.name}のみ再ロール" onclick="rerollSingleStat('${def.key}')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
