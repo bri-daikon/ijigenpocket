@@ -19,9 +19,13 @@
       --accent-dice: #38bdf8;
       --accent-chara: #a855f7;
       --accent-report: #10b981;
+      --accent-compare: #f59e0b;
+      --accent-crifan: #f43f5e;
       --glow-dice: 0 0 16px rgba(56, 189, 248, 0.35);
       --glow-chara: 0 0 16px rgba(168, 85, 247, 0.35);
       --glow-report: 0 0 16px rgba(16, 185, 129, 0.35);
+      --glow-compare: 0 0 16px rgba(245, 158, 11, 0.35);
+      --glow-crifan: 0 0 16px rgba(244, 63, 94, 0.35);
       --header-height: 60px;
       --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -168,6 +172,20 @@
       border-color: rgba(16, 185, 129, 0.4);
       color: #34d399;
       box-shadow: var(--glow-report);
+    }
+
+    .tab-btn[data-target="compare"].active {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      box-shadow: var(--glow-compare);
+    }
+
+    .tab-btn[data-target="crifan"].active {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+      box-shadow: var(--glow-crifan);
     }
 
     .tab-btn.active .shortcut-key {
@@ -359,6 +377,18 @@
         <span class="tab-label">楽々卓報告</span>
         <span class="shortcut-key">3</span>
       </button>
+
+      <button class="tab-btn" data-target="compare" id="tabCompare" title="魔導書：探索者比較の儀">
+        <span class="tab-icon">⚖️</span>
+        <span class="tab-label">探索者比較</span>
+        <span class="shortcut-key">4</span>
+      </button>
+
+      <button class="tab-btn" data-target="crifan" id="tabCrifan" title="クリファンチェック表">
+        <span class="tab-icon">💥</span>
+        <span class="tab-label">クリファン表</span>
+        <span class="shortcut-key">5</span>
+      </button>
     </nav>
 
     <!-- ユーティリティコントロール -->
@@ -375,7 +405,7 @@
     </div>
   </header>
 
-  <!-- フレーム表示エリア（状態を保持するため3つのiframeを常駐） -->
+  <!-- フレーム表示エリア（状態を保持するためiframeを常駐） -->
   <main id="frameContainer">
     <!-- 1. クトゥルフ神話TRPG キャラクター一括ダイス決定ツール -->
     <iframe
@@ -401,6 +431,24 @@
       class="app-frame"
       src="RakurakuTrpgReport.html"
       title="楽々TRPG卓報告"
+      allow="clipboard-read; clipboard-write; fullscreen"
+    ></iframe>
+
+    <!-- 4. 魔導書：探索者比較の儀 -->
+    <iframe
+      id="frameCompare"
+      class="app-frame"
+      src="CharaCompare.html"
+      title="魔導書：探索者比較の儀"
+      allow="clipboard-read; clipboard-write; fullscreen"
+    ></iframe>
+
+    <!-- 5. クリファンチェック表 -->
+    <iframe
+      id="frameCrifan"
+      class="app-frame"
+      src="crifancheck.html"
+      title="クリファンチェック表"
       allow="clipboard-read; clipboard-write; fullscreen"
     ></iframe>
   </main>
@@ -435,6 +483,18 @@
         frame: document.getElementById('frameReport'),
         url: 'RakurakuTrpgReport.html',
         title: '楽々TRPG卓報告'
+      },
+      compare: {
+        tab: document.getElementById('tabCompare'),
+        frame: document.getElementById('frameCompare'),
+        url: 'CharaCompare.html',
+        title: '魔導書：探索者比較の儀'
+      },
+      crifan: {
+        tab: document.getElementById('tabCrifan'),
+        frame: document.getElementById('frameCrifan'),
+        url: 'crifancheck.html',
+        title: 'クリファンチェック表'
       }
     };
 
@@ -469,7 +529,7 @@
       });
     });
 
-    // キーボードショートカット (数字キー 1, 2, 3 または Alt+1, 2, 3)
+    // キーボードショートカット (数字キー 1, 2, 3, 4, 5 または Alt+1, 2, 3, 4, 5)
     window.addEventListener('keydown', (e) => {
       // 入力欄にフォーカスがある時はショートカットを発火させない
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
@@ -480,6 +540,10 @@
         switchTool('chara');
       } else if (e.key === '3') {
         switchTool('report');
+      } else if (e.key === '4') {
+        switchTool('compare');
+      } else if (e.key === '5') {
+        switchTool('crifan');
       }
     });
 
