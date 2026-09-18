@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>クリファンチェック表</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/crifancheck.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <h1>クリファンチェック表</h1>
+        <p>あなたは出目カスか！？</p>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn ghost" id="exportAllBtn" title="CSV出力（全件）">全件CSV</button>
+        <button class="btn ghost" id="exportPageBtn" title="CSV出力（このページ）">ページCSV</button>
+      </div>
+    </header>
+
+    <div class="controlsCard">
+      <div class="field"><label>やった人</label><input id="inputter" type="text" placeholder="あなたの名前"></div>
+      <div class="field"><label>キャラクター名</label><input id="charName" type="text" placeholder="例：太郎"></div>
+      <div class="field"><label>クリティカル</label><input id="critical" type="number" step="any" min="0" value="0" oninput="this.value = this.value === '' ? '' : Math.max(0, Number(this.value))"></div>
+      <div class="field"><label>ファンブル</label><input id="fumble" type="number" step="any" min="0" value="0" oninput="this.value = this.value === '' ? '' : Math.max(0, Number(this.value))"></div>
+      <div class="field"><label>日付</label><input id="dateInput" type="date"></div>
+      <div class="field" style="flex:1;min-width:180px"><label>シナリオ名</label><input id="scenario" type="text" placeholder="シナリオ名"></div>
+
+    <!-- 月選択（ページング対象） -->
+    <div id="monthSelector" class="monthSelector">
+      <label>表示する月</label>
+      <select id="monthSelect"></select>
+    </div>
+
+	<div id="characterSelector" class="monthSelector">
+	  <label>キャラ名</label>
+	  <select id="characterSelect"></select>
+	</div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+        <button class="btn" id="addBtn">追加</button>
+		<button class="btn ghost" id="clearAllBtn">全クリア</button>        
+        <button class="btn ghost" id="saveImageBtn">画像で保存（PNG）</button>  
+      </div>
+
+	<div class="field">
+	  <label>CSV読み込み</label>
+	  <input id="csvFileInput" type="file" accept=".csv,text/csv">
+	  <div style="margin-top:6px">
+	    <button class="btn ghost" id="csvAppendBtn">追記で読み込む</button>
+	    <button class="btn ghost" id="csvReplaceBtn">置換で読み込む</button>
+	  </div>
+	</div>
+
+	<div class="field">
+	  <label>並べ替え</label>
+	  <select id="sortSelect">
+	    <option value="none">並べ替えなし</option>
+	    <option value="critical">critical（クリティカル）</option>
+	    <option value="fumble">fumble（ファンブル）</option>
+	    <option value="date">date（入力日付）</option>
+	    <option value="character">character（キャラ名）</option>
+	    <option value="scenario">scenario（シナリオ）</option>
+	  </select>
+	  <button class="btn ghost" id="sortDirBtn" title="昇順/降順切替">▲</button>
+	</div>
+
+
+      <div style="width:100%;display:flex;gap:8px;align-items:center;margin-top:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="color:var(--muted);font-size:13px;margin-right:6px">Rows</label>
+          <input id="rowsInput" type="number" min="1" max="20" value="5" style="width:72px;padding:6px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+          <label style="color:var(--muted);font-size:13px;margin-left:8px">Cols</label>
+          <input id="colsInput" type="number" min="1" max="20" value="8" style="width:72px;padding:6px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+          <button class="btn ghost" id="applyGridBtn" style="margin-left:8px">表示数を変更</button>
+        </div>
+
+        <label style="margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted)">
+          <input id="syncPageSize" type="checkbox" checked> ページサイズをグリッドに合わせる
+        </label>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="color:var(--muted);font-size:13px">ページサイズ</label>
+          <select id="pageSizeSelect" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:#eaf6ff">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+<!-- 画像化したい領域を囲む（既存の summary と grids をこの div に入れる） -->
+<div id="captureArea">
+
+    <div id="inputterBar" class="inputterBar" aria-live="polite">
+      <div class="inputterLabel">やった人</div>
+      <div id="inputterDisplay" class="inputterName">（未設定）</div>
+      <div style="margin-left:auto;color:var(--muted);font-size:13px">クリファンチェック表</div>
+    </div>
+
+    <!-- 縦並びエリア：上に件数（summary）、下に表（grids） -->
+    <div class="stackArea">
+      <!-- 件数エリア（上） -->
+      <div>
+        <div class="summaryCard">
+          <div class="stat"><div class="label">件数</div><div class="value" id="count">0</div></div>
+          <div class="stat"><div class="label">クリティカル 合計</div><div class="value" id="sumCritical">0</div></div>
+          <div class="stat"><div class="label">ファンブル 合計</div><div class="value" id="sumFumble">0</div></div>
+
+	<div id="monthlySummary" 
+	     style="background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;
+	            border:1px solid rgba(255,255,255,0.05);margin-top:10px;">
+	  <h3 style="margin:0 0 8px 0;font-size:14px;color:#9aa4b2;">月別集計</h3>
+	  <div id="monthlySummaryContent" style="font-size:13px;line-height:1.6;"></div>
+	</div>
+
+
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <button class="btn ghost" id="firstPage">|&lt;</button>
+            <button class="btn ghost" id="prevPage">&lt; 前</button>
+            <div class="pageInfo" style="color:var(--muted)">ページ <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></div>
+            <button class="btn ghost" id="nextPage">次 &gt;</button>
+            <button class="btn ghost" id="lastPage">&gt;|</button>
+            <input id="jumpInput" type="number" min="1" placeholder="ページ" style="width:84px;padding:8px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff;margin-left:12px">
+            <button class="btn ghost" id="jumpBtn">移動</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 表エリア（下） -->
+      <div class="gridsWrap">
+        <div class="gridCard">
+          <div class="gridTitleRow"><h3>クリティカル</h3><div class="small">クリックで削除</div></div>
+          <table id="gridCritical" class="grid" aria-label="クリティカルグリッド"></table>
+        </div>
+
+        <div class="gridCard">
+          <div class="gridTitleRow"><h3>ファンブル</h3><div class="small">同じ順序で埋まります</div></div>
+          <table id="gridFumble" class="grid" aria-label="ファンブルグリッド"></table>
+        </div>
+      </div>
+    </div>
+
+</div>
+    <footer>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;color:var(--muted);font-size:13px">
+        <span>Product by</span>
+        <a class="product-link" href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer">異次元ポケット</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="js/crifancheck.js" defer></script>
+</body>
+</html>
