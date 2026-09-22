@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy AI Prompt Generator - ファンタジー・プロンプト君</title>
+    <!-- Tailwind CSS (デザインフレームワーク) の読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        
+        /* 選択ボタン（チップ）の基本スタイル */
+        .chip-btn {
+            transition: all 0.15s ease-in-out;
+        }
+        .chip-btn.active {
+            background-color: #6366f1;
+            color: #ffffff;
+            border-color: #a855f7;
+            box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-3 md:p-6">
+
+    <div class="max-w-7xl mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-amber-500/20">
+        
+        <!-- ヘッダー -->
+        <header class="bg-gradient-to-r from-indigo-950 via-purple-900 to-amber-900/60 text-white p-5 text-center shadow-lg border-b border-amber-500/30">
+            <div class="inline-block px-3 py-0.5 mb-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-[11px] font-semibold tracking-wider">
+                ⚔️ FANTASY EDITION 🛡️
+            </div>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-200 to-indigo-200">
+                🏰 Fantasy Prompt Generator
+            </h1>
+            <p class="text-indigo-200 text-xs md:text-sm mt-1">中世ファンタジーの衣装・防具・魔導具・種族を選んで美麗プロンプトを自動作成</p>
+        </header>
+
+        <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- 左側：選択エリア (8/12) -->
+            <div id="leftPanel" class="lg:col-span-7 xl:col-span-8 space-y-6 h-[85vh] overflow-y-auto pr-2 custom-scrollbar transition-opacity duration-300">
+                
+                <!-- Gemini API設定 -->
+                <section class="bg-indigo-950/50 p-4 rounded-xl border border-indigo-500/40 space-y-3 mb-6">
+                    <h2 class="font-bold text-indigo-300 text-sm flex items-center gap-2">
+                        <span>🔮</span> Gemini API 設定 (AIによるファンタジー最適化)
+                    </h2>
+                    <div class="flex flex-col gap-2">
+                        <input type="password" id="geminiApiKey" placeholder="AI Studio等で取得したAPIキーを入力" class="w-full bg-slate-900 text-slate-200 border border-slate-700 rounded-lg p-2 text-xs focus:outline-none focus:border-purple-500">
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="saveApiKey()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition shadow">
+                                APIキーを保存
+                            </button>
+                            <span id="apiKeyStatus" class="text-[10px] text-emerald-400 font-semibold hidden">✓ 保存しました</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 0. AIツール & モード & パラメータ設定 -->
+                <section class="bg-slate-800/60 p-4 rounded-xl border border-purple-500/30 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-amber-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🤖</span> 対象AIモデル
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="aiModel">
+                            <button type="button" data-value="dalle" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">DALL-E 3 / Copilot / ChatGPT</button>
+                            <button type="button" data-value="nanobanana" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">Nano Banana (Gemini)</button>
+                            <button type="button" data-value="mj" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">Midjourney (v6)</button>
+                            <button type="button" data-value="nai" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">NovelAI</button>
+                            <button type="button" data-value="sd" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">Stable Diffusion</button>
+                        </div>
+                    </div>
+
+                    <!-- モード選択 -->
+                    <div>
+                        <h2 class="font-bold text-amber-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🎯</span> 生成モード
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="genMode">
+                            <button type="button" data-value="new" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">✨ 新規ファンタジーキャラ作成</button>
+                            <button type="button" data-value="ref" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 font-medium">🔄 元画像あり (同一キャラの装備・職種チェンジ)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="font-bold text-amber-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>📐</span> アスペクト比
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="aspectRatio">
+                            <button type="button" data-value="16:9" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">16:9 (横長/壮大な風景)</button>
+                            <button type="button" data-value="1:1" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">1:1 (正方形/アイコン)</button>
+                            <button type="button" data-value="4:3" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">4:3 (標準)</button>
+                            <button type="button" data-value="9:16" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">9:16 (縦長/全身立ち絵)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="font-bold text-amber-300 text-sm mb-2.5 flex items-center gap-2">
+                            <span>🎨</span> 画風・ファンタジースタイル
+                        </h2>
+                        <div class="flex flex-wrap gap-2" data-group="style">
+                            <button type="button" data-value="" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                            <button type="button" data-value="epic high fantasy art, intricately detailed, digital illustration" class="chip-btn active text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">王道ハイファンタジー美麗絵</button>
+                            <button type="button" data-value="anime fantasy style, 2D game illustration, clean lines" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ファンタジーアニメ調・ゲーム絵</button>
+                            <button type="button" data-value="dark fantasy, grimdark aesthetic, muted colors, high contrast, cinematic lighting" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ダークファンタジー調</button>
+                            <button type="button" data-value="classic oil painting style, Renaissance fantasy art, detailed brushwork" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-700">中世厚塗り・油絵風</button>
+                            <button type="button" data-value="chibi fantasy character, cute super deformed RPG figure" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-700">ちびキャラ(SD) RPG風</button>
+                            <button type="button" data-value="ethereal watercolor fantasy illustration, delicate lines, soft pastel washes" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-700">透明水彩ファンタジー風</button>
+                            <button type="button" data-value="photorealistic fantasy cosplay, 8k resolution, Unreal Engine 5 render, ray tracing" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-700">フォトリアル・実写風</button>
+                            <button type="button" data-value="retro 16-bit pixel art, classic JRPG aesthetic" class="chip-btn text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-700">ドット絵・クラシックJRPG</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- タブ切り替えUI -->
+                <div class="flex flex-wrap gap-2 border-b border-slate-700 pb-2 justify-between items-center">
+                    <div class="flex gap-2">
+                        <button type="button" id="tabBtnCharacter" onclick="switchTab('character')" class="px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors flex items-center gap-1.5 shadow">
+                            <span>👤</span> キャラクター＆装備
+                        </button>
+                        <button type="button" id="tabBtnBackground" onclick="switchTab('background')" class="px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors flex items-center gap-1.5">
+                            <span>🏰</span> ファンタジー背景・舞台
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mb-1">
+                        <button type="button" onclick="randomizeAll()" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 transition-colors shadow flex items-center gap-1">
+                            🎲 全てランダム
+                        </button>
+                        <button type="button" onclick="randomizeAll('1boy, male')" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow flex items-center gap-1">
+                            🚹 男子ランダム
+                        </button>
+                        <button type="button" onclick="randomizeAll('1girl, female')" class="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-pink-600 hover:bg-pink-500 text-white transition-colors shadow flex items-center gap-1">
+                            🚺 女子ランダム
+                        </button>
+                    </div>
+                </div>
+
+                <!-- キャラクタータブ内容 -->
+                <div id="characterTabContent" class="space-y-6">
+
+                    <!-- 1. 種族・ファンタジー特徴 -->
+                    <section class="bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/30 space-y-3">
+                        <h2 class="font-bold text-indigo-200 text-sm mb-2">🧝 種族・ファンタジー特徴 (Race & Traits)</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="race">
+                            <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし (人間ベース)</button>
+                            <button type="button" data-value="human" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">人間 (Human)</button>
+                            <button type="button" data-value="elf, pointy ears, slender frame" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">エルフ (尖り耳/優美)</button>
+                            <button type="button" data-value="dark elf, pointy ears, dark skin, white hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ダークエルフ (褐色肌/白髪)</button>
+                            <button type="button" data-value="beastfolk, fox ears, fox tail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">狐獣人 (狐耳・尻尾)</button>
+                            <button type="button" data-value="beastfolk, wolf ears, fluffy wolf tail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">狼獣人 (狼耳・尻尾)</button>
+                            <button type="button" data-value="beastfolk, cat ears, cat tail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">猫獣人 (猫耳・尻尾)</button>
+                            <button type="button" data-value="beastfolk, bunny ears, fluffy bunny tail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">兎獣人 (うさ耳・尻尾)</button>
+                            <button type="button" data-value="dragonkin, dragon horns, dragon tail, subtle scales" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">竜人・ドラゴニュート (角・尻尾・鱗)</button>
+                            <button type="button" data-value="angel, feathered white wings, glowing halo" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">天使 (白翼・光輪)</button>
+                            <button type="button" data-value="demon, demonic horns, bat wings, demon tail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">悪魔 (角・蝙蝠翼・悪魔尾)</button>
+                            <button type="button" data-value="fairy, translucent fairy wings, delicate frame" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">妖精・フェアリー (透明な羽)</button>
+                            <button type="button" data-value="dwarf, stocky sturdy build" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ドワーフ (小柄で頑強)</button>
+                            <button type="button" data-value="mermaid, aquatic fins, ear fins" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">セイレーン・水棲種 (ヒレ耳)</button>
+                        </div>
+                    </section>
+
+                    <!-- 2. 性別・年代・体型 -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">👤 性別</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="gender">
+                                <button type="button" data-value="gender neutral person" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="1boy, male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">男性</button>
+                                <button type="button" data-value="1girl, female" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">女性</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🎂 年代・佇まい</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="age">
+                                <button type="button" data-value="young teen, youthful" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">見習い・年少 (10代前半)</button>
+                                <button type="button" data-value="teenager" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">若き冒険者 (10代後半)</button>
+                                <button type="button" data-value="in 20s, young adult" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">青年・壮健 (20代)</button>
+                                <button type="button" data-value="in 30s, mature adult" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">歴戦・円熟 (30代)</button>
+                                <button type="button" data-value="in 40s, battle-hardened veteran" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">歴戦の古強者 (40代)</button>
+                                <button type="button" data-value="elderly wise person, venerable" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">賢者・長老・老騎士</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">📏 身長</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="height">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="tall stature" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">高身長・長身</button>
+                                <button type="button" data-value="short stature" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">低身長</button>
+                                <button type="button" data-value="chibi, small" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ちび・幼体型</button>
+                                <button type="button" data-value="giant, towering build" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">大柄・巨人族風</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">💪 体型</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bodyType">
+                                <button type="button" data-value="" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="athletic, toned body" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">しなやか・引き締まった体</button>
+                                <button type="button" data-value="muscular body, brawny" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">筋肉質・屈強な戦士</button>
+                                <button type="button" data-value="slender, slim body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">スリム・細身</button>
+                                <button type="button" data-value="curvy body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">グラマラス</button>
+                                <button type="button" data-value="delicate frame, fragile body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">華奢・繊細</button>
+                                <button type="button" data-value="stocky, stout body" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">頑丈・がっしり</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 3. 髪型・髪色 -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">💇 髪の長さ・ベース</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="hairLength">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="long straight hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ストレートロング</button>
+                                <button type="button" data-value="very long flowing hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">なびく超ロング</button>
+                                <button type="button" data-value="wavy long hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ウェーブロング</button>
+                                <button type="button" data-value="medium hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ミディアム</button>
+                                <button type="button" data-value="short hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ショート</button>
+                                <button type="button" data-value="short spiky hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">スパイキーショート</button>
+                                <button type="button" data-value="bob hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ボブ</button>
+                                <button type="button" data-value="wolf cut hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ウルフカット</button>
+                                <button type="button" data-value="slicked-back hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">オールバック</button>
+                                <button type="button" data-value="drill hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">縦ロール・ドリルヘア</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🎀 アレンジ・結び髪</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="hairArrangement">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="braided hair, single braid" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">三つ編みおさげ</button>
+                                <button type="button" data-value="twin braids" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">おさげツイン</button>
+                                <button type="button" data-value="crown braid" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">王冠編み込み (クラウンブレイド)</button>
+                                <button type="button" data-value="ponytail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ポニーテール</button>
+                                <button type="button" data-value="high ponytail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ハイポニーテール</button>
+                                <button type="button" data-value="side ponytail" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">サイドテール</button>
+                                <button type="button" data-value="twintails" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ツインテール</button>
+                                <button type="button" data-value="half updo" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ハーフアップ</button>
+                                <button type="button" data-value="hair bun" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">お団子・シニヨン</button>
+                                <button type="button" data-value="topknot, man bun" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">戦士の結髪 (マンバン/髷)</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🎨 髪色</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="hairColor">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="silver hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">銀髪 (Silver)</button>
+                                <button type="button" data-value="platinum blonde hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">プラチナブロンド</button>
+                                <button type="button" data-value="golden blonde hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">金髪 (Golden)</button>
+                                <button type="button" data-value="jet black hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">漆黒 (Jet Black)</button>
+                                <button type="button" data-value="crimson red hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">深紅・赤髪 (Crimson)</button>
+                                <button type="button" data-value="midnight blue hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">蒼髪・群青 (Navy Blue)</button>
+                                <button type="button" data-value="emerald green hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">翠髪 (Emerald)</button>
+                                <button type="button" data-value="pure white hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">白髪 (Pure White)</button>
+                                <button type="button" data-value="lavender purple hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">紫髪 (Lavender/Violet)</button>
+                                <button type="button" data-value="chestnut brown hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">茶髪 (Chestnut)</button>
+                                <button type="button" data-value="fiery orange hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">橙髪・火炎色 (Orange)</button>
+                                <button type="button" data-value="two-tone hair" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ツートンカラー</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 4. 瞳・表情・顔立ち -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <h2 class="font-bold text-slate-200 text-sm mb-2">👁️ 瞳の色 (左目)</h2>
+                                <div class="flex flex-wrap gap-1.5" data-group="leftEyeColor">
+                                    <button type="button" data-value="" class="chip-btn active text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                    <button type="button" data-value="blue" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">青・碧眼</button>
+                                    <button type="button" data-value="amber gold" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">金・琥珀</button>
+                                    <button type="button" data-value="emerald green" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">緑・翠眼</button>
+                                    <button type="button" data-value="crimson red" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">赤・紅眼</button>
+                                    <button type="button" data-value="violet purple" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">紫・紫紺</button>
+                                    <button type="button" data-value="silver grey" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">銀・灰色</button>
+                                </div>
+                            </div>
+                            <div>
+                                <h2 class="font-bold text-slate-200 text-sm mb-2">👁️ 瞳の色 (右目 / オッドアイ)</h2>
+                                <div class="flex flex-wrap gap-1.5" data-group="rightEyeColor">
+                                    <button type="button" data-value="" class="chip-btn active text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">左目と同じ</button>
+                                    <button type="button" data-value="blue" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">青・碧眼</button>
+                                    <button type="button" data-value="amber gold" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">金・琥珀</button>
+                                    <button type="button" data-value="emerald green" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">緑・翠眼</button>
+                                    <button type="button" data-value="crimson red" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">赤・紅眼</button>
+                                    <button type="button" data-value="violet purple" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">紫・紫紺</button>
+                                    <button type="button" data-value="silver grey" class="chip-btn text-xs px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">銀・灰色</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">✨ 表情</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="expression">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="confident smile, fearless grin" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">不敵な笑み・自信</button>
+                                <button type="button" data-value="gentle smile, compassionate expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">優しい微笑み・聖女</button>
+                                <button type="button" data-value="serious expression, determined glare" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">真剣・決意の眼差し</button>
+                                <button type="button" data-value="cool composed, emotionless calm" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">冷静・無表情・冷徹</button>
+                                <button type="button" data-value="fierce battle cry, intense focus" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">気迫・戦闘集中</button>
+                                <button type="button" data-value="mysterious smirk, enigmatic expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">神秘的な微笑・謎めいた</button>
+                                <button type="button" data-value="noble dignified look, regal expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">高貴・凛とした威厳</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 5. 頭部装飾・ファンタジーアクセサリー -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-1 flex items-center justify-between">
+                                <span>👑 頭部装飾・兜・アクセサリー</span>
+                                <span class="text-[10px] text-purple-400 font-normal">※複数選択可</span>
+                            </h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="accessory" data-multi="true">
+                                <button type="button" data-value="circlet with jewel" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">サークレット (額飾り)</button>
+                                <button type="button" data-value="tiara" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ティアラ</button>
+                                <button type="button" data-value="royal golden crown" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">王冠 (クラウン)</button>
+                                <button type="button" data-value="witch hat, pointed wizard hat" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">とんがり魔女帽子</button>
+                                <button type="button" data-value="knight helmet with visor up" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">騎士兜 (バイザー上げ)</button>
+                                <button type="button" data-value="hood pulled up, hooded cloak" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">フード被り</button>
+                                <button type="button" data-value="elven ear cuffs, ornate jewelry" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">エルフのイヤーカフ</button>
+                                <button type="button" data-value="holy nun veil" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">シスターベール</button>
+                                <button type="button" data-value="feather hair ornament" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">羽根飾り</button>
+                                <button type="button" data-value="runic leather eyepatch" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ルーン革眼帯</button>
+                                <button type="button" data-value="flower wreath crown" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">花冠 (精霊風)</button>
+                                <button type="button" data-value="glowing magical talisman necklace" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">護符ペンダント</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 6. 携行武具・魔法具 (Held Items & Weapons) -->
+                    <section class="bg-amber-950/20 p-4 rounded-xl border border-amber-500/30 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-amber-300 text-sm mb-1 flex items-center justify-between">
+                                <span>⚔️ 携行武具・魔法具 (Weapons & Artifacts)</span>
+                                <span class="text-[10px] text-amber-400 font-normal">※複数選択可</span>
+                            </h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="fantasyWeapon" data-multi="true">
+                                <button type="button" data-value="holding ornate magic staff with glowing crystal" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔導杖 (クリスタル杖)</button>
+                                <button type="button" data-value="holding carved wooden magic wand" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔法のワンド (小杖)</button>
+                                <button type="button" data-value="holding glowing ancient grimoire spellbook" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">古代の魔導書 (グリモワール)</button>
+                                <button type="button" data-value="sheathed sword on waist" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">腰の佩刀・鞘付き片手剣</button>
+                                <button type="button" data-value="wielding shining steel sword" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">抜刀した鋼鉄の剣</button>
+                                <button type="button" data-value="greatsword carried on back" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">背負った大剣 (クレイモア)</button>
+                                <button type="button" data-value="recurve bow and arrow quiver on back" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">弓と背中の矢筒</button>
+                                <button type="button" data-value="twin daggers strapped to thighs" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">太ももの双短剣 (ダガー)</button>
+                                <button type="button" data-value="carrying heavy warhammer" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">戦槌 (ウォーハンマー)</button>
+                                <button type="button" data-value="holding ornate kite shield" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">紋章付きの盾 (カイトシールド)</button>
+                                <button type="button" data-value="leather potion belt with glowing colorful vials" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ポーションベルト (光る薬瓶)</button>
+                                <button type="button" data-value="holding ornate brass magic lantern" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔導ランタン</button>
+                                <button type="button" data-value="clutching sacred golden holy cross rosary" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">聖印・黄金のロザリオ</button>
+                                <button type="button" data-value="floating magical energy orbs around hands" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">手元に浮かぶ魔導光球</button>
+                                <button type="button" data-value="holding bard lute harp" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">吟遊詩人のリュート・ハープ</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 7. 手元・籠手 -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🧤 手部・籠手 (Gloves & Gauntlets)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="gloves">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし (素手)</button>
+                                <button type="button" data-value="steel plate gauntlets" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">鋼鉄の甲冑籠手 (ガントレット)</button>
+                                <button type="button" data-value="leather archer gloves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">射手用レザーグローブ</button>
+                                <button type="button" data-value="fingerless mage gloves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指ぬき魔導グローブ</button>
+                                <button type="button" data-value="runic vambraces, leather bracers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ルーン刻印の革腕甲 (ブレーサー)</button>
+                                <button type="button" data-value="ornate gold bangles on wrists" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">黄金の腕輪・バングル</button>
+                                <button type="button" data-value="white lace gloves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">純白のレース手袋</button>
+                                <button type="button" data-value="black velvet opera gloves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">黒ベルベット長手袋</button>
+                                <button type="button" data-value="bandage wrapped hands" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">包帯・バンデージ巻き</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 8. 服装・衣装セクション (メイン) -->
+                    <section class="bg-purple-950/25 p-4 rounded-xl border border-purple-500/40 space-y-4">
+                        <div>
+                            <h2 class="font-bold text-purple-300 text-sm mb-2">🎨 衣装の基調カラー</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="clothingColor">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="silver and white" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">白銀・純白</button>
+                                <button type="button" data-value="gold and royal blue" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">王立紺碧＆黄金</button>
+                                <button type="button" data-value="jet black and gold" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">黒＆ゴールド</button>
+                                <button type="button" data-value="crimson red and dark grey" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">真紅＆ダークグレー</button>
+                                <button type="button" data-value="forest green and brown leather" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">深緑＆ブラウンレザー</button>
+                                <button type="button" data-value="amethyst purple and silver" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">アメジスト紫＆銀</button>
+                                <button type="button" data-value="weathered brown and bronze" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">煤けた革＆ブロンズ</button>
+                                <button type="button" data-value="pure black" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">漆黒 (Dark Knight)</button>
+                                <button type="button" data-value="prismatic rainbow glowing" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">幻想の虹彩光</button>
+                            </div>
+                        </div>
+
+                        <!-- ファンタジー一式・セットアップ -->
+                        <div>
+                            <h2 class="font-bold text-amber-300 text-sm mb-2">👗 ファンタジー衣装・職業一式 (Class & Outfit)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="outfit">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし (上下別々で指定)</button>
+                                
+                                <!-- 騎士・戦士 -->
+                                <button type="button" data-value="full plate armor, polished steel knight regalia" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🛡️ 全身板金鎧 (フルプレート)</button>
+                                <button type="button" data-value="holy knight paladin armor, white and gold armor with tabard" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">✨ 聖騎士・パラディン甲冑</button>
+                                <button type="button" data-value="dark knight armor, menacing black spiked plate armor" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">⚔️ 暗黒騎士装甲 (黒甲冑)</button>
+                                <button type="button" data-value="dragon knight armor, dragon scale carved plate armor" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🐉 竜騎士装甲 (竜鱗鎧)</button>
+                                <button type="button" data-value="valkyrie winged armor with battle skirt" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🪽 戦乙女・ヴァルキリー装甲</button>
+                                <button type="button" data-value="light scout armor, hardened leather and steel cuirass" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🗡️ 軽装騎士・前衛兵</button>
+                                <button type="button" data-value="gladiator armor, leather harness and shoulder guard" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">💪 剣闘士・グラディエーター</button>
+
+                                <!-- 魔法・術士 -->
+                                <button type="button" data-value="mage robe, elegant wizard attire with golden embroidery" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🧙‍♂️ 魔導士のローブ</button>
+                                <button type="button" data-value="archmage ornate long coat with glowing runes" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🌌 大魔導士コート (ルーン発光)</button>
+                                <button type="button" data-value="witch dress with corset and capelet" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🧹 魔女ドレス＆ケープ</button>
+                                <button type="button" data-value="necromancer dark vestments with skull motifs" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">💀 死霊術師 (ネクロマンサー法衣)</button>
+                                <button type="button" data-value="summoner flowing robes with intricate summoning sigils" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">📜 召喚士の法衣 (魔法陣文様)</button>
+                                <button type="button" data-value="druid nature garb, leaf and antler woven vestments" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🍃 精霊術士・ドルイド装束</button>
+                                <button type="button" data-value="astrologer celestial robes with constellation patterns" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">⭐ 占星術師の星辰ローブ</button>
+
+                                <!-- 聖職・信仰 -->
+                                <button type="button" data-value="high priest ornate ceremonial vestments" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">⛪ 高位司祭・教皇の式典服</button>
+                                <button type="button" data-value="priest cassock with ceremonial stole" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">✝️ 神父・司祭カソック</button>
+                                <button type="button" data-value="holy nun habit dress with golden trim" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🕊️ 修道女・シスター服</button>
+                                <button type="button" data-value="saint holy pure white gown with veil" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🤍 聖女の白銀ドレス</button>
+                                <button type="button" data-value="fantasy shrine maiden ceremonial robes, miko outfit" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">⛩️ 東方神聖巫女装束</button>
+
+                                <!-- 盗賊・狩人・暗殺 -->
+                                <button type="button" data-value="rogue leather armor with pouches and straps" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🗡️ 盗賊レザーアーマー</button>
+                                <button type="button" data-value="assassin hooded dark garb with throwing knife holsters" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">👤 暗殺者フード装束</button>
+                                <button type="button" data-value="ranger wilderness gear, green tunic and leather pauldrons" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🏹 レンジャー・森林狩人軽装</button>
+                                <button type="button" data-value="shinobi shadow outfit, sleek dark ninja gear" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🥷 忍び・シャドウ装束</button>
+
+                                <!-- 冒険者・職能 -->
+                                <button type="button" data-value="novice adventurer clothes, linen tunic and leather chestplate" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🎒 駆け出し冒険者服</button>
+                                <button type="button" data-value="alchemist leather coat with flask bandolier and goggles" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🧪 錬金術師コート (試験管ベルト)</button>
+                                <button type="button" data-value="bard theatrical colorful doublet with feather hat" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🪕 吟遊詩人・バード衣装</button>
+                                <button type="button" data-value="fantasy dancer silk silks, exotic belly dancer costume" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">💃 踊り子・砂漠シルク装束</button>
+                                <button type="button" data-value="blacksmith heavy leather apron and forge attire" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🔨 鍛冶屋エプロン＆革装具</button>
+                                <button type="button" data-value="traveling merchant outfit with satchel and heavy coat" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🐫 旅商人・行商人衣装</button>
+                                <button type="button" data-value="fantasy pirate captain coat with gold trim and sash" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🏴‍☠️ 海賊船長・キャプテンコート</button>
+
+                                <!-- 宮廷・王族 -->
+                                <button type="button" data-value="royal king imperial robe with ermine fur lining" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">👑 国王・皇帝ローブ (毛皮裏地)</button>
+                                <button type="button" data-value="noble lord embroidered velvet doublet with short cape" data-gender="male" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🍷 貴族ダブレット＆ケープ</button>
+                                <button type="button" data-value="princess ornate ballgown with corset and gold filigree" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">👗 王女コルセット舞踏会ガウン</button>
+                                <button type="button" data-value="court jester two-tone motley costume with bells" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🃏 宮廷道化師衣装 (ジェスター)</button>
+
+                                <!-- 部族・野性・和風武者 -->
+                                <button type="button" data-value="barbarian fur and leather armor, tribal war paint" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🪓 バーバリアン毛皮鎧</button>
+                                <button type="button" data-value="samurai armor and hakama, traditional bushi regalia" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🏯 侍甲冑・武者装束</button>
+                                <button type="button" data-value="onmyoji hunting robe, kariginu with talismans" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">📜 陰陽師・狩衣装束</button>
+                            </div>
+                        </div>
+
+                        <!-- トップス（上着・胴装甲） -->
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">👕 トップス (上着・胴部装甲)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="tops">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="steel breastplate, polished cuirass" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">鋼鉄の胸当て (ブレストプレート)</button>
+                                <button type="button" data-value="leather vest with buckles" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">レザーベスト (革胴着)</button>
+                                <button type="button" data-value="chainmail shirt" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">鎖帷子 (チェインメイル)</button>
+                                <button type="button" data-value="quilted gambeson jacket" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">キルティング胴着 (ギャンベゾン)</button>
+                                <button type="button" data-value="underbust leather corset" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">革製アンダーバストコルセット</button>
+                                <button type="button" data-value="corset blouse with frilled collar" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">コルセットブラウス</button>
+                                <button type="button" data-value="lace-up medieval tunic" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">編み上げ中世チュニック</button>
+                                <button type="button" data-value="noble ruffled shirt with poet sleeves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">フリル貴族シャツ (ポエットスリーブ)</button>
+                                <button type="button" data-value="peasant off-shoulder blouse" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">農民風オフショルブラウス</button>
+                                <button type="button" data-value="mage wrapped wrap top with mystical runes" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔導ラップトップ</button>
+                                <button type="button" data-value="dragon scale leather tunic" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">竜鱗レザーチュニック</button>
+                                <button type="button" data-value="bandage chest wrap top" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">さらし・包帯トップ</button>
+                                <button type="button" data-value="fur-trimmed warrior vest" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">毛皮縁取り戦士ベスト</button>
+                            </div>
+                        </div>
+
+                        <!-- アウター・外套・マント -->
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🧥 マント・外套・羽織 (Cloaks & Capes)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="outerwear">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="flowing hooded cloak" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">なびくフード付きマント</button>
+                                <button type="button" data-value="fur-lined heavy mantle" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">毛皮襟の重厚マント</button>
+                                <button type="button" data-value="knight battle surcoat with crest" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">騎士の陣羽織 (サーコート)</button>
+                                <button type="button" data-value="tabard over armor" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">タバード (紋章付き布衣)</button>
+                                <button type="button" data-value="elven leaf-patterned cloak" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">エルフの木の葉マント</button>
+                                <button type="button" data-value="steel pauldrons with attached cape" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">肩当て付き戦士マント</button>
+                                <button type="button" data-value="archmage long robe coat with gold trim" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔導長衣コート</button>
+                                <button type="button" data-value="tattered traveler cloak" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">使い古された旅人マント</button>
+                                <button type="button" data-value="short shoulder capelet" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">肩掛けショートケープ</button>
+                                <button type="button" data-value="feathered raven cape" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">漆黒の羽毛ケープ (ワタリガラス風)</button>
+                                <button type="button" data-value="hunter leather duster longcoat" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">狩人の革ロングコート</button>
+                                <button type="button" data-value="priest ceremonial stole" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">司祭の聖帯 (ストラ)</button>
+                            </div>
+                        </div>
+
+                        <!-- ボトムス（下衣・腰装甲） -->
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">👖 ボトムス (下衣・腰回り防具)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bottoms">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="armored greaves pants with plate tassets" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">草摺・腰甲付き装甲ズボン</button>
+                                <button type="button" data-value="fitted leather breeches" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">レザーブリーチズ (革乗馬ズボン)</button>
+                                <button type="button" data-value="layered fantasy long skirt" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">多層重ね着ロングスカート</button>
+                                <button type="button" data-value="pleated battle skirt with armor hip guards" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">バトルプリーツスカート</button>
+                                <button type="button" data-value="high-slit mage skirt" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">スリット魔導スカート</button>
+                                <button type="button" data-value="laced side leather pants" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">サイド編み上げ革パンツ</button>
+                                <button type="button" data-value="loose medieval trousers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ゆったり中世ズボン</button>
+                                <button type="button" data-value="silky harem pants" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ハーレムパンツ (踊り子風)</button>
+                                <button type="button" data-value="fur-trimmed loincloth over breeches" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">毛皮腰布付きパンツ (戦士風)</button>
+                                <button type="button" data-value="traditional hakama trousers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">袴 (侍・武者スタイル)</button>
+                            </div>
+                        </div>
+
+                        <!-- 靴・足元 -->
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">👢 靴・足元 (Boots & Sabatons)</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="shoes">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="steel plate sabatons" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">鉄靴・サバトン (甲冑靴)</button>
+                                <button type="button" data-value="knee-high adventurer leather boots with buckles" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">膝丈レザーブーツ (バックル付き)</button>
+                                <button type="button" data-value="thigh-high laced combat boots" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">編み上げサイハイブーツ</button>
+                                <button type="button" data-value="fur-lined winter leather boots" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">毛皮裏地の防寒ブーツ</button>
+                                <button type="button" data-value="elven pointed soft slippers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">エルフの尖り靴 (ソフトスリッパ)</button>
+                                <button type="button" data-value="soft leather silent rogue boots" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">消音レザーブーツ (シーフ用)</button>
+                                <button type="button" data-value="armored high heel greaves" data-gender="female" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">装甲ハイヒール</button>
+                                <button type="button" data-value="gold-embroidered royal boots" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">金刺繍王族ブーツ</button>
+                                <button type="button" data-value="bandaged combat sandals" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">包帯グラディエーターサンダル</button>
+                                <button type="button" data-value="barefoot with golden ankle bracelets" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">裸足＆金のアンクレット (精霊・踊り子)</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 9. 構図・ポーズ -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">📐 構図・カメラアングル</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="framing">
+                                <button type="button" data-value="full body standing portrait" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">全身立ち絵 (Full Body)</button>
+                                <button type="button" data-value="cowboy shot, knee up" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">膝上 (ニーアップ)</button>
+                                <button type="button" data-value="upper body portrait" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">上半身 (バストアップ)</button>
+                                <button type="button" data-value="close-up heroic face portrait" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">顔アップ (クローズアップ)</button>
+                                <button type="button" data-value="low angle dramatic shot, looking up" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ローアングル (煽り・威風堂々)</button>
+                                <button type="button" data-value="dynamic action camera, Dutch angle" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ダイナミック斜めアングル</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🤺 ポーズ・アクション</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="pose">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">自然な立ち姿</button>
+                                <button type="button" data-value="ready battle stance, weapon held firmly" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">戦闘準備・構え</button>
+                                <button type="button" data-value="casting powerful magic spell, magic circle glowing" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔法詠唱 (足元に魔法陣)</button>
+                                <button type="button" data-value="drawing sword from scabbard" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">抜刀の瞬間</button>
+                                <button type="button" data-value="serene prayer pose, hands clasped together" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">祈りのポーズ (胸の前で合掌)</button>
+                                <button type="button" data-value="heroic stance, hand on hip, looking into distance" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">遠くを見つめる堂々たる佇まい</button>
+                                <button type="button" data-value="reading an ancient tome, thoughtful expression" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">魔導書を読み解く姿</button>
+                                <button type="button" data-value="sitting gracefully on a stone throne" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">玉座・岩場に腰掛ける</button>
+                                <button type="button" data-value="walking forward with cape billowing in wind" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">風にマントを靡かせ前進</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 10. 背景の簡易選択 (人物タブ用) -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <h2 class="font-bold text-slate-200 text-sm mb-2">🏞️ 背景 (簡易指定)</h2>
+                        <div class="flex flex-wrap gap-1.5" data-group="background">
+                            <button type="button" data-value="simple clean background" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">シンプル無地</button>
+                            <button type="button" data-value="cozy fantasy adventurer guild tavern background" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">冒険者ギルド酒場</button>
+                            <button type="button" data-value="ancient arcane magic library with towering bookshelves" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">大魔導図書館</button>
+                            <button type="button" data-value="grand fantasy cathedral with stained glass windows" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">大聖堂・神殿 (ステンドグラス)</button>
+                            <button type="button" data-value="royal castle throne room, red carpet and chandeliers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">王城・玉座の間</button>
+                            <button type="button" data-value="mystical enchanted forest with glowing flora" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">精霊の宿る神秘の森</button>
+                            <button type="button" data-value="floating sky islands, clouds and waterfalls in sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">天空の浮遊島</button>
+                            <button type="button" data-value="ancient stone dungeon ruin with torches" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">古代ダンジョン遺跡</button>
+                            <button type="button" data-value="luminous crystal cavern, glowing gemstones" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">水晶洞窟</button>
+                            <button type="button" data-value="medieval fantasy city market street" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">中世ファンタジー城下町</button>
+                        </div>
+                    </section>
+
+                    <!-- 自由入力 -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-2">
+                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <span>✏️</span> 自由追加入力 (追加の装備・固有名詞・世界観設定など)
+                        </h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="customInput" placeholder="例: glowing blue runes on sword, snow falling, pet dragon on shoulder" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+                            <button type="button" id="btnTranslateCustom" onclick="translateAndApply('customInput', 'btnTranslateCustom')" class="bg-purple-700 hover:bg-purple-600 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition shadow flex-shrink-0">
+                                🌐 日本語を翻訳して反映
+                            </button>
+                        </div>
+                    </section>
+
+                </div>
+                <!-- /キャラクタータブ内容 -->
+
+                <!-- 背景タブ内容 -->
+                <div id="backgroundTabContent" class="space-y-6 hidden">
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-4">
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">⏰ 時間帯・天空</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgTime">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="dawn, morning sun breaking through clouds" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">夜明け・黎明 (朝日)</button>
+                                <button type="button" data-value="bright daylight, blue sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">昼間・晴天</button>
+                                <button type="button" data-value="golden sunset, dramatic evening dusk" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">夕暮れ・黄昏・マジックアワー</button>
+                                <button type="button" data-value="starry night, glittering milky way galaxy" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">満天の星空・銀河</button>
+                                <button type="button" data-value="full moon night, glowing moonlight" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">満月の夜・青白い月光</button>
+                                <button type="button" data-value="mystical aurora borealis in night sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">神秘的なオーロラ</button>
+                                <button type="button" data-value="blood moon, ominous red eclipse" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">紅い月 (ブラッドムーン)</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🌪️ 天候・魔導大気効果</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgWeather">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="clear sky" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">快晴</button>
+                                <button type="button" data-value="mystical fog, thick enchanted mist" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">深い朝霧・神秘の靄</button>
+                                <button type="button" data-value="floating glowing magical mana particles" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">舞い散るマナ光粒子</button>
+                                <button type="button" data-value="gentle rain, wet cobblestones" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">静かな雨・濡れた石畳</button>
+                                <button type="button" data-value="dramatic thunderstorm, flashing lightning" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">嵐・雷光</button>
+                                <button type="button" data-value="falling white snow, winter blizzard" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">粉雪・吹雪</button>
+                                <button type="button" data-value="floating fire sparks and burning embers" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">舞い散る火の粉・残り火</button>
+                                <button type="button" data-value="cherry blossom petals swirling in wind" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">風に舞う花びら・桜吹雪</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🕯️ 光源・ライティング</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgLighting">
+                                <button type="button" data-value="" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">指定なし</button>
+                                <button type="button" data-value="god rays breaking through forest canopy, tyndall effect" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">天使の梯子 (木漏れ日/薄明光線)</button>
+                                <button type="button" data-value="flickering warm candlelight and wall torches" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">松明・キャンドルの揺らめく灯火</button>
+                                <button type="button" data-value="ethereal blue bioluminescent glow" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">神秘的な青い燐光・生物発光</button>
+                                <button type="button" data-value="colorful sunlight filtering through stained glass windows" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ステンドグラスの七色の光芒</button>
+                                <button type="button" data-value="dramatic rim lighting, heroic backlight" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">英雄的な逆光・リムライト</button>
+                                <button type="button" data-value="dim chiaroscuro lighting, deep shadows" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">陰影際立つ明暗対比 (キアロスクーロ)</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="font-bold text-amber-300 text-sm mb-2">🏰 ファンタジー舞台・世界観ロケーション</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgSetting">
+                                <button type="button" data-value="fantasy world scenery" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">ファンタジー風景全般</button>
+                                <button type="button" data-value="cozy fantasy adventurer guild tavern, wooden tables and fireplace" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🍺 冒険者ギルド酒場 (暖炉と木樽)</button>
+                                <button type="button" data-value="ancient grand arcane library with towering bookshelves, flying books" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">📚 大魔導図書館 (空飛ぶ書物)</button>
+                                <button type="button" data-value="majestic royal castle throne room, marble pillars, banners" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">👑 王城・壮麗な玉座の間</button>
+                                <button type="button" data-value="grand sacred cathedral interior, high vaulted ceilings, statues" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">⛪ 大聖堂・荘厳な聖域</button>
+                                <button type="button" data-value="mystical enchanted ancient forest, giant glowing mushrooms, mossy ruins" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🌳 精霊の古樹の森 (光るキノコ)</button>
+                                <button type="button" data-value="floating sky islands fantasy continent, waterfalls cascading into clouds" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">☁️ 天空の浮遊大陸・空の滝</button>
+                                <button type="button" data-value="medieval fantasy citadel city, cobblestone streets, market stalls" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🛡️ 城塞都市・石畳の商店街</button>
+                                <button type="button" data-value="ancient underground stone dungeon ruins, crumbling pillars, moss" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🗝️ 古代地下迷宮・ダンジョン</button>
+                                <button type="button" data-value="luminous subterranean crystal cave, glowing purple crystals" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">💎 地下水晶洞窟 (紫光アメジスト)</button>
+                                <button type="button" data-value="dragon volcanic lair, rivers of molten lava, jagged black rocks" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🌋 ドラゴンの巣窟・溶岩地帯</button>
+                                <button type="button" data-value="ancient stone altar with glowing intricate magic circle on the floor" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🔯 魔法陣の祭壇 (古代の遺跡)</button>
+                                <button type="button" data-value="overlooking vast fantasy kingdom from mountain cliff at sunset" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">🌄 崖の上から見下ろす王国の全景</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="font-bold text-slate-200 text-sm mb-2">🎥 背景カメラアングル</h2>
+                            <div class="flex flex-wrap gap-1.5" data-group="bgCamera">
+                                <button type="button" data-value="wide angle landscape view" class="chip-btn active text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">広角パノラマ (ワイド)</button>
+                                <button type="button" data-value="cinematic depth of field, focused perspective" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">シネマティック被写界深度</button>
+                                <button type="button" data-value="aerial bird eye view from high above" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">天空からの俯瞰・鳥瞰図</button>
+                                <button type="button" data-value="dramatic low angle looking up at towering structures" class="chip-btn text-xs px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800">仰ぎ見るローアングル (巨大建築)</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 背景自由入力 -->
+                    <section class="bg-slate-800/40 p-4 rounded-xl border border-slate-700 space-y-2">
+                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <span>✏️</span> 背景自由追加入力
+                        </h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="bgCustomInput" placeholder="例: ancient dragon flying in background sky, glowing blue flowers" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+                            <button type="button" id="btnTranslateBgCustom" onclick="translateAndApply('bgCustomInput', 'btnTranslateBgCustom')" class="bg-purple-700 hover:bg-purple-600 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition shadow flex-shrink-0">
+                                🌐 日本語を翻訳して反映
+                            </button>
+                        </div>
+                    </section>
+                </div>
+                <!-- /背景タブ内容 -->
+
+            </div>
+            <!-- /左側エリア -->
+
+            <!-- 右側：プロンプトプレビュー＆出力エリア (4/12) -->
+            <div class="lg:col-span-5 xl:col-span-4 space-y-5">
+                
+                <!-- 生成された英語プロンプト -->
+                <div class="bg-slate-800/80 rounded-xl p-4 border border-purple-500/40 shadow-xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="font-bold text-sm text-purple-300 flex items-center gap-1.5">
+                            <span>✨</span> 英語プロンプト (Positive)
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span id="modelTag" class="text-[10px] bg-purple-900/60 text-purple-200 px-2 py-0.5 rounded border border-purple-500/40 font-mono">DALL-E 3</span>
+                            <button type="button" onclick="copyToClipboard('positivePrompt', 'copyToastPos')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-2.5 py-1 rounded shadow transition flex items-center gap-1 font-semibold">
+                                📋 コピー
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div id="positivePrompt" class="bg-slate-950 p-3 rounded-lg text-xs font-mono text-purple-100 min-h-[120px] max-h-[220px] overflow-y-auto custom-scrollbar break-words select-all border border-slate-700">
+                            <!-- プロンプト自動生成 -->
+                        </div>
+                        <div id="copyToastPos" class="absolute bottom-2 right-2 bg-emerald-600 text-white text-[11px] font-bold px-2 py-1 rounded shadow hidden">
+                            コピーしました！
+                        </div>
+                    </div>
+
+                    <!-- ネガティブプロンプト -->
+                    <div class="pt-2 border-t border-slate-700/60">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-bold text-xs text-rose-300 flex items-center gap-1">
+                                <span>🚫</span> 除外要素 (Negative)
+                            </span>
+                            <button type="button" onclick="copyToClipboard('negativePrompt', 'copyToastNeg')" class="bg-rose-800 hover:bg-rose-700 text-white text-[10px] px-2 py-0.5 rounded shadow transition font-semibold">
+                                📋 コピー
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <div id="negativePrompt" class="bg-slate-950 p-2.5 rounded-lg text-[11px] font-mono text-rose-200/90 min-h-[60px] max-h-[100px] overflow-y-auto custom-scrollbar break-words select-all border border-slate-700">
+                                <!-- ネガティブ自動生成 -->
+                            </div>
+                            <div id="copyToastNeg" class="absolute bottom-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow hidden">
+                                コピーしました！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日本語による選択要素サマリー -->
+                <div class="bg-slate-800/80 rounded-xl p-4 border border-slate-700 shadow-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="font-bold text-xs text-slate-300 flex items-center gap-1">
+                            <span>📝</span> 選択内容サマリー (日本語)
+                        </span>
+                        <button type="button" onclick="copyToClipboard('japanesePrompt', 'copyToastJp')" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 transition">
+                            📋 コピー
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <div id="japanesePrompt" class="bg-slate-950 p-3 rounded-lg text-xs text-slate-300 min-h-[90px] max-h-[180px] overflow-y-auto custom-scrollbar break-words border border-slate-800 leading-relaxed">
+                            <!-- 日本語サマリー -->
+                        </div>
+                        <div id="copyToastJp" class="absolute bottom-2 right-2 bg-emerald-600 text-white text-[11px] font-bold px-2 py-1 rounded shadow hidden">
+                            コピーしました！
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gemini API 最適化生成ボタン & 結果 -->
+                <div class="bg-gradient-to-br from-indigo-950/70 to-purple-950/70 rounded-xl p-4 border border-purple-500/50 shadow-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sm text-amber-200 flex items-center gap-1.5">
+                            <span>🔮</span> Gemini AI プロンプト昇華
+                        </span>
+                        <span class="text-[10px] text-purple-300">ハイファンタジー特化</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">選択したキーワードを元に、Geminiが最高峰の描写力を持つファンタジー英語プロンプトに拡張・ブラッシュアップします。</p>
+                    
+                    <button type="button" id="btnGenerateGemini" onclick="generateGeminiPrompt()" class="w-full bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs md:text-sm shadow-lg transition flex items-center justify-center gap-2">
+                        <span>🪄</span> Geminiで至高のファンタジープロンプトを生成
+                    </button>
+
+                    <div id="geminiOutputContainer" class="hidden space-y-3 pt-3 border-t border-purple-500/30">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-emerald-300">✨ Gemini 生成プロンプト (Positive)</span>
+                                <button type="button" onclick="copyToClipboard('geminiPosPrompt', 'copyToastGeminiPos')" class="bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded shadow">コピー</button>
+                            </div>
+                            <div class="relative">
+                                <div id="geminiPosPrompt" class="bg-slate-950 p-2.5 rounded-lg text-xs font-mono text-emerald-200 max-h-[140px] overflow-y-auto custom-scrollbar break-words border border-slate-700"></div>
+                                <div id="copyToastGeminiPos" class="absolute bottom-1 right-1 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded hidden">コピー完了</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-rose-300">🚫 Gemini 推奨ネガティブ (Negative)</span>
+                                <button type="button" onclick="copyToClipboard('geminiNegPrompt', 'copyToastGeminiNeg')" class="bg-rose-800 hover:bg-rose-700 text-white text-[10px] px-2 py-0.5 rounded shadow">コピー</button>
+                            </div>
+                            <div class="relative">
+                                <div id="geminiNegPrompt" class="bg-slate-950 p-2.5 rounded-lg text-[10px] font-mono text-rose-200 max-h-[80px] overflow-y-auto custom-scrollbar break-words border border-slate-700"></div>
+                                <div id="copyToastGeminiNeg" class="absolute bottom-1 right-1 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded hidden">コピー完了</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /右側エリア -->
+
+        </div>
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        // 状態管理
+        const state = {
+            tabMode: 'character',
+            aiModel: 'dalle',
+            genMode: 'new',
+            aspectRatio: '1:1',
+            style: 'epic high fantasy art, intricately detailed, digital illustration',
+            race: '',
+            gender: '1girl, female',
+            age: 'teenager',
+            height: '',
+            bodyType: 'athletic, toned body',
+            hairLength: '',
+            hairArrangement: '',
+            hairColor: '',
+            leftEyeColor: '',
+            rightEyeColor: '',
+            expression: '',
+            accessory: '',
+            fantasyWeapon: '',
+            gloves: '',
+            clothingColor: '',
+            outfit: '',
+            tops: '',
+            outerwear: '',
+            bottoms: '',
+            shoes: '',
+            framing: 'full body standing portrait',
+            pose: '',
+            background: 'simple clean background',
+            bgTime: '',
+            bgWeather: '',
+            bgLighting: '',
+            bgSetting: 'fantasy world scenery',
+            bgCamera: 'wide angle landscape view'
+        };
+
+        // ネガティブプロンプトのプリセット
+        const negativePresets = {
+            sd: "nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, modern clothing, t-shirt, cars, electronics",
+            mj: "--no modern clothing, t-shirt, text, watermark, signature, low quality, deformed, extra limbs",
+            nai: "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, modern clothes",
+            dalle: "Avoid modern elements, jeans, hoodies, smartphones, cars, deformed limbs, blurry faces, low quality art, plain boring render",
+            nanobanana: "modern items, cars, contemporary clothes, deformed anatomy, extra fingers, text watermark, bad quality"
+        };
+
+        // タブ切り替え
+        function switchTab(tab) {
+            state.tabMode = tab;
+            const btnChar = document.getElementById('tabBtnCharacter');
+            const btnBg = document.getElementById('tabBtnBackground');
+            const contentChar = document.getElementById('characterTabContent');
+            const contentBg = document.getElementById('backgroundTabContent');
+
+            if (tab === 'character') {
+                btnChar.className = 'px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors flex items-center gap-1.5 shadow';
+                btnBg.className = 'px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors flex items-center gap-1.5';
+                contentChar.classList.remove('hidden');
+                contentBg.classList.add('hidden');
+            } else {
+                btnBg.className = 'px-5 py-2.5 text-sm font-bold rounded-t-lg bg-indigo-600 text-white transition-colors flex items-center gap-1.5 shadow';
+                btnChar.className = 'px-5 py-2.5 text-sm font-bold rounded-t-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors flex items-center gap-1.5';
+                contentBg.classList.remove('hidden');
+                contentChar.classList.add('hidden');
+            }
+            updatePrompts();
+        }
+
+        // プロンプト更新メイン
+        function updatePrompts() {
+            const aiModel = state.aiModel;
+            const genMode = state.genMode;
+            const aspect = state.aspectRatio;
+
+            // モデル名表示
+            const modelNames = {
+                sd: "Stable Diffusion",
+                mj: "Midjourney v6",
+                nai: "NovelAI",
+                dalle: "DALL-E 3 (Copilot)",
+                nanobanana: "Nano Banana (Gemini)"
+            };
+            document.getElementById('modelTag').innerText = modelNames[aiModel];
+
+            let terms = [];
+
+            // クオリティ＆基本スタイル
+            if (aiModel === 'sd' || aiModel === 'nai') {
+                terms.push("masterpiece, best quality, ultra-detailed fantasy art");
+            }
+            if (state.style) terms.push(state.style);
+
+            // デフォルト基本指示
+            terms.push("no modern text, no modern logos, fantasy theme");
+
+            // 構図の優先配置
+            if (state.tabMode === 'character' && state.framing) {
+                terms.push(state.framing);
+            } else if (state.tabMode === 'background' && state.bgCamera) {
+                terms.push(state.bgCamera);
+            }
+
+            if (state.tabMode === 'character') {
+                // キャラクターモード
+                const charKeys = ['race', 'gender', 'age', 'height', 'bodyType'];
+                charKeys.forEach(key => {
+                    if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
+                });
+
+                // 髪
+                if (state.hairLength) terms.push(state.hairLength);
+                if (state.hairArrangement) terms.push(state.hairArrangement);
+                if (state.hairColor) terms.push(state.hairColor);
+
+                // 瞳
+                const lEye = state.leftEyeColor;
+                const rEye = state.rightEyeColor;
+                if (lEye && rEye) {
+                    if (lEye === rEye) terms.push(`${lEye} eyes`);
+                    else terms.push(`heterochromia, left eye ${lEye}, right eye ${rEye}`);
+                } else if (lEye) terms.push(`${lEye} eye`);
+                else if (rEye) terms.push(`${rEye} eye`);
+
+                // 表情
+                if (state.expression) terms.push(state.expression);
+
+                // 装飾・武具・装備
+                if (state.accessory) terms.push(state.accessory);
+                if (state.fantasyWeapon) terms.push(state.fantasyWeapon);
+                if (state.gloves) terms.push(state.gloves);
+
+                // 衣装
+                if (state.clothingColor) terms.push(`${state.clothingColor} color palette`);
+                if (state.outfit) terms.push(state.outfit);
+                if (state.tops) terms.push(state.tops);
+                if (state.outerwear) terms.push(state.outerwear);
+                if (state.bottoms) terms.push(state.bottoms);
+                if (state.shoes) terms.push(state.shoes);
+
+                // ポーズ・背景
+                if (state.pose) terms.push(state.pose);
+                if (state.background) terms.push(state.background);
+
+                // 自由追加入力
+                const custom = document.getElementById('customInput');
+                if (custom && custom.value.trim() !== '') {
+                    terms.push(custom.value.trim());
+                }
+
+            } else {
+                // 背景モード
+                const bgKeys = ['bgTime', 'bgWeather', 'bgLighting', 'bgSetting'];
+                bgKeys.forEach(key => {
+                    if (state[key] && state[key].trim() !== '') terms.push(state[key].trim());
+                });
+
+                const bgCustom = document.getElementById('bgCustomInput');
+                if (bgCustom && bgCustom.value.trim() !== '') {
+                    terms.push(bgCustom.value.trim());
+                }
+            }
+
+            // AIモデルごとのフォーマット調整
+            let finalPositive = "";
+            if (genMode === 'ref') {
+                if (aiModel === 'dalle' || aiModel === 'nanobanana') {
+                    finalPositive = `Keep the character features from reference image unchanged. Transform their fantasy outfit, equipment, and scene into: ${terms.join(', ')}. Aspect ratio: ${aspect}.`;
+                } else if (aiModel === 'mj') {
+                    finalPositive = `${terms.join(', ')} --cref [IMAGE_URL] --ar ${aspect} --v 6.0`;
+                } else {
+                    finalPositive = `[Character Reference / Gear Change] Maintain facial identity, change fantasy gear to: ${terms.join(', ')}`;
+                }
+            } else {
+                if (aiModel === 'mj') {
+                    finalPositive = terms.join(', ') + ` --ar ${aspect} --v 6.0`;
+                } else if (aiModel === 'dalle') {
+                    finalPositive = `A stunning fantasy illustration of: ${terms.join(', ')}. Format aspect ratio ${aspect}.`;
+                } else if (aiModel === 'nanobanana') {
+                    finalPositive = `Create a high fantasy image of: ${terms.join(', ')}. Aspect ratio: ${aspect}.`;
+                } else {
+                    finalPositive = terms.join(', ');
+                }
+            }
+
+            document.getElementById('positivePrompt').innerText = finalPositive;
+            document.getElementById('negativePrompt').innerText = negativePresets[aiModel] || negativePresets.sd;
+
+            // 日本語サマリー構築
+            buildJapaneseSummary();
+        }
+
+        // 日本語サマリー
+        function buildJapaneseSummary() {
+            const getActiveText = (groupName) => {
+                const group = document.querySelector(`[data-group="${groupName}"]`);
+                if (!group) return '';
+                const activeBtns = group.querySelectorAll('.chip-btn.active:not(.hidden)');
+                if (activeBtns.length === 0) return '';
+                return Array.from(activeBtns).map(btn => btn.innerText.trim()).join('・');
+            };
+
+            const jpTerms = [];
+            if (state.genMode === 'ref') {
+                jpTerms.push(`【モード】🔄 元画像参照（同一キャラの装備・衣装チェンジ）`);
+            }
+
+            const styleJp = getActiveText('style');
+            if (styleJp) jpTerms.push(`【画風】${styleJp}`);
+
+            if (state.tabMode === 'character') {
+                const raceJp = getActiveText('race');
+                if (raceJp && raceJp !== '指定なし (人間ベース)') jpTerms.push(`【種族】${raceJp}`);
+
+                const genderJp = getActiveText('gender');
+                const ageJp = getActiveText('age');
+                const heightJp = getActiveText('height');
+                const bodyJp = getActiveText('bodyType');
+                const personParts = [genderJp, ageJp, heightJp, bodyJp].filter(p => p && p !== '指定なし');
+                if (personParts.length > 0) jpTerms.push(`【人物】${personParts.join(' / ')}`);
+
+                const hairLenJp = getActiveText('hairLength');
+                const hairArrJp = getActiveText('hairArrangement');
+                const hairColJp = getActiveText('hairColor');
+                const hairParts = [hairColJp, hairLenJp, hairArrJp].filter(p => p && p !== '指定なし');
+                if (hairParts.length > 0) jpTerms.push(`【髪】${hairParts.join(' / ')}`);
+
+                const lEyeJp = getActiveText('leftEyeColor');
+                const rEyeJp = getActiveText('rightEyeColor');
+                if (lEyeJp && rEyeJp && rEyeJp !== '左目と同じ') {
+                    jpTerms.push(`【瞳】オッドアイ (左:${lEyeJp} / 右:${rEyeJp})`);
+                } else if (lEyeJp && lEyeJp !== '指定なし') {
+                    jpTerms.push(`【瞳】${lEyeJp}`);
+                }
+
+                const expJp = getActiveText('expression');
+                if (expJp && expJp !== '指定なし') jpTerms.push(`【表情】${expJp}`);
+
+                const accJp = getActiveText('accessory');
+                if (accJp) jpTerms.push(`【頭部装飾】${accJp}`);
+
+                const weaponJp = getActiveText('fantasyWeapon');
+                if (weaponJp) jpTerms.push(`【武具・魔導具】${weaponJp}`);
+
+                const glovesJp = getActiveText('gloves');
+                if (glovesJp && glovesJp !== '指定なし (素手)') jpTerms.push(`【手部】${glovesJp}`);
+
+                const colorJp = getActiveText('clothingColor');
+                const outfitJp = getActiveText('outfit');
+                const topsJp = getActiveText('tops');
+                const outerwearJp = getActiveText('outerwear');
+                const bottomsJp = getActiveText('bottoms');
+                const shoesJp = getActiveText('shoes');
+                const outfitParts = [colorJp, outfitJp, topsJp, outerwearJp, bottomsJp, shoesJp].filter(p => p && p !== '指定なし' && p !== '指定なし (上下別々で指定)');
+                if (outfitParts.length > 0) jpTerms.push(`【衣装・甲冑】${outfitParts.join(' / ')}`);
+
+                const frameJp = getActiveText('framing');
+                const poseJp = getActiveText('pose');
+                if (frameJp || (poseJp && poseJp !== '自然な立ち姿')) {
+                    jpTerms.push(`【構図・ポーズ】${[frameJp, poseJp].filter(Boolean).join(' / ')}`);
+                }
+
+                const bgJp = getActiveText('background');
+                if (bgJp && bgJp !== 'シンプル無地') jpTerms.push(`【背景】${bgJp}`);
+
+                const customInput = document.getElementById('customInput');
+                if (customInput && customInput.value.trim()) {
+                    jpTerms.push(`【自由追加入力】${customInput.value.trim()}`);
+                }
+            } else {
+                const timeJp = getActiveText('bgTime');
+                if (timeJp && timeJp !== '指定なし') jpTerms.push(`【時間帯】${timeJp}`);
+
+                const weatherJp = getActiveText('bgWeather');
+                if (weatherJp && weatherJp !== '指定なし') jpTerms.push(`【天候・大気】${weatherJp}`);
+
+                const lightingJp = getActiveText('bgLighting');
+                if (lightingJp && lightingJp !== '指定なし') jpTerms.push(`【光源】${lightingJp}`);
+
+                const settingJp = getActiveText('bgSetting');
+                if (settingJp) jpTerms.push(`【舞台】${settingJp}`);
+
+                const camJp = getActiveText('bgCamera');
+                if (camJp) jpTerms.push(`【画角】${camJp}`);
+
+                const bgCustom = document.getElementById('bgCustomInput');
+                if (bgCustom && bgCustom.value.trim()) {
+                    jpTerms.push(`【背景自由追加入力】${bgCustom.value.trim()}`);
+                }
+            }
+
+            const aspectJp = getActiveText('aspectRatio');
+            if (aspectJp) jpTerms.push(`【アスペクト比】${aspectJp}`);
+
+            document.getElementById('japanesePrompt').innerText = jpTerms.join('、 ');
+        }
+
+        // 個別グループのランダム選択
+        function randomizeGroup(groupName) {
+            const group = document.querySelector(`[data-group="${groupName}"]`);
+            if (!group) return;
+
+            const isMulti = group.getAttribute('data-multi') === 'true';
+            const buttons = Array.from(group.querySelectorAll('.chip-btn')).filter(b => !b.classList.contains('hidden'));
+            if (buttons.length === 0) return;
+
+            if (isMulti) {
+                // 複数選択はランダムで1〜2個選択、または全解除
+                buttons.forEach(b => b.classList.remove('active'));
+                const pickCount = Math.floor(Math.random() * 3); // 0, 1, or 2
+                for (let i = 0; i < pickCount; i++) {
+                    const randBtn = buttons[Math.floor(Math.random() * buttons.length)];
+                    randBtn.classList.add('active');
+                }
+                const activeVals = Array.from(group.querySelectorAll('.chip-btn.active'))
+                    .map(b => b.getAttribute('data-value'))
+                    .filter(Boolean);
+                state[groupName] = activeVals.join(', ');
+            } else {
+                buttons.forEach(b => b.classList.remove('active'));
+                const randBtn = buttons[Math.floor(Math.random() * buttons.length)];
+                randBtn.classList.add('active');
+                state[groupName] = randBtn.getAttribute('data-value') || '';
+            }
+
+            if (groupName === 'gender') updateGenderOptions();
+            updatePrompts();
+        }
+
+        // 全体ランダム
+        function randomizeAll(forceGender = null) {
+            if (forceGender) {
+                state.gender = forceGender;
+                const genderGroup = document.querySelector('[data-group="gender"]');
+                if (genderGroup) {
+                    genderGroup.querySelectorAll('.chip-btn').forEach(b => {
+                        b.classList.toggle('active', b.getAttribute('data-value') === forceGender);
+                    });
+                }
+            }
+
+            const buttonGroups = document.querySelectorAll('#characterTabContent [data-group]');
+            buttonGroups.forEach(group => {
+                const groupName = group.getAttribute('data-group');
+                if (forceGender && groupName === 'gender') return;
+                if (['aiModel', 'genMode', 'aspectRatio', 'style'].includes(groupName)) return;
+
+                const isMulti = group.getAttribute('data-multi') === 'true';
+                const buttons = Array.from(group.querySelectorAll('.chip-btn')).filter(b => !b.classList.contains('hidden'));
+                if (buttons.length === 0) return;
+
+                buttons.forEach(b => b.classList.remove('active'));
+
+                if (isMulti) {
+                    // ランダムで0〜2個選択
+                    const pickCount = Math.floor(Math.random() * 3);
+                    for (let i = 0; i < pickCount; i++) {
+                        const randBtn = buttons[Math.floor(Math.random() * buttons.length)];
+                        randBtn.classList.add('active');
+                    }
+                    const activeVals = Array.from(group.querySelectorAll('.chip-btn.active'))
+                        .map(b => b.getAttribute('data-value'))
+                        .filter(Boolean);
+                    state[groupName] = activeVals.join(', ');
+                } else {
+                    const randBtn = buttons[Math.floor(Math.random() * buttons.length)];
+                    randBtn.classList.add('active');
+                    state[groupName] = randBtn.getAttribute('data-value') || '';
+                }
+            });
+
+            updateGenderOptions();
+            updatePrompts();
+        }
+
+        // 性別フィルタ
+        function updateGenderOptions() {
+            const currentGender = state.gender;
+            let targetGender = 'all';
+
+            if (currentGender.includes('female') || currentGender.includes('1girl')) {
+                targetGender = 'female';
+            } else if (currentGender.includes('male') || currentGender.includes('1boy')) {
+                targetGender = 'male';
+            }
+
+            const genderButtons = document.querySelectorAll('button[data-gender]');
+            genderButtons.forEach(btn => {
+                const btnGender = btn.getAttribute('data-gender');
+                if (btnGender === 'all' || targetGender === 'all' || btnGender === targetGender) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                    if (btn.classList.contains('active')) {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        // APIキー保存
+        function saveApiKey() {
+            const key = document.getElementById('geminiApiKey').value.trim();
+            if (key) {
+                localStorage.setItem('geminiApiKey', key);
+                const status = document.getElementById('apiKeyStatus');
+                status.classList.remove('hidden');
+                setTimeout(() => status.classList.add('hidden'), 2000);
+            }
+        }
+
+        function loadApiKey() {
+            const key = localStorage.getItem('geminiApiKey');
+            if (key) {
+                document.getElementById('geminiApiKey').value = key;
+            }
+        }
+
+        // Gemini API呼び出し (ファンタジー特化システムプロンプト)
+        async function generateGeminiPrompt() {
+            const apiKey = localStorage.getItem('geminiApiKey');
+            if (!apiKey) {
+                alert("Gemini APIキーを入力して保存してください。");
+                return;
+            }
+
+            const currentTerms = document.getElementById('japanesePrompt').innerText;
+            if (!currentTerms) {
+                alert("先にプロンプトの要素を選択してください。");
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerateGemini');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span> 召喚中 (生成中)...';
+            btn.disabled = true;
+
+            const leftPanel = document.getElementById('leftPanel');
+            if (leftPanel) {
+                leftPanel.style.pointerEvents = 'none';
+                leftPanel.style.opacity = '0.5';
+            }
+
+            const systemPrompt = `あなたはハイファンタジー・ダークファンタジーの最高峰アートディレクター兼プロンプトエンジニアです。
+ユーザーが選択したファンタジー要素（職業、鎧、魔法具、種族、背景など）を元に、画像生成AI（Midjourney v6, Stable Diffusion XL, DALL-E 3等）に最適化された至高のファンタジー英語プロンプトを構築してください。
+
+出力形式:
+以下のJSONフォーマットのみを出力してください。
+{
+  "positive": "超美麗で重厚なファンタジー英語プロンプト",
+  "negative": "除外ネガティブプロンプト"
+}
+
+プロンプト構築の心得:
+1. positive: 主題（キャラクター、種族特徴、身に纏う甲冑やローブの質感、携行する魔導具や武具の輝き）、ポーズや表情、光源（魔法の光、木漏れ日、松明等）、背景環境（壮大な城塞、古の大樹など）、画風（epic high fantasy art, intricate filigree, masterpiece）を論理的に構成すること。現代の人工物（ジーンズ、Tシャツ、ビル、機械）が混ざらないよう世界観を完全に中世ファンタジーに統一すること。
+2. negative: 現代的な服装やアイテム、低品質、解剖学的な破綻（bad anatomy, deformed fingers）等を徹底的に排除すること。
+`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+                system_instruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: "以下のファンタジー要素から至高のプロンプトを作成してください:\n" + currentTerms }] }],
+                generationConfig: {
+                    temperature: 0.7,
+                    response_mime_type: "application/json"
+                }
+            };
+
+            try {
+                let response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error ? err.error.message : `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                let contentText = result.candidates[0].content.parts[0].text;
+                contentText = contentText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(contentText);
+
+                document.getElementById('geminiOutputContainer').classList.remove('hidden');
+                document.getElementById('geminiPosPrompt').innerText = parsed.positive;
+                document.getElementById('geminiNegPrompt').innerText = parsed.negative;
+            } catch (e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (leftPanel) {
+                    leftPanel.style.pointerEvents = 'auto';
+                    leftPanel.style.opacity = '1';
+                }
+            }
+        }
+
+        // 翻訳機能
+        async function translateAndApply(inputId, btnId) {
+            const inputEl = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            const hasJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text);
+            if (hasJapanese) {
+                const orig = btn.innerText;
+                btn.innerText = "⏳ 翻訳中...";
+                btn.disabled = true;
+                try {
+                    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    let translated = '';
+                    for (let i = 0; i < data[0].length; i++) {
+                        if (data[0][i][0]) translated += data[0][i][0];
+                    }
+                    inputEl.value = translated;
+                    updatePrompts();
+                } catch (e) {
+                    alert("翻訳に失敗しました。直接英語で入力してください。");
+                } finally {
+                    btn.innerText = orig;
+                    btn.disabled = false;
+                }
+            } else {
+                updatePrompts();
+            }
+        }
+
+        // クリップボードコピー
+        function copyToClipboard(elementId, toastId) {
+            const text = document.getElementById(elementId).innerText;
+            if (!text) return;
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            const toast = document.getElementById(toastId);
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        // 初期化
+        window.onload = function() {
+            loadApiKey();
+            const buttonGroups = document.querySelectorAll('[data-group]');
+
+            // state初期化＆各見出しにランダムボタン注入
+            buttonGroups.forEach(group => {
+                const groupName = group.getAttribute('data-group');
+                const isMulti = group.getAttribute('data-multi') === 'true';
+
+                if (isMulti) {
+                    const activeVals = Array.from(group.querySelectorAll('.chip-btn.active'))
+                        .map(b => b.getAttribute('data-value'))
+                        .filter(Boolean);
+                    state[groupName] = activeVals.join(', ');
+                } else {
+                    const activeBtn = group.querySelector('.chip-btn.active');
+                    state[groupName] = activeBtn ? (activeBtn.getAttribute('data-value') || '') : '';
+                }
+
+                // 設定系以外の各ヘッダーに「🎲 ランダム」ボタンを自動付与
+                const header = group.previousElementSibling;
+                if (header && header.tagName === 'H2' && !['aiModel', 'genMode', 'aspectRatio', 'style'].includes(groupName)) {
+                    if (!header.querySelector('button')) {
+                        header.classList.add('flex', 'items-center', 'justify-between');
+                        const randBtn = document.createElement('button');
+                        randBtn.type = 'button';
+                        randBtn.className = 'text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-amber-300 border border-slate-700 transition shadow flex-shrink-0 ml-2 whitespace-nowrap';
+                        randBtn.innerHTML = '🎲 ランダム';
+                        randBtn.onclick = function() { randomizeGroup(groupName); };
+                        header.appendChild(randBtn);
+                    }
+                }
+            });
+
+            // クリックイベントの登録
+            buttonGroups.forEach(group => {
+                const groupName = group.getAttribute('data-group');
+                const buttons = group.querySelectorAll('.chip-btn');
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const isMulti = group.getAttribute('data-multi') === 'true';
+                        if (isMulti) {
+                            btn.classList.toggle('active');
+                            const activeVals = Array.from(group.querySelectorAll('.chip-btn.active'))
+                                .map(b => b.getAttribute('data-value'))
+                                .filter(Boolean);
+                            state[groupName] = activeVals.join(', ');
+                        } else {
+                            buttons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            state[groupName] = btn.getAttribute('data-value') || '';
+                        }
+
+                        if (groupName === 'gender') {
+                            updateGenderOptions();
+                        }
+                        updatePrompts();
+                    });
+                });
+            });
+
+            // 自由入力の変更検知
+            const customInput = document.getElementById('customInput');
+            if (customInput) {
+                customInput.addEventListener('input', () => updatePrompts());
+            }
+            const bgCustomInput = document.getElementById('bgCustomInput');
+            if (bgCustomInput) {
+                bgCustomInput.addEventListener('input', () => updatePrompts());
+            }
+
+            updateGenderOptions();
+            updatePrompts();
+        };
+    </script>
+</body>
+</html>
