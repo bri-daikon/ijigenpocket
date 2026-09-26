@@ -7234,11 +7234,11 @@ const reportTemplates = {
     return text;
   },
   emo: (data) => {
-    const marks = getReportMarks(data.mark) || { main: "✦", sub: "✧" };
-    const m1 = marks.main || "✦";
-    const m2 = marks.sub || "✧";
+    const marks = getReportMarks(data.mark);
+    const m1 = marks.main;
+    const m2 = marks.sub;
 
-    let text = `${m1} ${data.system}\n`;
+    let text = `${m1 ? m1 + " " : ""}${data.system}\n`;
     if (data.scenario) text += `『${data.scenario}』\n`;
     if (data.author) text += `作：${data.author}\n`;
     text += `\n`;
@@ -7248,7 +7248,7 @@ const reportTemplates = {
     if (data.end) text += `${line}\n${data.end}\n${line}\n\n`;
 
     data.gms.forEach(gm => {
-      if (gm.name) text += `${gm.role} ${m1} ${gm.name}\n`;
+      if (gm.name) text += m1 ? `${gm.role} ${m1} ${gm.name}\n` : `${gm.role}: ${gm.name}\n`;
     });
     data.pls.forEach(pl => {
       if (pl.pcName || pl.plName) {
