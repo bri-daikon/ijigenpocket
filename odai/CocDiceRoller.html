@@ -749,11 +749,47 @@
     }
 
     /* Multi-Roll Results Comparison Table */
+    .table-scroll-hint {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px dashed rgba(6, 182, 212, 0.35);
+      border-radius: 8px;
+      padding: 7px 12px;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+
     .table-container {
+      width: 100%;
+      max-width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(15, 23, 42, 0.6);
+    }
+
+    .table-container::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.65);
     }
 
     .roll-table {
@@ -985,17 +1021,58 @@
     /* Responsive */
     @media (max-width: 768px) {
       .container {
-        padding: 16px 12px 40px;
-        gap: 16px;
+        padding: 12px 10px 40px;
+        gap: 14px;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
       }
       header {
-        padding: 16px;
+        padding: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .header-titles h1 {
+        font-size: 1.25rem;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .header-titles p {
+        font-size: 0.78rem;
       }
       .panel {
-        padding: 16px;
+        padding: 14px;
+        border-radius: 12px;
+        width: 100%;
+        box-sizing: border-box;
       }
       .controls-grid {
         grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .segmented-btn {
+        padding: 8px 6px;
+        font-size: 0.8rem;
+      }
+      .count-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .count-btn {
+        flex: 1 1 calc(25% - 6px);
+        min-width: 44px;
+        padding: 8px 4px;
+        font-size: 0.82rem;
+      }
+      .custom-count-input {
+        flex: 1 1 54px;
+        min-width: 50px;
+        width: auto;
+        padding: 7px 4px;
+        font-size: 0.82rem;
       }
       .roll-action-wrap {
         justify-content: stretch;
@@ -1003,9 +1080,258 @@
       .btn-roll {
         width: 100%;
         justify-content: center;
+        padding: 12px 20px;
+        font-size: 1rem;
       }
+      .limits-toggle-btn {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+        gap: 6px;
+      }
+      .limits-panel {
+        padding: 12px;
+        gap: 10px;
+      }
+      .limits-quick-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .limits-quick-bar > div:last-child {
+        margin-left: 0 !important;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .limits-quick-bar input[type="number"] {
+        width: 60px;
+      }
+      .limits-quick-bar .btn-copy {
+        flex: 1 1 calc(50% - 6px);
+        justify-content: center;
+        min-height: 32px;
+      }
+      .limits-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .limit-item {
+        padding: 8px 10px;
+      }
+      .custom-formula-select {
+        font-size: 0.76rem;
+        padding: 6px;
+      }
+      .limit-totals-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .limit-total-field {
+        justify-content: space-between;
+        width: 100%;
+      }
+      .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .section-title h2 {
+        font-size: 1.05rem;
+        flex-wrap: wrap;
+      }
+      .section-title .desc {
+        font-size: 0.75rem;
+      }
+      .status-summary-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+      }
+      .status-summary-bar > div:last-child {
+        margin-left: 0 !important;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .status-summary-bar .btn-iachara-direct {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+        font-size: 0.88rem;
+      }
+      .status-summary-bar .btn-copy {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Stat cards 2-column on mobile */
       .stat-cards-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .stat-card {
+        padding: 10px 8px;
+      }
+      .stat-card .card-head {
+        margin-bottom: 4px;
+        width: 100%;
+        gap: 4px;
+      }
+      .stat-card .stat-name {
+        font-size: 0.95rem;
+      }
+      .stat-card .card-head-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .stat-card .btn-lock {
+        padding: 3px 6px;
+        font-size: 0.72rem;
+        min-height: 26px;
+      }
+      .stat-card .btn-reroll {
+        padding: 3px;
+        min-width: 26px;
+        min-height: 26px;
+      }
+      .stat-card .stat-value {
+        font-size: 1.65rem;
+        margin: 2px 0 4px;
+      }
+      .stat-card .stat-formula {
+        font-size: 0.68rem;
+      }
+      .stat-card .stat-breakdown {
+        font-size: 0.65rem;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .stat-card .swap-indicator {
+        font-size: 0.72rem;
+        padding: 4px 6px;
+        width: 100%;
+        text-align: center;
+        margin-top: 4px;
+      }
+
+      .substats-wrap {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .substat-card {
+        padding: 8px 10px;
+      }
+      .substat-card .sub-value {
+        font-size: 1.1rem;
+      }
+
+      /* Show table horizontal scroll hint on mobile */
+      .table-scroll-hint {
+        display: flex;
+      }
+      .roll-table {
+        min-width: 660px;
+        font-size: 0.8rem;
+      }
+      .roll-table th,
+      .roll-table td {
+        padding: 8px 4px;
+      }
+      .roll-table .cell-num {
+        font-size: 0.88rem;
+      }
+      .roll-table .cell-dice {
+        font-size: 0.62rem;
+      }
+      .btn-apply-row {
+        padding: 5px 6px;
+        font-size: 0.7rem;
+      }
+
+      .export-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .export-card {
+        padding: 14px 12px;
+      }
+      .export-card-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .export-card-head > div {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+      }
+      .export-card-head .btn-copy,
+      .export-card-head .btn-iachara-direct {
+        flex: 1;
+        justify-content: center;
+        min-height: 36px;
+      }
+
+      .toast {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        justify-content: center;
+        font-size: 0.85rem;
+        padding: 10px 14px;
+      }
+
+      .dice-modal-card {
+        padding: 16px;
+        margin: 10px;
+        width: calc(100% - 20px);
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+      .modal-form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .dice-modal-footer {
+        flex-direction: column-reverse;
+        gap: 8px;
+      }
+      .dice-modal-footer button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .stat-cards-grid {
+        gap: 6px;
+      }
+      .stat-card {
+        padding: 8px 5px;
+      }
+      .stat-card .stat-name {
+        font-size: 0.88rem;
+      }
+      .stat-card .stat-value {
+        font-size: 1.5rem;
+      }
+      .stat-card .btn-lock {
+        font-size: 0.65rem;
+        padding: 2px 4px;
+      }
+      .substats-wrap {
+        gap: 6px;
+      }
+      .substat-card {
+        padding: 6px 8px;
       }
     }
 
@@ -1351,6 +1677,16 @@
           <span>📊 ロール結果一覧・比較</span>
         </h2>
         <span class="desc">「この行を採用」ボタンでセット一括採用、セルクリックでその出目だけを現在のステータスに適用できます</span>
+      </div>
+
+      <div class="table-scroll-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>横スクロールで全能力値・出目を確認できます</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
       </div>
 
       <div class="table-container">
