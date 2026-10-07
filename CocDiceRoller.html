@@ -1361,6 +1361,31 @@
         justify-content: center;
       }
 
+      /* Traits responsive */
+      .traits-controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .traits-mode-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .traits-actions-group {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .traits-actions-group button {
+        flex: 1;
+        justify-content: center;
+      }
+      .traits-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
       footer {
         padding: 16px 14px;
         font-size: 0.82rem;
@@ -1548,6 +1573,138 @@
       color: var(--accent-cyan);
       transform: scale(1.05);
     }
+
+    /* Traits (特徴表) Styles */
+    .traits-panel {
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.12), 0 10px 25px rgba(0, 0, 0, 0.35);
+    }
+    .badge-traits {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.18);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .traits-controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    }
+    .traits-mode-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .traits-mode-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .traits-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .traits-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .trait-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: var(--transition);
+      position: relative;
+    }
+    .trait-card:hover {
+      border-color: rgba(168, 85, 247, 0.5);
+      background: rgba(20, 29, 54, 0.75);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
+    }
+    .trait-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .trait-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #c084fc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trait-dice-result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 8, 20, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 14px 10px;
+      min-height: 88px;
+      transition: var(--transition);
+    }
+    .trait-card:hover .trait-dice-result {
+      border-color: rgba(139, 92, 246, 0.25);
+      background: rgba(5, 8, 20, 0.8);
+    }
+    .trait-main-val {
+      font-family: 'Cinzel', 'Noto Sans JP', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.05em;
+      line-height: 1.1;
+      text-shadow: 0 0 16px rgba(192, 132, 252, 0.35);
+    }
+    .trait-main-val.rolled {
+      background: linear-gradient(135deg, #ffffff 30%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .trait-sub-detail {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-align: center;
+    }
+    .trait-memo-wrap {
+      width: 100%;
+    }
+    .trait-memo-input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+    .trait-memo-input:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -1729,6 +1886,91 @@
       <!-- Sub Stats (HP, MP, SAN, DB, etc.) -->
       <div class="substats-wrap" id="subStatsWrap">
         <!-- Dynamically rendered derived stats -->
+      </div>
+    </section>
+
+    <!-- Traits Section (特徴表) -->
+    <section class="panel traits-panel" id="traitsSection">
+      <div class="section-title">
+        <h2>
+          <span>✨ 特徴表</span>
+          <span class="badge-traits">2枠分</span>
+        </h2>
+        <span class="desc">1D6+1D10（または1D20）で特徴を決定できます（何度でも振り直し可能）</span>
+      </div>
+
+      <div class="traits-controls-bar">
+        <div class="traits-mode-group">
+          <span class="traits-mode-label">ダイス方式:</span>
+          <div class="segmented-control traits-mode-toggle">
+            <button type="button" class="segmented-btn active" id="btnTraitModeD6D10">1D6 + 1D10 (2015式)</button>
+            <button type="button" class="segmented-btn" id="btnTraitModeD20">1D20 (20面ダイス)</button>
+          </div>
+        </div>
+
+        <div class="traits-actions-group">
+          <button type="button" class="btn-roll" id="btnRollTraitsAll" style="padding: 9px 20px; font-size: 0.92rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 8h.01"></path>
+              <path d="M8 8h.01"></path>
+              <path d="M8 16h.01"></path>
+              <path d="M16 16h.01"></path>
+              <path d="M12 12h.01"></path>
+            </svg>
+            <span>特徴を2つ振る</span>
+          </button>
+          <button type="button" class="btn-copy" id="btnCopyTraits" style="font-size: 0.82rem; padding: 8px 14px;">
+            <span>📋 特徴をコピー</span>
+          </button>
+          <button type="button" class="btn-copy" id="btnClearTraits" style="font-size: 0.82rem; padding: 8px 12px; color: var(--text-dim);" title="特徴ダイス結果をクリアします">
+            <span>リセット</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="traits-cards-grid">
+        <!-- Trait Slot 1 -->
+        <div class="trait-card" id="traitCard1">
+          <div class="trait-card-head">
+            <span class="trait-card-title">
+              <span>🎲 特徴 1</span>
+            </span>
+            <button class="btn-reroll" id="btnRerollTrait1" type="button" title="特徴1のみ振り直す">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </button>
+          </div>
+          <div class="trait-dice-result" id="traitResult1">
+            <span class="trait-main-val" id="traitVal1">-</span>
+            <span class="trait-sub-detail" id="traitDetail1">ダイスを振ってください</span>
+          </div>
+          <div class="trait-memo-wrap">
+            <input type="text" class="trait-memo-input" id="traitMemo1" placeholder="特徴名や効果をメモ（例: 3-8 信頼のおける人）">
+          </div>
+        </div>
+
+        <!-- Trait Slot 2 -->
+        <div class="trait-card" id="traitCard2">
+          <div class="trait-card-head">
+            <span class="trait-card-title">
+              <span>🎲 特徴 2</span>
+            </span>
+            <button class="btn-reroll" id="btnRerollTrait2" type="button" title="特徴2のみ振り直す">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </button>
+          </div>
+          <div class="trait-dice-result" id="traitResult2">
+            <span class="trait-main-val" id="traitVal2">-</span>
+            <span class="trait-sub-detail" id="traitDetail2">ダイスを振ってください</span>
+          </div>
+          <div class="trait-memo-wrap">
+            <input type="text" class="trait-memo-input" id="traitMemo2" placeholder="特徴名や効果をメモ（例: 1-4 代謝異常）">
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2089,6 +2331,11 @@
       customFormulas: {
         ed6: {},
         ed7: {}
+      },
+      traits: {
+        mode: 'd6_d10', // 'd6_d10' or 'd20'
+        slot1: null,
+        slot2: null
       }
     };
 
@@ -2123,6 +2370,21 @@
     const btnOpenIachara = document.getElementById('btnOpenIachara');
     const btnOpenIacharaTop = document.getElementById('btnOpenIacharaTop');
     const toastEl = document.getElementById('toast');
+
+    // Traits DOM Elements
+    const btnTraitModeD6D10 = document.getElementById('btnTraitModeD6D10');
+    const btnTraitModeD20 = document.getElementById('btnTraitModeD20');
+    const btnRollTraitsAll = document.getElementById('btnRollTraitsAll');
+    const btnCopyTraits = document.getElementById('btnCopyTraits');
+    const btnClearTraits = document.getElementById('btnClearTraits');
+    const btnRerollTrait1 = document.getElementById('btnRerollTrait1');
+    const btnRerollTrait2 = document.getElementById('btnRerollTrait2');
+    const traitVal1 = document.getElementById('traitVal1');
+    const traitDetail1 = document.getElementById('traitDetail1');
+    const traitMemo1 = document.getElementById('traitMemo1');
+    const traitVal2 = document.getElementById('traitVal2');
+    const traitDetail2 = document.getElementById('traitDetail2');
+    const traitMemo2 = document.getElementById('traitMemo2');
 
     // Generate Iachara URL
     function generateIacharaUrl() {
@@ -2741,7 +3003,21 @@
       derived.forEach(item => {
         summaryStr += `${item.label}: ${item.value}  `;
       });
-      textSummary.value = summaryStr;
+
+      // Traits summary if rolled
+      let traitsSummary = '';
+      if (state.traits && (state.traits.slot1 || state.traits.slot2)) {
+        traitsSummary += `\n\n【特徴表】\n`;
+        if (state.traits.slot1) {
+          const m1 = (state.traits.slot1.memo || '').trim();
+          traitsSummary += `特徴1: ${state.traits.slot1.main}${m1 ? ` (${m1})` : ''} [${state.traits.slot1.detail}]\n`;
+        }
+        if (state.traits.slot2) {
+          const m2 = (state.traits.slot2.memo || '').trim();
+          traitsSummary += `特徴2: ${state.traits.slot2.main}${m2 ? ` (${m2})` : ''} [${state.traits.slot2.detail}]\n`;
+        }
+      }
+      textSummary.value = summaryStr + traitsSummary;
 
       // 2. Chat Palette
       let paletteStr = '';
@@ -2766,6 +3042,7 @@
           paletteStr += `CC<=${fifth} 【${d.name} イクストリーム】\n`;
         });
       }
+      paletteStr += `\n// --- 特徴表ダイス ---\n1D6+1D10 【特徴表 (2015式)】\n1D20 【特徴表 (1D20)】\n`;
       textPalette.value = paletteStr;
 
       // 3. Ccfolia JSON
@@ -2773,11 +3050,16 @@
       const mpObj = derived.find(d => d.label.includes('MP'));
       const sanObj = derived.find(d => d.label.includes('SAN'));
 
+      let ccfoliaMemo = `${edLabel}\n合計: ${sumTotalEl.textContent} (EDU除外: ${sumNoEduEl.textContent})`;
+      if (traitsSummary) {
+        ccfoliaMemo += traitsSummary;
+      }
+
       const ccfoliaData = {
         kind: "character",
         data: {
           name: "探索者",
-          memo: `${edLabel}\n合計: ${sumTotalEl.textContent} (EDU除外: ${sumNoEduEl.textContent})`,
+          memo: ccfoliaMemo,
           initiative: state.edition === 'ed6' ? (s.DEX || 10) : Math.floor((s.DEX || 50) / 5),
           status: [
             { label: "HP", value: Number(hpObj ? hpObj.value : 10), max: Number(hpObj ? hpObj.value : 10) },
@@ -2830,6 +3112,172 @@
         }, 2000);
       }).catch(err => {
         showToast('コピーに失敗しました。');
+      });
+    }
+
+    // ============================================================
+    // Traits (特徴表) Logic
+    // ============================================================
+    function rollSingleTrait(mode) {
+      if (mode === 'd6_d10') {
+        const d6 = Math.floor(Math.random() * 6) + 1;
+        const d10 = Math.floor(Math.random() * 10) + 1;
+        const sum = d6 + d10;
+        return {
+          main: `${d6} - ${d10}`,
+          detail: `出目: [1D6: ${d6}, 1D10: ${d10}] (合計: ${sum})`,
+          d6: d6,
+          d10: d10,
+          total: sum,
+          d20: null
+        };
+      } else {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        return {
+          main: `${d20}`,
+          detail: `出目: [1D20: ${d20}]`,
+          d6: null,
+          d10: null,
+          total: d20,
+          d20: d20
+        };
+      }
+    }
+
+    function renderTraits() {
+      // Slot 1
+      if (state.traits.slot1) {
+        traitVal1.textContent = state.traits.slot1.main;
+        traitVal1.classList.add('rolled');
+        traitDetail1.textContent = state.traits.slot1.detail;
+      } else {
+        traitVal1.textContent = '-';
+        traitVal1.classList.remove('rolled');
+        traitDetail1.textContent = 'ダイスを振ってください';
+      }
+
+      // Slot 2
+      if (state.traits.slot2) {
+        traitVal2.textContent = state.traits.slot2.main;
+        traitVal2.classList.add('rolled');
+        traitDetail2.textContent = state.traits.slot2.detail;
+      } else {
+        traitVal2.textContent = '-';
+        traitVal2.classList.remove('rolled');
+        traitDetail2.textContent = 'ダイスを振ってください';
+      }
+
+      updateExportTexts();
+    }
+
+    function rollTraitsAll() {
+      const mode = state.traits.mode;
+      const res1 = rollSingleTrait(mode);
+      const res2 = rollSingleTrait(mode);
+      const m1 = traitMemo1.value.trim();
+      const m2 = traitMemo2.value.trim();
+
+      state.traits.slot1 = { ...res1, memo: m1 };
+      state.traits.slot2 = { ...res2, memo: m2 };
+
+      renderTraits();
+      showToast(`特徴1 (${res1.main}) と 特徴2 (${res2.main}) をロールしました！`);
+    }
+
+    function rerollTraitSlot(slotNum) {
+      const mode = state.traits.mode;
+      const res = rollSingleTrait(mode);
+      if (slotNum === 1) {
+        const m1 = traitMemo1.value.trim();
+        state.traits.slot1 = { ...res, memo: m1 };
+        renderTraits();
+        showToast(`特徴1 を振り直しました: ${res.main}`);
+      } else {
+        const m2 = traitMemo2.value.trim();
+        state.traits.slot2 = { ...res, memo: m2 };
+        renderTraits();
+        showToast(`特徴2 を振り直しました: ${res.main}`);
+      }
+    }
+
+    function clearTraits() {
+      state.traits.slot1 = null;
+      state.traits.slot2 = null;
+      traitMemo1.value = '';
+      traitMemo2.value = '';
+      renderTraits();
+      showToast('特徴表ダイス結果をリセットしました');
+    }
+
+    function copyTraitsText() {
+      if (!state.traits.slot1 && !state.traits.slot2) {
+        showToast('まだ特徴ダイスが振られていません');
+        return;
+      }
+      const modeName = state.traits.mode === 'd6_d10' ? '1D6+1D10 (2015式)' : '1D20';
+      const lines = [`【特徴表 (${modeName})】`];
+      if (state.traits.slot1) {
+        const m = traitMemo1.value.trim();
+        lines.push(`特徴1: ${state.traits.slot1.main}${m ? ` (${m})` : ''} [${state.traits.slot1.detail}]`);
+      }
+      if (state.traits.slot2) {
+        const m = traitMemo2.value.trim();
+        lines.push(`特徴2: ${state.traits.slot2.main}${m ? ` (${m})` : ''} [${state.traits.slot2.detail}]`);
+      }
+      const text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('特徴の結果テキストをコピーしました！');
+      }).catch(() => {
+        showToast('コピーに失敗しました');
+      });
+    }
+
+    // Traits Event Listeners
+    if (btnTraitModeD6D10 && btnTraitModeD20) {
+      btnTraitModeD6D10.addEventListener('click', () => {
+        btnTraitModeD6D10.classList.add('active');
+        btnTraitModeD20.classList.remove('active');
+        state.traits.mode = 'd6_d10';
+        showToast('特徴ダイス方式を「1D6 + 1D10 (2015式)」に設定しました');
+      });
+
+      btnTraitModeD20.addEventListener('click', () => {
+        btnTraitModeD20.classList.add('active');
+        btnTraitModeD6D10.classList.remove('active');
+        state.traits.mode = 'd20';
+        showToast('特徴ダイス方式を「1D20 (20面ダイス)」に設定しました');
+      });
+    }
+
+    if (btnRollTraitsAll) {
+      btnRollTraitsAll.addEventListener('click', rollTraitsAll);
+    }
+    if (btnRerollTrait1) {
+      btnRerollTrait1.addEventListener('click', () => rerollTraitSlot(1));
+    }
+    if (btnRerollTrait2) {
+      btnRerollTrait2.addEventListener('click', () => rerollTraitSlot(2));
+    }
+    if (btnClearTraits) {
+      btnClearTraits.addEventListener('click', clearTraits);
+    }
+    if (btnCopyTraits) {
+      btnCopyTraits.addEventListener('click', copyTraitsText);
+    }
+    if (traitMemo1) {
+      traitMemo1.addEventListener('input', () => {
+        if (state.traits.slot1) {
+          state.traits.slot1.memo = traitMemo1.value.trim();
+        }
+        updateExportTexts();
+      });
+    }
+    if (traitMemo2) {
+      traitMemo2.addEventListener('input', () => {
+        if (state.traits.slot2) {
+          state.traits.slot2.memo = traitMemo2.value.trim();
+        }
+        updateExportTexts();
       });
     }
 
@@ -3304,6 +3752,7 @@
 
     // Initial Roll on Load
     performRolls(state.rollCount);
+    renderTraits();
   </script>
 </body>
 </html>
