@@ -1896,7 +1896,7 @@
           <span>✨ 特徴表</span>
           <span class="badge-traits">2枠分</span>
         </h2>
-        <span class="desc">1D6+1D10（または1D20）で特徴を決定できます（何度でも振り直し可能）</span>
+        <span class="desc">1D6+1D10（または1D6+1D20）で特徴を決定できます（何度でも振り直し可能）</span>
       </div>
 
       <div class="traits-controls-bar">
@@ -1904,7 +1904,7 @@
           <span class="traits-mode-label">ダイス方式:</span>
           <div class="segmented-control traits-mode-toggle">
             <button type="button" class="segmented-btn active" id="btnTraitModeD6D10">1D6 + 1D10 (2015式)</button>
-            <button type="button" class="segmented-btn" id="btnTraitModeD20">1D20 (20面ダイス)</button>
+            <button type="button" class="segmented-btn" id="btnTraitModeD6D20">1D6 + 1D20</button>
           </div>
         </div>
 
@@ -2373,7 +2373,7 @@
 
     // Traits DOM Elements
     const btnTraitModeD6D10 = document.getElementById('btnTraitModeD6D10');
-    const btnTraitModeD20 = document.getElementById('btnTraitModeD20');
+    const btnTraitModeD6D20 = document.getElementById('btnTraitModeD6D20');
     const btnRollTraitsAll = document.getElementById('btnRollTraitsAll');
     const btnCopyTraits = document.getElementById('btnCopyTraits');
     const btnClearTraits = document.getElementById('btnClearTraits');
@@ -3042,7 +3042,7 @@
           paletteStr += `CC<=${fifth} 【${d.name} イクストリーム】\n`;
         });
       }
-      paletteStr += `\n// --- 特徴表ダイス ---\n1D6+1D10 【特徴表 (2015式)】\n1D20 【特徴表 (1D20)】\n`;
+      paletteStr += `\n// --- 特徴表ダイス ---\n1D6+1D10 【特徴表 (2015式)】\n1D6+1D20 【特徴表 (1D6+1D20)】\n`;
       textPalette.value = paletteStr;
 
       // 3. Ccfolia JSON
@@ -3132,13 +3132,15 @@
           d20: null
         };
       } else {
+        const d6 = Math.floor(Math.random() * 6) + 1;
         const d20 = Math.floor(Math.random() * 20) + 1;
+        const sum = d6 + d20;
         return {
-          main: `${d20}`,
-          detail: `出目: [1D20: ${d20}]`,
-          d6: null,
+          main: `${d6} - ${d20}`,
+          detail: `出目: [1D6: ${d6}, 1D20: ${d20}] (合計: ${sum})`,
+          d6: d6,
           d10: null,
-          total: d20,
+          total: sum,
           d20: d20
         };
       }
@@ -3214,7 +3216,7 @@
         showToast('まだ特徴ダイスが振られていません');
         return;
       }
-      const modeName = state.traits.mode === 'd6_d10' ? '1D6+1D10 (2015式)' : '1D20';
+      const modeName = state.traits.mode === 'd6_d10' ? '1D6+1D10 (2015式)' : '1D6+1D20';
       const lines = [`【特徴表 (${modeName})】`];
       if (state.traits.slot1) {
         const m = traitMemo1.value.trim();
@@ -3233,19 +3235,19 @@
     }
 
     // Traits Event Listeners
-    if (btnTraitModeD6D10 && btnTraitModeD20) {
+    if (btnTraitModeD6D10 && btnTraitModeD6D20) {
       btnTraitModeD6D10.addEventListener('click', () => {
         btnTraitModeD6D10.classList.add('active');
-        btnTraitModeD20.classList.remove('active');
+        btnTraitModeD6D20.classList.remove('active');
         state.traits.mode = 'd6_d10';
         showToast('特徴ダイス方式を「1D6 + 1D10 (2015式)」に設定しました');
       });
 
-      btnTraitModeD20.addEventListener('click', () => {
-        btnTraitModeD20.classList.add('active');
+      btnTraitModeD6D20.addEventListener('click', () => {
+        btnTraitModeD6D20.classList.add('active');
         btnTraitModeD6D10.classList.remove('active');
-        state.traits.mode = 'd20';
-        showToast('特徴ダイス方式を「1D20 (20面ダイス)」に設定しました');
+        state.traits.mode = 'd6_d20';
+        showToast('特徴ダイス方式を「1D6 + 1D20」に設定しました');
       });
     }
 
