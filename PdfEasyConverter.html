@@ -4656,6 +4656,20 @@ video {
                 <div id="reportGmList" class="space-y-1.5"></div>
               </div>
 
+              <!-- KPC / GPC -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="user-cog" class="w-4 h-4 text-indigo-600"></i>
+                    KPC / GPC
+                  </label>
+                  <button type="button" onclick="addReportKpc()" class="text-[11px] text-teal-600 hover:text-teal-800 font-bold flex items-center gap-0.5">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>KPC追加
+                  </button>
+                </div>
+                <div id="reportKpcList" class="space-y-1.5"></div>
+              </div>
+
               <!-- 参加者 (HO / PC名 / PL名) -->
               <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
                 <div class="flex items-center justify-between">
@@ -5689,6 +5703,95 @@ function ensureVirtualItemRendered(id) {
   return card;
 }
 
+
+function scrollToItem(targetId, options = {}) {
+  const item = processedItems.find(i => i.id === targetId);
+  if (!item) return;
+
+  // 親TOCの折りたたみを展開
+  const targetIndex = processedItems.findIndex(i => i.id === targetId);
+  let changed = false;
+  let activeTocs = [];
+  for (let i = 0; i <= targetIndex; i++) {
+    const it = processedItems[i];
+    if (it.isToc) {
+      const tocLevel = it.tocLevel || 1;
+      while (activeTocs.length > 0 && activeTocs[activeTocs.length - 1].level >= tocLevel) {
+        activeTocs.pop();
+      }
+      activeTocs.push({ item: it, level: tocLevel });
+    }
+  }
+  for (const t of activeTocs) {
+    if (t.item.isCollapsed) {
+      t.item.isCollapsed = false;
+      changed = true;
+    }
+  }
+
+  // 検索フィルター解除
+  const search = document.getElementById("card-search-input");
+  if (search && search.value && !document.getElementById("selection-card-" + targetId)) {
+    search.value = "";
+    changed = true;
+  }
+
+  const list = document.getElementById("text-list");
+  if (!list) return;
+
+  const block = options.block || "center";
+  const hlClass = options.highlightClass || (options.block === "start" ? "bg-teal-50 border-teal-400" : "bg-indigo-100/60 border-indigo-400");
+  const hlDuration = options.highlightDuration || 1500;
+
+  const applyHighlight = (cardEl) => {
+    if (!cardEl) return;
+    const classes = hlClass.split(" ").filter(c => c);
+    classes.forEach(c => cardEl.classList.add(c));
+    setTimeout(() => {
+      classes.forEach(c => cardEl.classList.remove(c));
+    }, hlDuration);
+  };
+
+  if (virtualCards.enabled) {
+    if (changed) {
+      renderList(true);
+    }
+    const virtualIndex = virtualCards.items.findIndex(record => record.item.id === targetId);
+    if (virtualIndex >= 0) {
+      // スクロールイベントによる再計算の割り込みを2.5秒間確実にブロックして力尽きるのを防止
+      virtualCards.suppressScrollUntil = performance.now() + 2500;
+
+      // 目標アイテムを含むウィンドウを設定
+      virtualCards.start = Math.max(0, virtualIndex - 30);
+      renderVirtualWindow(false);
+
+      // 目標位置へ直接ワープ（長距離スムーススクロールによる失速・中断を防ぐ）
+      const targetScrollTop = Math.max(0, virtualIndex * virtualCards.rowHeight - (list.clientHeight / 3));
+      list.scrollTop = targetScrollTop;
+
+      // 描画された要素を取得して微調整とハイライト
+      requestAnimationFrame(() => {
+        const card = document.getElementById("selection-card-" + targetId) || document.querySelector(`[data-id="${targetId}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: block });
+          applyHighlight(card);
+        }
+      });
+      return;
+    }
+  }
+
+  // 非仮想スクロールの場合
+  if (changed) {
+    renderList(true);
+  }
+  const card = document.getElementById("selection-card-" + targetId) || document.querySelector(`[data-id="${targetId}"]`);
+  if (card) {
+    card.scrollIntoView({ behavior: "smooth", block: block });
+    applyHighlight(card);
+  }
+}
+
 function scrollVirtualCard(card, options) {
   if (!card) return;
   const list = document.getElementById("text-list");
@@ -5704,13 +5807,15 @@ function scrollVirtualCard(card, options) {
   if (block === "center") {
     targetScrollTop = list.scrollTop + offset - (listRect.height - cardRect.height) / 2;
   }
-  if (virtualCards.enabled) virtualCards.suppressScrollUntil = performance.now() + 500;
+  const scrollDistance = Math.abs(targetScrollTop - list.scrollTop);
+  const scrollBehavior = scrollDistance > listRect.height * 2 ? "auto" : ((options && options.behavior) || "smooth");
+  if (virtualCards.enabled) virtualCards.suppressScrollUntil = performance.now() + 2500;
   list.scrollTo({
     top: Math.max(0, targetScrollTop),
-    behavior: (options && options.behavior) || "smooth"
+    behavior: scrollBehavior
   });
 }
-function changeCardColor(id,colorId){const targetIds=selectedCardIds.has(id)?Array.from(selectedCardIds):[id];saveHistoryState();let changed=false;targetIds.forEach(targetId=>{const item=processedItems.find(i=>i.id===targetId);if(item){item.color=colorId;const mappedTab=Object.keys(tabColorMapping).find(k=>tabColorMapping[k]===colorId);if(mappedTab){item.tabName=mappedTab}changed=true}});if(changed){if(targetIds.length>1){clearSelection();showToast("タブ一括設定","選択したカードの色とタブを一括変更しました。","success")}renderList();saveToLocalStorage()}}function toggleBookmark(id){const item=processedItems.find(i=>i.id===id);if(item){item.bookmarked=!item.bookmarked;renderList();saveToLocalStorage();showToast(item.bookmarked?"しおりを挟みました":"しおりを外しました",item.text.substring(0,15)+"...","info")}}function toggleNoteInput(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=!item.isEditingNote;renderList()}}function saveNote(id){const item=processedItems.find(i=>i.id===id);const input=document.getElementById(`note-input-${id}`);if(item&&input){item.note=input.value.trim();delete item._noteDraft;item.isEditingNote=false;renderList();saveToLocalStorage();showToast("付箋を貼りました",item.note?`「${item.note}」`:"空の付箋","success")}}function editNote(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=true;renderList()}}function cancelNoteEdit(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=false;delete item._noteDraft;renderList()}}function deleteNote(id){const item=processedItems.find(i=>i.id===id);if(item){item.note="";item.isEditingNote=false;renderList();saveToLocalStorage();showToast("付箋を剥がしました","","info")}}function editTocName(id){const item=processedItems.find(i=>i.id===id);if(item){const currentName=item.tocName||item.text;const newName=prompt("目次の表示名を入力してください（空欄で元のテキストに戻す）:",currentName);if(newName!==null){const trimmed=newName.trim();item.tocName=(trimmed&&trimmed!==item.text)?trimmed:undefined;const card=document.getElementById("selection-card-"+id);if(card)card._cachedHTML=null;saveToLocalStorage();renderList(true);updateBookmarkAndNoteLists();showToast("目次名を変更",item.tocName?`「${item.tocName}」に更新しました。`:"目次名をリセットしました。","success")}}}function ensureItemVisible(targetId){const targetIndex=processedItems.findIndex(i=>i.id===targetId);if(targetIndex===-1)return;let changed=false;let activeTocs=[];for(let i=0;i<=targetIndex;i++){const item=processedItems[i];if(item.isToc){const tocLevel=item.tocLevel||1;while(activeTocs.length>0&&activeTocs[activeTocs.length-1].level>=tocLevel){activeTocs.pop()}activeTocs.push({item:item,level:tocLevel})}}for(const tocInfo of activeTocs){if(tocInfo.item.isCollapsed){tocInfo.item.isCollapsed=false;changed=true}}const search=document.getElementById("card-search-input");if(search.value&&!document.getElementById("selection-card-"+targetId)){search.value="";changed=true}if(changed){renderList()}if(virtualCards.enabled){virtualCards.pendingId=targetId;renderList()}ensureVirtualItemRendered(targetId)}function updateBookmarkAndNoteLists(){const bList=document.getElementById("bookmark-list");const bCount=document.getElementById("bookmark-count");const nList=document.getElementById("note-list");const nCount=document.getElementById("note-count");const tList=document.getElementById("toc-list");const tCount=document.getElementById("toc-count");const bookmarks=processedItems.filter(i=>i.bookmarked);bCount.innerText=bookmarks.length;if(bookmarks.length===0){bList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">しおりのある項目はありません</p>`}else{bList.innerHTML="";const bFrag=document.createDocumentFragment();bookmarks.forEach(item=>{const div=document.createElement("div");div.className="p-2 bg-amber-50/50 hover:bg-amber-100/40 border border-amber-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";div.setAttribute("title","クリックで該当箇所にジャンプ");div.onclick=()=>{ensureItemVisible(item.id);const targetCard=document.querySelector(`[data-id="${item.id}"]`);if(targetCard){scrollVirtualCard(targetCard,{behavior:"smooth",block:"center"});targetCard.classList.add("bg-amber-100/60","border-amber-400");setTimeout(()=>{targetCard.classList.remove("bg-amber-100/60","border-amber-400")},800)}};div.innerHTML=`\n            <span class="truncate flex-grow">${escapeHtml(item.text)}</span>\n            <button onclick="event.stopPropagation(); toggleBookmark(${item.id})" class="text-amber-500 hover:text-rose-500 p-0.5" title="しおりを外す">\n              <i data-lucide="x" class="w-3.5 h-3.5"></i>\n            </button>\n          `;bList.appendChild(div)})}if(tList){const tocs=processedItems.filter(i=>i.isToc);tocs.forEach(t=>{if(!t.tocLevel)t.tocLevel=1});tCount.innerText=tocs.length;if(tocs.length===0){tList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">目次に追加するとここにリスト化されます</p>`}else{tList.innerHTML="";const tFrag=document.createDocumentFragment();tocs.forEach(item=>{const div=document.createElement("div");const tocLevel=item.tocLevel||1;div.className="p-2 bg-indigo-50/50 hover:bg-indigo-100/40 border border-indigo-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";div.style.marginLeft=`${(tocLevel-1)*12}px`;div.setAttribute("title","クリックで該当箇所にジャンプ / ダブルクリックで目次名を編集");div.onclick=()=>{ensureItemVisible(item.id);const targetCard=document.querySelector(`[data-id="${item.id}"]`);if(targetCard){scrollVirtualCard(targetCard,{behavior:"smooth",block:"center"});targetCard.classList.add("bg-indigo-100/60","border-indigo-400");setTimeout(()=>{targetCard.classList.remove("bg-indigo-100/60","border-indigo-400")},800)}};div.ondblclick=(e)=>{e.stopPropagation();editTocName(item.id);};div.innerHTML=`\n              <span class="truncate flex-grow font-semibold text-indigo-800" title="${escapeHtml(item.tocName||item.text)}">${escapeHtml(item.tocName||item.text)}</span>\n              <div class="flex items-center gap-1 flex-shrink-0">\n                <button type="button" onclick="event.stopPropagation(); editTocName(${item.id})" class="text-indigo-500 hover:text-teal-700 hover:bg-indigo-100 p-1 rounded transition-colors" title="目次名を変更・編集">\n                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>\n                </button>\n                <button type="button" onclick="event.stopPropagation(); toggleToc(${item.id})" class="text-indigo-400 hover:text-rose-500 hover:bg-rose-100 p-1 rounded transition-colors" title="目次から削除">\n                  <i data-lucide="x" class="w-3.5 h-3.5"></i>\n                </button>\n              </div>\n            `;tFrag.appendChild(div)});tList.appendChild(tFrag)}}const notes=processedItems.filter(i=>i.note);nCount.innerText=notes.length;if(notes.length===0){nList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">メモ付きのカードがありません</p>`}else{nList.innerHTML="";const nFrag=document.createDocumentFragment();notes.forEach(item=>{const div=document.createElement("div");div.className="p-2.5 bg-emerald-50/50 hover:bg-emerald-100/40 border border-emerald-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex flex-col gap-1";div.setAttribute("title","クリックで該当箇所にジャンプ");div.onclick=()=>{ensureItemVisible(item.id);const targetCard=document.querySelector(`[data-id="${item.id}"]`);if(targetCard){scrollVirtualCard(targetCard,{behavior:"smooth",block:"center"});targetCard.classList.add("bg-emerald-100/60","border-emerald-400");setTimeout(()=>{targetCard.classList.remove("bg-emerald-100/60","border-emerald-400")},800)}};div.innerHTML=`\n            <div class="flex justify-between items-start gap-2">\n              <span class="font-semibold text-emerald-800 flex items-center gap-1">\n                <i data-lucide="sticky-note" class="w-3 h-3 text-emerald-600 fill-emerald-100"></i>\n                ${escapeHtml(item.note)}\n              </span>\n              <div class="flex items-center gap-1">\n                <button onclick="event.stopPropagation(); copyText('${escapeHtml((item.note||"").replace(/'/g,"'"))}', 'メモ（付箋）の内容')" class="text-slate-400 hover:text-teal-600 p-0.5" title="メモをコピー">\n                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>\n                </button>\n                <button onclick="event.stopPropagation(); deleteNote(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5" title="付箋を剥がす">\n                  <i data-lucide="x" class="w-3.5 h-3.5"></i>\n                </button>\n              </div>\n            </div>\n            <p class="text-[10px] text-slate-400 truncate italic">原文: "${escapeHtml(item.text)}"</p>\n          `;nList.appendChild(div)})}if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons({root:document.getElementById("bookmark-list")});lucide.createIcons({root:document.getElementById("note-list")});if(tList)lucide.createIcons({root:tList});}}function syncEditState(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(item&&item.isEditing&&ta){if(item.text!==ta.value){item.text=ta.value;item.furiganaHtml=undefined}}}function updateCardTab(id,tabName){syncEditState(id);const item=processedItems.find(i=>i.id===id);if(item){item.tabName=tabName;if(tabColorMapping[tabName]){item.color=tabColorMapping[tabName]}saveToLocalStorage();renderList()}}function normalizeSpeakerNames(names){return[...new Set(names.filter(name=>typeof name==="string").map(name=>name.trim()).filter(Boolean))]}function loadSpeakerNames(){try{const names=JSON.parse(localStorage.getItem("pdf_tool_speaker_names")||"[]");return Array.isArray(names)?normalizeSpeakerNames(names):[]}catch(e){return[]}}let speakerNames=loadSpeakerNames();function addSpeakerSetting(name="",focus=true){const list=document.getElementById("speaker-settings-list");const empty=list.querySelector("[data-empty]");if(empty)empty.remove();const row=document.createElement("div");row.className="flex items-center gap-1";row.innerHTML=`<input type="text" aria-label="発言者名" placeholder="発言者名（例：KP、田中）" class="speaker-name-input min-w-0 w-full text-xs px-2 py-1.5 border border-slate-300 rounded outline-none focus:ring-1 focus:ring-teal-500">\n        <button type="button" title="この発言者でカードを検索・絞り込み" aria-label="この発言者で検索" class="text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded p-1 transition-colors flex items-center justify-center flex-shrink-0" style="width:24px;height:24px;"><i data-lucide="search" class="w-3.5 h-3.5"></i></button>\n        <button type="button" title="上へ" aria-label="発言者を上へ" class="text-slate-400 hover:text-slate-600 px-1">↑</button>\n        <button type="button" title="下へ" aria-label="発言者を下へ" class="text-slate-400 hover:text-slate-600 px-1">↓</button>\n        <button type="button" title="削除" aria-label="発言者を削除" class="text-slate-400 hover:text-rose-500 px-1">×</button>`;const input=row.querySelector("input");input.value=name;const buttons=row.querySelectorAll("button");buttons[0].onclick=()=>{const curName=input.value.trim();if(curName){filterBySpeaker(curName)}else{showToast("入力エラー","発言者名を入力してから検索してください。","warning")}};buttons[1].onclick=()=>{if(row.previousElementSibling)list.insertBefore(row,row.previousElementSibling)};buttons[2].onclick=()=>{if(row.nextElementSibling)list.insertBefore(row.nextElementSibling,row)};buttons[3].onclick=()=>row.remove();list.appendChild(row);if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons({root:row})}if(focus)input.focus()}function renderSpeakerSettings(){const list=document.getElementById("speaker-settings-list");list.replaceChildren();if(!speakerNames.length){const empty=document.createElement("p");empty.dataset.empty="true";empty.className="text-[10px] text-slate-400 py-2";empty.textContent="右上の＋から発言者を追加してください。";list.appendChild(empty)}speakerNames.forEach(name=>addSpeakerSetting(name,false));const listOptions=document.getElementById("speaker-name-options");if(listOptions)listOptions.replaceChildren(...speakerNames.map(name=>new Option(name,name)));updateSpeakerFilterOptions()}function saveSpeakerSettings(){const names=normalizeSpeakerNames(Array.from(document.querySelectorAll("#speaker-settings-list input"),input=>input.value));try{localStorage.setItem("pdf_tool_speaker_names",JSON.stringify(names))}catch(e){showToast("保存エラー","発言者設定を保存できませんでした。","error");return}speakerNames=names;processedItems.forEach(item=>{if(item.isEditing)syncEditState(item.id)});renderSpeakerSettings();renderList();showToast("発言者設定",`${names.length}名の候補を保存しました。`,"success")}function speakerOptions(currentName){const names=speakerNames.slice();if(currentName&&!names.includes(currentName))names.push(currentName);return`<option value="" ${!currentName?"selected":""}>自動判定</option>`+names.map(name=>`<option value="${escapeHtml(name)}" ${name===currentName?"selected":""}>${escapeHtml(name)}</option>`).join("")}function enterCardSpeaker(id){const item=processedItems.find(item=>item.id===id);if(!item)return;const name=prompt("発言者名を入力してください（空欄で自動判定）",item.charName||"");if(name!==null)updateCardChar(id,name.trim())}function updateCardChar(id,charName){
+function changeCardColor(id,colorId){const targetIds=selectedCardIds.has(id)?Array.from(selectedCardIds):[id];saveHistoryState();let changed=false;targetIds.forEach(targetId=>{const item=processedItems.find(i=>i.id===targetId);if(item){item.color=colorId;const mappedTab=Object.keys(tabColorMapping).find(k=>tabColorMapping[k]===colorId);if(mappedTab){item.tabName=mappedTab}changed=true}});if(changed){if(targetIds.length>1){clearSelection();showToast("タブ一括設定","選択したカードの色とタブを一括変更しました。","success")}renderList();saveToLocalStorage()}}function toggleBookmark(id){const item=processedItems.find(i=>i.id===id);if(item){item.bookmarked=!item.bookmarked;renderList();saveToLocalStorage();showToast(item.bookmarked?"しおりを挟みました":"しおりを外しました",item.text.substring(0,15)+"...","info")}}function toggleNoteInput(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=!item.isEditingNote;renderList()}}function saveNote(id){const item=processedItems.find(i=>i.id===id);const input=document.getElementById(`note-input-${id}`);if(item&&input){item.note=input.value.trim();delete item._noteDraft;item.isEditingNote=false;renderList();saveToLocalStorage();showToast("付箋を貼りました",item.note?`「${item.note}」`:"空の付箋","success")}}function editNote(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=true;renderList()}}function cancelNoteEdit(id){const item=processedItems.find(i=>i.id===id);if(item){item.isEditingNote=false;delete item._noteDraft;renderList()}}function deleteNote(id){const item=processedItems.find(i=>i.id===id);if(item){item.note="";item.isEditingNote=false;renderList();saveToLocalStorage();showToast("付箋を剥がしました","","info")}}function editTocName(id){const item=processedItems.find(i=>i.id===id);if(item){const currentName=item.tocName||item.text;const newName=prompt("目次の表示名を入力してください（空欄で元のテキストに戻す）:",currentName);if(newName!==null){const trimmed=newName.trim();item.tocName=(trimmed&&trimmed!==item.text)?trimmed:undefined;const card=document.getElementById("selection-card-"+id);if(card)card._cachedHTML=null;saveToLocalStorage();renderList(true);updateBookmarkAndNoteLists();showToast("目次名を変更",item.tocName?`「${item.tocName}」に更新しました。`:"目次名をリセットしました。","success")}}}function ensureItemVisible(targetId){const targetIndex=processedItems.findIndex(i=>i.id===targetId);if(targetIndex===-1)return;let changed=false;let activeTocs=[];for(let i=0;i<=targetIndex;i++){const item=processedItems[i];if(item.isToc){const tocLevel=item.tocLevel||1;while(activeTocs.length>0&&activeTocs[activeTocs.length-1].level>=tocLevel){activeTocs.pop()}activeTocs.push({item:item,level:tocLevel})}}for(const tocInfo of activeTocs){if(tocInfo.item.isCollapsed){tocInfo.item.isCollapsed=false;changed=true}}const search=document.getElementById("card-search-input");if(search.value&&!document.getElementById("selection-card-"+targetId)){search.value="";changed=true}if(changed){renderList()}if(virtualCards.enabled){virtualCards.pendingId=targetId;renderList()}ensureVirtualItemRendered(targetId)}function updateBookmarkAndNoteLists(){const bList=document.getElementById("bookmark-list");const bCount=document.getElementById("bookmark-count");const nList=document.getElementById("note-list");const nCount=document.getElementById("note-count");const tList=document.getElementById("toc-list");const tCount=document.getElementById("toc-count");const bookmarks=processedItems.filter(i=>i.bookmarked);bCount.innerText=bookmarks.length;if(bookmarks.length===0){bList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">しおりのある項目はありません</p>`}else{bList.innerHTML="";const bFrag=document.createDocumentFragment();bookmarks.forEach(item=>{const div=document.createElement("div");div.className="p-2 bg-amber-50/50 hover:bg-amber-100/40 border border-amber-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";div.setAttribute("title","クリックで該当箇所にジャンプ");div.onclick=()=>{scrollToItem(item.id,{block:"center",highlightClass:"bg-amber-100/60 border-amber-400",highlightDuration:1000});};div.innerHTML=`\n            <span class="truncate flex-grow">${escapeHtml(item.text)}</span>\n            <button onclick="event.stopPropagation(); toggleBookmark(${item.id})" class="text-amber-500 hover:text-rose-500 p-0.5" title="しおりを外す">\n              <i data-lucide="x" class="w-3.5 h-3.5"></i>\n            </button>\n          `;bList.appendChild(div)})}if(tList){const tocs=processedItems.filter(i=>i.isToc);tocs.forEach(t=>{if(!t.tocLevel)t.tocLevel=1});tCount.innerText=tocs.length;if(tocs.length===0){tList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">目次に追加するとここにリスト化されます</p>`}else{tList.innerHTML="";const tFrag=document.createDocumentFragment();tocs.forEach(item=>{const div=document.createElement("div");const tocLevel=item.tocLevel||1;div.className="p-2 bg-indigo-50/50 hover:bg-indigo-100/40 border border-indigo-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex justify-between items-center gap-2";div.style.marginLeft=`${(tocLevel-1)*12}px`;div.setAttribute("title","クリックで該当箇所にジャンプ / ダブルクリックで目次名を編集");div.onclick=()=>{scrollToItem(item.id,{block:"center",highlightClass:"bg-indigo-100/60 border-indigo-400",highlightDuration:1000});};div.ondblclick=(e)=>{e.stopPropagation();editTocName(item.id);};div.innerHTML=`\n              <span class="truncate flex-grow font-semibold text-indigo-800" title="${escapeHtml(item.tocName||item.text)}">${escapeHtml(item.tocName||item.text)}</span>\n              <div class="flex items-center gap-1 flex-shrink-0">\n                <button type="button" onclick="event.stopPropagation(); editTocName(${item.id})" class="text-indigo-500 hover:text-teal-700 hover:bg-indigo-100 p-1 rounded transition-colors" title="目次名を変更・編集">\n                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>\n                </button>\n                <button type="button" onclick="event.stopPropagation(); toggleToc(${item.id})" class="text-indigo-400 hover:text-rose-500 hover:bg-rose-100 p-1 rounded transition-colors" title="目次から削除">\n                  <i data-lucide="x" class="w-3.5 h-3.5"></i>\n                </button>\n              </div>\n            `;tFrag.appendChild(div)});tList.appendChild(tFrag)}}const notes=processedItems.filter(i=>i.note);nCount.innerText=notes.length;if(notes.length===0){nList.innerHTML=`<p class="text-[11px] text-slate-400 text-center py-6">メモ付きのカードがありません</p>`}else{nList.innerHTML="";const nFrag=document.createDocumentFragment();notes.forEach(item=>{const div=document.createElement("div");div.className="p-2.5 bg-emerald-50/50 hover:bg-emerald-100/40 border border-emerald-100 rounded-lg text-xs text-slate-700 cursor-pointer transition-all flex flex-col gap-1";div.setAttribute("title","クリックで該当箇所にジャンプ");div.onclick=()=>{scrollToItem(item.id,{block:"center",highlightClass:"bg-emerald-100/60 border-emerald-400",highlightDuration:1000});};div.innerHTML=`\n            <div class="flex justify-between items-start gap-2">\n              <span class="font-semibold text-emerald-800 flex items-center gap-1">\n                <i data-lucide="sticky-note" class="w-3 h-3 text-emerald-600 fill-emerald-100"></i>\n                ${escapeHtml(item.note)}\n              </span>\n              <div class="flex items-center gap-1">\n                <button onclick="event.stopPropagation(); copyText('${escapeHtml((item.note||"").replace(/'/g,"'"))}', 'メモ（付箋）の内容')" class="text-slate-400 hover:text-teal-600 p-0.5" title="メモをコピー">\n                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>\n                </button>\n                <button onclick="event.stopPropagation(); deleteNote(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5" title="付箋を剥がす">\n                  <i data-lucide="x" class="w-3.5 h-3.5"></i>\n                </button>\n              </div>\n            </div>\n            <p class="text-[10px] text-slate-400 truncate italic">原文: "${escapeHtml(item.text)}"</p>\n          `;nList.appendChild(div)})}if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons({root:document.getElementById("bookmark-list")});lucide.createIcons({root:document.getElementById("note-list")});if(tList)lucide.createIcons({root:tList});}}function syncEditState(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(item&&item.isEditing&&ta){if(item.text!==ta.value){item.text=ta.value;item.furiganaHtml=undefined}}}function updateCardTab(id,tabName){syncEditState(id);const item=processedItems.find(i=>i.id===id);if(item){item.tabName=tabName;if(tabColorMapping[tabName]){item.color=tabColorMapping[tabName]}saveToLocalStorage();renderList()}}function normalizeSpeakerNames(names){return[...new Set(names.filter(name=>typeof name==="string").map(name=>name.trim()).filter(Boolean))]}function loadSpeakerNames(){try{const names=JSON.parse(localStorage.getItem("pdf_tool_speaker_names")||"[]");return Array.isArray(names)?normalizeSpeakerNames(names):[]}catch(e){return[]}}let speakerNames=loadSpeakerNames();function addSpeakerSetting(name="",focus=true){const list=document.getElementById("speaker-settings-list");const empty=list.querySelector("[data-empty]");if(empty)empty.remove();const row=document.createElement("div");row.className="flex items-center gap-1";row.innerHTML=`<input type="text" aria-label="発言者名" placeholder="発言者名（例：KP、田中）" class="speaker-name-input min-w-0 w-full text-xs px-2 py-1.5 border border-slate-300 rounded outline-none focus:ring-1 focus:ring-teal-500">\n        <button type="button" title="この発言者でカードを検索・絞り込み" aria-label="この発言者で検索" class="text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded p-1 transition-colors flex items-center justify-center flex-shrink-0" style="width:24px;height:24px;"><i data-lucide="search" class="w-3.5 h-3.5"></i></button>\n        <button type="button" title="上へ" aria-label="発言者を上へ" class="text-slate-400 hover:text-slate-600 px-1">↑</button>\n        <button type="button" title="下へ" aria-label="発言者を下へ" class="text-slate-400 hover:text-slate-600 px-1">↓</button>\n        <button type="button" title="削除" aria-label="発言者を削除" class="text-slate-400 hover:text-rose-500 px-1">×</button>`;const input=row.querySelector("input");input.value=name;const buttons=row.querySelectorAll("button");buttons[0].onclick=()=>{const curName=input.value.trim();if(curName){filterBySpeaker(curName)}else{showToast("入力エラー","発言者名を入力してから検索してください。","warning")}};buttons[1].onclick=()=>{if(row.previousElementSibling)list.insertBefore(row,row.previousElementSibling)};buttons[2].onclick=()=>{if(row.nextElementSibling)list.insertBefore(row.nextElementSibling,row)};buttons[3].onclick=()=>row.remove();list.appendChild(row);if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons({root:row})}if(focus)input.focus()}function renderSpeakerSettings(){const list=document.getElementById("speaker-settings-list");list.replaceChildren();if(!speakerNames.length){const empty=document.createElement("p");empty.dataset.empty="true";empty.className="text-[10px] text-slate-400 py-2";empty.textContent="右上の＋から発言者を追加してください。";list.appendChild(empty)}speakerNames.forEach(name=>addSpeakerSetting(name,false));const listOptions=document.getElementById("speaker-name-options");if(listOptions)listOptions.replaceChildren(...speakerNames.map(name=>new Option(name,name)));updateSpeakerFilterOptions()}function saveSpeakerSettings(){const names=normalizeSpeakerNames(Array.from(document.querySelectorAll("#speaker-settings-list input"),input=>input.value));try{localStorage.setItem("pdf_tool_speaker_names",JSON.stringify(names))}catch(e){showToast("保存エラー","発言者設定を保存できませんでした。","error");return}speakerNames=names;processedItems.forEach(item=>{if(item.isEditing)syncEditState(item.id)});renderSpeakerSettings();renderList();showToast("発言者設定",`${names.length}名の候補を保存しました。`,"success")}function speakerOptions(currentName){const names=speakerNames.slice();if(currentName&&!names.includes(currentName))names.push(currentName);return`<option value="" ${!currentName?"selected":""}>自動判定</option>`+names.map(name=>`<option value="${escapeHtml(name)}" ${name===currentName?"selected":""}>${escapeHtml(name)}</option>`).join("")}function enterCardSpeaker(id){const item=processedItems.find(item=>item.id===id);if(!item)return;const name=prompt("発言者名を入力してください（空欄で自動判定）",item.charName||"");if(name!==null)updateCardChar(id,name.trim())}function updateCardChar(id,charName){
 syncEditState(id);const item=processedItems.find(i=>i.id===id);if(!item)return;
 item.charName=charName;
 const card=document.getElementById('selection-card-'+id);
@@ -5957,7 +6062,23 @@ function clearText() {
   resetFileScopedData();
   renderList();
   showToast("クリア完了", "読み込んだデータをすべて削除しました。", "info");
-}function showToast(title,message,type="success"){const container=document.getElementById("toast-container");const toast=document.createElement("div");let bg="bg-white";let text="text-slate-800";let border="border-slate-200";let iconColor="text-teal-500";let iconName="check-circle";if(type==="error"){border="border-rose-100";bg="bg-rose-50";iconColor="text-rose-500";iconName="alert-triangle"}else if(type==="info"){border="border-blue-100";bg="bg-blue-50";iconColor="text-blue-500";iconName="info"}toast.className=`${bg} ${text} border ${border} rounded-xl shadow-lg p-3 w-72 flex items-start gap-3 pointer-events-auto transition-all duration-300 opacity-0 transform translate-y-2`;toast.innerHTML=`\n        <div class="${iconColor} flex-shrink-0 mt-0.5">\n          <i data-lucide="${iconName}" class="w-5 h-5"></i>\n        </div>\n        <div class="flex-grow">\n          <h4 class="text-xs font-bold">${escapeHtml(title)}</h4>\n          ${message?`<p class="text-[10px] text-slate-500 mt-0.5 leading-tight">${escapeHtml(message)}</p>`:""}\n        </div>\n        <button class="text-slate-400 hover:text-slate-600 self-start" onclick="this.parentElement.remove()">\n          <i data-lucide="x" class="w-3.5 h-3.5"></i>\n        </button>\n      `;container.appendChild(toast);lucide.createIcons({root:toast});setTimeout(()=>{toast.classList.remove("opacity-0","translate-y-2")},50);setTimeout(()=>{toast.classList.add("opacity-0","translate-y-2");setTimeout(()=>{toast.remove()},300)},4e3)}async function extractPdfOutline(doc){const btn=document.getElementById("btn-toggle-pdf-outline");try{const outline=await doc.getOutline();if(!outline||outline.length===0){pdfOutline=[];if(btn){btn.disabled=true;btn.classList.add("opacity-50","cursor-not-allowed");btn.classList.remove("opacity-100")}return}async function resolveNode(node){let pageNum=null;if(node.dest){try{let destObj=node.dest;if(typeof destObj==="string"){destObj=await doc.getDestination(destObj)}if(Array.isArray(destObj)&&destObj.length>0){const pageRef=destObj[0];if(pageRef!==null){if(typeof pageRef==="object"){const pageIndex=await doc.getPageIndex(pageRef);pageNum=pageIndex+1}else if(typeof pageRef==="number"){pageNum=pageRef+1}}}}catch(e){console.error("しおりの宛先解決中にエラー:",e)}}const resolvedChildren=[];if(node.items&&node.items.length>0){for(const child of node.items){resolvedChildren.push(await resolveNode(child))}}return{title:node.title,page:pageNum,items:resolvedChildren}}const resolvedOutline=[];for(const item of outline){resolvedOutline.push(await resolveNode(item))}pdfOutline=resolvedOutline;if(btn){btn.disabled=false;btn.classList.remove("opacity-50","cursor-not-allowed");btn.classList.add("opacity-100")}renderPdfOutline()}catch(e){console.error("しおり抽出エラー:",e);pdfOutline=[];if(btn){btn.disabled=true;btn.classList.add("opacity-50","cursor-not-allowed");btn.classList.remove("opacity-100")}}}function renderPdfOutline(){const container=document.getElementById("preview-outline-tree");if(!container)return;if(pdfOutline.length===0){container.innerHTML=`<p class="text-slate-400 text-center py-6">目次（しおり）はありません</p>`;return}container.innerHTML="";function buildTreeHtml(nodes,depth=0){let html="";nodes.forEach(node=>{const paddingLeft=depth*12;const pageBadge=node.page?`<span class="ml-auto bg-slate-100 text-slate-500 text-[10px] px-1 rounded">P.${node.page}</span>`:"";const clickableClass=node.page?"cursor-pointer hover:bg-slate-100 text-slate-700 font-medium":"text-slate-400 cursor-default";const clickHandler=node.page?`onclick="jumpToPageFromOutline(${node.page})"`:"";html+=`\n            <div class="flex items-center py-1 px-1.5 rounded transition-all ${clickableClass}" style="padding-left: ${paddingLeft+6}px" ${clickHandler}>\n              <i data-lucide="chevron-right" class="w-3.5 h-3.5 mr-1 text-slate-400 flex-shrink-0 ${node.items.length>0?"":"opacity-0"}"></i>\n              <span class="truncate" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</span>\n              ${pageBadge}\n            </div>\n          `;if(node.items&&node.items.length>0){html+=buildTreeHtml(node.items,depth+1)}});return html}container.innerHTML=buildTreeHtml(pdfOutline);lucide.createIcons()}function togglePdfOutlinePanel(){const container=document.getElementById("preview-outline-container");const btn=document.getElementById("btn-toggle-pdf-outline");if(!container||!btn)return;isOutlineOpen=!isOutlineOpen;if(isOutlineOpen){container.classList.remove("hidden");btn.classList.add("bg-slate-200","text-slate-800");btn.classList.remove("text-slate-400")}else{container.classList.add("hidden");btn.classList.remove("bg-slate-200","text-slate-800");btn.classList.add("text-slate-400")}}function importOutlineToCards(){if(!pdfOutline||pdfOutline.length===0){showToast("エラー","PDFに目次がありません。","error");return}if(!confirm("PDFの目次情報を目次カードとして追加しますか？\n（目次名と本文を照合し、対応するカードの直前へ追加します）"))return;saveHistoryState();const contentItems=processedItems.filter(item=>!item.isToc);const normalizeOutlineText=value=>(value||"").normalize("NFKC").toLowerCase().replace(/^[◆◇●○■□▶▷▼▽・▪▫]+/,"").replace(/[\s\u3000]+/g,"");const entries=[];function flatten(nodes,level){for(const node of nodes){if(node.title)entries.push({node:node,level:Math.min(level,6)});if(node.items&&node.items.length)flatten(node.items,level+1)}}flatten(pdfOutline,1);let addedCount=0;for(const{node:node,level:level}of entries){const title=normalizeOutlineText(node.title);const page=Number(node.page)||1;const containsTitle=item=>{const text=normalizeOutlineText(item.text||item.original);return title.length>0&&text.includes(title)};let target=contentItems.find(item=>Number(item.page)===page&&containsTitle(item));if(!target)target=contentItems.find(item=>Math.abs(Number(item.page)-page)<=1&&containsTitle(item));if(!target)target=contentItems.find(item=>Number(item.page)>=page);let insertIndex=target?processedItems.indexOf(target):processedItems.length;if(insertIndex<0)insertIndex=processedItems.length;processedItems.splice(insertIndex,0,{id:globalId++,original:node.title,text:node.title,bookmarked:false,note:"",page:page,color:"slate",tabName:"",charName:"",isCommand:false,isToc:true,tocLevel:level,tocName:"",isCollapsed:false,isCopied:false});addedCount++}if(addedCount>0){saveToLocalStorage();renderList();showToast("目次追加",`PDFの目次から ${addedCount} 件のカードを追加しました！`,"success")}}function jumpToPageFromOutline(pageNum){if(!pageNum)return;jumpToPreviewPage(pageNum);const targetItem=processedItems.find(i=>i.page==pageNum);if(targetItem){ensureItemVisible(targetItem.id)}const targetCard=document.querySelector(`#text-list [data-page="${pageNum}"]`);if(targetCard){scrollVirtualCard(targetCard,{behavior:"smooth",block:"start"});targetCard.classList.add("bg-teal-50","border-teal-400");setTimeout(()=>{targetCard.classList.remove("bg-teal-50","border-teal-400")},1500)}}let openPaletteId=null;function toggleColorPalette(id,event){if(event)event.stopPropagation();const popup=document.getElementById(`palette-popup-${id}`);const parentCard=popup?popup.closest(".card-container"):null;if(openPaletteId!==null&&openPaletteId!==id){const oldPopup=document.getElementById(`palette-popup-${openPaletteId}`);if(oldPopup){oldPopup.classList.add("hidden");oldPopup.classList.remove("flex");const oldCard=oldPopup.closest(".card-container");if(oldCard)oldCard.style.zIndex=""}}if(popup){if(popup.classList.contains("hidden")){popup.classList.remove("hidden");popup.classList.add("flex");openPaletteId=id;if(parentCard)parentCard.style.zIndex="30"}else{popup.classList.add("hidden");popup.classList.remove("flex");openPaletteId=null;if(parentCard)parentCard.style.zIndex=""}}}document.addEventListener("click",e=>{if(openPaletteId!==null){const popup=document.getElementById(`palette-popup-${openPaletteId}`);if(popup&&!popup.contains(e.target)){popup.classList.add("hidden");popup.classList.remove("flex");const oldCard=popup.closest(".card-container");if(oldCard)oldCard.style.zIndex="";openPaletteId=null}}});function escapeHtml(str){if(!str)return"";return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function toggleRightPane(forceState) {
+}function showToast(title,message,type="success"){const container=document.getElementById("toast-container");const toast=document.createElement("div");let bg="bg-white";let text="text-slate-800";let border="border-slate-200";let iconColor="text-teal-500";let iconName="check-circle";if(type==="error"){border="border-rose-100";bg="bg-rose-50";iconColor="text-rose-500";iconName="alert-triangle"}else if(type==="info"){border="border-blue-100";bg="bg-blue-50";iconColor="text-blue-500";iconName="info"}toast.className=`${bg} ${text} border ${border} rounded-xl shadow-lg p-3 w-72 flex items-start gap-3 pointer-events-auto transition-all duration-300 opacity-0 transform translate-y-2`;toast.innerHTML=`\n        <div class="${iconColor} flex-shrink-0 mt-0.5">\n          <i data-lucide="${iconName}" class="w-5 h-5"></i>\n        </div>\n        <div class="flex-grow">\n          <h4 class="text-xs font-bold">${escapeHtml(title)}</h4>\n          ${message?`<p class="text-[10px] text-slate-500 mt-0.5 leading-tight">${escapeHtml(message)}</p>`:""}\n        </div>\n        <button class="text-slate-400 hover:text-slate-600 self-start" onclick="this.parentElement.remove()">\n          <i data-lucide="x" class="w-3.5 h-3.5"></i>\n        </button>\n      `;container.appendChild(toast);lucide.createIcons({root:toast});setTimeout(()=>{toast.classList.remove("opacity-0","translate-y-2")},50);setTimeout(()=>{toast.classList.add("opacity-0","translate-y-2");setTimeout(()=>{toast.remove()},300)},4e3)}async function extractPdfOutline(doc){const btn=document.getElementById("btn-toggle-pdf-outline");try{const outline=await doc.getOutline();if(!outline||outline.length===0){pdfOutline=[];if(btn){btn.disabled=true;btn.classList.add("opacity-50","cursor-not-allowed");btn.classList.remove("opacity-100")}return}async function resolveNode(node){let pageNum=null;if(node.dest){try{let destObj=node.dest;if(typeof destObj==="string"){destObj=await doc.getDestination(destObj)}if(Array.isArray(destObj)&&destObj.length>0){const pageRef=destObj[0];if(pageRef!==null){if(typeof pageRef==="object"){const pageIndex=await doc.getPageIndex(pageRef);pageNum=pageIndex+1}else if(typeof pageRef==="number"){pageNum=pageRef+1}}}}catch(e){console.error("しおりの宛先解決中にエラー:",e)}}const resolvedChildren=[];if(node.items&&node.items.length>0){for(const child of node.items){resolvedChildren.push(await resolveNode(child))}}return{title:node.title,page:pageNum,items:resolvedChildren}}const resolvedOutline=[];for(const item of outline){resolvedOutline.push(await resolveNode(item))}pdfOutline=resolvedOutline;if(btn){btn.disabled=false;btn.classList.remove("opacity-50","cursor-not-allowed");btn.classList.add("opacity-100")}renderPdfOutline()}catch(e){console.error("しおり抽出エラー:",e);pdfOutline=[];if(btn){btn.disabled=true;btn.classList.add("opacity-50","cursor-not-allowed");btn.classList.remove("opacity-100")}}}function renderPdfOutline(){const container=document.getElementById("preview-outline-tree");if(!container)return;if(pdfOutline.length===0){container.innerHTML=`<p class="text-slate-400 text-center py-6">目次（しおり）はありません</p>`;return}container.innerHTML="";function buildTreeHtml(nodes,depth=0){let html="";nodes.forEach(node=>{const paddingLeft=depth*12;const pageBadge=node.page?`<span class="ml-auto bg-slate-100 text-slate-500 text-[10px] px-1 rounded">P.${node.page}</span>`:"";const clickableClass=node.page?"cursor-pointer hover:bg-slate-100 text-slate-700 font-medium":"text-slate-400 cursor-default";const clickHandler=node.page?`onclick="jumpToPageFromOutline(${node.page})"`:"";html+=`\n            <div class="flex items-center py-1 px-1.5 rounded transition-all ${clickableClass}" style="padding-left: ${paddingLeft+6}px" ${clickHandler}>\n              <i data-lucide="chevron-right" class="w-3.5 h-3.5 mr-1 text-slate-400 flex-shrink-0 ${node.items.length>0?"":"opacity-0"}"></i>\n              <span class="truncate" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</span>\n              ${pageBadge}\n            </div>\n          `;if(node.items&&node.items.length>0){html+=buildTreeHtml(node.items,depth+1)}});return html}container.innerHTML=buildTreeHtml(pdfOutline);lucide.createIcons()}function togglePdfOutlinePanel(){const container=document.getElementById("preview-outline-container");const btn=document.getElementById("btn-toggle-pdf-outline");if(!container||!btn)return;isOutlineOpen=!isOutlineOpen;if(isOutlineOpen){container.classList.remove("hidden");btn.classList.add("bg-slate-200","text-slate-800");btn.classList.remove("text-slate-400")}else{container.classList.add("hidden");btn.classList.remove("bg-slate-200","text-slate-800");btn.classList.add("text-slate-400")}}function importOutlineToCards(){if(!pdfOutline||pdfOutline.length===0){showToast("エラー","PDFに目次がありません。","error");return}if(!confirm("PDFの目次情報を目次カードとして追加しますか？\n（目次名と本文を照合し、対応するカードの直前へ追加します）"))return;saveHistoryState();const contentItems=processedItems.filter(item=>!item.isToc);const normalizeOutlineText=value=>(value||"").normalize("NFKC").toLowerCase().replace(/^[◆◇●○■□▶▷▼▽・▪▫]+/,"").replace(/[\s\u3000]+/g,"");const entries=[];function flatten(nodes,level){for(const node of nodes){if(node.title)entries.push({node:node,level:Math.min(level,6)});if(node.items&&node.items.length)flatten(node.items,level+1)}}flatten(pdfOutline,1);let addedCount=0;for(const{node:node,level:level}of entries){const title=normalizeOutlineText(node.title);const page=Number(node.page)||1;const containsTitle=item=>{const text=normalizeOutlineText(item.text||item.original);return title.length>0&&text.includes(title)};let target=contentItems.find(item=>Number(item.page)===page&&containsTitle(item));if(!target)target=contentItems.find(item=>Math.abs(Number(item.page)-page)<=1&&containsTitle(item));if(!target)target=contentItems.find(item=>Number(item.page)>=page);let insertIndex=target?processedItems.indexOf(target):processedItems.length;if(insertIndex<0)insertIndex=processedItems.length;processedItems.splice(insertIndex,0,{id:globalId++,original:node.title,text:node.title,bookmarked:false,note:"",page:page,color:"slate",tabName:"",charName:"",isCommand:false,isToc:true,tocLevel:level,tocName:"",isCollapsed:false,isCopied:false});addedCount++}if(addedCount>0){saveToLocalStorage();renderList();showToast("目次追加",`PDFの目次から ${addedCount} 件のカードを追加しました！`,"success")}}function jumpToPageFromOutline(pageNum){
+  if(!pageNum)return;
+  jumpToPreviewPage(pageNum);
+  let targetItem=processedItems.find(i=>i.page==pageNum);
+  if(!targetItem){
+    let minDiff=Infinity;
+    for(const it of processedItems){
+      if(it.page){
+        const d=Math.abs(it.page-pageNum);
+        if(d<minDiff){minDiff=d;targetItem=it;}
+      }
+    }
+  }
+  if(targetItem){
+    scrollToItem(targetItem.id,{block:"start",highlightClass:"bg-teal-50 border-teal-400",highlightDuration:1500});
+  }
+}let openPaletteId=null;function toggleColorPalette(id,event){if(event)event.stopPropagation();const popup=document.getElementById(`palette-popup-${id}`);const parentCard=popup?popup.closest(".card-container"):null;if(openPaletteId!==null&&openPaletteId!==id){const oldPopup=document.getElementById(`palette-popup-${openPaletteId}`);if(oldPopup){oldPopup.classList.add("hidden");oldPopup.classList.remove("flex");const oldCard=oldPopup.closest(".card-container");if(oldCard)oldCard.style.zIndex=""}}if(popup){if(popup.classList.contains("hidden")){popup.classList.remove("hidden");popup.classList.add("flex");openPaletteId=id;if(parentCard)parentCard.style.zIndex="30"}else{popup.classList.add("hidden");popup.classList.remove("flex");openPaletteId=null;if(parentCard)parentCard.style.zIndex=""}}}document.addEventListener("click",e=>{if(openPaletteId!==null){const popup=document.getElementById(`palette-popup-${openPaletteId}`);if(popup&&!popup.contains(e.target)){popup.classList.add("hidden");popup.classList.remove("flex");const oldCard=popup.closest(".card-container");if(oldCard)oldCard.style.zIndex="";openPaletteId=null}}});function escapeHtml(str){if(!str)return"";return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function toggleRightPane(forceState) {
   const narrow = isNarrowScreen();
   const currentOpen = (isRightPaneOpen !== null) ? isRightPaneOpen : !narrow;
   if (typeof forceState === "boolean") {
@@ -7176,6 +7297,7 @@ function loadFileScopedData(fileName) {
 
 // --- 卓報告作成 (TRPG Session Report) 制御ロジック ---
 let reportGms = [{ role: "KP", name: "" }];
+let reportKpcs = [];
 let reportPls = [];
 let reportUserEditedText = null;
 let reportInitialized = false;
@@ -7194,6 +7316,7 @@ function getReportData() {
     line: document.getElementById("reportDecLineSelect")?.value || "----------------",
     mark: document.getElementById("reportDecMarkSelect")?.value !== undefined ? document.getElementById("reportDecMarkSelect").value : "",
     gms: Array.isArray(reportGms) ? JSON.parse(JSON.stringify(reportGms)) : [{ role: "KP", name: "" }],
+    kpcs: Array.isArray(reportKpcs) ? JSON.parse(JSON.stringify(reportKpcs)) : [],
     pls: Array.isArray(reportPls) ? JSON.parse(JSON.stringify(reportPls)) : [],
     userEditedText: reportUserEditedText
   };
@@ -7244,10 +7367,12 @@ function applyReportData(data) {
     document.getElementById("reportDecMarkSelect").value = d.mark !== undefined ? d.mark : "";
   }
   reportGms = Array.isArray(d.gms) && d.gms.length > 0 ? JSON.parse(JSON.stringify(d.gms)) : [{ role: "KP", name: "" }];
+  reportKpcs = Array.isArray(d.kpcs) ? JSON.parse(JSON.stringify(d.kpcs)) : [];
   reportPls = Array.isArray(d.pls) && d.pls.length > 0 ? JSON.parse(JSON.stringify(d.pls)) : [];
   reportUserEditedText = d.userEditedText !== undefined ? d.userEditedText : null;
 
   renderReportGmList();
+  renderReportKpcList();
   renderReportPlList();
   generateReportPreview();
 }
@@ -7271,6 +7396,7 @@ function resetReportData() {
     line: "----------------",
     mark: "",
     gms: [{ role: "KP", name: "" }],
+    kpcs: [],
     pls: [],
     userEditedText: null
   });
@@ -7285,6 +7411,7 @@ function initReportDataIfNeeded() {
     syncReportFromExplorer(false);
   } else {
     renderReportGmList();
+    renderReportKpcList();
     renderReportPlList();
   }
 }
@@ -7387,6 +7514,72 @@ function renderReportGmList() {
   if (typeof lucide !== "undefined" && lucide.createIcons) {
     lucide.createIcons({ root: container });
   }
+}
+
+
+function renderReportKpcList() {
+  const container = document.getElementById("reportKpcList");
+  if (!container) return;
+  container.innerHTML = "";
+  if (reportKpcs.length === 0) {
+    container.innerHTML = `<div class="text-[11px] text-slate-400 py-1.5 text-center">KPC/GPCは未設定です（「+KPC追加」で追加できます）</div>`;
+    return;
+  }
+  reportKpcs.forEach((kpc, idx) => {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-1.5";
+    row.innerHTML = `
+      <input type="text" class="report-field-input text-xs" style="width: 75px; flex-shrink: 0;" placeholder="KPC" value="${escapeHtml(kpc.role || "KPC")}" oninput="updateReportKpc(${idx}, 'role', this.value)">
+      <input type="text" class="report-field-input text-xs flex-1" placeholder="PC名 (KPC名)" value="${escapeHtml(kpc.pcName || "")}" oninput="updateReportKpc(${idx}, 'pcName', this.value)">
+      <input type="text" class="report-field-input text-xs flex-1" placeholder="PL名 / 操作者 (任意)" value="${escapeHtml(kpc.plName || "")}" oninput="updateReportKpc(${idx}, 'plName', this.value)">
+      <button type="button" onclick="removeReportKpc(${idx})" class="text-slate-400 hover:text-rose-500 p-1 rounded transition-colors flex-shrink-0" title="削除">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    `;
+    container.appendChild(row);
+  });
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons({ root: container });
+  }
+}
+
+function addReportKpc() {
+  const defaultRole = (reportGms && reportGms.length > 0 && /GM/i.test(reportGms[0].role)) ? "GPC" : "KPC";
+  reportKpcs.push({ role: defaultRole, pcName: "", plName: "" });
+  renderReportKpcList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function removeReportKpc(index) {
+  reportKpcs.splice(index, 1);
+  renderReportKpcList();
+  reportUserEditedText = null;
+  generateReportPreview();
+}
+
+function updateReportKpc(index, field, value) {
+  if (reportKpcs[index]) {
+    reportKpcs[index][field] = value;
+    reportUserEditedText = null;
+    generateReportPreview();
+  }
+}
+
+function formatReportKpcLine(kpc, mark) {
+  let line = "";
+  if (kpc.role) {
+    line += mark ? `${kpc.role} ` : `${kpc.role}: `;
+  }
+  if (mark) line += `${mark} `;
+  if (kpc.pcName && kpc.plName) {
+    line += `${kpc.pcName} / ${kpc.plName}`;
+  } else if (kpc.pcName) {
+    line += kpc.pcName;
+  } else if (kpc.plName) {
+    line += kpc.plName;
+  }
+  return line.trim();
 }
 
 function renderReportPlList() {
@@ -7546,7 +7739,17 @@ const reportTemplates = {
       if (gm.name) text += `${gm.role}: ${gmMark}${gm.name}\n`;
     });
 
-    if (data.gms.some(g => g.name) && data.pls.some(p => p.pcName || p.plName)) {
+    if (data.kpcs && data.kpcs.length > 0) {
+      const activeKpcs = data.kpcs.filter(k => k.pcName || k.plName);
+      if (activeKpcs.length > 0) {
+        if (data.gms.some(g => g.name)) text += `\n`;
+        activeKpcs.forEach(kpc => {
+          text += formatReportKpcLine(kpc, marks.sub) + `\n`;
+        });
+      }
+    }
+
+    if ((data.gms.some(g => g.name) || (data.kpcs && data.kpcs.some(k => k.pcName || k.plName))) && data.pls.some(p => p.pcName || p.plName)) {
       text += `\n`;
     }
 
@@ -7571,6 +7774,16 @@ const reportTemplates = {
 
     let gmLines = data.gms.filter(gm => gm.name).map(gm => `${gm.role}: ${gm.name}`);
     if (gmLines.length) text += gmLines.join(" / ") + `\n`;
+
+    if (data.kpcs && data.kpcs.length > 0) {
+      let kpcLines = data.kpcs.filter(k => k.pcName || k.plName).map(kpc => {
+        let parts = [];
+        if (kpc.pcName) parts.push(kpc.pcName);
+        if (kpc.plName) parts.push(kpc.plName);
+        return `${kpc.role || "KPC"}: ${parts.join(" / ")}`;
+      });
+      if (kpcLines.length) text += kpcLines.join(" / ") + `\n`;
+    }
 
     let plLines = data.pls.filter(pl => pl.pcName || pl.plName).map(pl => {
       let parts = [];
@@ -7605,6 +7818,13 @@ const reportTemplates = {
     data.gms.forEach(gm => {
       if (gm.name) text += m1 ? `${gm.role} ${m1} ${gm.name}\n` : `${gm.role}: ${gm.name}\n`;
     });
+    if (data.kpcs && data.kpcs.length > 0) {
+      data.kpcs.forEach(kpc => {
+        if (kpc.pcName || kpc.plName) {
+          text += formatReportKpcLine(kpc, m2) + `\n`;
+        }
+      });
+    }
     data.pls.forEach(pl => {
       if (pl.pcName || pl.plName) {
         text += formatReportPlLine(pl, m2) + `\n`;
@@ -7643,6 +7863,7 @@ function generateReportPreview() {
     line: document.getElementById("reportDecLineSelect")?.value || "----------------",
     mark: document.getElementById("reportDecMarkSelect")?.value || "",
     gms: reportGms,
+    kpcs: reportKpcs,
     pls: reportPls
   };
 
@@ -8456,7 +8677,8 @@ function saveNpcFromModal() {
   }
 
   if (customCommands) {
-    cmdLines.push(customCommands);
+    const formattedCustom = customCommands.split("\n").map(l => l.replace(/([^\s\r\n])\s*(【[^】\r\n]+】)/g, "$1 $2")).join("\n");
+    cmdLines.push(formattedCustom);
   }
 
   const editIndex = parseInt(document.getElementById("npc-form-edit-index").value, 10);
@@ -8833,6 +9055,20 @@ function generateCcfoliaPieceJson(char) {
 
   // Commands
   let commands = char.commands || "";
+
+  // 技能値と【コメント】の間に必ずスペースを入れる正規化
+  if (commands) {
+    commands = commands.split("\n").map(line => {
+      // 技能値やダイス数式・ステータス等と【コメント】の間に必ず半角スペースを入れる
+      return line.replace(/([^\s\r\n])\s*(【[^】\r\n]+】)/g, "$1 $2");
+    }).join("\n");
+  } else if (char.skills && char.skills.length > 0) {
+    // commandsが未設定だが技能が存在する場合の自動生成フォールバック
+    const prefix = is7th ? "CC" : "CCB";
+    const skillLines = char.skills.map(s => `${prefix}<=${s.value !== undefined ? s.value : (s.val || 0)} 【${s.name}】`);
+    commands = skillLines.join("\n");
+  }
+
   if (!is7th) {
     if (!/(?:^|\n)\s*\/\/\s*db\s*=/i.test(commands) && res.db !== undefined && res.db !== "-") {
       let cleanDb = String(res.db).trim();
