@@ -378,6 +378,12 @@
         <option value="SKP"></option>
         <option value="KPC"></option>
     </datalist>
+    <datalist id="kpcRoleOptions">
+        <option value="KPC"></option>
+        <option value="GPC"></option>
+        <option value="NPC"></option>
+        <option value="DPC"></option>
+    </datalist>
 
     <div class="bg-animations">
         <div class="bg-shape shape-1"></div>
@@ -479,6 +485,15 @@
                 <button type="button" class="btn-add" onclick="addGM()">+ 進行役を追加</button>
             </div>
 
+            <!-- KPCs / GPCs -->
+            <div class="form-group">
+                <label>KPC / GPC</label>
+                <div id="kpcList" class="list-container">
+                    <!-- Dynamic items -->
+                </div>
+                <button type="button" class="btn-add" onclick="addKPC()">+ KPC / GPCを追加</button>
+            </div>
+
             <!-- PCs / PLs -->
             <div class="form-group">
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 0.5rem;">
@@ -539,6 +554,7 @@
     <script>
         // Data models
         let gms = [{ role: 'KP', name: '' }];
+        let kpcs = [{ ho: 'KPC', pcName: '', plName: '' }];
         let pls = [{ ho: 'HO1', pcName: '', plName: '' }];
         let userEditedText = null;
 
@@ -611,16 +627,27 @@
                 const marks = getMarks(data.mark);
                 const gmMark = marks.main ? marks.main + ' ' : '';
                 
-                data.gms.forEach(gm => {
-                    if(gm.name) text += `${gm.role}: ${gmMark}${gm.name}\n`;
+                const validGms = data.gms.filter(gm => gm.name);
+                const validKpcs = (data.kpcs || []).filter(kpc => kpc.pcName || kpc.plName);
+                const validPls = data.pls.filter(pl => pl.pcName || pl.plName);
+
+                validGms.forEach(gm => {
+                    text += `${gm.role}: ${gmMark}${gm.name}\n`;
                 });
                 
-                text += `\n`;
-                data.pls.forEach(pl => {
-                    if(pl.pcName || pl.plName) {
+                if(validKpcs.length > 0) {
+                    if(validGms.length > 0) text += `\n`;
+                    validKpcs.forEach(kpc => {
+                        text += formatPlLine(kpc, marks.sub) + `\n`;
+                    });
+                }
+                
+                if(validPls.length > 0) {
+                    if(validGms.length > 0 || validKpcs.length > 0) text += `\n`;
+                    validPls.forEach(pl => {
                         text += formatPlLine(pl, marks.sub) + `\n`;
-                    }
-                });
+                    });
+                }
                 
                 text += `\n`;
                 if(data.date) text += `(${data.date})\n`;
@@ -638,6 +665,17 @@
                 let gmLines = data.gms.filter(gm => gm.name).map(gm => `${gm.role}: ${gm.name}`);
                 if(gmLines.length) text += gmLines.join(' / ') + `\n`;
                 
+                let kpcLines = (data.kpcs || []).filter(kpc => kpc.pcName || kpc.plName).map(kpc => {
+                    let parts = [];
+                    if(kpc.pcName) parts.push(kpc.pcName);
+                    if(kpc.plName) parts.push(kpc.plName);
+                    return kpc.ho ? `${kpc.ho}.${parts.join('/')}` : parts.join('/');
+                });
+                if(kpcLines.length) {
+                    const prefix = kpcLines.every(l => /^(KPC|GPC|NPC|DPC)/i.test(l)) ? '' : 'KPC: ';
+                    text += prefix + kpcLines.join(' / ') + `\n`;
+                }
+
                 let plLines = data.pls.filter(pl => pl.pcName || pl.plName).map(pl => {
                     let parts = [];
                     if(pl.pcName) parts.push(pl.pcName);
@@ -671,6 +709,11 @@
                 data.gms.forEach(gm => {
                     if(gm.name) text += `${gm.role} ${m1} ${gm.name}\n`;
                 });
+                (data.kpcs || []).forEach(kpc => {
+                    if(kpc.pcName || kpc.plName) {
+                        text += formatPlLine(kpc, m2) + `\n`;
+                    }
+                });
                 data.pls.forEach(pl => {
                     if(pl.pcName || pl.plName) {
                         text += formatPlLine(pl, m2) + `\n`;
@@ -690,6 +733,7 @@
         const previewTextarea = document.getElementById('previewTextarea');
         const charCount = document.getElementById('charCount');
         const gmList = document.getElementById('gmList');
+        const kpcList = document.getElementById('kpcList');
         const plList = document.getElementById('plList');
 
         function escapeHtml(str) {
@@ -720,6 +764,26 @@
             });
         }
 
+        function renderKPCList() {
+            kpcList.innerHTML = '';
+            kpcs.forEach((kpc, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-item';
+                const ho = escapeHtml(kpc.ho);
+                const pc = escapeHtml(kpc.pcName);
+                const plName = escapeHtml(kpc.plName);
+                el.innerHTML = `
+                    <input type="text" list="kpcRoleOptions" placeholder="HOなど (例:KPC)" value="${ho}" style="width:100px;flex:none;" oninput="updateKPC(${index}, 'ho', this.value)">
+                    <div class="pl-item-inputs">
+                        <input type="text" placeholder="PC名" value="${pc}" oninput="updateKPC(${index}, 'pcName', this.value)">
+                        <input type="text" placeholder="PL名" value="${plName}" oninput="updateKPC(${index}, 'plName', this.value)">
+                    </div>
+                    <button class="btn-icon" onclick="removeKPC(${index})" title="削除">×</button>
+                `;
+                kpcList.appendChild(el);
+            });
+        }
+
         function renderPLList() {
             plList.innerHTML = '';
             pls.forEach((pl, index) => {
@@ -744,6 +808,15 @@
         window.addGM = () => { gms.push({ role: 'KP', name: '' }); renderGMList(); generatePreview(); };
         window.removeGM = (index) => { gms.splice(index, 1); renderGMList(); generatePreview(); };
         window.updateGM = (index, field, value) => { gms[index][field] = value; generatePreview(); };
+
+        window.addKPC = () => {
+            const defaultHo = kpcs.length === 0 ? 'KPC' : (kpcs[kpcs.length - 1].ho || 'KPC');
+            kpcs.push({ ho: defaultHo, pcName: '', plName: '' });
+            renderKPCList();
+            generatePreview();
+        };
+        window.removeKPC = (index) => { kpcs.splice(index, 1); renderKPCList(); generatePreview(); };
+        window.updateKPC = (index, field, value) => { kpcs[index][field] = value; generatePreview(); };
 
         window.addPL = () => { 
             const lastHo = pls.length > 0 ? pls[pls.length-1].ho : '';
@@ -774,6 +847,7 @@
                 line: document.getElementById('decLine').value,
                 mark: document.getElementById('decMark').value,
                 gms: gms,
+                kpcs: kpcs,
                 pls: pls
             };
 
@@ -917,6 +991,7 @@
 
         // Init
         renderGMList();
+        renderKPCList();
         renderPLList();
         
         // Auto-set today's date
