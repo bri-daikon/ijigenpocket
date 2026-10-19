@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>異次元ぽけっと農園 〜ゆるキャラたちと不思議な畑〜</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4ade80;
+            --primary-dark: #22c55e;
+            --soil: #8b5a2b;
+            --soil-wet: #5c3a1e;
+            --accent: #f59e0b;
+            --gold: #fbbf24;
+            --card-bg: rgba(255, 255, 255, 0.88);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background: linear-gradient(180deg, #7dd3fc 0%, #bae6fd 30%, #bbf7d0 70%, #86efac 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 天候エフェクト背景 */
+        .sky-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 1s ease;
+        }
+        .weather-rain {
+            background: linear-gradient(180deg, rgba(30, 58, 138, 0.35) 0%, rgba(59, 130, 246, 0.2) 100%);
+            opacity: 0;
+        }
+        .weather-rain.active {
+            opacity: 1;
+        }
+
+        .weather-rainbow {
+            position: absolute;
+            top: 15px;
+            right: 5%;
+            width: 180px;
+            height: 90px;
+            border-radius: 90px 90px 0 0;
+            border: 10px solid transparent;
+            border-top: 10px solid rgba(239, 68, 68, 0.5);
+            box-shadow: 0 -8px 0 0 rgba(245, 158, 11, 0.5), 0 -16px 0 0 rgba(16, 185, 129, 0.5), 0 -24px 0 0 rgba(59, 130, 246, 0.5);
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+        .weather-rainbow.active {
+            opacity: 0.85;
+            animation: rainbowPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes rainbowPulse {
+            0% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); transform: scale(1); }
+            100% { filter: drop-shadow(0 0 25px rgba(253, 224, 71, 0.8)); transform: scale(1.05); }
+        }
+
+        /* 雲のアニメーション */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: 50px;
+            filter: blur(2px);
+            animation: floatCloud linear infinite;
+        }
+        @keyframes floatCloud {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(110vw); }
+        }
+
+        /* ヘッダーエリア */
+        header {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            max-width: 650px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .title-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .title-badge h1 {
+            font-size: 1.05rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .stats-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05), 0 2px 5px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .coin-icon {
+            color: #f59e0b;
+            font-size: 1.15rem;
+            animation: spinCoin 6s infinite ease-in-out;
+        }
+        @keyframes spinCoin {
+            0%, 90% { transform: rotateY(0); }
+            95% { transform: rotateY(180deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        /* メインコンテナ */
+        main {
+            width: 100%;
+            max-width: 650px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+            flex: 1;
+        }
+
+        /* 天気＆環境ステータスバー */
+        .weather-banner {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow);
+        }
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .weather-icon {
+            font-size: 1.4rem;
+        }
+        .weather-buff {
+            font-size: 0.75rem;
+            background: #dcfce7;
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 800;
+        }
+
+        /* ファーム画面エリア */
+        .farm-stage {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 244, 0.88) 100%);
+            border-radius: 24px;
+            padding: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08), inset 0 2px 6px rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            min-height: 280px;
+        }
+
+        /* 畑のグリッド */
+        .field-grid {
+            display: grid;
+            gap: 12px;
+            margin: 0 auto;
+            max-width: 480px;
+        }
+        .grid-2x2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3x3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4x4 { grid-template-columns: repeat(4, 1fr); }
+        .grid-5x5 { grid-template-columns: repeat(5, 1fr); }
+
+        /* 収穫モード切り替えバー */
+        .harvest-mode-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(241, 245, 249, 0.9);
+            padding: 6px 10px;
+            border-radius: 14px;
+            gap: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .harvest-mode-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .harvest-mode-tabs {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+        .mode-tab-btn {
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: #ffffff;
+            color: #64748b;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .mode-tab-btn:hover {
+            color: #1e293b;
+        }
+        .mode-tab-btn.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border-color: #059669;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+        .mode-tab-btn.mode-sell.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #d97706;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+        }
+        .mode-tab-btn.mode-ask.active {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border-color: #4f46e5;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+        }
+
+        /* 料理レベル＆経験値バー */
+        .kitchen-level-badge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+            border: 2px solid #fbcfe8;
+            border-radius: 16px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+        }
+        .kitchen-exp-bar {
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+            border: 1px solid #fbcfe8;
+        }
+        .kitchen-exp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ec4899, #db2777);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 野菜かご（インベントリ）カード */
+        .basket-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 10px 12px;
+            gap: 10px;
+        }
+        .basket-item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        .basket-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-sell-sm {
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #78350f;
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-sell-sm:active {
+            transform: scale(0.95);
+        }
+
+        /* 土のプロット */
+        .plot-tile {
+            aspect-ratio: 1 / 1;
+            background: radial-gradient(circle at 50% 30%, #9a6538, var(--soil));
+            border-radius: 20px;
+            border: 3px solid #6b4320;
+            box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.3), 0 6px 10px rgba(0, 0, 0, 0.15);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .plot-tile:active {
+            transform: scale(0.95);
+        }
+        .plot-tile.wet {
+            background: radial-gradient(circle at 50% 30%, #6e4624, var(--soil-wet));
+            border-color: #442713;
+        }
+        .plot-tile.wet::after {
+            content: '💧';
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 0.85rem;
+            animation: waterGleam 2s infinite ease-in-out;
+        }
+        @keyframes waterGleam {
+            0%, 100% { opacity: 0.6; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* 作物アイコン・見た目 */
+        .crop-img {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.22));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            z-index: 2;
+        }
+        .plot-tile.ready .crop-img {
+            animation: harvestBounce 0.9s infinite alternate cubic-bezier(0.36, 0, 0.66, -0.56);
+        }
+        @keyframes harvestBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-8px) scale(1.15); filter: drop-shadow(0 12px 14px rgba(251, 191, 36, 0.6)); }
+        }
+        .empty-seed-prompt img {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+        }
+        .plot-tile:hover .empty-seed-prompt img {
+            opacity: 0.85;
+        }
+
+        /* キラキラ★品質エフェクト */
+        .quality-badge {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 8px;
+            z-index: 3;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .quality-gold {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            color: #fff;
+        }
+        .quality-rainbow {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6);
+            color: #fff;
+            animation: rainbowSpin 3s linear infinite;
+        }
+
+        /* 成長ゲージバー */
+        .growth-meter {
+            position: absolute;
+            bottom: 6px;
+            left: 8px;
+            right: 8px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        .growth-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #86efac, #22c55e);
+            width: 0%;
+            transition: width 0.2s linear;
+        }
+        .growth-time {
+            position: absolute;
+            bottom: 14px;
+            font-size: 0.65rem;
+            color: #fff;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            z-index: 2;
+        }
+
+        /* 畑の空き地・種植えアイコン */
+        .empty-seed-prompt {
+            font-size: 1.8rem;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .plot-tile:hover .empty-seed-prompt {
+            opacity: 0.7;
+        }
+
+        /* マスコットヘルパー歩行・活動エリア */
+        .mascot-roam-area {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 5;
+        }
+        .mascot-walker {
+            position: absolute;
+            transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .mascot-walker img {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+            animation: mascotBob 1.8s infinite ease-in-out alternate;
+        }
+        @keyframes mascotBob {
+            0% { transform: translateY(0) rotate(-3deg) scale(1); }
+            50% { transform: translateY(-3px) scale(1.03); }
+            100% { transform: translateY(-7px) rotate(3deg) scale(1); }
+        }
+        .mascot-bubble {
+            font-size: 0.68rem;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 3px 8px;
+            font-weight: 800;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            color: #1e293b;
+            border: 1.5px solid #e2e8f0;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        /* ツール・種まきパレット */
+        .control-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 種スクローラー */
+        .seeds-scroller {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 4px 2px;
+        }
+        .seeds-scroller::-webkit-scrollbar { height: 6px; }
+        .seeds-scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        .seed-card {
+            flex: 0 0 auto;
+            width: 82px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 8px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        .seed-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+        .seed-card.selected {
+            border-color: #22c55e;
+            background: #f0fdf4;
+            box-shadow: 0 0 0 2px #22c55e, 0 6px 12px rgba(34, 197, 94, 0.2);
+            transform: translateY(-4px) scale(1.05);
+        }
+        .seed-card .seed-crop-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.12));
+            transition: transform 0.2s;
+        }
+        .seed-card:hover .seed-crop-img {
+            transform: scale(1.1);
+        }
+        .seed-name { font-size: 0.72rem; font-weight: 800; color: #1e293b; text-align: center; }
+        .seed-cost { font-size: 0.68rem; font-weight: 800; color: #d97706; display: flex; align-items: center; gap: 3px; }
+        .seed-time { font-size: 0.62rem; color: #64748b; font-weight: 700; }
+
+        .coin-icon-img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            vertical-align: middle;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+        }
+        .coin-icon-inline {
+            width: 15px;
+            height: 15px;
+            object-fit: contain;
+            vertical-align: -2px;
+            display: inline-block;
+        }
+        .almanac-crop-img {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12));
+        }
+
+        .seed-locked {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+            cursor: not-allowed;
+        }
+
+        /* ツールバー */
+        .tools-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .action-tool-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+        }
+        .action-tool-btn:active { transform: scale(0.96); }
+        .btn-water { background: linear-gradient(135deg, #38bdf8, #0284c7); color: #fff; }
+        .btn-harvest-all { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+
+        /* モーダル共通スタイル */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-sheet {
+            background: #ffffff;
+            width: 100%;
+            max-width: 520px;
+            max-height: 85vh;
+            border-radius: 28px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-close-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+        }
+
+        .modal-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* ゆるキャラ仲間カード */
+        .mascot-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+        .mascot-card.hired {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+        .mascot-img-wrap {
+            width: 68px;
+            height: 68px;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            padding: 4px;
+            border: 2px solid #f1f5f9;
+        }
+        .mascot-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.12));
+            transition: transform 0.2s ease;
+        }
+        .mascot-card:hover .mascot-img-wrap img {
+            transform: scale(1.1);
+        }
+        .mascot-details { flex: 1; }
+        .mascot-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mascot-role {
+            font-size: 0.72rem;
+            color: #15803d;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .mascot-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+        .mascot-hire-btn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(34, 197, 94, 0.3);
+            white-space: nowrap;
+        }
+        .mascot-hire-btn:disabled {
+            background: #cbd5e1;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* 料理アイテムカード */
+        .recipe-card {
+            background: #fdf2f8;
+            border: 2px solid #fbcfe8;
+            border-radius: 18px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+        .recipe-icon {
+            width: 64px;
+            height: 64px;
+            background: #ffffff;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            flex-shrink: 0;
+            overflow: hidden;
+            padding: 4px;
+            border: 2px solid #fce7f3;
+        }
+        .recipe-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.12));
+            transition: transform 0.2s ease;
+        }
+        .recipe-card:hover .recipe-icon img {
+            transform: scale(1.1);
+        }
+        .recipe-info { flex: 1; }
+        .recipe-title { font-size: 0.95rem; font-weight: 800; color: #831843; }
+        .recipe-reqs { font-size: 0.75rem; color: #be185d; font-weight: 700; margin-top: 2px; }
+        .recipe-profit { font-size: 0.8rem; font-weight: 800; color: #d97706; margin-top: 3px; }
+
+        /* 図鑑グリッド */
+        .almanac-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .almanac-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            text-align: center;
+        }
+        .almanac-card.discovered {
+            border-color: #cbd5e1;
+            background: #ffffff;
+        }
+        .almanac-crop-icon { font-size: 2rem; }
+        .almanac-name { font-size: 0.75rem; font-weight: 800; color: #0f172a; }
+        .almanac-count { font-size: 0.65rem; color: #64748b; font-weight: 700; }
+
+        /* フローティング通知・パーティクル */
+        .floating-text {
+            position: fixed;
+            font-weight: 900;
+            pointer-events: none;
+            z-index: 200;
+            animation: floatFade 1.2s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        @keyframes floatFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+            50% { transform: translate(-50%, -30px) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+        }
+
+        /* BGM & サウンドコントローラー */
+        .sound-toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+        }
+
+        /* 下部ナビゲーション */
+        footer {
+            width: 100%;
+            max-width: 650px;
+            padding: 6px 12px 14px;
+            display: flex;
+            justify-content: space-around;
+            gap: 8px;
+            z-index: 20;
+        }
+        .nav-button {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: all 0.15s;
+        }
+        .nav-button:active { transform: scale(0.95); }
+        .nav-icon { font-size: 1.3rem; }
+
+        /* SVGキャラクターグラフィック用のスタイル */
+        .svg-mascot {
+            width: 48px;
+            height: 48px;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.15));
+        }
+
+        /* フッターナビゲーション (8ボタン対応グリッド) */
+        footer {
+            width: 100%;
+            max-width: 650px;
+            padding: 8px 10px 14px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            z-index: 20;
+        }
+
+        .nav-button {
+            position: relative;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            border-radius: 14px;
+            padding: 6px 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .nav-button:hover {
+            transform: translateY(-2px);
+            background: #ffffff;
+            border-color: #cbd5e1;
+        }
+        .nav-button:active {
+            transform: scale(0.94);
+        }
+        .nav-button.highlight-gacha {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        .nav-button.highlight-daily {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .nav-badge-pill {
+            position: absolute;
+            top: -4px;
+            right: -2px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+            animation: badgePulse 1.5s infinite ease-in-out;
+        }
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* レア作物・UR演出 */
+        .seed-card.is-rare {
+            border: 2px solid #8b5cf6;
+            background: linear-gradient(145deg, #faf5ff 0%, #f3e8ff 100%);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.25);
+        }
+        .seed-card.is-rare.selected {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 2px #a855f7, 0 8px 16px rgba(168, 85, 247, 0.35);
+        }
+        .ur-ribbon {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 900;
+            padding: 1px 4px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            animation: urShine 2s infinite linear alternate;
+        }
+        @keyframes urShine {
+            0% { filter: drop-shadow(0 0 2px #ec4899); }
+            100% { filter: drop-shadow(0 0 6px #8b5cf6); }
+        }
+
+        .stock-badge {
+            position: absolute;
+            bottom: 3px;
+            right: 4px;
+            background: #10b981;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .plot-tile.is-rare-crop {
+            box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.4), 0 0 12px rgba(168, 85, 247, 0.3);
+        }
+        .plot-tile.is-rare-crop::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px dashed rgba(192, 132, 252, 0.6);
+            border-radius: 17px;
+            pointer-events: none;
+            animation: rotateDashed 20s linear infinite;
+        }
+        @keyframes rotateDashed {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ガチャモーダル用スタイル */
+        .gacha-stage {
+            background: linear-gradient(180deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+            border-radius: 20px;
+            padding: 20px 14px;
+            text-align: center;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .gacha-stage::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 60%);
+            pointer-events: none;
+            animation: spinBg 30s linear infinite;
+        }
+        @keyframes spinBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .gacha-machine-wrap {
+            position: relative;
+            z-index: 2;
+            margin: 10px auto;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gacha-machine-icon {
+            font-size: 5.5rem;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.4));
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .gacha-machine-icon.shaking {
+            animation: machineShake 0.6s infinite ease-in-out;
+        }
+        @keyframes machineShake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            20% { transform: translate(-6px, 4px) rotate(-6deg) scale(1.05); }
+            40% { transform: translate(6px, -4px) rotate(6deg) scale(1.08); }
+            60% { transform: translate(-4px, -2px) rotate(-4deg) scale(1.05); }
+            80% { transform: translate(4px, 2px) rotate(4deg) scale(1.02); }
+        }
+
+        .gacha-action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            position: relative;
+            z-index: 2;
+        }
+        .btn-gacha-roll {
+            flex: 1;
+            padding: 12px 10px;
+            border-radius: 16px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-gacha-roll:active { transform: scale(0.95); }
+        .btn-gacha-single {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #78350f;
+        }
+        .btn-gacha-multi {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+        }
+
+        /* ガチャ結果表示グリッド */
+        .gacha-result-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .capsule-card {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 6px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: scale(0.5);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.06);
+        }
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+        .capsule-card.is-ur {
+            border: 2px solid #ec4899;
+            background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 100%);
+            box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+            animation: popInUr 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, urGlow 1.8s infinite alternate;
+        }
+        @keyframes popInUr {
+            0% { opacity: 0; transform: scale(0.2) rotate(-15deg); }
+            70% { transform: scale(1.2) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        @keyframes urGlow {
+            0% { box-shadow: 0 0 8px #ec4899; }
+            100% { box-shadow: 0 0 20px #8b5cf6, 0 0 30px #38bdf8; }
+        }
+        .capsule-img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+        .capsule-name {
+            font-size: 0.62rem;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+        .capsule-rarity {
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+        .rarity-normal { background: #f1f5f9; color: #475569; }
+        .rarity-ur { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; }
+
+        /* デイリーボーナスモーダル用スタイル */
+        .daily-box-card {
+            background: linear-gradient(135deg, #fdf4ff 0%, #eff6ff 100%);
+            border: 2px solid #c084fc;
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(192, 132, 252, 0.15);
+        }
+        .daily-chest-icon {
+            font-size: 4.5rem;
+            margin: 6px 0;
+            animation: chestBounce 1.5s infinite ease-in-out alternate;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15));
+            cursor: pointer;
+        }
+        @keyframes chestBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-8px) scale(1.08); }
+        }
+        .daily-streak-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 12px 0 6px;
+        }
+        .streak-pill {
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #64748b;
+        }
+        .streak-pill.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #ffffff;
+            border-color: #d97706;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+        }
+
+        /* 種フィルターバー */
+        .seed-filter-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .seed-filter-btn {
+            flex: 1;
+            padding: 4px 6px;
+            border-radius: 8px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .seed-filter-btn.active {
+            background: #0f172a;
+            color: #ffffff;
+            border-color: #0f172a;
+        }
+
+        @media (max-width: 400px) {
+            .crop-avatar { font-size: 1.8rem; }
+            .seed-card { width: 72px; padding: 6px 4px; }
+            .almanac-grid { grid-template-columns: repeat(2, 1fr); }
+            .gacha-result-container { grid-template-columns: repeat(3, 1fr); }
+            footer { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+            .nav-button { font-size: 0.62rem; padding: 4px 1px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 天候エフェクト背景 -->
+    <div class="sky-layer weather-rain" id="rain-layer"></div>
+    <div class="sky-layer weather-rainbow" id="rainbow-layer"></div>
+    <div class="sky-layer" id="clouds-layer"></div>
+
+    <!-- ヘッダー -->
+    <header>
+        <div class="title-badge">
+            <span style="font-size: 1.4rem;">🌱</span>
+            <div>
+                <h1>異次元ぽけっと農園</h1>
+                <div style="font-size: 0.65rem; color: #64748b; font-weight: 700;">ゆるキャラたちと不思議な畑</div>
+            </div>
+        </div>
+
+        <div class="stats-group">
+            <div class="stat-pill">
+                <img src="img/icon_coin.png" class="coin-icon-img" alt="coin">
+                <span id="gold-display">100</span>
+            </div>
+            <button class="sound-toggle-btn" id="sound-btn" title="サウンド切り替え">🔊</button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main>
+        <!-- 天気ステータスバー -->
+        <div class="weather-banner">
+            <div class="weather-info">
+                <span class="weather-icon" id="weather-icon">☀️</span>
+                <div>
+                    <div id="weather-name">ぽかぽか晴れ</div>
+                    <div class="weather-buff" id="weather-buff">すくすく成長中！</div>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.65rem; color: #64748b; font-weight: 700;">天気予報まで</div>
+                <div style="font-size: 0.85rem; font-weight: 900; color: #0284c7;" id="weather-timer">00:45</div>
+            </div>
+        </div>
+
+        <!-- ファームステージ（畑） -->
+        <div class="farm-stage" id="farm-stage">
+            <!-- ゆるキャラ自由移動レイヤー -->
+            <div class="mascot-roam-area" id="mascot-roam-area"></div>
+
+            <!-- 畑タイルグリッド -->
+            <div class="field-grid grid-2x2" id="field-grid">
+                <!-- JavaScriptで動的生成 -->
+            </div>
+        </div>
+
+        <!-- 操作パネル（種セレクター ＆ ツール） -->
+        <div class="control-panel">
+            <!-- 収穫モード選択タブ -->
+            <div class="harvest-mode-bar">
+                <span class="harvest-mode-label">収穫モード:</span>
+                <div class="harvest-mode-tabs">
+                    <button class="mode-tab-btn mode-ask active" id="mode-btn-ask" type="button" title="収穫時に売却か料理用保管かを選択">❓ 毎回えらぶ</button>
+                    <button class="mode-tab-btn" id="mode-btn-stock" type="button" title="収穫した作物をすべて料理用（野菜かご）にストック">🧺 料理用に保管</button>
+                    <button class="mode-tab-btn mode-sell" id="mode-btn-sell" type="button" title="収穫した作物をすべて即売却してコインに換金">💰 すぐ売却</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; font-weight: 800; color: #334155;">まく種を選んで畑をタップ・なぞってね！</span>
+                <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;" id="crop-level-tag">畑マス数: 4</span>
+            </div>
+
+            <!-- 種フィルタータブ -->
+            <div class="seed-filter-bar">
+                <button class="seed-filter-btn active" id="filter-seed-all" type="button">🌱 すべて</button>
+                <button class="seed-filter-btn" id="filter-seed-normal" type="button">🌿 普段の種</button>
+                <button class="seed-filter-btn" id="filter-seed-rare" type="button">✨ 珍しい種 (UR)</button>
+            </div>
+
+            <!-- 種スクローラー -->
+            <div class="seeds-scroller" id="seeds-container">
+                <!-- JS生成 -->
+            </div>
+
+            <!-- ツールバー -->
+            <div class="tools-bar">
+                <button class="action-tool-btn btn-water" id="tool-water-all">
+                    <span>💧</span> 全マス水やり (15<img src="img/icon_coin.png" class="coin-icon-inline">)
+                </button>
+                <button class="action-tool-btn btn-harvest-all" id="tool-harvest-all">
+                    <span>✨</span> 一括収穫！
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 下部ナビゲーション (8ボタン) -->
+    <footer>
+        <button class="nav-button" id="btn-open-basket">
+            <span class="nav-icon">🧺</span>
+            <span>野菜かご</span>
+        </button>
+        <button class="nav-button" id="btn-open-kitchen">
+            <span class="nav-icon">🍳</span>
+            <span>料理工房</span>
+        </button>
+        <button class="nav-button" id="btn-open-mascots">
+            <span class="nav-icon">🐾</span>
+            <span>仲間たち</span>
+        </button>
+        <button class="nav-button" id="btn-open-shop">
+            <span class="nav-icon">🛒</span>
+            <span>畑の拡張</span>
+        </button>
+        <button class="nav-button highlight-daily" id="btn-open-daily">
+            <span class="nav-badge-pill" id="daily-badge" style="display:none;">!</span>
+            <span class="nav-icon">🎁</span>
+            <span>デイリー</span>
+        </button>
+        <button class="nav-button highlight-gacha" id="btn-open-gacha">
+            <span class="nav-icon">🎰</span>
+            <span>種ガチャ</span>
+        </button>
+        <button class="nav-button" id="btn-open-almanac">
+            <span class="nav-icon">📖</span>
+            <span>収穫図鑑</span>
+        </button>
+        <button class="nav-button" id="btn-open-help">
+            <span class="nav-icon">❓</span>
+            <span>あそびかた</span>
+        </button>
+    </footer>
+
+    <!-- モーダル：仲間たち（ゆるキャラお手伝い） -->
+    <div class="modal-overlay" id="modal-mascots">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">🐾 異次元ポケットの仲間たち</div>
+                <button class="modal-close-btn" data-close="modal-mascots">✕</button>
+            </div>
+            <div class="modal-body" id="mascots-list-body">
+                <!-- JS生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：野菜かご（倉庫・手動売却） -->
+    <div class="modal-overlay" id="modal-basket">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">🧺 野菜かご（収穫物ストック）</div>
+                <button class="modal-close-btn" data-close="modal-basket">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 0.8rem; color: #475569; background: #f0fdf4; padding: 10px; border-radius: 12px; font-weight: 700;">
+                    料理用に保管した野菜たちです。料理に使ったり、急ぎでお金が必要な時はここから直接市場に出荷もできます！
+                </div>
+                <div id="basket-list-body" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- JS生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：料理工房 -->
+    <div class="modal-overlay" id="modal-kitchen">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">🍳 子狐たちの料理工房</div>
+                <button class="modal-close-btn" data-close="modal-kitchen">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 料理レベル＆経験値バー -->
+                <div class="kitchen-level-badge">
+                    <div>
+                        <div style="font-size: 0.95rem; font-weight: 900; color: #831843;" id="kitchen-level-text">🍳 料理レベル: Lv.1</div>
+                        <div style="font-size: 0.7rem; color: #be185d; font-weight: 700;" id="kitchen-exp-text">熟練度: 0 / 100 XP</div>
+                    </div>
+                    <div style="width: 140px;">
+                        <div class="kitchen-exp-bar"><div class="kitchen-exp-fill" id="kitchen-exp-fill" style="width: 0%;"></div></div>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.8rem; color: #475569; background: #fff1f2; padding: 10px; border-radius: 12px; font-weight: 700;">
+                    野菜かごの食材を加工して特製料理を出荷！単品で売るより高額で売れて料理XPも獲得できます✨ 料理レベルが上がると秘伝レシピが解放！
+                </div>
+                <div id="recipes-list-body" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- JS生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：畑の拡張ショップ -->
+    <div class="modal-overlay" id="modal-shop">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">🛒 畑の開墾・拡張ショップ</div>
+                <button class="modal-close-btn" data-close="modal-shop">✕</button>
+            </div>
+            <div class="modal-body" id="shop-body">
+                <!-- JS生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：収穫図鑑 -->
+    <div class="modal-overlay" id="modal-almanac">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">📖 ふしぎ植物図鑑</div>
+                <button class="modal-close-btn" data-close="modal-almanac">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 0.8rem; color: #64748b; font-weight: 700;">
+                    これまでに育てて収穫した作物の記録です。全種コンプリートを目指そう！
+                </div>
+                <div class="almanac-grid" id="almanac-grid-body">
+                    <!-- JS生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：あそびかた -->
+    <div class="modal-overlay" id="modal-help">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title">❓ あそびかたガイド</div>
+                <button class="modal-close-btn" data-close="modal-help">✕</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.85rem; line-height: 1.6; color: #334155;">
+                <p><strong>1. 種を植えよう</strong><br>下部のトレイから種を選び、畑をタップするか、指・マウスでなぞって一気に植え付けられます。</p>
+                <p><strong>2. 水やりでスピードアップ</strong><br>土が湿っている（💧マーク）と、作物の成長速度が2倍になります！雨が降ると全マス自動で潤います。</p>
+                <p><strong>3. 収穫：売却か料理かを選択！</strong><br>作物がピコピコ跳ねたら収穫チャンス！収穫した作物は<strong>「💰 すぐ売ってコインにする」</strong>か<strong>「🧺 料理用に保管する」</strong>かを選べます。画面上部の収穫モードタブで「毎回えらぶ」「料理用」「売却」を切り替えられます。</p>
+                <p><strong>4. 料理工房で高額出荷＆レベルアップ</strong><br>野菜かごに貯めた作物は「料理工房」で豪華な料理に加工できます！単品で売るよりはるかに高額で出荷でき、料理レベルが上がると次々と新レシピが解放されます！</p>
+                <p><strong>5. ゆるキャラたちの力を借りよう</strong><br>「めんだこ（自動水やり）」「シマエナガ（成長短縮）」「ハシビロコウ（品質UP）」「ウッポー（自動収穫）」「子狐きょうだい（料理売値UP）」など、心強い仲間たちが畑を手伝ってくれます。</p>
+                <p><strong>6. 放置でもすくすく育つ</strong><br>ゲームを閉じている間も時間は進みます。次に開いたときに立派に実っていますよ！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：単体収穫選択 -->
+    <div class="modal-overlay" id="modal-harvest-choice">
+        <div class="modal-sheet" style="text-align: center; padding: 22px 18px; max-width: 380px;">
+            <div id="harvest-choice-crop-icon" style="font-size: 3rem; margin-bottom: 6px;">🌱</div>
+            <h3 id="harvest-choice-title" style="font-size: 1.15rem; font-weight: 900; color: #0f172a; margin-bottom: 4px;">収穫しました！</h3>
+            <p id="harvest-choice-desc" style="font-size: 0.82rem; color: #64748b; font-weight: 700; margin-bottom: 18px;">この作物の使い道をえらんでね</p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="mascot-hire-btn" id="btn-choice-sell" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>💰</span>
+                    <span id="btn-choice-sell-text">今すぐ売却 (+0🪙)</span>
+                </button>
+                <button class="mascot-hire-btn" id="btn-choice-stock" style="background: linear-gradient(135deg, #10b981, #059669); padding: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>🧺</span>
+                    <span>野菜かごへ保管 (料理素材にする)</span>
+                </button>
+                <button type="button" class="action-tool-btn" style="background: #f1f5f9; color: #64748b; padding: 10px;" data-close="modal-harvest-choice">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：一括収穫の用途選択 -->
+    <div class="modal-overlay" id="modal-harvest-all-choice">
+        <div class="modal-sheet" style="text-align: center; padding: 22px 18px; max-width: 380px;">
+            <div style="font-size: 3rem; margin-bottom: 6px;">✨🧺</div>
+            <h3 style="font-size: 1.15rem; font-weight: 900; color: #0f172a; margin-bottom: 4px;">一括収穫！</h3>
+            <p id="harvest-all-choice-desc" style="font-size: 0.85rem; color: #475569; font-weight: 700; margin-bottom: 18px;">実った作物をまとめて収穫します。<br>どのように処理しますか？</p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="mascot-hire-btn" id="btn-all-choice-sell" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 14px; font-size: 0.95rem;">
+                    💰 全て今すぐ売却してコインにする
+                </button>
+                <button class="mascot-hire-btn" id="btn-all-choice-stock" style="background: linear-gradient(135deg, #10b981, #059669); padding: 14px; font-size: 0.95rem;">
+                    🧺 全て野菜かごに保管 (料理用)
+                </button>
+                <button type="button" class="action-tool-btn" style="background: #f1f5f9; color: #64748b; padding: 10px;" data-close="modal-harvest-all-choice">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：おかえりなさい（オフライン放置収穫レポート） -->
+    <div class="modal-overlay" id="modal-offline">
+        <div class="modal-sheet" style="text-align: center; padding: 24px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 8px;">🏡✨</div>
+            <h2 style="font-size: 1.25rem; font-weight: 900; color: #15803d; margin-bottom: 6px;">おかえりなさい！</h2>
+            <p id="offline-report-text" style="font-size: 0.9rem; color: #475569; font-weight: 700; margin-bottom: 18px; line-height: 1.5;"></p>
+            <button class="mascot-hire-btn" style="width: 100%; padding: 12px; font-size: 1rem;" data-close="modal-offline">
+                収穫を受け取る！
+            </button>
+        </div>
+    </div>
+
+    <!-- モーダル：デイリーボーナス -->
+    <div class="modal-overlay" id="modal-daily">
+        <div class="modal-sheet" style="max-width: 440px;">
+            <div class="modal-header">
+                <div class="modal-title">🎁 本日のデイリーログインボーナス！</div>
+                <button class="modal-close-btn" data-close="modal-daily">✕</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div class="daily-box-card">
+                    <div style="font-size: 0.85rem; font-weight: 800; color: #7c3aed;">
+                        毎日ログインで珍しい野菜の種が必ずもらえる！
+                    </div>
+                    <div class="daily-chest-icon" id="daily-chest-btn">🎁</div>
+                    <div id="daily-bonus-result-wrap" style="display: none; margin-top: 10px;">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 6px;">
+                            本日のプレゼント種
+                        </div>
+                        <div id="daily-bonus-card" style="display: inline-flex; align-items: center; gap: 10px; background: #ffffff; border: 2px solid #c084fc; border-radius: 16px; padding: 10px 14px; box-shadow: 0 4px 10px rgba(192, 132, 252, 0.2);">
+                            <!-- JS生成 -->
+                        </div>
+                        <div id="daily-coin-bonus" style="font-size: 0.82rem; font-weight: 900; color: #d97706; margin-top: 8px;">
+                            <!-- JS生成 -->
+                        </div>
+                    </div>
+                    <div class="daily-streak-bar" id="daily-streak-bar">
+                        <!-- JS生成 -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 14px;">
+                    <button class="mascot-hire-btn" id="btn-claim-daily" style="width: 100%; padding: 14px; font-size: 1rem; background: linear-gradient(135deg, #a855f7, #6366f1); box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);">
+                        🎁 ボーナスを受け取る！
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：種ガチャ -->
+    <div class="modal-overlay" id="modal-gacha">
+        <div class="modal-sheet" style="max-width: 500px;">
+            <div class="modal-header">
+                <div class="modal-title">🎰 ふしぎの種ガチャマシーン</div>
+                <button class="modal-close-btn" data-close="modal-gacha">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="gacha-stage">
+                    <div style="font-size: 0.72rem; background: rgba(0,0,0,0.3); display: inline-block; padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                        ✨ UR 珍しい種: <strong>0.01%</strong> | 🌿 普段の種: <strong>99.99%</strong>
+                    </div>
+
+                    <div class="gacha-machine-wrap">
+                        <div class="gacha-machine-icon" id="gacha-machine-icon">🎰</div>
+                    </div>
+
+                    <div style="font-size: 0.85rem; font-weight: 800; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        貯めたコインで幻の種を狙おう！
+                    </div>
+                    <div style="font-size: 0.7rem; color: #cbd5e1; margin-top: 2px;">
+                        当たった種はストックされ、畑ですぐに植えられます！
+                    </div>
+
+                    <div class="gacha-action-row">
+                        <button class="btn-gacha-roll btn-gacha-single" id="btn-gacha-1">
+                            <span>🎲 1回まわす</span>
+                            <span style="font-size: 0.75rem;">1,000🪙</span>
+                        </button>
+                        <button class="btn-gacha-roll btn-gacha-multi" id="btn-gacha-10">
+                            <span>✨ 10連まわす (お得!)</span>
+                            <span style="font-size: 0.75rem;">9,000🪙 (-1,000🪙)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ガチャ結果コンテナ -->
+                <div id="gacha-result-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <span style="font-size: 0.8rem; font-weight: 800; color: #0f172a;" id="gacha-result-title">🎉 排出結果</span>
+                        <span style="font-size: 0.7rem; color: #10b981; font-weight: 700;">すべて種ストックに追加済！</span>
+                    </div>
+                    <div class="gacha-result-container" id="gacha-result-grid">
+                        <!-- JS生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+         * 異次元ぽけっと農園 - ゲームスクリプト
+         * ========================================================================= */
+
+        // サウンドシンセサイザー (Web Audio API)
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContextClass();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playPop(freq = 440, duration = 0.08) {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, this.ctx.currentTime + duration);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playHarvest() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.04);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.04);
+                    osc.stop(now + i * 0.04 + 0.12);
+                });
+            }
+
+            playWater() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playCoin() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            playFanfare() {
+                if (!this.enabled) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+                const now = this.ctx.currentTime;
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.3);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        // SVGグラフィックヘルパー (超美麗ベクターイラスト)
+        const SVG_GRAPHICS = {
+            rare_sprout: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="rs_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c084fc"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#4ade80"/></linearGradient></defs><ellipse cx="50" cy="85" rx="30" ry="8" fill="#581c87" opacity="0.4"/><path d="M50,85 Q48,55 35,42 Q20,50 30,68 Q46,75 50,85 Z" fill="url(#rs_grad)" stroke="#fff" stroke-width="2.5"/><path d="M50,85 Q52,50 68,36 Q82,44 72,62 Q56,72 50,85 Z" fill="url(#rs_grad)" stroke="#fff" stroke-width="2.5"/><path d="M50,18 L53,26 L61,28 L55,34 L57,42 L50,37 L43,42 L45,34 L39,28 L47,26 Z" fill="#fde047" stroke="#ca8a04" stroke-width="1.5"/></svg>`,
+            crystal_strawberry: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="c_sb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f472b6"/><stop offset="50%" stop-color="#ec4899"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient><linearGradient id="c_leaf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs><polygon points="50,15 75,35 85,65 50,95 15,65 25,35" fill="url(#c_sb)" stroke="#fff" stroke-width="2.5"/><polygon points="50,15 50,95 85,65" fill="rgba(255,255,255,0.25)"/><polygon points="50,35 70,55 50,80 30,55" fill="rgba(255,255,255,0.4)" stroke="#fff" stroke-width="1.5"/><path d="M50,8 Q42,20 28,18 Q40,25 45,30 Q50,22 55,30 Q60,25 72,18 Q58,20 50,8 Z" fill="url(#c_leaf)" stroke="#fff" stroke-width="1.5"/><circle cx="50" cy="50" r="3" fill="#fff"/><circle cx="65" cy="40" r="2" fill="#fff"/><circle cx="35" cy="65" r="2.5" fill="#fff"/></svg>`,
+            star_potato: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="sp_gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="50%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#b45309"/></linearGradient></defs><ellipse cx="50" cy="52" rx="36" ry="28" fill="url(#sp_gold)" stroke="#fff" stroke-width="2" transform="rotate(-10 50 52)"/><ellipse cx="50" cy="52" rx="46" ry="12" fill="none" stroke="#fde047" stroke-width="3.5" stroke-dasharray="5,3" transform="rotate(25 50 52)"/><path d="M80,18 L83,28 L94,30 L85,38 L88,48 L79,42 L70,48 L73,38 L64,30 L75,28 Z" fill="#fde047" stroke="#d97706" stroke-width="1.5"/><circle cx="42" cy="45" r="3" fill="#d97706" opacity="0.6"/><circle cx="58" cy="55" r="4" fill="#d97706" opacity="0.6"/><circle cx="35" cy="58" r="2.5" fill="#d97706" opacity="0.6"/><path d="M22,30 Q35,28 32,45" stroke="#fff" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`,
+            galaxy_cabbage: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="gc_grad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fdf4ff"/><stop offset="25%" stop-color="#c084fc"/><stop offset="65%" stop-color="#6366f1"/><stop offset="100%" stop-color="#1e1b4b"/></radialGradient></defs><circle cx="50" cy="50" r="42" fill="url(#gc_grad)" stroke="#a855f7" stroke-width="3"/><path d="M50,15 Q75,30 65,60 Q55,85 30,75 Q15,55 30,30 Q40,15 50,15" fill="none" stroke="#e879f9" stroke-width="3.5" stroke-linecap="round"/><path d="M50,28 Q65,40 58,62 Q48,72 38,62" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="50" r="7" fill="#fff"/><circle cx="32" cy="42" r="2" fill="#fff"/><circle cx="68" cy="38" r="1.5" fill="#fff"/><circle cx="60" cy="68" r="2" fill="#fff"/><circle cx="38" cy="65" r="1.5" fill="#fff"/></svg>`,
+            aurora_onion: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="ao_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a7f3d0"/><stop offset="40%" stop-color="#2dd4bf"/><stop offset="70%" stop-color="#818cf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs><path d="M50,20 C75,38 85,62 75,80 C65,95 35,95 25,80 C15,62 25,38 50,20 Z" fill="url(#ao_grad)" stroke="#fff" stroke-width="2.5"/><path d="M50,20 L50,88 M36,32 C30,50 30,72 40,86 M64,32 C70,50 70,72 60,86" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"/><path d="M50,22 Q46,8 38,2 Q48,10 50,22 Q52,10 62,2 Q54,8 50,22 Z" fill="#34d399" stroke="#fff" stroke-width="1.5"/><circle cx="42" cy="55" r="3" fill="#fff" opacity="0.8"/></svg>`,
+            phoenix_chili: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pc_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="30%" stop-color="#f97316"/><stop offset="70%" stop-color="#ef4444"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient></defs><path d="M48,25 Q35,50 45,75 Q52,90 68,95 Q58,80 56,65 Q52,45 60,28 Z" fill="url(#pc_grad)" stroke="#fde047" stroke-width="2.5"/><path d="M54,28 Q40,15 28,12 Q42,20 48,26 Q56,12 70,8 Q60,18 56,28 Z" fill="#fbbf24" stroke="#d97706" stroke-width="2"/><circle cx="50" cy="58" r="2.5" fill="#fef08a"/><circle cx="48" cy="72" r="2" fill="#fef08a"/></svg>`,
+            moonlight_radish: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="mr_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#fef9c3"/><stop offset="100%" stop-color="#fde047"/></linearGradient></defs><path d="M42,25 C68,32 78,60 62,88 C55,95 48,95 45,86 C55,62 48,40 32,30 Z" fill="url(#mr_grad)" stroke="#facc15" stroke-width="2.5"/><path d="M36,28 Q28,14 15,10 Q28,18 34,26 Q36,12 45,5 Q40,16 38,28 Z" fill="#4ade80" stroke="#16a34a" stroke-width="1.5"/><circle cx="58" cy="52" r="3.5" fill="#fff"/><circle cx="52" cy="68" r="2.5" fill="#fff"/></svg>`,
+            jewel_pea: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="jp_pod" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="100%" stop-color="#eab308"/></linearGradient></defs><path d="M15,75 Q35,88 75,70 Q92,58 90,42 Q60,70 25,62 Q15,70 15,75 Z" fill="url(#jp_pod)" stroke="#ca8a04" stroke-width="2.5"/><circle cx="32" cy="60" r="8" fill="#ef4444" stroke="#fff" stroke-width="1.5"/><circle cx="48" cy="54" r="8.5" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><circle cx="65" cy="48" r="9" fill="#10b981" stroke="#fff" stroke-width="1.5"/><circle cx="80" cy="40" r="7.5" fill="#a855f7" stroke="#fff" stroke-width="1.5"/><circle cx="30" cy="58" r="2.5" fill="#fff"/><circle cx="46" cy="52" r="2.5" fill="#fff"/><circle cx="63" cy="46" r="3" fill="#fff"/></svg>`,
+            sun_mango: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="sm_grad" cx="40%" cy="40%" r="60%"><stop offset="0%" stop-color="#fef08a"/><stop offset="50%" stop-color="#f97316"/><stop offset="100%" stop-color="#dc2626"/></radialGradient></defs><path d="M50,10 L54,20 L64,14 L64,25 L75,22 L71,32 L82,34 L74,42 L84,48 L73,53 L81,62 L70,64 L74,75 L63,73 L63,84 L53,78 L49,88 L43,78 L33,84 L33,73 L22,75 L26,64 L15,62 L23,53 L12,48 L22,42 L14,34 L25,32 L21,22 L32,25 L32,14 L42,20 Z" fill="#fef08a" opacity="0.45"/><path d="M48,22 C68,22 82,40 76,62 C70,82 48,86 36,74 C26,62 30,34 48,22 Z" fill="url(#sm_grad)" stroke="#fff" stroke-width="2.5"/><path d="M48,22 Q45,12 38,6 Q45,14 48,22 Z" fill="#22c55e" stroke="#15803d" stroke-width="1.5"/><ellipse cx="45" cy="40" rx="6" ry="12" fill="#fff" opacity="0.5" transform="rotate(-25 45 40)"/></svg>`,
+            time_bamboo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="tb_grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6ee7b7"/><stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/></linearGradient></defs><path d="M50,10 C45,30 25,60 25,85 C40,92 60,92 75,85 C75,60 55,30 50,10 Z" fill="url(#tb_grad)" stroke="#065f46" stroke-width="2.5"/><path d="M28,82 Q50,75 72,82 M33,65 Q50,58 67,65 M40,46 Q50,40 60,46" fill="none" stroke="#fef08a" stroke-width="2.5"/><circle cx="50" cy="62" r="12" fill="rgba(255,255,255,0.85)" stroke="#d97706" stroke-width="2"/><line x1="50" y1="62" x2="50" y2="54" stroke="#78350f" stroke-width="2" stroke-linecap="round"/><line x1="50" y1="62" x2="56" y2="62" stroke="#78350f" stroke-width="1.5" stroke-linecap="round"/><circle cx="50" cy="62" r="1.5" fill="#78350f"/></svg>`,
+            miracle_peach: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="mp_grad" cx="45%" cy="40%" r="55%"><stop offset="0%" stop-color="#fdf2f8"/><stop offset="35%" stop-color="#f472b6"/><stop offset="75%" stop-color="#ec4899"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs><path d="M15,82 Q25,72 40,78 Q50,68 65,75 Q80,72 88,84 Q70,95 30,92 Q15,88 15,82 Z" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="2"/><path d="M50,15 C30,22 18,48 25,68 C32,82 48,84 50,84 C52,84 68,82 75,68 C82,48 70,22 50,15 Z" fill="url(#mp_grad)" stroke="#fff" stroke-width="2.5"/><path d="M50,15 C48,35 48,65 50,84" fill="none" stroke="#be185d" stroke-width="2.5" opacity="0.6"/><path d="M50,18 Q40,8 24,10 Q38,18 48,22 Q58,12 74,10 Q60,18 52,22" fill="#4ade80" stroke="#15803d" stroke-width="1.5"/><circle cx="36" cy="42" r="5" fill="#fff" opacity="0.7"/></svg>`,
+            // 料理SVG
+            dish_star_stew: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="d_stew" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="50%" stop-color="#312e81"/><stop offset="100%" stop-color="#4338ca"/></linearGradient></defs><ellipse cx="50" cy="72" rx="42" ry="18" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/><ellipse cx="50" cy="62" rx="38" ry="15" fill="url(#d_stew)" stroke="#fff" stroke-width="2"/><polygon points="45,55 47,59 52,60 48,63 49,68 45,65 41,68 42,63 38,60 43,59" fill="#fde047"/><polygon points="60,52 61,55 65,56 62,58 63,62 60,60 57,62 58,58 55,56 59,55" fill="#f97316"/><circle cx="35" cy="62" r="3.5" fill="#fde047"/><circle cx="50" cy="55" r="1.5" fill="#fff"/><circle cx="68" cy="60" r="2" fill="#fff"/><path d="M40,45 Q45,35 40,25 M50,45 Q55,35 50,22 M60,45 Q65,35 60,25" fill="none" stroke="#e0e7ff" stroke-width="2" stroke-linecap="round" opacity="0.7"/></svg>`,
+            dish_aurora_soup: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="d_as" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2dd4bf"/><stop offset="50%" stop-color="#818cf8"/><stop offset="100%" stop-color="#f472b6"/></linearGradient></defs><path d="M20,40 C20,70 30,85 50,85 C70,85 80,70 80,40 Z" fill="rgba(255,255,255,0.7)" stroke="#67e8f9" stroke-width="2.5"/><ellipse cx="50" cy="42" rx="28" ry="10" fill="url(#d_as)"/><path d="M30,42 Q50,48 70,42" stroke="#fff" stroke-width="2" fill="none"/><circle cx="48" cy="40" r="3" fill="#22c55e"/><circle cx="54" cy="43" r="2.5" fill="#22c55e"/><ellipse cx="50" cy="85" rx="20" ry="5" fill="#94a3b8" opacity="0.4"/></svg>`,
+            dish_crystal_tart: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="72" rx="42" ry="18" fill="#d97706" stroke="#78350f" stroke-width="2.5"/><ellipse cx="50" cy="66" rx="36" ry="14" fill="#fef3c7"/><polygon points="45,45 55,42 60,52 50,60 40,54" fill="#ec4899" stroke="#fff" stroke-width="1.5"/><polygon points="30,52 38,48 42,56 35,62 26,58" fill="#38bdf8" stroke="#fff" stroke-width="1.5"/><polygon points="62,50 70,46 75,54 68,60 60,56" fill="#a855f7" stroke="#fff" stroke-width="1.5"/><circle cx="50" cy="50" r="2.5" fill="#fff"/><circle cx="35" cy="54" r="2" fill="#fff"/><circle cx="66" cy="52" r="2" fill="#fff"/></svg>`,
+            dish_galaxy_salad: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="42" ry="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2.5"/><ellipse cx="50" cy="64" rx="36" ry="18" fill="#4338ca"/><path d="M30,55 Q50,45 70,55 Q60,75 40,70 Z" fill="#6d28d9"/><circle cx="38" cy="58" r="4.5" fill="#3b82f6" stroke="#fff" stroke-width="1"/><circle cx="58" cy="55" r="4.5" fill="#ec4899" stroke="#fff" stroke-width="1"/><circle cx="48" cy="65" r="5" fill="#facc15" stroke="#fff" stroke-width="1"/><circle cx="42" cy="52" r="2" fill="#fff"/><circle cx="62" cy="62" r="2" fill="#fff"/></svg>`,
+            dish_phoenix_mapo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="42" ry="16" fill="#1e293b" stroke="#0f172a" stroke-width="3"/><ellipse cx="50" cy="65" rx="38" ry="14" fill="#dc2626"/><rect x="35" y="55" width="8" height="8" rx="2" fill="#fef08a" transform="rotate(15 39 59)"/><rect x="52" y="52" width="9" height="9" rx="2" fill="#fef08a" transform="rotate(-20 56 56)"/><rect x="44" y="62" width="8" height="8" rx="2" fill="#fef08a" transform="rotate(10 48 66)"/><path d="M32,60 Q38,52 46,58" stroke="#581c87" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M55,62 Q62,56 68,64" stroke="#581c87" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M48,45 Q50,30 45,20 M55,45 Q58,32 52,22" stroke="#ea580c" stroke-width="2.5" fill="none"/></svg>`,
+            dish_moon_oden: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="18" fill="#78350f" stroke="#451a03" stroke-width="2.5"/><ellipse cx="50" cy="64" rx="36" ry="14" fill="#fef08a"/><path d="M30,55 C45,50 50,65 42,72 C35,68 32,62 30,55 Z" fill="#fff" stroke="#ca8a04" stroke-width="2"/><rect x="52" y="52" width="16" height="16" fill="#f97316" rx="3" transform="rotate(25 60 60)"/><polygon points="45,50 55,46 52,60" fill="#a16207"/><circle cx="58" cy="60" r="2" fill="#fff"/></svg>`,
+            dish_jewel_pilaf: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2.5"/><ellipse cx="50" cy="62" rx="35" ry="16" fill="#facc15" stroke="#eab308" stroke-width="2"/><circle cx="35" cy="58" r="3.5" fill="#ef4444" stroke="#fff" stroke-width="1"/><circle cx="48" cy="54" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1"/><circle cx="62" cy="56" r="3.5" fill="#10b981" stroke="#fff" stroke-width="1"/><circle cx="42" cy="64" r="3.5" fill="#a855f7" stroke="#fff" stroke-width="1"/><circle cx="55" cy="65" r="3" fill="#f97316" stroke="#fff" stroke-width="1"/></svg>`,
+            dish_sun_crepe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="40" ry="15" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/><polygon points="20,70 50,25 80,70" fill="#fef08a" stroke="#d97706" stroke-width="2"/><circle cx="50" cy="38" r="9" fill="#fff"/><circle cx="50" cy="38" r="6" fill="#f97316"/><circle cx="38" cy="50" r="5" fill="#f97316"/><circle cx="62" cy="50" r="5" fill="#f97316"/><circle cx="50" cy="58" r="5" fill="#ec4899"/><path d="M46,36 Q50,30 54,36" stroke="#fff" stroke-width="2" fill="none"/></svg>`,
+            dish_time_ramen: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#dc2626" stroke="#991b1b" stroke-width="3"/><ellipse cx="50" cy="60" rx="38" ry="16" fill="#fef08a"/><path d="M25,58 Q50,68 75,58 M28,62 Q50,72 72,62" stroke="#d97706" stroke-width="2" fill="none"/><polygon points="32,50 45,45 42,62 30,60" fill="#10b981" stroke="#047857" stroke-width="1.5"/><circle cx="52" cy="55" r="6" fill="#fff" stroke="#ec4899" stroke-width="2"/><circle cx="52" cy="55" r="3" fill="#ec4899"/><ellipse cx="65" cy="56" rx="6" ry="7" fill="#f97316" stroke="#fff" stroke-width="1.5"/></svg>`,
+            dish_miracle_fondue: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="40" ry="14" fill="#1e293b" opacity="0.3"/><path d="M30,55 L35,80 L65,80 L70,55 Z" fill="#fbbf24" stroke="#b45309" stroke-width="2.5"/><ellipse cx="50" cy="55" rx="20" ry="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/><circle cx="50" cy="55" r="4" fill="#ec4899" opacity="0.5"/><line x1="25" y1="30" x2="48" y2="52" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="36" r="6" fill="#f472b6" stroke="#fff" stroke-width="1"/><circle cx="70" cy="40" r="5" fill="#fde047" stroke="#fff" stroke-width="1"/></svg>`
+        };
+
+        function getSvgDataUri(key) {
+            const raw = SVG_GRAPHICS[key] || '';
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(raw.trim());
+        }
+
+        // 作物マスターデータ（普段の種14種 ＋ 珍しい幻の野菜10種）
+        const CROPS = [
+            // 普段の野菜（14種）
+            { id: 'turnip', name: 'ぽかぽかカブ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_turnip.png', growSec: 12, cost: 6, sell: 12, licenseCost: 0, isRare: false },
+            { id: 'tomato', name: 'ぷちトマト', sproutImg: 'img/crop_sprout.png', img: 'img/crop_tomato.png', growSec: 24, cost: 18, sell: 36, licenseCost: 60, isRare: false },
+            { id: 'corn', name: 'もこもこトウモロコシ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_corn.png', growSec: 36, cost: 32, sell: 65, licenseCost: 160, isRare: false },
+            { id: 'carrot', name: 'おひさまニンジン', sproutImg: 'img/crop_sprout.png', img: 'img/crop_carrot.png', growSec: 50, cost: 50, sell: 105, licenseCost: 350, isRare: false },
+            { id: 'berry', name: 'ほしぞらベリー', sproutImg: 'img/crop_sprout.png', img: 'img/crop_berry.png', growSec: 80, cost: 110, sell: 240, licenseCost: 800, isRare: false },
+            { id: 'grape', name: 'ぷるぷるブドウ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_grape.png', growSec: 120, cost: 180, sell: 400, licenseCost: 1600, isRare: false },
+            { id: 'mushroom', name: 'ふしぎキノコ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_mushroom.png', growSec: 160, cost: 260, sell: 600, licenseCost: 3000, isRare: false },
+            { id: 'eggplant', name: 'ほっぺナス', sproutImg: 'img/crop_sprout.png', img: 'img/crop_eggplant.png', growSec: 210, cost: 380, sell: 900, licenseCost: 5000, isRare: false },
+            { id: 'watermelon', name: 'まんまるスイカ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_watermelon.png', growSec: 280, cost: 550, sell: 1350, licenseCost: 8000, isRare: false },
+            { id: 'lemon', name: 'つきあかりレモン', sproutImg: 'img/crop_sprout.png', img: 'img/crop_lemon.png', growSec: 360, cost: 800, sell: 2000, licenseCost: 12000, isRare: false },
+            { id: 'pumpkin', name: '月光カボチャ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_pumpkin.png', growSec: 480, cost: 1200, sell: 3100, licenseCost: 18000, isRare: false },
+            { id: 'melon', name: 'にじいろメロン', sproutImg: 'img/crop_sprout.png', img: 'img/crop_melon.png', growSec: 600, cost: 2000, sell: 5400, licenseCost: 28000, isRare: false },
+            { id: 'dragonfruit', name: 'コスモドラゴンフルーツ', sproutImg: 'img/crop_sprout.png', img: 'img/crop_dragonfruit.png', growSec: 800, cost: 3200, sell: 9000, licenseCost: 45000, isRare: false },
+            { id: 'tree_apple', name: '世界樹のりんご', sproutImg: 'img/crop_sprout.png', img: 'img/crop_tree_apple.png', growSec: 1200, cost: 5000, sell: 15000, licenseCost: 70000, isRare: false },
+
+            // 珍しい野菜の種（UR・全10種、ガチャ＆デイリー限定！）
+            { id: 'crystal_strawberry', name: '水晶イチゴ', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('crystal_strawberry'), growSec: 90, cost: 0, sell: 18000, licenseCost: 0, isRare: true },
+            { id: 'star_potato', name: '流星ポテト', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('star_potato'), growSec: 120, cost: 0, sell: 24000, licenseCost: 0, isRare: true },
+            { id: 'galaxy_cabbage', name: '銀河キャベツ', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('galaxy_cabbage'), growSec: 160, cost: 0, sell: 32000, licenseCost: 0, isRare: true },
+            { id: 'aurora_onion', name: 'オーロラタマネギ', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('aurora_onion'), growSec: 200, cost: 0, sell: 40000, licenseCost: 0, isRare: true },
+            { id: 'phoenix_chili', name: '不死鳥唐辛子', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('phoenix_chili'), growSec: 240, cost: 0, sell: 48000, licenseCost: 0, isRare: true },
+            { id: 'moonlight_radish', name: '月光ダイコン', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('moonlight_radish'), growSec: 280, cost: 0, sell: 56000, licenseCost: 0, isRare: true },
+            { id: 'jewel_pea', name: '宝飾エンドウ', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('jewel_pea'), growSec: 320, cost: 0, sell: 65000, licenseCost: 0, isRare: true },
+            { id: 'sun_mango', name: '太陽のマンゴー', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('sun_mango'), growSec: 380, cost: 0, sell: 75000, licenseCost: 0, isRare: true },
+            { id: 'time_bamboo', name: '時渡りのタケノコ', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('time_bamboo'), growSec: 450, cost: 0, sell: 90000, licenseCost: 0, isRare: true },
+            { id: 'miracle_peach', name: '悠久の仙桃', sproutImg: getSvgDataUri('rare_sprout'), img: getSvgDataUri('miracle_peach'), growSec: 600, cost: 0, sell: 120000, licenseCost: 0, isRare: true }
+        ];
+
+        // ゆるキャラマスターデータ
+        const MASCOTS = [
+            {
+                id: 'mendako',
+                name: 'めんだこ',
+                role: 'スプリンクラー水やり隊',
+                desc: '畑をぷかぷか巡回し、乾いた土に定期的に水をまいてくれます。',
+                cost: 150,
+                imgSrc: 'img/farm_mendako.png'
+            },
+            {
+                id: 'shimaenaga',
+                name: 'シマエナガ',
+                role: '成長促進のうた',
+                desc: '作物のそばでチュンチュン歌い、畑全体の作物の成長時間を短縮します。',
+                cost: 600,
+                imgSrc: 'img/farm_shimaenaga.png'
+            },
+            {
+                id: 'hashibirokou',
+                name: 'ハシビロコウ',
+                role: '幸運の見守り神',
+                desc: 'じーーっと作物を凝視することで、ゴールド★や虹★の変異率がアップ！',
+                cost: 1800,
+                imgSrc: 'img/farm_shoebill.png'
+            },
+            {
+                id: 'uppo',
+                name: 'ウッポー',
+                role: '自動収穫ポーター',
+                desc: '実った作物を自動で収穫してくれます（収穫モード設定に合わせて保管または売却）。',
+                cost: 5000,
+                imgSrc: 'img/farm_uppou.png'
+            },
+            {
+                id: 'kogitsune',
+                name: '子狐きょうだい',
+                role: '料理工房の見習いシェフ',
+                desc: '料理出荷額が1.5倍に跳ね上がり、料理経験値も+50%ボーナス！',
+                cost: 12000,
+                imgSrc: 'img/farm_kogitsune.png'
+            },
+            {
+                id: 'emo_jelly',
+                name: 'エモ・クラゲ',
+                role: '気象コントローラー',
+                desc: '空を浮遊し、恵みの雨や奇跡の虹の発生チャンスを倍増させます。',
+                cost: 25000,
+                imgSrc: 'img/farm_emojelly.png'
+            }
+        ];
+
+        // 料理レシピデータ（基本14種 ＋ 新料理10種 = 計24種）
+        const RECIPES = [
+            // 基本料理（14種）
+            { id: 'soup', reqLevel: 1, name: 'カブのぽかぽかポタージュ', img: 'img/dish_soup.png', req: { turnip: 3 }, sellPrice: 65, exp: 20 },
+            { id: 'salad', reqLevel: 1, name: '特製トマトサラダ', img: 'img/dish_salad.png', req: { tomato: 2, turnip: 1 }, sellPrice: 150, exp: 30 },
+            { id: 'doria', reqLevel: 2, name: 'コーンとトマトの香ばしドリア', img: 'img/dish_doria.png', req: { corn: 2, tomato: 2, turnip: 2 }, sellPrice: 420, exp: 50 },
+            { id: 'curry', reqLevel: 2, name: 'おひさま野菜カレー', img: 'img/dish_curry.png', req: { carrot: 2, tomato: 2, corn: 1 }, sellPrice: 600, exp: 60 },
+            { id: 'jam', reqLevel: 3, name: 'ほしぞらベリージャム', img: 'img/dish_jam.png', req: { berry: 3, turnip: 1 }, sellPrice: 1300, exp: 90 },
+            { id: 'pizza', reqLevel: 4, name: '森のふしぎピッツァ', img: 'img/dish_pizza.png', req: { mushroom: 2, tomato: 3, corn: 1 }, sellPrice: 2500, exp: 140 },
+            { id: 'pasta', reqLevel: 5, name: 'ほっぺナスの森風ボロネーゼ', img: 'img/dish_pasta.png', req: { eggplant: 2, tomato: 3, mushroom: 1 }, sellPrice: 4600, exp: 200 },
+            { id: 'sandwich', reqLevel: 6, name: 'ジューシィ・フルーツサンド', img: 'img/dish_sandwich.png', req: { grape: 2, watermelon: 1, berry: 2 }, sellPrice: 5000, exp: 260 },
+            { id: 'pie', reqLevel: 7, name: '月光パンプキンパイ', img: 'img/dish_pie.png', req: { pumpkin: 2, berry: 2, carrot: 1 }, sellPrice: 12500, exp: 380 },
+            { id: 'lemonade', reqLevel: 8, name: '月明かりハニーレモネード', img: 'img/dish_lemonade.png', req: { lemon: 2, grape: 2, melon: 1 }, sellPrice: 19000, exp: 550 },
+            { id: 'parfait', reqLevel: 9, name: '奇跡のにじいろパフェ', img: 'img/dish_parfait.png', req: { melon: 2, watermelon: 2, berry: 3, lemon: 1 }, sellPrice: 32000, exp: 850 },
+            { id: 'apple_juice', reqLevel: 10, name: '世界樹の黄金ジュース', img: 'img/dish_apple_juice.png', req: { tree_apple: 1, lemon: 2, melon: 1 }, sellPrice: 48000, exp: 1200 },
+            { id: 'paella', reqLevel: 10, name: '銀河のコスモパエリア', img: 'img/dish_paella.png', req: { dragonfruit: 2, pumpkin: 2, mushroom: 3, corn: 2 }, sellPrice: 55000, exp: 1500 },
+            { id: 'apple_pie', reqLevel: 10, name: '世界樹の至高アップルパイ', img: 'img/dish_apple_pie.png', req: { tree_apple: 2, melon: 2, pumpkin: 2 }, sellPrice: 100000, exp: 2500 },
+
+            // 多様な野菜を組み合わせて作る新料理（10種）
+            { id: 'dish_star_stew', reqLevel: 5, name: '流星ポテトの星空シチュー', img: getSvgDataUri('dish_star_stew'), req: { star_potato: 1, melon: 1, carrot: 2 }, sellPrice: 52000, exp: 650 },
+            { id: 'dish_aurora_soup', reqLevel: 6, name: 'オーロラオニオンの七色スープ', img: getSvgDataUri('dish_aurora_soup'), req: { aurora_onion: 1, tomato: 3, turnip: 2 }, sellPrice: 68000, exp: 850 },
+            { id: 'dish_crystal_tart', reqLevel: 6, name: '水晶イチゴのジュエルタルト', img: getSvgDataUri('dish_crystal_tart'), req: { crystal_strawberry: 1, tree_apple: 1, grape: 2 }, sellPrice: 82000, exp: 1000 },
+            { id: 'dish_galaxy_salad', reqLevel: 7, name: '銀河キャベツと果実のコスモサラダ', img: getSvgDataUri('dish_galaxy_salad'), req: { galaxy_cabbage: 1, berry: 3, lemon: 2 }, sellPrice: 96000, exp: 1200 },
+            { id: 'dish_phoenix_mapo', reqLevel: 7, name: '不死鳥麻婆茄子 (灼熱仕立て)', img: getSvgDataUri('dish_phoenix_mapo'), req: { phoenix_chili: 1, eggplant: 3, mushroom: 2 }, sellPrice: 115000, exp: 1400 },
+            { id: 'dish_moon_oden', reqLevel: 8, name: '月光ダイコンと秋野菜の極みおでん', img: getSvgDataUri('dish_moon_oden'), req: { moonlight_radish: 1, pumpkin: 2, corn: 2 }, sellPrice: 138000, exp: 1700 },
+            { id: 'dish_jewel_pilaf', reqLevel: 8, name: '宝飾エンドウの黄金宝石ピラフ', img: getSvgDataUri('dish_jewel_pilaf'), req: { jewel_pea: 1, corn: 3, watermelon: 1 }, sellPrice: 165000, exp: 2000 },
+            { id: 'dish_sun_crepe', reqLevel: 9, name: '太陽マンゴーの王冠クレープ', img: getSvgDataUri('dish_sun_crepe'), req: { sun_mango: 1, dragonfruit: 1, berry: 3 }, sellPrice: 198000, exp: 2400 },
+            { id: 'dish_time_ramen', reqLevel: 9, name: '時渡りタケノコの幻影極上ラーメン', img: getSvgDataUri('dish_time_ramen'), req: { time_bamboo: 1, mushroom: 2, tomato: 2, turnip: 2 }, sellPrice: 240000, exp: 2900 },
+            { id: 'dish_miracle_fondue', reqLevel: 10, name: '悠久仙桃と星果実の奇跡フォンデュ', img: getSvgDataUri('dish_miracle_fondue'), req: { miracle_peach: 1, crystal_strawberry: 1, star_potato: 1, tree_apple: 2 }, sellPrice: 380000, exp: 5000 }
+        ];
+
+        // 料理レベルテーブル
+        const KITCHEN_EXP_TABLE = [
+            0,     // Lv.0
+            50,    // Lv.1 -> 2
+            120,   // Lv.2 -> 3
+            250,   // Lv.3 -> 4
+            500,   // Lv.4 -> 5
+            900,   // Lv.5 -> 6
+            1500,  // Lv.6 -> 7
+            2500,  // Lv.7 -> 8
+            4000,  // Lv.8 -> 9
+            6500,  // Lv.9 -> 10
+            999999 // Lv.10 (MAX)
+        ];
+
+        // ゲーム状態データ
+        const gameState = {
+            gold: 100,
+            plotsCount: 4, // 4 -> 9 -> 16 -> 25
+            selectedSeedId: 'turnip',
+            unlockedSeeds: ['turnip'],
+            harvestMode: 'ask', // 'ask' | 'stock' | 'sell'
+            kitchenLevel: 1,
+            kitchenExp: 0,
+            plots: [], // { id, cropId, plantedAt, wet, waterTimer, quality: 1|2|5 }
+            hiredMascots: {}, // id: boolean
+            inventory: {}, // cropId: count
+            almanac: {}, // cropId: { harvested: 0, maxQuality: 1 }
+            seedStock: {}, // cropId: count
+            dailyBonus: { lastDate: '', streak: 0 },
+            seedFilter: 'all', // 'all' | 'normal' | 'rare'
+            weather: 'sunny', // 'sunny' | 'rain' | 'rainbow'
+            weatherCountdown: 45,
+            lastSaveTime: Date.now()
+        };
+
+        // 選択中の一時収穫ターゲットプロット
+        let pendingHarvestPlotIndex = null;
+
+        // 初期化処理
+        function initGame() {
+            loadSavedData();
+            checkSeedUnlocks();
+            buildFieldGrid();
+            renderSeedsSelector();
+            renderMascotsList();
+            renderKitchenList();
+            renderBasketList();
+            renderShopList();
+            renderAlmanacGrid();
+            updateHarvestModeUI();
+            updateDailyBadge();
+            updateUI();
+            setupEventListeners();
+            startWeatherCycle();
+            startMainLoop();
+            checkOfflineProgress();
+            checkDailyBonusOnLoad();
+        }
+
+        // 畑グリッド構築
+        function buildFieldGrid() {
+            const gridEl = document.getElementById('field-grid');
+            gridEl.innerHTML = '';
+
+            gridEl.className = 'field-grid';
+            if (gameState.plotsCount <= 4) gridEl.classList.add('grid-2x2');
+            else if (gameState.plotsCount <= 9) gridEl.classList.add('grid-3x3');
+            else if (gameState.plotsCount <= 16) gridEl.classList.add('grid-4x4');
+            else gridEl.classList.add('grid-5x5');
+
+            while (gameState.plots.length < gameState.plotsCount) {
+                gameState.plots.push({
+                    id: gameState.plots.length,
+                    cropId: null,
+                    currentGrow: 0,
+                    wet: false,
+                    wetDuration: 0,
+                    quality: 1
+                });
+            }
+
+            gameState.plots.forEach((plot, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'plot-tile';
+                tile.id = `plot-${index}`;
+                tile.dataset.index = index;
+
+                tile.addEventListener('pointerdown', () => {
+                    handlePlotAction(index);
+                });
+                tile.addEventListener('pointerenter', (e) => {
+                    if (e.buttons === 1) {
+                        handlePlotAction(index);
+                    }
+                });
+
+                gridEl.appendChild(tile);
+            });
+            updatePlotsView();
+        }
+
+        // プロット表示更新
+        function updatePlotsView() {
+            gameState.plots.forEach((plot, index) => {
+                const tile = document.getElementById(`plot-${index}`);
+                if (!tile) return;
+
+                tile.className = 'plot-tile' + (plot.wet ? ' wet' : '');
+
+                if (!plot.cropId) {
+                    tile.innerHTML = `<span class="empty-seed-prompt"><img src="img/crop_sprout.png" alt="空き地"></span>`;
+                    return;
+                }
+
+                const crop = CROPS.find(c => c.id === plot.cropId);
+                if (!crop) return;
+
+                if (crop.isRare) {
+                    tile.classList.add('is-rare-crop');
+                }
+
+                const growTarget = crop.growSec;
+                const current = plot.currentGrow || 0;
+                const progress = Math.min(1, current / growTarget);
+                const isReady = progress >= 1;
+
+                if (isReady) {
+                    tile.classList.add('ready');
+                }
+
+                let badgeHtml = '';
+                if (crop.isRare) {
+                    badgeHtml += `<span class="ur-ribbon" style="top:4px; left:6px; right:auto;">✨UR</span>`;
+                }
+                if (plot.quality === 2) badgeHtml += `<span class="quality-badge quality-gold" style="${crop.isRare ? 'left:40px;' : ''}">★GOLD</span>`;
+                if (plot.quality === 5) badgeHtml += `<span class="quality-badge quality-rainbow" style="${crop.isRare ? 'left:40px;' : ''}">★★★RAINBOW</span>`;
+
+                const displayImg = isReady ? crop.img : crop.sproutImg;
+                const remSec = Math.max(0, Math.ceil(growTarget - current));
+                const timeText = isReady ? '収穫OK!' : `${remSec}s${plot.wet ? '⚡' : '💤'}`;
+
+                tile.innerHTML = `
+                    ${badgeHtml}
+                    <img src="${displayImg}" class="crop-img" alt="${crop.name}">
+                    <div class="growth-time">${timeText}</div>
+                    <div class="growth-meter">
+                        <div class="growth-bar" style="width: ${progress * 100}%;"></div>
+                    </div>
+                `;
+            });
+        }
+
+        // プロット操作（植える or 収穫）
+        function handlePlotAction(plotIndex) {
+            const plot = gameState.plots[plotIndex];
+            if (!plot) return;
+
+            if (plot.cropId) {
+                const crop = CROPS.find(c => c.id === plot.cropId);
+                if ((plot.currentGrow || 0) >= crop.growSec) {
+                    harvestPlot(plotIndex);
+                    return;
+                }
+            }
+
+            if (!plot.cropId) {
+                plantSeed(plotIndex);
+            }
+        }
+
+        // 種まき
+        function plantSeed(plotIndex) {
+            const crop = CROPS.find(c => c.id === gameState.selectedSeedId);
+            if (!crop) return;
+
+            const stock = gameState.seedStock[crop.id] || 0;
+            let usedStock = false;
+
+            if (stock > 0) {
+                // 所持種ストックを優先消費（コイン不要！）
+                gameState.seedStock[crop.id]--;
+                usedStock = true;
+            } else if (crop.isRare) {
+                createFloatingText('所持種がありません！ガチャやデイリーでGETしてね！', '#ec4899');
+                sound.playPop(300);
+                return;
+            } else {
+                if (gameState.gold < crop.cost) {
+                    createFloatingText('コインが足りません！', '#ef4444');
+                    sound.playPop(300);
+                    return;
+                }
+                gameState.gold -= crop.cost;
+            }
+
+            const plot = gameState.plots[plotIndex];
+
+            let quality = 1;
+            let goldRate = 0.12;
+            let rainbowRate = 0.02;
+
+            if (gameState.hiredMascots['hashibirokou']) {
+                goldRate += 0.15;
+                rainbowRate += 0.05;
+            }
+            if (gameState.weather === 'rainbow') {
+                goldRate += 0.3;
+                rainbowRate += 0.2;
+            }
+
+            const r = Math.random();
+            if (r < rainbowRate) quality = 5;
+            else if (r < goldRate) quality = 2;
+
+            plot.cropId = crop.id;
+            plot.currentGrow = 0;
+            plot.quality = quality;
+            plot.wetDuration = 0;
+            if (gameState.weather === 'rain') plot.wet = true;
+
+            sound.playPop(crop.isRare ? 750 : 500);
+            if (usedStock) {
+                createFloatingText(`🌱 ${crop.name} を植えました (種消費)`, '#10b981', plotIndex);
+            } else {
+                createFloatingText(`-${crop.cost}🪙`, '#f59e0b', plotIndex);
+            }
+            updatePlotsView();
+            updateUI();
+            saveData();
+        }
+
+        // 収穫（モードに応じた分岐処理）
+        function harvestPlot(plotIndex, forcedMode = null) {
+            const plot = gameState.plots[plotIndex];
+            if (!plot || !plot.cropId) return;
+
+            const mode = forcedMode || gameState.harvestMode;
+
+            if (mode === 'ask') {
+                pendingHarvestPlotIndex = plotIndex;
+                const crop = CROPS.find(c => c.id === plot.cropId);
+                const earned = crop.sell * plot.quality;
+
+                document.getElementById('harvest-choice-crop-icon').innerHTML = `<img src="${crop.img}" style="width:72px; height:72px; object-fit:contain;">`;
+                document.getElementById('harvest-choice-title').textContent = `${crop.name} を収穫！`;
+                document.getElementById('btn-choice-sell-text').textContent = `今すぐ市場で売却 (+${earned}🪙)`;
+
+                document.getElementById('modal-harvest-choice').classList.add('active');
+                sound.playPop(650);
+                return;
+            }
+
+            executeHarvest(plotIndex, mode);
+        }
+
+        // 収穫の実行処理（売却 or 料理用保管）
+        function executeHarvest(plotIndex, action) {
+            const plot = gameState.plots[plotIndex];
+            if (!plot || !plot.cropId) return;
+
+            const crop = CROPS.find(c => c.id === plot.cropId);
+            const earned = crop.sell * plot.quality;
+
+            if (action === 'sell') {
+                gameState.gold += earned;
+                sound.playCoin();
+                createFloatingText(`+${earned}🪙 (売却)`, '#f59e0b', plotIndex);
+            } else {
+                // 'stock' (料理用に保管)
+                gameState.inventory[crop.id] = (gameState.inventory[crop.id] || 0) + 1;
+                sound.playHarvest();
+                createFloatingText(`+1 🧺 (野菜かごへ)`, '#10b981', plotIndex);
+            }
+
+            if (!gameState.almanac[crop.id]) {
+                gameState.almanac[crop.id] = { harvested: 0, maxQuality: 1 };
+                createFloatingText(`📖 新種発見！${crop.name}`, '#10b981');
+                sound.playFanfare();
+            }
+            gameState.almanac[crop.id].harvested++;
+            if (plot.quality > gameState.almanac[crop.id].maxQuality) {
+                gameState.almanac[crop.id].maxQuality = plot.quality;
+            }
+
+            plot.cropId = null;
+            plot.currentGrow = 0;
+            plot.quality = 1;
+            plot.wetDuration = 0;
+            if (gameState.weather !== 'rain') plot.wet = false;
+
+            updatePlotsView();
+            updateUI();
+            renderKitchenList();
+            renderBasketList();
+            renderAlmanacGrid();
+            saveData();
+        }
+
+        // 全マス水やり
+        function waterAllPlots() {
+            const cost = 15;
+            if (gameState.gold < cost) {
+                createFloatingText('コインが足りません！', '#ef4444');
+                return;
+            }
+            gameState.gold -= cost;
+            gameState.plots.forEach(plot => {
+                plot.wet = true;
+                plot.wetDuration = 0;
+            });
+            sound.playWater();
+            createFloatingText('-15🪙 全マス潤いました！', '#38bdf8');
+            updatePlotsView();
+            updateUI();
+            saveData();
+        }
+
+        // 一括収穫
+        function harvestAllReadyPlots() {
+            const readyPlots = [];
+            gameState.plots.forEach((plot, index) => {
+                if (plot.cropId) {
+                    const crop = CROPS.find(c => c.id === plot.cropId);
+                    if ((plot.currentGrow || 0) >= crop.growSec) {
+                        readyPlots.push(index);
+                    }
+                }
+            });
+
+            if (readyPlots.length === 0) {
+                createFloatingText('収穫できる作物がありません', '#64748b');
+                return;
+            }
+
+            if (gameState.harvestMode === 'ask') {
+                document.getElementById('harvest-all-choice-desc').innerHTML = `実った <strong>${readyPlots.length} 個</strong> の作物をまとめて収穫します。<br>どのように処理しますか？`;
+                document.getElementById('modal-harvest-all-choice').classList.add('active');
+                sound.playPop(650);
+                return;
+            }
+
+            readyPlots.forEach(idx => {
+                executeHarvest(idx, gameState.harvestMode);
+            });
+        }
+
+        // 一括収穫アクション決定
+        function executeHarvestAll(mode) {
+            document.getElementById('modal-harvest-all-choice').classList.remove('active');
+            let count = 0;
+            gameState.plots.forEach((plot, idx) => {
+                if (plot.cropId) {
+                    const crop = CROPS.find(c => c.id === plot.cropId);
+                    if ((plot.currentGrow || 0) >= crop.growSec) {
+                        executeHarvest(idx, mode);
+                        count++;
+                    }
+                }
+            });
+            if (count > 0) {
+                if (mode === 'sell') createFloatingText(`🌾 ${count}個を一括売却しました！`, '#f59e0b');
+                else createFloatingText(`🧺 ${count}個を野菜かごに保管しました！`, '#10b981');
+            }
+        }
+
+        // 収穫モードUI更新
+        function updateHarvestModeUI() {
+            ['ask', 'stock', 'sell'].forEach(mode => {
+                const btn = document.getElementById(`mode-btn-${mode}`);
+                if (btn) {
+                    if (gameState.harvestMode === mode) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 種解放状態チェック
+        function checkSeedUnlocks() {
+            if (!gameState.unlockedSeeds || !Array.isArray(gameState.unlockedSeeds)) {
+                gameState.unlockedSeeds = ['turnip'];
+            }
+            if (!gameState.unlockedSeeds.includes('turnip')) {
+                gameState.unlockedSeeds.push('turnip');
+            }
+        }
+
+        // 種ライセンス購入
+        window.buySeedLicense = function(cropId) {
+            const crop = CROPS.find(c => c.id === cropId);
+            if (!crop) return;
+
+            if (gameState.gold < crop.licenseCost) {
+                createFloatingText('コインが足りません！', '#ef4444');
+                return;
+            }
+
+            gameState.gold -= crop.licenseCost;
+            gameState.unlockedSeeds.push(crop.id);
+            gameState.selectedSeedId = crop.id;
+            sound.playFanfare();
+            createFloatingText(`🎉 ${crop.name} の栽培ライセンス取得！`, '#22c55e');
+
+            renderSeedsSelector();
+            updateUI();
+            saveData();
+        };
+
+        // 種セレクター描画
+        function renderSeedsSelector() {
+            checkSeedUnlocks();
+            const container = document.getElementById('seeds-container');
+            if (!container) return;
+            const savedScrollLeft = container.scrollLeft;
+            container.innerHTML = '';
+
+            let list = CROPS;
+            if (gameState.seedFilter === 'normal') {
+                list = CROPS.filter(c => !c.isRare);
+            } else if (gameState.seedFilter === 'rare') {
+                list = CROPS.filter(c => c.isRare);
+            }
+
+            list.forEach(crop => {
+                const isUnlocked = crop.isRare || gameState.unlockedSeeds.includes(crop.id);
+                const stock = gameState.seedStock[crop.id] || 0;
+                const card = document.createElement('div');
+                card.className = `seed-card ${crop.id === gameState.selectedSeedId ? 'selected' : ''} ${!isUnlocked ? 'seed-locked' : ''} ${crop.isRare ? 'is-rare' : ''}`;
+                
+                let ribbon = crop.isRare ? `<span class="ur-ribbon">UR</span>` : '';
+                let stockBadge = stock > 0 ? `<span class="stock-badge">×${stock}</span>` : '';
+
+                let costInfo = '';
+                if (stock > 0) {
+                    costInfo = `<div class="seed-cost" style="color:#10b981; font-weight:900;">所持種で無料</div>`;
+                } else if (crop.isRare) {
+                    costInfo = `<div class="seed-cost" style="color:#a855f7; font-size:0.62rem;">限定 (所持0)</div>`;
+                } else if (!isUnlocked) {
+                    costInfo = `<div class="seed-cost" style="color:#6366f1; font-size:0.62rem; font-weight:900;">📜 🪙${crop.licenseCost}</div>`;
+                } else {
+                    costInfo = `<div class="seed-cost"><img src="img/icon_coin.png" class="coin-icon-inline" alt="G"> ${crop.cost}</div>`;
+                }
+
+                card.innerHTML = `
+                    ${ribbon}
+                    <img src="${crop.img}" class="seed-crop-img" alt="${crop.name}" style="${!isUnlocked ? 'filter:grayscale(1) opacity(0.5);' : ''}">
+                    <div class="seed-name">${crop.name}</div>
+                    ${costInfo}
+                    <div class="seed-time">⏱️ ${crop.growSec}秒</div>
+                    ${stockBadge}
+                `;
+
+                card.addEventListener('click', () => {
+                    if (!crop.isRare && !gameState.unlockedSeeds.includes(crop.id)) {
+                        if (confirm(`【農協ライセンス発行】\n『${crop.name}』の種ライセンスを 🪙${crop.licenseCost} で購入して栽培を開放しますか？`)) {
+                            window.buySeedLicense(crop.id);
+                        }
+                        return;
+                    }
+                    if (crop.isRare && (gameState.seedStock[crop.id] || 0) <= 0) {
+                        createFloatingText('所持種がありません！ガチャやデイリーでGETしてね！', '#ec4899');
+                    }
+                    gameState.selectedSeedId = crop.id;
+                    renderSeedsSelector();
+                    sound.playPop(crop.isRare ? 700 : 600);
+                });
+
+                container.appendChild(card);
+            });
+            container.scrollLeft = savedScrollLeft;
+        }
+
+        // 仲間たちモーダル描画
+        function renderMascotsList() {
+            const container = document.getElementById('mascots-list-body');
+            container.innerHTML = '';
+
+            MASCOTS.forEach(mascot => {
+                const isHired = !!gameState.hiredMascots[mascot.id];
+                const card = document.createElement('div');
+                card.className = `mascot-card ${isHired ? 'hired' : ''}`;
+
+                card.innerHTML = `
+                    <div class="mascot-img-wrap"><img src="${mascot.imgSrc}" alt="${mascot.name}"></div>
+                    <div class="mascot-details">
+                        <div class="mascot-name">${mascot.name} ${isHired ? '<span style="color:#16a34a; font-size:0.75rem;">(お手伝い中)</span>' : ''}</div>
+                        <div class="mascot-role">特技: ${mascot.role}</div>
+                        <div class="mascot-desc">${mascot.desc}</div>
+                    </div>
+                    <div>
+                        ${isHired ? 
+                            `<button class="mascot-hire-btn" style="background:#e2e8f0; color:#64748b; cursor:default;" disabled>仲間入り済</button>` :
+                            `<button class="mascot-hire-btn" onclick="hireMascot('${mascot.id}')">雇用 🪙${mascot.cost}</button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateMascotRoamingArea();
+        }
+
+        // 仲間雇用
+        window.hireMascot = function(mascotId) {
+            const mascot = MASCOTS.find(m => m.id === mascotId);
+            if (!mascot) return;
+
+            if (gameState.gold < mascot.cost) {
+                createFloatingText('コインが足りません！', '#ef4444');
+                return;
+            }
+
+            gameState.gold -= mascot.cost;
+            gameState.hiredMascots[mascotId] = true;
+            sound.playFanfare();
+            createFloatingText(`🎉 ${mascot.name} が仲間になった！`, '#22c55e');
+
+            renderMascotsList();
+            updateUI();
+            saveData();
+        };
+
+        // 畑を歩き回るマスコットのアニメーション配置
+        function updateMascotRoamingArea() {
+            const roamArea = document.getElementById('mascot-roam-area');
+            roamArea.innerHTML = '';
+
+            Object.keys(gameState.hiredMascots).forEach(id => {
+                const mascot = MASCOTS.find(m => m.id === id);
+                if (!mascot) return;
+
+                const walker = document.createElement('div');
+                walker.className = 'mascot-walker';
+                walker.id = `walker-${id}`;
+
+                let bubbleText = 'るんるん♪';
+                if (id === 'mendako') bubbleText = 'ぷしゅー💧';
+                if (id === 'shimaenaga') bubbleText = 'チュン♪';
+                if (id === 'hashibirokou') bubbleText = 'じーーっ';
+                if (id === 'uppo') bubbleText = '収穫まかせて！';
+                if (id === 'kogitsune') bubbleText = 'おいしくなぁれ🍳';
+                if (id === 'emo_jelly') bubbleText = 'ふわふわ〜🌈';
+
+                walker.innerHTML = `
+                    <div class="mascot-bubble">${bubbleText}</div>
+                    <img src="${mascot.imgSrc}" alt="${mascot.name}">
+                `;
+
+                walker.style.left = `${10 + Math.random() * 70}%`;
+                walker.style.top = `${10 + Math.random() * 60}%`;
+
+                roamArea.appendChild(walker);
+            });
+        }
+
+        // 野菜かご（倉庫）描画
+        function renderBasketList() {
+            const container = document.getElementById('basket-list-body');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let hasItem = false;
+            CROPS.forEach(crop => {
+                const count = gameState.inventory[crop.id] || 0;
+                if (count > 0) {
+                    hasItem = true;
+                    const item = document.createElement('div');
+                    item.className = 'basket-item';
+                    if (crop.isRare) {
+                        item.style.border = '2px solid #c084fc';
+                        item.style.background = 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)';
+                    }
+
+                    item.innerHTML = `
+                        <div class="basket-item-info">
+                            <img src="${crop.img}" style="width:40px; height:40px; object-fit:contain;" alt="${crop.name}">
+                            <div>
+                                <div style="font-weight:900; font-size:0.85rem; color:#0f172a; display:flex; align-items:center; gap:4px;">
+                                    ${crop.name} ${crop.isRare ? '<span class="ur-ribbon" style="position:static;">✨UR</span>' : ''}
+                                </div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:700;">所持数: <strong style="color:#0f172a;">${count}個</strong> (出荷単価: 🪙${crop.sell.toLocaleString()})</div>
+                            </div>
+                        </div>
+                        <div class="basket-item-actions">
+                            <button class="btn-sell-sm" onclick="sellInventoryItem('${crop.id}', 1)">1個売却</button>
+                            <button class="btn-sell-sm" style="background: linear-gradient(135deg, #f59e0b, #d97706); color:#fff;" onclick="sellInventoryItem('${crop.id}', ${count})">全数売却</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                }
+            });
+
+            if (!hasItem) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:30px 10px; color:#94a3b8;">
+                        <div style="font-size:2.5rem; margin-bottom:8px;">🧺🍃</div>
+                        <div style="font-size:0.85rem; font-weight:800;">野菜かごは空っぽです</div>
+                        <div style="font-size:0.75rem; margin-top:4px;">作物を収穫する際に「料理用に保管」を選ぶとここにストックされます！</div>
+                    </div>
+                `;
+            }
+        }
+
+        // 野菜かごからの手動売却
+        window.sellInventoryItem = function(cropId, count) {
+            const current = gameState.inventory[cropId] || 0;
+            if (current < count || count <= 0) return;
+
+            const crop = CROPS.find(c => c.id === cropId);
+            const earned = crop.sell * count;
+
+            gameState.inventory[cropId] -= count;
+            gameState.gold += earned;
+            sound.playCoin();
+            createFloatingText(`+${earned.toLocaleString()}🪙 (野菜出荷)`, '#f59e0b');
+
+            renderBasketList();
+            renderKitchenList();
+            updateUI();
+            saveData();
+        };
+
+        // 料理工房描画
+        function renderKitchenList() {
+            const container = document.getElementById('recipes-list-body');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // 料理レベル＆EXPバー更新
+            const curLv = gameState.kitchenLevel || 1;
+            const curExp = gameState.kitchenExp || 0;
+            const maxExp = KITCHEN_EXP_TABLE[curLv] || 999999;
+            const progress = curLv >= 10 ? 100 : Math.min(100, Math.floor((curExp / maxExp) * 100));
+
+            const levelText = document.getElementById('kitchen-level-text');
+            const expText = document.getElementById('kitchen-exp-text');
+            const expFill = document.getElementById('kitchen-exp-fill');
+
+            if (levelText) levelText.textContent = `🍳 料理レベル: Lv.${curLv}${curLv >= 10 ? ' (極)' : ''}`;
+            if (expText) expText.textContent = curLv >= 10 ? '最高ランク到達！' : `熟練度: ${curExp} / ${maxExp} XP`;
+            if (expFill) expFill.style.width = `${progress}%`;
+
+            RECIPES.forEach(recipe => {
+                const isLevelUnlocked = curLv >= recipe.reqLevel;
+                let canCook = isLevelUnlocked;
+                let reqStrings = [];
+
+                for (const [cropId, count] of Object.entries(recipe.req)) {
+                    const crop = CROPS.find(c => c.id === cropId);
+                    const current = gameState.inventory[cropId] || 0;
+                    if (current < count) canCook = false;
+                    const nameBadge = crop.isRare ? `<span style="color:#a855f7;">${crop.name}</span>` : crop.name;
+                    reqStrings.push(`<span style="display:inline-flex; align-items:center; gap:2px;"><img src="${crop.img}" class="coin-icon-inline" style="width:18px;height:18px;">${nameBadge}×${count}(所持:${current})</span>`);
+                }
+
+                let finalSell = recipe.sellPrice;
+                let finalExp = recipe.exp;
+                if (gameState.hiredMascots['kogitsune']) {
+                    finalSell = Math.floor(finalSell * 1.5);
+                    finalExp = Math.floor(finalExp * 1.5);
+                }
+
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+                if (!isLevelUnlocked) {
+                    card.style.opacity = '0.55';
+                    card.style.filter = 'grayscale(0.5)';
+                }
+
+                card.innerHTML = `
+                    <div class="recipe-icon"><img src="${recipe.img}" alt="${recipe.name}"></div>
+                    <div class="recipe-info">
+                        <div class="recipe-title">${recipe.name} ${!isLevelUnlocked ? `<span style="font-size:0.75rem; color:#ef4444; font-weight:800;">(🔒 料理Lv.${recipe.reqLevel}で解放)</span>` : ''}</div>
+                        <div class="recipe-reqs" style="display:flex; flex-wrap:wrap; gap:6px;">${reqStrings.join(' / ')}</div>
+                        <div class="recipe-profit">出荷額: <img src="img/icon_coin.png" class="coin-icon-inline"> ${finalSell.toLocaleString()} ${gameState.hiredMascots['kogitsune'] ? '(子狐ボーナスx1.5!)' : ''} | 獲得XP: +${finalExp}</div>
+                    </div>
+                    <div>
+                        <button class="mascot-hire-btn" ${canCook ? '' : 'disabled'} onclick="cookRecipe('${recipe.id}')">
+                            ${isLevelUnlocked ? '料理する' : '未解放'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 料理作成＆即時出荷
+        window.cookRecipe = function(recipeId) {
+            const recipe = RECIPES.find(r => r.id === recipeId);
+            if (!recipe) return;
+
+            if (gameState.kitchenLevel < recipe.reqLevel) {
+                createFloatingText('料理レベルが足りません！', '#ef4444');
+                return;
+            }
+
+            for (const [cropId, count] of Object.entries(recipe.req)) {
+                if ((gameState.inventory[cropId] || 0) < count) return;
+            }
+            for (const [cropId, count] of Object.entries(recipe.req)) {
+                gameState.inventory[cropId] -= count;
+            }
+
+            let finalSell = recipe.sellPrice;
+            let finalExp = recipe.exp;
+            if (gameState.hiredMascots['kogitsune']) {
+                finalSell = Math.floor(finalSell * 1.5);
+                finalExp = Math.floor(finalExp * 1.5);
+            }
+
+            gameState.gold += finalSell;
+            gameState.kitchenExp = (gameState.kitchenExp || 0) + finalExp;
+
+            // レベルアップ判定
+            const curLv = gameState.kitchenLevel || 1;
+            const maxExp = KITCHEN_EXP_TABLE[curLv] || 999999;
+            if (curLv < 10 && gameState.kitchenExp >= maxExp) {
+                gameState.kitchenExp -= maxExp;
+                gameState.kitchenLevel = curLv + 1;
+                sound.playFanfare();
+                createFloatingText(`🎉 料理Lv.${gameState.kitchenLevel} にレベルアップ！新レシピ解放！`, '#ec4899');
+            } else {
+                sound.playCoin();
+                createFloatingText(`🍳 ${recipe.name} 完成！ +${finalSell.toLocaleString()}🪙 (+${finalExp}XP)`, '#ec4899');
+            }
+
+            renderKitchenList();
+            renderBasketList();
+            updateUI();
+            saveData();
+        };
+
+        // ショップ（畑拡張）
+        function renderShopList() {
+            const container = document.getElementById('shop-body');
+            container.innerHTML = '';
+
+            const expansions = [
+                { plots: 9, name: '畑を中サイズに拡張 (3×3 = 9マス)', cost: 800 },
+                { plots: 16, name: '畑を大農園に拡張 (4×4 = 16マス)', cost: 3500 },
+                { plots: 25, name: '畑をギガ農園に拡張 (5×5 = 25マス)', cost: 12000 }
+            ];
+
+            expansions.forEach(exp => {
+                const isBought = gameState.plotsCount >= exp.plots;
+                const canAfford = gameState.gold >= exp.cost;
+
+                const item = document.createElement('div');
+                item.className = 'mascot-card';
+                item.innerHTML = `
+                    <div class="mascot-img-wrap" style="font-size:1.8rem;">🚜</div>
+                    <div class="mascot-details">
+                        <div class="mascot-name">${exp.name}</div>
+                        <div class="mascot-desc">一度に育てられる作物の数が大幅に増えます！</div>
+                    </div>
+                    <div>
+                        ${isBought ? 
+                            `<button class="mascot-hire-btn" style="background:#e2e8f0; color:#64748b;" disabled>拡張完了</button>` :
+                            `<button class="mascot-hire-btn" ${canAfford ? '' : 'disabled'} onclick="buyExpansion(${exp.plots}, ${exp.cost})">開墾 🪙${exp.cost.toLocaleString()}</button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.buyExpansion = function(targetPlots, cost) {
+            if (gameState.gold < cost) return;
+            gameState.gold -= cost;
+            gameState.plotsCount = targetPlots;
+            sound.playFanfare();
+            createFloatingText('🎉 畑を拡張しました！', '#22c55e');
+
+            buildFieldGrid();
+            renderShopList();
+            updateUI();
+            saveData();
+        };
+
+        // 図鑑描画
+        function renderAlmanacGrid() {
+            const container = document.getElementById('almanac-grid-body');
+            container.innerHTML = '';
+
+            CROPS.forEach(crop => {
+                const record = gameState.almanac[crop.id];
+                const card = document.createElement('div');
+                card.className = `almanac-card ${record ? 'discovered' : ''} ${crop.isRare ? 'is-rare' : ''}`;
+
+                if (record) {
+                    let stars = '★通常';
+                    if (record.maxQuality === 2) stars = '★★GOLD';
+                    if (record.maxQuality === 5) stars = '★★★RAINBOW';
+
+                    card.innerHTML = `
+                        ${crop.isRare ? '<span class="ur-ribbon" style="position:static; margin-bottom:2px;">✨UR幻</span>' : ''}
+                        <img src="${crop.img}" class="almanac-crop-img" alt="${crop.name}">
+                        <div class="almanac-name">${crop.name}</div>
+                        <div class="almanac-count">収穫数: ${record.harvested}</div>
+                        <div style="font-size:0.6rem; color:#d97706; font-weight:800;">${stars}</div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="almanac-crop-icon" style="filter:grayscale(1); opacity:0.3; font-size:2rem;">❓</div>
+                        <div class="almanac-name" style="color:#94a3b8;">${crop.isRare ? '【UR幻の野菜】' : '未発見'}</div>
+                        <div class="almanac-count">---</div>
+                    `;
+                }
+                container.appendChild(card);
+            });
+        }
+
+        // 天候サイクル
+        function startWeatherCycle() {
+            setInterval(() => {
+                gameState.weatherCountdown--;
+                if (gameState.weatherCountdown <= 0) {
+                    changeWeather();
+                    gameState.weatherCountdown = 60;
+                }
+                const m = Math.floor(gameState.weatherCountdown / 60);
+                const s = gameState.weatherCountdown % 60;
+                document.getElementById('weather-timer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function changeWeather() {
+            let rainChance = 0.3;
+            let rainbowChance = 0.1;
+            if (gameState.hiredMascots['emo_jelly']) {
+                rainChance = 0.45;
+                rainbowChance = 0.25;
+            }
+
+            const r = Math.random();
+            const rainEl = document.getElementById('rain-layer');
+            const rainbowEl = document.getElementById('rainbow-layer');
+
+            if (r < rainbowChance) {
+                gameState.weather = 'rainbow';
+                document.getElementById('weather-icon').textContent = '🌈';
+                document.getElementById('weather-name').textContent = '奇跡の虹空';
+                document.getElementById('weather-buff').textContent = '最高品質★変異率が超UP！';
+                rainEl.classList.remove('active');
+                rainbowEl.classList.add('active');
+                createFloatingText('🌈 奇跡の虹がかかりました！', '#8b5cf6');
+            } else if (r < rainbowChance + rainChance) {
+                gameState.weather = 'rain';
+                document.getElementById('weather-icon').textContent = '🌧️';
+                document.getElementById('weather-name').textContent = '恵みの雨';
+                document.getElementById('weather-buff').textContent = '全畑に自動水やり！成長加速！';
+                rainEl.classList.add('active');
+                rainbowEl.classList.remove('active');
+                createFloatingText('🌧️ 恵みの雨が降ってきました！', '#0284c7');
+                gameState.plots.forEach(p => { p.wet = true; p.wetDuration = 0; });
+            } else {
+                gameState.weather = 'sunny';
+                document.getElementById('weather-icon').textContent = '☀️';
+                document.getElementById('weather-name').textContent = 'ぽかぽか晴れ';
+                document.getElementById('weather-buff').textContent = '水やりで成長速度アップ！';
+                rainEl.classList.remove('active');
+                rainbowEl.classList.remove('active');
+            }
+            updatePlotsView();
+        }
+
+        // メインゲーム進行ループ（0.5秒ごと）
+        function startMainLoop() {
+            setInterval(() => {
+                // 作物の成長＆水分の消費ロジック
+                gameState.plots.forEach(plot => {
+                    if (plot.cropId) {
+                        const crop = CROPS.find(c => c.id === plot.cropId);
+                        if (crop && (plot.currentGrow || 0) < crop.growSec) {
+                            // 水分があるときは2倍、乾いているときは0.5倍
+                            let speed = plot.wet ? 2.0 : 0.5;
+                            if (gameState.hiredMascots['shimaenaga']) speed *= 1.25;
+
+                            plot.currentGrow = (plot.currentGrow || 0) + 0.5 * speed;
+                        }
+                    }
+
+                    // 晴天時の乾燥タイマー（約35秒で土が乾く）
+                    if (plot.wet && gameState.weather !== 'rain') {
+                        plot.wetDuration = (plot.wetDuration || 0) + 0.5;
+                        if (plot.wetDuration >= 35) {
+                            plot.wet = false;
+                            plot.wetDuration = 0;
+                        }
+                    }
+                });
+
+                updatePlotsView();
+                if (Math.random() < 0.05) spawnCloud();
+            }, 500);
+
+            // マスコットの自律行動タイマー（3.5秒ごと）
+            setInterval(() => {
+                // めんだこ：自動水やり
+                if (gameState.hiredMascots['mendako'] && Math.random() < 0.7) {
+                    const dryPlots = gameState.plots.filter(p => !p.wet);
+                    if (dryPlots.length > 0) {
+                        const target = dryPlots[Math.floor(Math.random() * dryPlots.length)];
+                        target.wet = true;
+                        target.wetDuration = 0;
+                        sound.playWater();
+                        createFloatingText('めんだこが水やり！💧', '#38bdf8', target.id);
+                        updatePlotsView();
+                    }
+                }
+
+                // ウッポー：自動収穫
+                if (gameState.hiredMascots['uppo']) {
+                    gameState.plots.forEach((plot, idx) => {
+                        if (plot.cropId) {
+                            const crop = CROPS.find(c => c.id === plot.cropId);
+                            if ((plot.currentGrow || 0) >= crop.growSec) {
+                                // ask モード時は自動的に stock（保管）で預かってくれる
+                                const autoMode = gameState.harvestMode === 'ask' ? 'stock' : gameState.harvestMode;
+                                executeHarvest(idx, autoMode);
+                                createFloatingText('ウッポーがお手伝い！🐾', '#fb923c', idx);
+                            }
+                        }
+                    });
+                }
+
+                // マスコットの移動
+                Object.keys(gameState.hiredMascots).forEach(id => {
+                    const walker = document.getElementById(`walker-${id}`);
+                    if (walker) {
+                        walker.style.left = `${5 + Math.random() * 80}%`;
+                        walker.style.top = `${5 + Math.random() * 70}%`;
+                    }
+                });
+            }, 3500);
+
+            // 自動セーブ (5秒ごと)
+            setInterval(() => {
+                saveData();
+            }, 5000);
+        }
+
+        // 雲アニメ
+        function spawnCloud() {
+            const clouds = document.getElementById('clouds-layer');
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            const w = 60 + Math.random() * 100;
+            const h = 25 + Math.random() * 30;
+            cloud.style.width = `${w}px`;
+            cloud.style.height = `${h}px`;
+            cloud.style.top = `${10 + Math.random() * 150}px`;
+            cloud.style.animationDuration = `${15 + Math.random() * 25}s`;
+            clouds.appendChild(cloud);
+            setTimeout(() => cloud.remove(), 40000);
+        }
+
+        // オフライン放置シミュレーション
+        function checkOfflineProgress() {
+            const now = Date.now();
+            const elapsedSec = (now - (gameState.lastSaveTime || now)) / 1000;
+
+            if (elapsedSec > 30) {
+                let readyCount = 0;
+                let autoHarvestedCount = 0;
+
+                gameState.plots.forEach(plot => {
+                    if (plot.cropId) {
+                        const crop = CROPS.find(c => c.id === plot.cropId);
+                        // オフライン中は乾湿平均速度で進行
+                        const speed = 1.0 * (gameState.hiredMascots['shimaenaga'] ? 1.25 : 1.0);
+                        plot.currentGrow = (plot.currentGrow || 0) + elapsedSec * speed;
+
+                        if (plot.currentGrow >= crop.growSec) {
+                            if (gameState.hiredMascots['uppo']) {
+                                const autoMode = gameState.harvestMode === 'ask' ? 'stock' : gameState.harvestMode;
+                                if (autoMode === 'sell') {
+                                    gameState.gold += crop.sell * plot.quality;
+                                } else {
+                                    gameState.inventory[crop.id] = (gameState.inventory[crop.id] || 0) + 1;
+                                }
+                                plot.cropId = null;
+                                plot.currentGrow = 0;
+                                autoHarvestedCount++;
+                            } else {
+                                readyCount++;
+                            }
+                        }
+                    }
+                });
+
+                if (readyCount > 0 || autoHarvestedCount > 0) {
+                    const modal = document.getElementById('modal-offline');
+                    let msg = `お留守の間に ${Math.floor(elapsedSec / 60)} 分が経過しました！<br>`;
+                    if (readyCount > 0) msg += `🌱 <strong>${readyCount} 個</strong> の作物が実って収穫を待っています！<br>`;
+                    if (autoHarvestedCount > 0) msg += `🐾 ウッポーが <strong>${autoHarvestedCount} 個</strong> の作物を自動収穫してくれました！`;
+                    document.getElementById('offline-report-text').innerHTML = msg;
+                    modal.classList.add('active');
+                }
+            }
+            gameState.lastSaveTime = now;
+            saveData();
+        }
+
+        // フローティングポップテキスト
+        function createFloatingText(text, color = '#22c55e', plotIndex = null) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.textContent = text;
+            el.style.color = color;
+
+            if (plotIndex !== null) {
+                const tile = document.getElementById(`plot-${plotIndex}`);
+                if (tile) {
+                    const rect = tile.getBoundingClientRect();
+                    el.style.left = `${rect.left + rect.width / 2}px`;
+                    el.style.top = `${rect.top + 20}px`;
+                }
+            } else {
+                el.style.left = `50%`;
+                el.style.top = `40%`;
+            }
+
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        // UI更新
+        function updateUI() {
+            document.getElementById('gold-display').textContent = gameState.gold.toLocaleString();
+            document.getElementById('crop-level-tag').textContent = `畑マス数: ${gameState.plotsCount}`;
+            renderSeedsSelector();
+        }
+
+        // ==========================================
+        // デイリーボーナス機能
+        // ==========================================
+        function getTodayString() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function isYesterday(lastDateStr) {
+            if (!lastDateStr) return false;
+            const today = new Date(getTodayString());
+            const last = new Date(lastDateStr);
+            const diffDays = Math.round((today - last) / (1000 * 60 * 60 * 24));
+            return diffDays === 1;
+        }
+
+        function isDailyAvailable() {
+            return !gameState.dailyBonus || gameState.dailyBonus.lastDate !== getTodayString();
+        }
+
+        function updateDailyBadge() {
+            const badge = document.getElementById('daily-badge');
+            if (badge) {
+                badge.style.display = isDailyAvailable() ? 'block' : 'none';
+            }
+        }
+
+        let pendingDailyCrop = null;
+        let pendingDailyCoin = 0;
+
+        function openDailyBonusModal() {
+            const modal = document.getElementById('modal-daily');
+            const available = isDailyAvailable();
+            const chestBtn = document.getElementById('daily-chest-btn');
+            const resultWrap = document.getElementById('daily-bonus-result-wrap');
+            const cardEl = document.getElementById('daily-bonus-card');
+            const coinEl = document.getElementById('daily-coin-bonus');
+            const claimBtn = document.getElementById('btn-claim-daily');
+            const streakBar = document.getElementById('daily-streak-bar');
+
+            if (!gameState.dailyBonus) {
+                gameState.dailyBonus = { lastDate: '', streak: 0 };
+            }
+
+            let curStreak = gameState.dailyBonus.streak || 0;
+            if (available) {
+                if (isYesterday(gameState.dailyBonus.lastDate)) {
+                    curStreak = (curStreak % 7) + 1;
+                } else {
+                    curStreak = 1;
+                }
+            }
+
+            streakBar.innerHTML = '';
+            for (let i = 1; i <= 7; i++) {
+                const pill = document.createElement('div');
+                pill.className = `streak-pill ${i <= curStreak ? 'active' : ''}`;
+                pill.textContent = `${i}日目`;
+                streakBar.appendChild(pill);
+            }
+
+            if (!available) {
+                chestBtn.textContent = '✨🎁✨';
+                resultWrap.style.display = 'block';
+                cardEl.innerHTML = `<span style="font-size:0.85rem; font-weight:800; color:#10b981;">本日のデイリーボーナスは受取済みです！また明日お楽しみに！</span>`;
+                coinEl.textContent = `連続ログイン: ${gameState.dailyBonus.streak}日目達成中！`;
+                claimBtn.disabled = true;
+                claimBtn.textContent = '受取済み（明日また来てね！）';
+                claimBtn.style.background = '#cbd5e1';
+                claimBtn.style.boxShadow = 'none';
+                claimBtn.style.cursor = 'default';
+            } else {
+                chestBtn.textContent = '🎁';
+                resultWrap.style.display = 'none';
+                claimBtn.disabled = false;
+                claimBtn.textContent = '🎁 タップしてボーナスを受け取る！';
+                claimBtn.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+                claimBtn.style.boxShadow = '0 4px 14px rgba(168, 85, 247, 0.4)';
+                claimBtn.style.cursor = 'pointer';
+
+                const rareCrops = CROPS.filter(c => c.isRare);
+                pendingDailyCrop = rareCrops[Math.floor(Math.random() * rareCrops.length)];
+                pendingDailyCoin = curStreak * 300; // 連続ログインコインボーナス
+
+                cardEl.innerHTML = `
+                    <img src="${pendingDailyCrop.img}" style="width:48px; height:48px; object-fit:contain;">
+                    <div style="text-align:left;">
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <span class="ur-ribbon" style="position:static;">UR</span>
+                            <span style="font-weight:900; font-size:0.9rem; color:#0f172a;">${pendingDailyCrop.name} の種</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#64748b;">種ストックに +1個 付与！</div>
+                    </div>
+                `;
+                coinEl.innerHTML = `さらに連続ログインボーナス: <img src="img/icon_coin.png" class="coin-icon-inline"> +${pendingDailyCoin.toLocaleString()}🪙 (連続${curStreak}日目)`;
+            }
+
+            modal.classList.add('active');
+            sound.playPop(650);
+        }
+
+        function claimDailyBonus() {
+            if (!isDailyAvailable() || !pendingDailyCrop) return;
+
+            const curStreak = isYesterday(gameState.dailyBonus.lastDate) ? ((gameState.dailyBonus.streak || 0) % 7) + 1 : 1;
+            gameState.dailyBonus.lastDate = getTodayString();
+            gameState.dailyBonus.streak = curStreak;
+
+            gameState.seedStock[pendingDailyCrop.id] = (gameState.seedStock[pendingDailyCrop.id] || 0) + 1;
+            gameState.gold += pendingDailyCoin;
+
+            const chestBtn = document.getElementById('daily-chest-btn');
+            const resultWrap = document.getElementById('daily-bonus-result-wrap');
+            const claimBtn = document.getElementById('btn-claim-daily');
+
+            chestBtn.textContent = '✨🎉✨';
+            resultWrap.style.display = 'block';
+            claimBtn.disabled = true;
+            claimBtn.textContent = '受け取り完了！畑で植えてみよう！';
+            claimBtn.style.background = '#10b981';
+
+            sound.playFanfare();
+            createFloatingText(`🎉 【UR】${pendingDailyCrop.name}の種 を手に入れた！`, '#ec4899');
+
+            updateDailyBadge();
+            renderSeedsSelector();
+            updateUI();
+            saveData();
+        }
+
+        function checkDailyBonusOnLoad() {
+            updateDailyBadge();
+            if (isDailyAvailable()) {
+                setTimeout(() => {
+                    openDailyBonusModal();
+                }, 800);
+            }
+        }
+
+        // ==========================================
+        // ガチャ機能 (単発1000G / 10連9000G、UR 0.01%)
+        // ==========================================
+        function rollGacha(times) {
+            const cost = times === 1 ? 1000 : 9000;
+            if (gameState.gold < cost) {
+                createFloatingText('コインが足りません！', '#ef4444');
+                sound.playPop(300);
+                return;
+            }
+
+            gameState.gold -= cost;
+            updateUI();
+
+            const machineIcon = document.getElementById('gacha-machine-icon');
+            machineIcon.classList.add('shaking');
+            sound.playPop(500);
+
+            const resultSection = document.getElementById('gacha-result-section');
+            const resultGrid = document.getElementById('gacha-result-grid');
+            const resultTitle = document.getElementById('gacha-result-title');
+            resultSection.style.display = 'none';
+            resultGrid.innerHTML = '';
+
+            const rareCrops = CROPS.filter(c => c.isRare);
+            const normalCrops = CROPS.filter(c => !c.isRare);
+
+            const normalWeights = [
+                { id: 'turnip', w: 1800 },
+                { id: 'tomato', w: 1600 },
+                { id: 'corn', w: 1400 },
+                { id: 'carrot', w: 1200 },
+                { id: 'berry', w: 1000 },
+                { id: 'grape', w: 800 },
+                { id: 'mushroom', w: 600 },
+                { id: 'eggplant', w: 500 },
+                { id: 'watermelon', w: 400 },
+                { id: 'lemon', w: 300 },
+                { id: 'pumpkin', w: 200 },
+                { id: 'melon', w: 120 },
+                { id: 'dragonfruit', w: 60 },
+                { id: 'tree_apple', w: 19 }
+            ];
+            const totalNormalWeight = normalWeights.reduce((a, b) => a + b.w, 0);
+
+            setTimeout(() => {
+                machineIcon.classList.remove('shaking');
+
+                const pulledCrops = [];
+                let hasUr = false;
+
+                for (let i = 0; i < times; i++) {
+                    const r = Math.random();
+                    // 珍しい野菜の種は合計0.01% (0.0001)
+                    if (r < 0.0001) {
+                        const rare = rareCrops[Math.floor(Math.random() * rareCrops.length)];
+                        pulledCrops.push(rare);
+                        hasUr = true;
+                    } else {
+                        // 普段売っている種 (99.99%)
+                        let rw = Math.random() * totalNormalWeight;
+                        let selected = normalCrops[0];
+                        for (const nw of normalWeights) {
+                            if (rw < nw.w) {
+                                selected = normalCrops.find(c => c.id === nw.id);
+                                break;
+                            }
+                            rw -= nw.w;
+                        }
+                        pulledCrops.push(selected);
+                    }
+                }
+
+                // ストックに付与
+                pulledCrops.forEach(crop => {
+                    gameState.seedStock[crop.id] = (gameState.seedStock[crop.id] || 0) + 1;
+                });
+
+                if (hasUr) {
+                    sound.playFanfare();
+                    createFloatingText('🌈✨ 超激レア【UR】幻の種が当選しました！！', '#ec4899');
+                    resultTitle.innerHTML = '🎉 排出結果 <span style="color:#ec4899; font-weight:900;">【UR当選!!】</span>';
+                } else {
+                    sound.playCoin();
+                    resultTitle.textContent = '🎉 排出結果';
+                }
+
+                resultSection.style.display = 'block';
+
+                pulledCrops.forEach((crop, idx) => {
+                    const card = document.createElement('div');
+                    card.className = `capsule-card ${crop.isRare ? 'is-ur' : ''}`;
+                    card.style.animationDelay = `${idx * 0.05}s`;
+
+                    card.innerHTML = `
+                        <span class="capsule-rarity ${crop.isRare ? 'rarity-ur' : 'rarity-normal'}">${crop.isRare ? '★UR' : '普段の種'}</span>
+                        <img src="${crop.img}" class="capsule-img" alt="${crop.name}">
+                        <div class="capsule-name">${crop.name}</div>
+                    `;
+                    resultGrid.appendChild(card);
+                });
+
+                renderSeedsSelector();
+                updateUI();
+                saveData();
+            }, 600);
+        }
+
+        // ローカルストレージ保存・読み込み
+        function saveData() {
+            gameState.lastSaveTime = Date.now();
+            try {
+                localStorage.setItem('pocket_farm_save_data', JSON.stringify(gameState));
+            } catch (e) {
+                console.error('Save failed', e);
+            }
+        }
+
+        function loadSavedData() {
+            try {
+                const raw = localStorage.getItem('pocket_farm_save_data');
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    Object.assign(gameState, data);
+                }
+            } catch (e) {
+                console.error('Load failed', e);
+            }
+            if (!gameState.seedStock) gameState.seedStock = {};
+            if (!gameState.dailyBonus) gameState.dailyBonus = { lastDate: '', streak: 0 };
+            if (!gameState.seedFilter) gameState.seedFilter = 'all';
+            checkSeedUnlocks();
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // 収穫モード切り替えタブ
+            document.getElementById('mode-btn-ask').addEventListener('click', () => {
+                gameState.harvestMode = 'ask';
+                updateHarvestModeUI();
+                sound.playPop(550);
+                createFloatingText('収穫モード: 毎回えらぶ', '#6366f1');
+                saveData();
+            });
+            document.getElementById('mode-btn-stock').addEventListener('click', () => {
+                gameState.harvestMode = 'stock';
+                updateHarvestModeUI();
+                sound.playPop(550);
+                createFloatingText('収穫モード: 料理用に保管', '#10b981');
+                saveData();
+            });
+            document.getElementById('mode-btn-sell').addEventListener('click', () => {
+                gameState.harvestMode = 'sell';
+                updateHarvestModeUI();
+                sound.playPop(550);
+                createFloatingText('収穫モード: すぐ売却', '#f59e0b');
+                saveData();
+            });
+
+            // 種フィルター切り替えタブ
+            const filterBtns = {
+                all: document.getElementById('filter-seed-all'),
+                normal: document.getElementById('filter-seed-normal'),
+                rare: document.getElementById('filter-seed-rare')
+            };
+            Object.entries(filterBtns).forEach(([type, btn]) => {
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        gameState.seedFilter = type;
+                        Object.values(filterBtns).forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        renderSeedsSelector();
+                        sound.playPop(550);
+                    });
+                }
+            });
+
+            // 単体収穫ダイアログボタン
+            document.getElementById('btn-choice-sell').addEventListener('click', () => {
+                document.getElementById('modal-harvest-choice').classList.remove('active');
+                if (pendingHarvestPlotIndex !== null) {
+                    executeHarvest(pendingHarvestPlotIndex, 'sell');
+                    pendingHarvestPlotIndex = null;
+                }
+            });
+            document.getElementById('btn-choice-stock').addEventListener('click', () => {
+                document.getElementById('modal-harvest-choice').classList.remove('active');
+                if (pendingHarvestPlotIndex !== null) {
+                    executeHarvest(pendingHarvestPlotIndex, 'stock');
+                    pendingHarvestPlotIndex = null;
+                }
+            });
+
+            // 一括収穫ダイアログボタン
+            document.getElementById('btn-all-choice-sell').addEventListener('click', () => {
+                executeHarvestAll('sell');
+            });
+            document.getElementById('btn-all-choice-stock').addEventListener('click', () => {
+                executeHarvestAll('stock');
+            });
+
+            // ツールボタン
+            document.getElementById('tool-water-all').addEventListener('click', waterAllPlots);
+            document.getElementById('tool-harvest-all').addEventListener('click', harvestAllReadyPlots);
+
+            // デイリーボーナス操作
+            document.getElementById('btn-open-daily').addEventListener('click', openDailyBonusModal);
+            document.getElementById('daily-chest-btn').addEventListener('click', claimDailyBonus);
+            document.getElementById('btn-claim-daily').addEventListener('click', claimDailyBonus);
+
+            // ガチャ操作
+            document.getElementById('btn-gacha-1').addEventListener('click', () => rollGacha(1));
+            document.getElementById('btn-gacha-10').addEventListener('click', () => rollGacha(10));
+
+            // サウンドボタン
+            const soundBtn = document.getElementById('sound-btn');
+            soundBtn.addEventListener('click', () => {
+                sound.enabled = !sound.enabled;
+                soundBtn.textContent = sound.enabled ? '🔊' : '🔇';
+                soundBtn.style.opacity = sound.enabled ? '1' : '0.5';
+            });
+
+            // 各種モーダル開閉
+            const bindModal = (btnId, modalId, onOpen) => {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+                btn.addEventListener('click', () => {
+                    if (onOpen) onOpen();
+                    document.getElementById(modalId).classList.add('active');
+                    sound.playPop(700);
+                });
+            };
+            bindModal('btn-open-basket', 'modal-basket', renderBasketList);
+            bindModal('btn-open-kitchen', 'modal-kitchen', renderKitchenList);
+            bindModal('btn-open-mascots', 'modal-mascots', renderMascotsList);
+            bindModal('btn-open-shop', 'modal-shop', renderShopList);
+            bindModal('btn-open-gacha', 'modal-gacha');
+            bindModal('btn-open-almanac', 'modal-almanac', renderAlmanacGrid);
+            bindModal('btn-open-help', 'modal-help');
+
+            document.querySelectorAll('[data-close]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-close');
+                    document.getElementById(targetId).classList.remove('active');
+                });
+            });
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) overlay.classList.remove('active');
+                });
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
