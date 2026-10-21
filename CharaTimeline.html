@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運命の刻録：探索者クロニクル - Weby</title>
+    <!-- Tailwind CSS (Aesthetics and Responsiveness) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f', 950: '#451a03' },
+                        stone: { 800: '#292524', 900: '#1c1917', 950: '#0c0a09' },
+                    },
+                    fontFamily: {
+                        header: ['"Cinzel"', 'serif'],
+                        body: ['"M PLUS Rounded 1c"', 'sans-serif'],
+                        serif: ['"Shippori Mincho"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Shippori+Mincho:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js (for Sentiment Timeline Chart) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Sortable.js (for Drag and Drop Reordering) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- html2canvas (for PNG High-Res Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #090705;
+            background-image:
+                radial-gradient(circle at 100% 0%, #1f1408 0%, transparent 45%),
+                radial-gradient(circle at 0% 100%, #150c05 0%, transparent 45%);
+            background-attachment: fixed;
+            color: #d6d3d1;
+        }
+
+        /* 視認性の高いスクロールバー */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0c09;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a3420;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78350f;
+        }
+
+        /* 魔導書の四隅装飾枠 */
+        .magic-border {
+            position: relative;
+        }
+        .magic-border::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border: 1px solid rgba(217, 119, 6, 0.18);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        /* タイムラインの中央線（光る運命の糸） */
+        .timeline-line {
+            position: absolute;
+            top: 2rem;
+            bottom: 2rem;
+            left: 50%;
+            width: 2px;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, 
+                rgba(217, 119, 6, 0.1) 0%, 
+                rgba(245, 158, 11, 0.7) 15%, 
+                rgba(217, 119, 6, 0.8) 85%, 
+                rgba(217, 119, 6, 0.1) 100%
+            );
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+        }
+
+        @media (max-width: 767px) {
+            .timeline-line {
+                left: 1.25rem;
+            }
+            .timeline-item {
+                padding-left: 2.75rem;
+            }
+            .timeline-node {
+                position: absolute;
+                left: 0;
+                top: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-stone-200 flex flex-col antialiased">
+
+    <!-- ヘッダー（魔導書ナビゲーション） -->
+    <header class="border-b border-amber-900/40 bg-[#120e0a]/95 backdrop-blur-md sticky top-0 z-40 px-4 py-3 shadow-[0_4px_25px_rgba(0,0,0,0.8)] shrink-0">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-950 rounded-xl text-amber-100 shadow-[0_0_15px_rgba(217,119,6,0.4)] border border-amber-500/40">
+                    <i data-lucide="hourglass" class="w-6 h-6 animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl md:text-2xl font-extrabold font-header tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-500">
+                            運命の刻録
+                        </h1>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">CHRONICLE</span>
+                    </div>
+                    <p class="text-[10px] text-amber-600/90 tracking-widest font-header uppercase">
+                        Grimoire of Character Timeline & Destiny
+                    </p>
+                </div>
+            </div>
+
+            <!-- アクション・導線メニュー -->
+            <div class="flex items-center gap-1.5 flex-wrap justify-center">
+                <!-- 魔導書シリーズ相互リンク -->
+                <a href="CharaCompare.html" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-sm" title="探索者比較の魔導書へ">
+                    <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-500"></i> 比較の儀
+                </a>
+                <a href="CharaRelation.html" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-sm" title="探索者相関図へ">
+                    <i data-lucide="network" class="w-3.5 h-3.5 text-amber-500"></i> 相関図
+                </a>
+                <a href="CharaHeight.html" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-sm" title="身長比較へ">
+                    <i data-lucide="ruler" class="w-3.5 h-3.5 text-amber-500"></i> 身長比較
+                </a>
+                <a href="CharaPortfolio.html" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 hover:border-amber-700 shadow-sm" title="ポートフォリオへ">
+                    <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-500"></i> ポートフォリオ
+                </a>
+
+                <div class="h-4 w-px bg-amber-900/60 mx-1 hidden sm:block"></div>
+
+                <!-- ファイル・年表管理系 -->
+                <button onclick="openTimelineListModal()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-900/40 text-amber-300 rounded-lg transition-all border border-amber-900/60 shadow-sm" title="保存済み年表一覧">
+                    <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> 書架
+                </button>
+                <button onclick="createNewTimeline()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-900/40 text-amber-300 rounded-lg transition-all border border-amber-900/60 shadow-sm" title="新規年表作成">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新規
+                </button>
+                <button onclick="exportTimelineJson()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-900/40 text-amber-300 rounded-lg transition-all border border-amber-900/60 shadow-sm" title="JSONファイル保存">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> 保存
+                </button>
+                <button onclick="triggerJsonImport()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-900/40 text-amber-300 rounded-lg transition-all border border-amber-900/60 shadow-sm" title="JSONファイル読込">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i> 読込
+                </button>
+                <input type="file" id="importTimelineInput" class="hidden" accept=".json" onchange="importTimelineJson(event)">
+
+                <!-- エクスポート系（主役） -->
+                <button onclick="exportTimelineImage()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-stone-950 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-400" title="画像（PNG）として一括書き出し">
+                    <i data-lucide="image" class="w-3.5 h-3.5"></i> 画像出力
+                </button>
+                <button onclick="copyTimelineMarkdown()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-amber-900/40 text-stone-300 rounded-lg transition-all border border-stone-800" title="テキスト/Markdownコピー">
+                    <i data-lucide="clipboard-copy" class="w-3.5 h-3.5 text-stone-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ（2ペインレイアウト） -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- 左ペイン: エディタ＆コントロール (lg:col-span-4) -->
+        <aside class="lg:col-span-4 flex flex-col gap-5 sticky top-20">
+
+            <!-- 年表基本設定カード -->
+            <div class="p-5 rounded-2xl bg-[#14100c]/90 border border-amber-950/60 shadow-xl backdrop-blur magic-border">
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <h2 class="text-sm font-bold font-header tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <i data-lucide="scroll" class="w-4 h-4 text-amber-500"></i> 年表の基本設定
+                    </h2>
+                    <button onclick="loadSampleData()" class="text-[10px] text-amber-600 hover:text-amber-400 underline font-mono">
+                        サンプル読込
+                    </button>
+                </div>
+
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-stone-400 mb-1">年表タイトル</label>
+                        <input type="text" id="timelineTitleInput" oninput="updateCharacterMeta()" placeholder="例：ふたりの奇跡と軌跡" 
+                               class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-amber-100 placeholder-stone-600 focus:outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-stone-400 mb-1">サブタイトル・概要</label>
+                        <input type="text" id="timelineSubtitleInput" oninput="updateCharacterMeta()" placeholder="例：出会いから現在に至る絆の記録" 
+                               class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-amber-100 placeholder-stone-600 focus:outline-none transition-colors">
+                    </div>
+                </div>
+
+                <!-- キャラクター設定（ふたり） -->
+                <div class="mt-5 pt-4 border-t border-amber-950/60 space-y-4">
+                    <div class="text-[11px] font-bold text-amber-500/90 font-header flex items-center justify-between">
+                        <span>主役キャラクター設定</span>
+                        <span class="text-[10px] text-stone-500 font-normal">CharaCompareと連携可能</span>
+                    </div>
+
+                    <!-- キャラクターA -->
+                    <div class="p-3 rounded-xl bg-stone-900/60 border border-amber-950/40 relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-bold text-amber-400 font-mono">PERSONA A</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="openCharSelectModal(0)" class="text-[10px] px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/60 hover:bg-amber-900 transition-colors flex items-center gap-1" title="CharaCompareから読込">
+                                    <i data-lucide="book" class="w-3 h-3"></i> 魔導書から呼出
+                                </button>
+                                <button onclick="triggerIconUpload(0)" class="text-[10px] px-2 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-1" title="画像アップロード">
+                                    <i data-lucide="image" class="w-3 h-3"></i> 画像変更
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div id="charAIconPreview" onclick="triggerIconUpload(0)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-amber-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md">
+                                <i data-lucide="user" class="w-6 h-6 text-amber-500"></i>
+                            </div>
+                            <div class="flex-1 space-y-1.5">
+                                <div class="flex gap-2">
+                                    <input type="text" id="charANameInput" oninput="updateCharacterMeta()" placeholder="キャラクターAの名前" 
+                                           class="flex-1 bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded px-2.5 py-1 text-xs text-amber-100 focus:outline-none">
+                                    <input type="color" id="charAColorInput" oninput="updateCharacterMeta()" value="#d97706" 
+                                           class="w-7 h-7 p-0 bg-transparent rounded cursor-pointer border border-amber-950 shrink-0" title="テーマカラー">
+                                </div>
+                                <input type="text" id="charARoleInput" oninput="updateCharacterMeta()" placeholder="肩書 / 役割（例：探偵、魔術師）" 
+                                       class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- キャラクターB -->
+                    <div class="p-3 rounded-xl bg-stone-900/60 border border-blue-950/40 relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-bold text-blue-400 font-mono">PERSONA B</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="openCharSelectModal(1)" class="text-[10px] px-2 py-0.5 rounded bg-blue-950/40 text-blue-300 border border-blue-800/60 hover:bg-blue-900 transition-colors flex items-center gap-1" title="CharaCompareから読込">
+                                    <i data-lucide="book" class="w-3 h-3"></i> 魔導書から呼出
+                                </button>
+                                <button onclick="triggerIconUpload(1)" class="text-[10px] px-2 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-1" title="画像アップロード">
+                                    <i data-lucide="image" class="w-3 h-3"></i> 画像変更
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div id="charBIconPreview" onclick="triggerIconUpload(1)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-blue-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md">
+                                <i data-lucide="user" class="w-6 h-6 text-blue-500"></i>
+                            </div>
+                            <div class="flex-1 space-y-1.5">
+                                <div class="flex gap-2">
+                                    <input type="text" id="charBNameInput" oninput="updateCharacterMeta()" placeholder="キャラクターBの名前" 
+                                           class="flex-1 bg-[#0c0a09] border border-amber-950/60 focus:border-blue-500 rounded px-2.5 py-1 text-xs text-blue-100 focus:outline-none">
+                                    <input type="color" id="charBColorInput" oninput="updateCharacterMeta()" value="#3b82f6" 
+                                           class="w-7 h-7 p-0 bg-transparent rounded cursor-pointer border border-blue-950 shrink-0" title="テーマカラー">
+                                </div>
+                                <input type="text" id="charBRoleInput" oninput="updateCharacterMeta()" placeholder="肩書 / 役割（例：助手、祓魔師）" 
+                                       class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-blue-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- エピソード管理パネル -->
+            <div class="p-5 rounded-2xl bg-[#14100c]/90 border border-amber-950/60 shadow-xl backdrop-blur magic-border flex-1 flex flex-col">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-bold font-header tracking-wider text-amber-400 flex items-center gap-1.5">
+                            <i data-lucide="list-ordered" class="w-4 h-4 text-amber-500"></i> 刻録エピソード
+                        </h2>
+                        <span id="episodeCountBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-800 text-stone-400">0 件</span>
+                    </div>
+                    <button onclick="openEpisodeModal()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-500 text-stone-950 rounded-lg transition-all shadow-md">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> エピソード追加
+                    </button>
+                </div>
+                <p class="text-[10px] text-stone-500 mb-3">ドラッグ＆ドロップでエピソードの時系列順を入れ替え可能</p>
+
+                <!-- ドラッグ並び替え対象リスト -->
+                <div id="editorEpisodeList" class="flex-1 overflow-y-auto max-h-[460px] pr-1">
+                    <!-- 動的生成 -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右ペイン: リッチプレビュー & グラフ (lg:col-span-8) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- 画像出力ターゲット（#captureTarget） -->
+            <div id="captureTarget" class="p-6 md:p-8 rounded-3xl bg-[#0e0b08] border border-amber-900/50 shadow-2xl relative overflow-hidden magic-border">
+
+                <!-- 背景の古代紋様・光彩グラデーション -->
+                <div class="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="absolute -top-32 -left-32 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <!-- プレビューヘッダー: タイトル & ふたりの対峙バナー -->
+                <div class="relative z-10 text-center mb-8 pb-6 border-b border-amber-950/60">
+                    <p class="text-[10px] tracking-widest text-amber-600 font-header uppercase mb-1">CHRONICLE OF DESTINY</p>
+                    <h2 id="previewTitle" class="text-2xl md:text-3xl font-extrabold font-header tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-400 mb-2">
+                        ふたりの奇跡と軌跡
+                    </h2>
+                    <p id="previewSubtitle" class="text-xs md:text-sm text-stone-400 max-w-lg mx-auto font-light leading-relaxed">
+                        運命の糸が紡いだ出会いから現在までの歩み
+                    </p>
+
+                    <!-- ふたりの対峙ビジュアル -->
+                    <div class="mt-6 flex items-center justify-center gap-4 sm:gap-8 max-w-md mx-auto">
+                        <!-- キャラA -->
+                        <div class="flex flex-col items-center flex-1">
+                            <div id="previewCharAIcon" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-900 border-2 border-amber-600/80 shadow-[0_0_20px_rgba(217,119,6,0.3)] overflow-hidden flex items-center justify-center mb-2">
+                                <i data-lucide="user" class="w-8 h-8 text-amber-400"></i>
+                            </div>
+                            <div id="previewCharAName" class="text-sm sm:text-base font-bold text-amber-400 truncate max-w-[140px]">探索者 A</div>
+                            <div id="previewCharARole" class="text-[10px] text-stone-500 truncate max-w-[140px]">先見の観察者</div>
+                        </div>
+
+                        <!-- 中央の運命の結び目 -->
+                        <div class="shrink-0 flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full bg-stone-900 border border-amber-700/60 flex items-center justify-center shadow-lg text-amber-400">
+                                <i data-lucide="link-2" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-[10px] font-header text-amber-600/80 mt-1 tracking-widest">DESTINY</span>
+                        </div>
+
+                        <!-- キャラB -->
+                        <div class="flex flex-col items-center flex-1">
+                            <div id="previewCharBIcon" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-900 border-2 border-blue-600/80 shadow-[0_0_20px_rgba(59,130,246,0.3)] overflow-hidden flex items-center justify-center mb-2">
+                                <i data-lucide="user" class="w-8 h-8 text-blue-400"></i>
+                            </div>
+                            <div id="previewCharBName" class="text-sm sm:text-base font-bold text-blue-400 truncate max-w-[140px]">探索者 B</div>
+                            <div id="previewCharBRole" class="text-[10px] text-stone-500 truncate max-w-[140px]">寡黙な守護者</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 感情推移グラフセクション（折りたたみ可能） -->
+                <div class="relative z-10 mb-8 p-4 rounded-2xl bg-[#14100c]/80 border border-amber-950/60 shadow-lg backdrop-blur">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-header">
+                            <i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 感情パラメータ推移（心の距離）
+                        </span>
+                        <button onclick="toggleChartDisplay()" class="text-[10px] text-stone-500 hover:text-amber-400 flex items-center gap-1">
+                            <i data-lucide="eye" class="w-3 h-3"></i> 表示切替
+                        </button>
+                    </div>
+                    <div id="chartWrapper" class="h-44 w-full">
+                        <canvas id="sentimentChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- タイムライン本体 -->
+                <div class="relative z-10 py-4">
+                    <!-- 中央の光る運命のライン -->
+                    <div class="timeline-line"></div>
+
+                    <!-- エピソードカード群 -->
+                    <div id="timelineContainer" class="relative">
+                        <!-- 動的生成 -->
+                    </div>
+                </div>
+
+                <!-- フッター透かし -->
+                <div class="relative z-10 mt-12 pt-4 border-t border-amber-950/40 text-center flex items-center justify-between text-[10px] text-stone-600 font-mono">
+                    <span>魔導書：運命の刻録 - Weby</span>
+                    <span>異次元ポケット工房 • CHRONICLE</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- エピソード編集モーダル -->
+    <div id="episodeEditModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto magic-border">
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-amber-950/60">
+                <h3 id="episodeModalTitle" class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="feather" class="w-4 h-4 text-amber-500"></i> エピソードの刻録
+                </h3>
+                <button onclick="closeEpisodeModal()" class="text-stone-500 hover:text-stone-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- 時期 ＆ 日付 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-stone-400 font-bold mb-1">チャプター / 時期 <span class="text-red-500">*</span></label>
+                        <input type="text" id="epPeriodInput" placeholder="例：プロローグ：雨の日の出会い" 
+                               class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 font-bold mb-1">年代・日付・経過時間 (任意)</label>
+                        <input type="text" id="epDateInput" placeholder="例：2023年4月 / 16歳の夏" 
+                               class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- タイトル -->
+                <div>
+                    <label class="block text-stone-400 font-bold mb-1">エピソードタイトル <span class="text-red-500">*</span></label>
+                    <input type="text" id="epTitleInput" placeholder="例：刃と古書が交差した夜" 
+                           class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
+                </div>
+
+                <!-- カテゴリ ＆ 関係性ラベル -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-stone-400 font-bold mb-1">カテゴリ</label>
+                        <select id="epCategoryInput" class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-amber-200 focus:outline-none">
+                            <option value="encounter">✨ 出会い・邂逅</option>
+                            <option value="daily">☕ 穏やかな日常</option>
+                            <option value="battle">⚔️ 事件・共闘</option>
+                            <option value="conflict">🌧️ すれ違い・葛藤</option>
+                            <option value="bond">💖 誓約・信頼</option>
+                            <option value="parting">⏳ 別離・岐路</option>
+                            <option value="future">🌟 未来・IF</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-stone-400 font-bold mb-1">関係性ラベル (任意)</label>
+                        <input type="text" id="epRelationInput" placeholder="例：警戒・素性不明、唯一無二の共犯者" 
+                               class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 感情パラメータスライダー（ふたり） -->
+                <div class="p-3 rounded-xl bg-stone-900/60 border border-amber-950/40 space-y-3">
+                    <span class="block text-[11px] font-bold text-amber-400">感情パラメータ / 好感度 (0〜100%)</span>
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span id="modalCharALabel" class="text-amber-400 font-bold">探索者 A</span>
+                            <span id="epSentimentAVal" class="font-mono text-amber-300">50%</span>
+                        </div>
+                        <input type="range" id="epSentimentAInput" min="0" max="100" value="50" oninput="document.getElementById('epSentimentAVal').textContent = this.value + '%'"
+                               class="w-full accent-amber-500 cursor-pointer">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span id="modalCharBLabel" class="text-blue-400 font-bold">探索者 B</span>
+                            <span id="epSentimentBVal" class="font-mono text-blue-300">50%</span>
+                        </div>
+                        <input type="range" id="epSentimentBInput" min="0" max="100" value="50" oninput="document.getElementById('epSentimentBVal').textContent = this.value + '%'"
+                               class="w-full accent-blue-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- 本文 -->
+                <div>
+                    <label class="block text-stone-400 font-bold mb-1">エピソード本文</label>
+                    <textarea id="epContentInput" rows="4" placeholder="当時の出来事やふたりの様子、心情の変化などを記録..." 
+                              class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none leading-relaxed"></textarea>
+                </div>
+
+                <!-- 象徴的なセリフ・台詞 -->
+                <div>
+                    <label class="block text-stone-400 font-bold mb-1">象徴的なセリフ・言葉 (任意)</label>
+                    <input type="text" id="epQuoteInput" placeholder="例：「お前の背中は、俺が地獄の底まで守る」" 
+                           class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-amber-200 focus:outline-none italic">
+                </div>
+
+                <!-- 挿絵画像URL -->
+                <div>
+                    <label class="block text-stone-400 font-bold mb-1">挿絵・スクショ画像URL (任意)</label>
+                    <input type="text" id="epImageUrlInput" placeholder="https://..." 
+                           class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
+                </div>
+
+                <div class="flex gap-3 pt-3 border-t border-amber-950/60">
+                    <button onclick="closeEpisodeModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded font-bold transition-colors">
+                        キャンセル
+                    </button>
+                    <button onclick="saveEpisodeFromModal()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded font-bold transition-colors shadow-lg">
+                        刻録を保存する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- キャラクター選択モーダル（魔導書連携） -->
+    <div id="charSelectModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-amber-950/60">
+                <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="book-open" class="w-4 h-4 text-amber-500"></i> 魔導書からキャラクターを選択
+                </h3>
+                <button onclick="closeCharSelectModal()" class="text-stone-500 hover:text-stone-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-[11px] text-stone-400 mb-3"><span id="modalSlotLabel" class="text-amber-400 font-bold"></span> に設定するキャラクターを選択してください</p>
+
+            <div id="charSelectList" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-80">
+                <!-- 動的生成 -->
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-amber-950/60 text-right">
+                <button onclick="closeCharSelectModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 年表一覧モーダル（書架） -->
+    <div id="timelineListModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-amber-950/60">
+                <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="folder" class="w-4 h-4 text-amber-500"></i> 記録された年表の書架
+                </h3>
+                <button onclick="closeTimelineListModal()" class="text-stone-500 hover:text-stone-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="timelineItemsList" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-80">
+                <!-- 動的生成 -->
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-amber-950/60 flex justify-between items-center">
+                <button onclick="createNewTimeline(); closeTimelineListModal();" class="text-xs text-amber-400 hover:underline flex items-center gap-1">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新規年表を作成
+                </button>
+                <button onclick="closeTimelineListModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-[#14100c] border border-amber-600/80 text-xs text-amber-100 shadow-[0_4px_25px_rgba(0,0,0,0.9)] transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <span id="toast-icon"></span>
+        <span id="toast-message" class="font-bold"></span>
+    </div>
+
+    <!-- ロジックスクリプト -->
+    <script src="js/CharaTimeline.js"></script>
+</body>
+</html>
