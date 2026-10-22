@@ -72,9 +72,11 @@
             content: '';
             position: absolute;
             inset: 3px;
-            border: 1px solid rgba(217, 119, 6, 0.18);
+            border: 1px solid rgba(217, 119, 6, 0.22);
             pointer-events: none;
             border-radius: inherit;
+            box-sizing: border-box;
+            z-index: 5;
         }
 
         /* タイムラインの中央線（光る運命の糸） */
@@ -217,18 +219,24 @@
                     <div class="p-3 rounded-xl bg-stone-900/60 border border-amber-950/40 relative">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] font-bold text-amber-400 font-mono">PERSONA A</span>
-                            <div class="flex items-center gap-1.5">
-                                <button onclick="openCharSelectModal(0)" class="text-[10px] px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/60 hover:bg-amber-900 transition-colors flex items-center gap-1" title="CharaCompareから読込">
-                                    <i data-lucide="book" class="w-3 h-3"></i> 魔導書から呼出
+                            <div class="flex items-center gap-1">
+                                <button onclick="openCharSelectModal(0)" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/60 hover:bg-amber-900 transition-colors flex items-center gap-0.5" title="魔導書からキャラクターを呼出">
+                                    <i data-lucide="book" class="w-3 h-3"></i> 呼出
                                 </button>
-                                <button onclick="triggerIconUpload(0)" class="text-[10px] px-2 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-1" title="画像アップロード">
-                                    <i data-lucide="image" class="w-3 h-3"></i> 画像変更
+                                <button onclick="triggerIconUpload(0)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="画像ファイルをアップロード">
+                                    <i data-lucide="image" class="w-3 h-3"></i> 画像
+                                </button>
+                                <button onclick="openEmojiModal(0)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="絵文字アイコンを設定">
+                                    <span class="text-xs leading-none">✨</span> 絵文字
+                                </button>
+                                <button onclick="clearCharIcon(0)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="画像なし（デフォルト）に戻す">
+                                    <i data-lucide="user-x" class="w-3 h-3"></i> なし
                                 </button>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <div id="charAIconPreview" onclick="triggerIconUpload(0)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-amber-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md">
+                            <div id="charAIconPreview" onclick="openEmojiModal(0)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-amber-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md select-none text-xl hover:opacity-90 transition-opacity" title="クリックで絵文字・画像変更">
                                 <i data-lucide="user" class="w-6 h-6 text-amber-500"></i>
                             </div>
                             <div class="flex-1 space-y-1.5">
@@ -239,7 +247,7 @@
                                            class="w-7 h-7 p-0 bg-transparent rounded cursor-pointer border border-amber-950 shrink-0" title="テーマカラー">
                                 </div>
                                 <input type="text" id="charARoleInput" oninput="updateCharacterMeta()" placeholder="肩書 / 役割（例：探偵、魔術師）" 
-                                       class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
+                                        class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-amber-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
                             </div>
                         </div>
                     </div>
@@ -248,18 +256,24 @@
                     <div class="p-3 rounded-xl bg-stone-900/60 border border-blue-950/40 relative">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] font-bold text-blue-400 font-mono">PERSONA B</span>
-                            <div class="flex items-center gap-1.5">
-                                <button onclick="openCharSelectModal(1)" class="text-[10px] px-2 py-0.5 rounded bg-blue-950/40 text-blue-300 border border-blue-800/60 hover:bg-blue-900 transition-colors flex items-center gap-1" title="CharaCompareから読込">
-                                    <i data-lucide="book" class="w-3 h-3"></i> 魔導書から呼出
+                            <div class="flex items-center gap-1">
+                                <button onclick="openCharSelectModal(1)" class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950/40 text-blue-300 border border-blue-800/60 hover:bg-blue-900 transition-colors flex items-center gap-0.5" title="魔導書からキャラクターを呼出">
+                                    <i data-lucide="book" class="w-3 h-3"></i> 呼出
                                 </button>
-                                <button onclick="triggerIconUpload(1)" class="text-[10px] px-2 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-1" title="画像アップロード">
-                                    <i data-lucide="image" class="w-3 h-3"></i> 画像変更
+                                <button onclick="triggerIconUpload(1)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="画像ファイルをアップロード">
+                                    <i data-lucide="image" class="w-3 h-3"></i> 画像
+                                </button>
+                                <button onclick="openEmojiModal(1)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="絵文字アイコンを設定">
+                                    <span class="text-xs leading-none">✨</span> 絵文字
+                                </button>
+                                <button onclick="clearCharIcon(1)" class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-700 transition-colors flex items-center gap-0.5" title="画像なし（デフォルト）に戻す">
+                                    <i data-lucide="user-x" class="w-3 h-3"></i> なし
                                 </button>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <div id="charBIconPreview" onclick="triggerIconUpload(1)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-blue-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md">
+                            <div id="charBIconPreview" onclick="openEmojiModal(1)" class="w-12 h-12 rounded-full bg-stone-800 border-2 border-blue-600/60 shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-md select-none text-xl hover:opacity-90 transition-opacity" title="クリックで絵文字・画像変更">
                                 <i data-lucide="user" class="w-6 h-6 text-blue-500"></i>
                             </div>
                             <div class="flex-1 space-y-1.5">
@@ -270,7 +284,7 @@
                                            class="w-7 h-7 p-0 bg-transparent rounded cursor-pointer border border-blue-950 shrink-0" title="テーマカラー">
                                 </div>
                                 <input type="text" id="charBRoleInput" oninput="updateCharacterMeta()" placeholder="肩書 / 役割（例：助手、祓魔師）" 
-                                       class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-blue-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
+                                        class="w-full bg-[#0c0a09] border border-amber-950/60 focus:border-blue-500 rounded px-2.5 py-1 text-[11px] text-stone-400 focus:outline-none">
                             </div>
                         </div>
                     </div>
@@ -387,8 +401,9 @@
 
     <!-- エピソード編集モーダル -->
     <div id="episodeEditModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto magic-border">
-            <div class="flex items-center justify-between mb-4 pb-2 border-b border-amber-950/60">
+        <div class="bg-[#14100c] border border-amber-900/70 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col magic-border overflow-hidden">
+            <!-- 固定ヘッダー -->
+            <div class="flex items-center justify-between p-5 pb-3 border-b border-amber-950/60 shrink-0">
                 <h3 id="episodeModalTitle" class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
                     <i data-lucide="feather" class="w-4 h-4 text-amber-500"></i> エピソードの刻録
                 </h3>
@@ -397,7 +412,8 @@
                 </button>
             </div>
 
-            <div class="space-y-4 text-xs">
+            <!-- スクロール可能な本文領域 -->
+            <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
                 <!-- 時期 ＆ 日付 -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -481,38 +497,54 @@
                     <input type="text" id="epImageUrlInput" placeholder="https://..." 
                            class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded p-2 text-stone-200 focus:outline-none">
                 </div>
+            </div>
 
-                <div class="flex gap-3 pt-3 border-t border-amber-950/60">
-                    <button onclick="closeEpisodeModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded font-bold transition-colors">
-                        キャンセル
-                    </button>
-                    <button onclick="saveEpisodeFromModal()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded font-bold transition-colors shadow-lg">
-                        刻録を保存する
-                    </button>
-                </div>
+            <!-- 固定フッター -->
+            <div class="p-4 border-t border-amber-950/60 flex gap-3 shrink-0 bg-[#14100c]">
+                <button onclick="closeEpisodeModal()" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded font-bold transition-colors">
+                    キャンセル
+                </button>
+                <button onclick="saveEpisodeFromModal()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded font-bold transition-colors shadow-lg">
+                    刻録を保存する
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- キャラクター選択モーダル（魔導書連携） -->
+    <!-- キャラクター選択モーダル（魔導書連携・検索機能付き） -->
     <div id="charSelectModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border">
-            <div class="flex items-center justify-between mb-3 pb-2 border-b border-amber-950/60">
-                <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
-                    <i data-lucide="book-open" class="w-4 h-4 text-amber-500"></i> 魔導書からキャラクターを選択
-                </h3>
-                <button onclick="closeCharSelectModal()" class="text-stone-500 hover:text-stone-300">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+        <div class="bg-[#14100c] border border-amber-900/70 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border overflow-hidden">
+            <!-- 固定ヘッダー & 検索バー -->
+            <div class="p-5 pb-3 border-b border-amber-950/60 shrink-0">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="book-open" class="w-4 h-4 text-amber-500"></i> 魔導書からキャラクターを選択
+                    </h3>
+                    <button onclick="closeCharSelectModal()" class="text-stone-500 hover:text-stone-300">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <p class="text-[11px] text-stone-400 mb-3"><span id="modalSlotLabel" class="text-amber-400 font-bold"></span> に設定するキャラクターを選択してください</p>
+                
+                <!-- 検索バー -->
+                <div class="relative">
+                    <i data-lucide="search" class="w-3.5 h-3.5 text-stone-500 absolute left-2.5 top-2.5"></i>
+                    <input type="text" id="charSearchInput" oninput="filterCharSelectList()" placeholder="名前・職業・キーワードで検索..." 
+                           class="w-full bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded-lg pl-8 pr-7 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-none transition-colors">
+                    <button id="charSearchClearBtn" onclick="clearCharSearch()" class="hidden absolute right-2 top-2 text-stone-500 hover:text-stone-300" title="検索文字をクリア">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
-            <p class="text-[11px] text-stone-400 mb-3"><span id="modalSlotLabel" class="text-amber-400 font-bold"></span> に設定するキャラクターを選択してください</p>
 
-            <div id="charSelectList" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-80">
+            <!-- スクロール可能なキャラクター一覧 -->
+            <div id="charSelectList" class="p-4 overflow-y-auto space-y-2 flex-1">
                 <!-- 動的生成 -->
             </div>
 
-            <div class="pt-3 mt-3 border-t border-amber-950/60 text-right">
-                <button onclick="closeCharSelectModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded">
+            <!-- 固定フッター -->
+            <div class="p-3 border-t border-amber-950/60 text-right shrink-0 bg-[#14100c]">
+                <button onclick="closeCharSelectModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded font-bold">
                     閉じる
                 </button>
             </div>
@@ -521,8 +553,9 @@
 
     <!-- 年表一覧モーダル（書架） -->
     <div id="timelineListModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#14100c] border border-amber-900/70 p-6 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border">
-            <div class="flex items-center justify-between mb-3 pb-2 border-b border-amber-950/60">
+        <div class="bg-[#14100c] border border-amber-900/70 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border overflow-hidden">
+            <!-- 固定ヘッダー -->
+            <div class="flex items-center justify-between p-5 pb-3 border-b border-amber-950/60 shrink-0">
                 <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
                     <i data-lucide="folder" class="w-4 h-4 text-amber-500"></i> 記録された年表の書架
                 </h3>
@@ -531,16 +564,104 @@
                 </button>
             </div>
 
-            <div id="timelineItemsList" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-80">
+            <!-- スクロール可能な年表リスト -->
+            <div id="timelineItemsList" class="p-4 overflow-y-auto space-y-2 flex-1">
                 <!-- 動的生成 -->
             </div>
 
-            <div class="pt-3 mt-3 border-t border-amber-950/60 flex justify-between items-center">
-                <button onclick="createNewTimeline(); closeTimelineListModal();" class="text-xs text-amber-400 hover:underline flex items-center gap-1">
+            <!-- 固定フッター -->
+            <div class="p-4 border-t border-amber-950/60 flex justify-between items-center shrink-0 bg-[#14100c]">
+                <button onclick="createNewTimeline()" class="text-xs text-amber-400 hover:underline flex items-center gap-1 font-bold">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新規年表を作成
                 </button>
-                <button onclick="closeTimelineListModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded">
+                <button onclick="closeTimelineListModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded font-bold">
                     閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 絵文字アイコン設定モーダル -->
+    <div id="emojiSelectModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14100c] border border-amber-900/70 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col magic-border overflow-hidden">
+            <!-- 固定ヘッダー -->
+            <div class="flex items-center justify-between p-5 pb-3 border-b border-amber-950/60 shrink-0">
+                <h3 class="text-sm font-bold text-amber-400 font-header tracking-wider flex items-center gap-1.5">
+                    <span>✨</span> <span id="emojiModalTargetLabel">探索者</span> のアイコン設定
+                </h3>
+                <button onclick="closeEmojiModal()" class="text-stone-500 hover:text-stone-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 本文（絵文字パレット・直接入力） -->
+            <div class="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
+                <!-- 自由入力 -->
+                <div class="p-3 rounded-xl bg-stone-900/60 border border-amber-950/50">
+                    <label class="block text-stone-300 font-bold mb-1.5">好きな絵文字を自由入力（コピペ可）</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="customEmojiInput" maxlength="4" placeholder="🦊" 
+                               class="w-16 text-center text-2xl bg-[#0a0806] border border-amber-950/60 focus:border-amber-500 rounded-lg p-1.5 text-stone-100 focus:outline-none">
+                        <button onclick="applyCustomEmoji()" class="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-lg transition-colors text-xs shadow-md">
+                            この絵文字を設定
+                        </button>
+                    </div>
+                </div>
+
+                <!-- プリセットパレット -->
+                <div>
+                    <label class="block text-stone-400 font-bold mb-2">おすすめ絵文字パレット（クリックで即時反映）</label>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-[10px] text-amber-500/90 font-bold block mb-1">🐾 動物・パートナー</span>
+                            <div class="grid grid-cols-7 gap-1.5 text-xl select-none" id="presetEmojiAnimal">
+                                <!-- JSで動的生成 -->
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-amber-500/90 font-bold block mb-1">⚔️ 冒険・職業・アイテム</span>
+                            <div class="grid grid-cols-7 gap-1.5 text-xl select-none" id="presetEmojiItem">
+                                <!-- JSで動的生成 -->
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-amber-500/90 font-bold block mb-1">🌙 属性・シンボル・日常</span>
+                            <div class="grid grid-cols-7 gap-1.5 text-xl select-none" id="presetEmojiSymbol">
+                                <!-- JSで動的生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 固定フッター -->
+            <div class="p-4 border-t border-amber-950/60 flex justify-between items-center shrink-0 bg-[#14100c]">
+                <button onclick="clearCharIcon(activeEmojiCharSlot); closeEmojiModal();" class="text-xs text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 font-bold">
+                    <i data-lucide="user-x" class="w-3.5 h-3.5"></i> 画像なし（初期シルエット）に戻す
+                </button>
+                <button onclick="closeEmojiModal()" class="px-4 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs rounded font-bold">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 確認モーダル（魔導書の問いかけ） -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14100c] border border-amber-900/70 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col magic-border overflow-hidden p-5">
+            <div class="flex items-center gap-2 mb-3 text-amber-400 font-bold font-header text-sm">
+                <i data-lucide="help-circle" class="w-4 h-4 text-amber-500"></i>
+                <span>刻録の儀式</span>
+            </div>
+            <p id="confirmMessage" class="text-xs text-stone-300 leading-relaxed mb-5 whitespace-pre-wrap">
+                よろしいですか？
+            </p>
+            <div class="flex gap-2.5">
+                <button id="confirmCancelBtn" onclick="closeConfirmModal(false)" class="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-xs font-bold transition-colors">
+                    キャンセル
+                </button>
+                <button id="confirmOkBtn" onclick="closeConfirmModal(true)" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded-lg text-xs font-bold transition-colors shadow-md">
+                    実行する
                 </button>
             </div>
         </div>
