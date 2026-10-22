@@ -604,21 +604,23 @@ function renderTimelinePreview() {
         ` : '';
 
         // 感情メーター
+        const sentA = ep.sentimentA ?? 50;
+        const sentB = ep.sentimentB ?? 50;
         const sentimentHtml = `
             <div class="mt-3 pt-2.5 border-t border-amber-950/40 flex items-center justify-between text-[11px] text-stone-400 gap-4">
-                <div class="flex items-center gap-1.5 flex-1">
-                    <span class="truncate max-w-[80px] font-bold" style="color: ${charA.color};">${escapeHtml(charA.name || '探索者 A')}</span>
+                <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span class="truncate max-w-[85px] font-bold leading-normal pb-0.5 inline-block" style="color: ${charA.color};">${escapeHtml(charA.name || '探索者 A')}</span>
                     <div class="flex-1 bg-stone-900 rounded-full h-1.5 overflow-hidden border border-stone-800">
-                        <div class="h-full rounded-full transition-all duration-500" style="width: ${ep.sentimentA || 50}%; background: ${charA.color};"></div>
+                        <div class="h-full rounded-full transition-all duration-500" style="width: ${sentA}%; background: ${charA.color};"></div>
                     </div>
-                    <span class="text-[10px] font-mono shrink-0">${ep.sentimentA || 50}%</span>
+                    <span class="text-[10px] font-mono shrink-0">${sentA}%</span>
                 </div>
-                <div class="flex items-center gap-1.5 flex-1">
-                    <span class="truncate max-w-[80px] font-bold" style="color: ${charB.color};">${escapeHtml(charB.name || '探索者 B')}</span>
+                <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span class="truncate max-w-[85px] font-bold leading-normal pb-0.5 inline-block" style="color: ${charB.color};">${escapeHtml(charB.name || '探索者 B')}</span>
                     <div class="flex-1 bg-stone-900 rounded-full h-1.5 overflow-hidden border border-stone-800">
-                        <div class="h-full rounded-full transition-all duration-500" style="width: ${ep.sentimentB || 50}%; background: ${charB.color};"></div>
+                        <div class="h-full rounded-full transition-all duration-500" style="width: ${sentB}%; background: ${charB.color};"></div>
                     </div>
-                    <span class="text-[10px] font-mono shrink-0">${ep.sentimentB || 50}%</span>
+                    <span class="text-[10px] font-mono shrink-0">${sentB}%</span>
                 </div>
             </div>
         `;
@@ -1144,9 +1146,11 @@ async function exportTimelineImage() {
         // html2canvas の実行
         const canvas = await html2canvas(target, {
             scale: 2, // 高解像度
-            backgroundColor: '#090705',
+            backgroundColor: '#0e0b08',
             useCORS: true,
-            logging: false
+            logging: false,
+            scrollX: 0,
+            scrollY: 0
         });
 
         const link = document.createElement('a');
@@ -1168,13 +1172,17 @@ function copyTimelineMarkdown() {
 
     const charA = currentTimeline.characters[0] || { name: '探索者 A' };
     const charB = currentTimeline.characters[1] || { name: '探索者 B' };
-    md += `**登場人物**: ${charA.name} × ${charB.name}\n\n---\n\n`;
+    const charAName = charA.name || '探索者 A';
+    const charBName = charB.name || '探索者 B';
+    md += `**登場人物**: ${charAName} × ${charBName}\n\n---\n\n`;
 
     currentTimeline.episodes.forEach((ep, i) => {
+        const sentA = ep.sentimentA ?? 50;
+        const sentB = ep.sentimentB ?? 50;
         md += `### ${i + 1}. 【${ep.period || '時期未定'}】${ep.title || '無題'}\n`;
         if (ep.date) md += `- **年代/日付**: ${ep.date}\n`;
         if (ep.relation) md += `- **関係性**: ${ep.relation}\n`;
-        md += `- **感情パラメータ**: ${charA.name}: ${ep.sentimentA || 50}% / ${charB.name}: ${ep.sentimentB || 50}%\n\n`;
+        md += `- **感情パラメータ**: ${charAName}: ${sentA}% / ${charBName}: ${sentB}%\n\n`;
         if (ep.content) md += `${ep.content}\n\n`;
         if (ep.quote) md += `> ${ep.quote}\n\n`;
         md += `---\n\n`;
