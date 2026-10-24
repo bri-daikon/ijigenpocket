@@ -5911,7 +5911,22 @@ saveToLocalStorage();showToast("一括結合",selectedItems.length+"個のカー
     report: reportData
   };
 
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveObj))));
+  let encoded = "";
+  try {
+    const jsonStr = JSON.stringify(saveObj);
+    const bytes = new TextEncoder().encode(jsonStr);
+    let binStr = "";
+    const len = bytes.byteLength;
+    const chunk = 8192;
+    for (let i = 0; i < len; i += chunk) {
+      binStr += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    encoded = btoa(binStr);
+  } catch (encodeErr) {
+    console.warn("標準Base64エンコードに失敗したため、旧方式フォールバックを使用します:", encodeErr);
+    encoded = btoa(unescape(encodeURIComponent(JSON.stringify(saveObj))));
+  }
+
   const blob = new Blob([encoded], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -5935,99 +5950,188 @@ saveToLocalStorage();showToast("一括結合",selectedItems.length+"個のカー
   showToast("保存完了", `${a.download} で保存しました。`, "success");
 }
 
+function parseProjectFileData(arrayBuffer) {
+  let rawText = "";
+  try {
+    rawText = new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(arrayBuffer)).trim();
+  } catch (e) {
+    const bytes = new Uint8Array(arrayBuffer);
+    let s = "";
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    rawText = s.trim();
+  }
+
+  // 1. プレーンJSON判定（ファイルがBase64ではなく直のJSONである場合）
+  if (rawText.startsWith("{") && rawText.endsWith("}")) {
+    try {
+      return JSON.parse(rawText);
+    } catch (e) {
+      console.warn("プレーンJSON解析失敗、Base64デコードを試みます:", e);
+    }
+  }
+
+  // 2. Base64デコード処理（BOM・空白・改行の除去）
+  const cleanB64 = rawText.replace(/[^A-Za-z0-9+/=]/g, "");
+  let binStr = "";
+  try {
+    binStr = atob(cleanB64);
+  } catch (b64Err) {
+    // atob失敗時、プレーンJSONとして再試行
+    try {
+      return JSON.parse(rawText);
+    } catch (finalErr) {
+      throw new Error("Base64データの解析に失敗しました。ファイルが破損している可能性があります。");
+    }
+  }
+
+  // 方式A: TextDecoder (モダンUTF-8バイトデコード)
+  try {
+    const len = binStr.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binStr.charCodeAt(i);
+    }
+    const decodedStr = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    return JSON.parse(decodedStr);
+  } catch (eA) {
+    console.warn("TextDecoderでの復元に失敗したため、旧方式デコードを試みます:", eA);
+  }
+
+  // 方式B: 旧方式 decodeURIComponent(escape(binStr))
+  try {
+    const decodedStr = decodeURIComponent(escape(binStr));
+    return JSON.parse(decodedStr);
+  } catch (eB) {
+    console.warn("旧方式デコードに失敗したため、直接パースを試みます:", eB);
+  }
+
+  // 方式C: 直接JSONパース
+  return JSON.parse(binStr);
+}
+
 function loadProjectFile(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const bytes = new Uint8Array(e.target.result);
-      let binaryStr = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binaryStr += String.fromCharCode(bytes[i]);
+      let data;
+      try {
+        data = parseProjectFileData(e.target.result);
+      } catch (parseErr) {
+        console.error("PECファイル解析エラー:", parseErr);
+        showToast("読込エラー", `ファイルの解析に失敗しました: ${parseErr.message}`, "error");
+        return;
       }
-      const decoded = decodeURIComponent(escape(atob(binaryStr)));
-      const data = JSON.parse(decoded);
-      if (!data.version || (!data.items && !data.characters && !data.npcs && !data.report)) {
+
+      if (!data || (!data.version && !data.items && !data.characters && !data.npcs && !data.report)) {
         showToast("読込エラー", "有効な .pec ファイルではありません。", "error");
         return;
       }
 
-      // 他のファイルからデータを持ち越さないよう、一旦ファイル個別データを完全に初期化
-      resetFileScopedData();
+      // 他のファイルからデータを持ち越さないよう、一旦ファイル個別データを初期化
+      try {
+        resetFileScopedData();
+      } catch (e) {
+        console.warn("resetFileScopedData エラー:", e);
+      }
 
       if (Array.isArray(data.speakerNames)) {
-        speakerNames = normalizeSpeakerNames(data.speakerNames);
-        localStorage.setItem("pdf_tool_speaker_names", JSON.stringify(speakerNames));
-        renderSpeakerSettings();
+        try {
+          speakerNames = normalizeSpeakerNames(data.speakerNames);
+          localStorage.setItem("pdf_tool_speaker_names", JSON.stringify(speakerNames));
+          renderSpeakerSettings();
+        } catch (e) {
+          console.warn("speakerNames 復元エラー:", e);
+        }
       }
+
       if (data.tabColorMapping) {
-        tabColorMapping = data.tabColorMapping;
-        localStorage.setItem("pdf_tool_tab_colors", JSON.stringify(tabColorMapping));
-        renderTabColorSettings();
-        if (typeof renderBulkColorPalette === "function") renderBulkColorPalette();
+        try {
+          tabColorMapping = data.tabColorMapping;
+          localStorage.setItem("pdf_tool_tab_colors", JSON.stringify(tabColorMapping));
+          renderTabColorSettings();
+          if (typeof renderBulkColorPalette === "function") renderBulkColorPalette();
+        } catch (e) {
+          console.warn("tabColorMapping 復元エラー:", e);
+        }
       }
 
       // 探索者ビューアの復元（データが無ければ空のまま）
-      if (Array.isArray(data.characters)) {
-        explorerCharacters = data.characters;
+      try {
+        if (Array.isArray(data.characters)) {
+          explorerCharacters = data.characters;
+        } else {
+          explorerCharacters = [];
+        }
         renderExplorerCards();
-      } else {
-        explorerCharacters = [];
-        renderExplorerCards();
+      } catch (e) {
+        console.warn("explorerCharacters 復元エラー:", e);
       }
 
       // NPCビューアの復元（データが無ければ空のまま）
-      if (Array.isArray(data.npcs)) {
-        npcCharacters = data.npcs;
+      try {
+        if (Array.isArray(data.npcs)) {
+          npcCharacters = data.npcs;
+        } else {
+          npcCharacters = [];
+        }
         renderNpcCards();
-      } else {
-        npcCharacters = [];
-        renderNpcCards();
+      } catch (e) {
+        console.warn("npcCharacters 復元エラー:", e);
       }
 
       // 卓報告作成の復元（データが無ければ初期値のまま）
-      if (data.report) {
-        applyReportData(data.report);
-      } else {
-        resetReportData();
+      try {
+        if (data.report) {
+          applyReportData(data.report);
+        } else {
+          resetReportData();
+        }
+      } catch (e) {
+        console.warn("reportData 復元エラー:", e);
       }
 
       // テキストカードの復元
       processedItems = (data.items || []).map(item => ({
-        id: item.id,
-        original: item.original || item.text,
-        text: item.text,
+        id: item.id !== undefined ? item.id : globalId++,
+        original: item.original || item.text || "",
+        text: item.text !== undefined ? item.text : item.original || "",
         bookmarked: !!item.bookmarked,
         note: item.note || "",
         page: item.page || 1,
         isEditing: false,
         furiganaHtml: item.furiganaHtml,
-        color: item.color,
-        tabName: item.tabName,
-        charName: item.charName,
-        isCommand: item.isCommand,
+        color: item.color || "slate",
+        tabName: item.tabName || "",
+        charName: item.charName || "",
+        isCommand: !!item.isCommand,
         isToc: !!item.isToc,
         tocLevel: item.tocLevel || 1,
         tocName: item.tocName,
         isCollapsed: !!item.isCollapsed,
-        isCopied: item.isCopied
+        isCopied: !!item.isCopied
       }));
-      const maxId = processedItems.length > 0 ? Math.max(...processedItems.map(i => i.id)) : 0;
+
+      // スタックあふれ（コールスタック上限エラー）を防ぐ安全なmaxId計算
+      const maxId = processedItems.reduce((max, item) => {
+        const numId = Number(item.id);
+        return !isNaN(numId) && numId > max ? numId : max;
+      }, 0);
       globalId = Math.max(maxId, globalId) + 1;
       currentFileName = data.fileName || file.name.replace(/\.pec$/i, "");
       renderList();
 
-      // ローカルストレージにも保存
-      saveToLocalStorage();
-      saveFileScopedCharacters();
-      saveReportSettings();
+      // ローカルストレージにも保存（クォータ上限時も読込完了を妨げない）
+      try { saveToLocalStorage(); } catch (e) {}
+      try { saveFileScopedCharacters(); } catch (e) {}
+      try { saveReportSettings(); } catch (e) {}
 
       const reportDesc = data.report && data.report.scenario ? `、卓報告（${data.report.scenario}）` : "";
       showToast("読込完了", `${file.name} を読み込みました。テキスト${processedItems.length}件、探索者${explorerCharacters.length}人、NPC${npcCharacters.length}人${reportDesc}を復元。`, "success");
     } catch(err) {
       console.error("PEC読込エラー:", err);
-      showToast("読込エラー", "ファイルの解析に失敗しました。保存と同じブラウザで開いているか確認してください。", "error");
+      showToast("読込エラー", `復元処理中にエラーが発生しました: ${err.message || "詳細不明"}`, "error");
     } finally {
       event.target.value = "";
     }
