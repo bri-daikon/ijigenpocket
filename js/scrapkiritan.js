@@ -308,21 +308,153 @@ if (batchBtn) {
 
 // --- Color Utility Logic ---
 const utilColor = document.getElementById('utility-color-input');
+const utilHexInput = document.getElementById('utility-hex-input');
+const utilRgbInput = document.getElementById('utility-rgb-input');
+const utilRInput = document.getElementById('utility-r-input');
+const utilGInput = document.getElementById('utility-g-input');
+const utilBInput = document.getElementById('utility-b-input');
+const utilHexSpan = document.getElementById('utility-hex');
+const utilRgbSpan = document.getElementById('utility-rgb');
+
+function parseHexColor(str) {
+    if (!str) return null;
+    let clean = str.trim().replace(/^#/, '');
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join('');
+    }
+    if (clean.length === 6 && /^[0-9a-fA-F]{6}$/.test(clean)) {
+        const r = parseInt(clean.slice(0, 2), 16);
+        const g = parseInt(clean.slice(2, 4), 16);
+        const b = parseInt(clean.slice(4, 6), 16);
+        return { r, g, b, hex: '#' + clean.toUpperCase() };
+    }
+    return null;
+}
+
+function parseRgbColor(str) {
+    if (!str) return null;
+    const match = str.match(/(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/);
+    if (match) {
+        const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
+        const g = Math.min(255, Math.max(0, parseInt(match[2], 10)));
+        const b = Math.min(255, Math.max(0, parseInt(match[3], 10)));
+        const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+        return { r, g, b, hex };
+    }
+    return null;
+}
+
+function syncColorValues(colorObj, source) {
+    const { r, g, b, hex } = colorObj;
+    const rgbStr = `rgb(${r}, ${g}, ${b})`;
+
+    if (source !== 'picker' && utilColor) utilColor.value = hex;
+    if (source !== 'hex' && utilHexInput) utilHexInput.value = hex;
+    if (source !== 'rgb' && utilRgbInput) utilRgbInput.value = rgbStr;
+    if (source !== 'rgbNums') {
+        if (utilRInput) utilRInput.value = r;
+        if (utilGInput) utilGInput.value = g;
+        if (utilBInput) utilBInput.value = b;
+    }
+    if (utilHexSpan) utilHexSpan.innerText = hex;
+    if (utilRgbSpan) utilRgbSpan.innerText = rgbStr;
+}
+
 if (utilColor) {
     utilColor.addEventListener('input', (e) => {
         const hex = e.target.value.toUpperCase();
-        document.getElementById('utility-hex').innerText = hex;
-        const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
-        document.getElementById('utility-rgb').innerText = `rgb(${r}, ${g}, ${b})`;
+        const parsed = parseHexColor(hex);
+        if (parsed) syncColorValues(parsed, 'picker');
     });
 }
+
+if (utilHexInput) {
+    utilHexInput.addEventListener('input', (e) => {
+        const parsed = parseHexColor(e.target.value);
+        if (parsed) syncColorValues(parsed, 'hex');
+    });
+    utilHexInput.addEventListener('blur', () => {
+        const parsed = parseHexColor(utilHexInput.value);
+        if (parsed) {
+            syncColorValues(parsed, 'hex');
+        } else if (utilColor) {
+            const fallback = parseHexColor(utilColor.value);
+            if (fallback) syncColorValues(fallback, 'external');
+        }
+    });
+}
+
+if (utilRgbInput) {
+    utilRgbInput.addEventListener('input', (e) => {
+        const parsed = parseRgbColor(e.target.value);
+        if (parsed) syncColorValues(parsed, 'rgb');
+    });
+    utilRgbInput.addEventListener('blur', () => {
+        const parsed = parseRgbColor(utilRgbInput.value);
+        if (parsed) {
+            syncColorValues(parsed, 'rgb');
+        } else if (utilColor) {
+            const fallback = parseHexColor(utilColor.value);
+            if (fallback) syncColorValues(fallback, 'external');
+        }
+    });
+}
+
+function handleRgbNumChange() {
+    const r = Math.min(255, Math.max(0, parseInt(utilRInput?.value || 0, 10)));
+    const g = Math.min(255, Math.max(0, parseInt(utilGInput?.value || 0, 10)));
+    const b = Math.min(255, Math.max(0, parseInt(utilBInput?.value || 0, 10)));
+    const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    syncColorValues({ r, g, b, hex }, 'rgbNums');
+}
+
+if (utilRInput) utilRInput.addEventListener('input', handleRgbNumChange);
+if (utilGInput) utilGInput.addEventListener('input', handleRgbNumChange);
+if (utilBInput) utilBInput.addEventListener('input', handleRgbNumChange);
+
+function copyColorValue(type) {
+    let txt = '';
+    if (type === 'hex' && utilHexInput) txt = utilHexInput.value;
+    else if (type === 'rgb' && utilRgbInput) txt = utilRgbInput.value;
+    else return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt);
+    } else {
+        const t = document.createElement('textarea');
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+    }
+    const n = document.getElementById('utility-notif');
+    if (n) {
+        n.style.opacity = '1';
+        setTimeout(() => n.style.opacity = '0', 2000);
+    }
+}
+window.copyColorValue = copyColorValue;
 
 function copyToClipboard(id) {
     const el = document.getElementById(id);
     if (!el) return;
-    const txt = el.innerText;
-    const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-    const n = document.getElementById('utility-notif'); if (n) { n.style.opacity = '1'; setTimeout(() => n.style.opacity = '0', 2000); }
+    const txt = el.value !== undefined ? el.value : el.innerText;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt);
+    } else {
+        const t = document.createElement('textarea');
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+    }
+    const n = document.getElementById('utility-notif');
+    if (n) {
+        n.style.opacity = '1';
+        setTimeout(() => n.style.opacity = '0', 2000);
+    }
 }
 window.copyToClipboard = copyToClipboard;
 
@@ -453,13 +585,31 @@ const iconCanvas = document.getElementById('icon-previewCanvas');
 const iconCtx = iconCanvas ? iconCanvas.getContext('2d') : null;
 const iconDownloadBtn = document.getElementById('icon-downloadBtn');
 const iconPlaceholderText = document.getElementById('icon-placeholderText');
+const iconScaleSlider = document.getElementById('icon-scale-slider');
+const iconScaleVal = document.getElementById('icon-scale-val');
+const iconScaleResetBtn = document.getElementById('icon-scale-reset-btn');
 
 let iconUploadedImage = new Image();
+let iconScale = 1.0;
+let iconOffsetX = 0;
+let iconOffsetY = 0;
+let isIconDragging = false;
+let iconDragStartX = 0;
+let iconDragStartY = 0;
+
+function resetIconTransform() {
+    iconScale = 1.0;
+    iconOffsetX = 0;
+    iconOffsetY = 0;
+    if (iconScaleSlider) iconScaleSlider.value = 100;
+    if (iconScaleVal) iconScaleVal.textContent = '100%';
+}
 
 function loadIconMakerFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (event) => {
+        resetIconTransform();
         iconUploadedImage.src = event.target.result;
     };
     reader.readAsDataURL(file);
@@ -478,6 +628,86 @@ if (iconImageInput) {
     iconImageInput.addEventListener('change', (e) => {
         loadIconMakerFile(e.target.files[0]);
     });
+}
+
+if (iconScaleSlider) {
+    iconScaleSlider.addEventListener('input', (e) => {
+        iconScale = parseInt(e.target.value, 10) / 100;
+        if (iconScaleVal) iconScaleVal.textContent = `${e.target.value}%`;
+        drawIconMaker();
+    });
+}
+
+if (iconScaleResetBtn) {
+    iconScaleResetBtn.addEventListener('click', () => {
+        resetIconTransform();
+        drawIconMaker();
+    });
+}
+
+// キャンバス上でのドラッグ移動 (マウス & タッチ)
+if (iconCanvas) {
+    const startDrag = (clientX, clientY) => {
+        if (!iconUploadedImage.src) return;
+        isIconDragging = true;
+        iconDragStartX = clientX;
+        iconDragStartY = clientY;
+    };
+
+    const moveDrag = (clientX, clientY) => {
+        if (!isIconDragging || !iconCanvas) return;
+        const rect = iconCanvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        const scaleFactor = iconCanvas.width / rect.width;
+        const dx = (clientX - iconDragStartX) * scaleFactor;
+        const dy = (clientY - iconDragStartY) * scaleFactor;
+        iconOffsetX += dx;
+        iconOffsetY += dy;
+        iconDragStartX = clientX;
+        iconDragStartY = clientY;
+        drawIconMaker();
+    };
+
+    const endDrag = () => {
+        isIconDragging = false;
+    };
+
+    iconCanvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => {
+        if (isIconDragging) {
+            e.preventDefault();
+            moveDrag(e.clientX, e.clientY);
+        }
+    });
+    window.addEventListener('mouseup', endDrag);
+
+    iconCanvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isIconDragging && e.touches.length === 1) {
+            e.preventDefault();
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', endDrag);
+
+    // マウスホイールによる拡大縮小
+    iconCanvas.addEventListener('wheel', (e) => {
+        if (!iconUploadedImage.src) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -10 : 10;
+        let currentPct = Math.round(iconScale * 100) + delta;
+        currentPct = Math.max(10, Math.min(300, currentPct));
+        iconScale = currentPct / 100;
+        if (iconScaleSlider) iconScaleSlider.value = currentPct;
+        if (iconScaleVal) iconScaleVal.textContent = `${currentPct}%`;
+        drawIconMaker();
+    }, { passive: false });
 }
 
 const updateIconOnColorOrTextChange = () => {
@@ -513,10 +743,12 @@ function drawIconMaker() {
     iconCtx.fillStyle = gradient;
     iconCtx.fillRect(0, 0, iconCanvas.width, iconCanvas.height);
 
-    // 画像描画
-    const x = (size - iconUploadedImage.width) / 2;
-    const y = (size - iconUploadedImage.height) / 2;
-    iconCtx.drawImage(iconUploadedImage, x, y);
+    // 画像描画 (拡大縮小・オフセット対応)
+    const drawWidth = iconUploadedImage.width * iconScale;
+    const drawHeight = iconUploadedImage.height * iconScale;
+    const x = (size - drawWidth) / 2 + iconOffsetX;
+    const y = (size - drawHeight) / 2 + iconOffsetY;
+    iconCtx.drawImage(iconUploadedImage, x, y, drawWidth, drawHeight);
 
     // テキスト描画
     const text = iconTextInput.value;
