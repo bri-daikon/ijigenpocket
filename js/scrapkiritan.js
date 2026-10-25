@@ -149,11 +149,28 @@ const drawRect = (x1, y1, x2, y2, pre) => {
 };
 
 const drawText = (x, y) => {
-    const txt = document.getElementById('textToInsert').value; if(!txt) return;
-    const sz = parseInt(document.getElementById('brushSize').value);
-    ctx.font = `bold ${sz}px Inter`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.strokeStyle = 'white'; ctx.lineWidth = sz*0.15; ctx.strokeText(txt, x, y);
-    ctx.fillStyle = document.getElementById('mainColor').value; ctx.fillText(txt, x, y);
+    const txt = document.getElementById('textToInsert').value;
+    if (!txt) return;
+    const sz = parseInt(document.getElementById('brushSize').value, 10);
+    const lineHeight = sz * 1.25;
+    const lines = txt.split('\n');
+
+    ctx.font = `bold ${sz}px Inter, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = sz * 0.15;
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.fillStyle = document.getElementById('mainColor').value;
+
+    lines.forEach((line, index) => {
+        const lineY = y + index * lineHeight;
+        if (line.length > 0) {
+            ctx.strokeText(line, x, lineY);
+            ctx.fillText(line, x, lineY);
+        }
+    });
 };
 
 if (canvas) {
