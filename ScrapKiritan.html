@@ -220,20 +220,51 @@
                 <div id="view-color" class="main-view hidden animate-in fade-in duration-500">
                     <div class="max-w-md mx-auto py-6">
                         <div class="flex flex-col items-center">
-                            <div class="w-48 h-48 mb-10 relative color-picker-wrapper">
+                            <div class="w-48 h-48 mb-8 relative color-picker-wrapper">
                                 <input type="color" id="utility-color-input" value="#3b82f6" class="shadow-2xl">
                             </div>
                             
                             <div class="w-full space-y-4">
-                                <div class="flex items-center justify-between bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                                    <span class="font-mono text-2xl font-black text-slate-700 tracking-tight" id="utility-hex">#3B82F6</span>
-                                    <button onclick="copyToClipboard('utility-hex')" class="bg-white border px-4 py-2 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all">HEXをコピー</button>
+                                <!-- HEX 入力・表示 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label for="utility-hex-input" class="text-xs font-bold text-slate-500 uppercase tracking-wider">HEX</label>
+                                        <button onclick="copyColorValue('hex')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all text-slate-700">HEXをコピー</button>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="text" id="utility-hex-input" value="#3B82F6" placeholder="#3B82F6" spellcheck="false" class="w-full font-mono text-2xl font-black text-slate-700 tracking-tight bg-white px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                                    <span class="font-mono text-lg font-bold text-slate-400" id="utility-rgb">rgb(59, 130, 246)</span>
-                                    <button onclick="copyToClipboard('utility-rgb')" class="bg-white border px-4 py-2 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all">RGBをコピー</button>
+
+                                <!-- RGB 入力・表示 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label for="utility-rgb-input" class="text-xs font-bold text-slate-500 uppercase tracking-wider">RGB</label>
+                                        <button onclick="copyColorValue('rgb')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all text-slate-700">RGBをコピー</button>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="text" id="utility-rgb-input" value="rgb(59, 130, 246)" placeholder="rgb(59, 130, 246)" spellcheck="false" class="w-full font-mono text-lg font-bold text-slate-700 tracking-tight bg-white px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <!-- R, G, B 個別入力 -->
+                                    <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200 text-xs font-bold text-slate-500">
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-red-500 font-black">R</span>
+                                            <input type="number" id="utility-r-input" min="0" max="255" value="59" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-emerald-500 font-black">G</span>
+                                            <input type="number" id="utility-g-input" min="0" max="255" value="130" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-blue-500 font-black">B</span>
+                                            <input type="number" id="utility-b-input" min="0" max="255" value="246" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            <!-- 互換性維持のための非表示要素 -->
+                            <span id="utility-hex" class="hidden">#3B82F6</span>
+                            <span id="utility-rgb" class="hidden">rgb(59, 130, 246)</span>
                             <div id="utility-notif" class="mt-6 text-emerald-500 font-black text-sm opacity-0 transition-opacity">COPIED!</div>
                         </div>
                     </div>
@@ -250,6 +281,19 @@
                                     <label class="block text-sm font-bold text-slate-700 mb-2">1. アイコン画像を選ぶ (背景透明推奨)</label>
                                     <input type="file" id="icon-imageInput" accept="image/png, image/jpeg, image/webp" 
                                         class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                </div>
+
+                                <!-- 画像の拡大縮小・位置調整 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-bold text-slate-700">画像の拡大・縮小</label>
+                                        <span id="icon-scale-val" class="text-xs font-mono font-bold text-indigo-600">100%</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <input type="range" id="icon-scale-slider" min="10" max="300" value="100" class="w-full accent-indigo-600">
+                                        <button id="icon-scale-reset-btn" type="button" class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition-all whitespace-nowrap shadow-sm">リセット</button>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">※プレビュー上でドラッグして位置調整、マウスホイールで拡大縮小も可能です</p>
                                 </div>
 
                                 <!-- 2. 背景色（グラデーション）選択 -->
@@ -290,7 +334,7 @@
                             <div class="flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl p-4 border-2 border-dashed border-slate-200 min-h-[300px]">
                                 <p id="icon-placeholderText" class="text-slate-400 text-sm font-bold mb-4">ここにプレビューが表示されます</p>
                                 <!-- このCanvasに画像を合成して描画します -->
-                                <canvas id="icon-previewCanvas" class="max-w-full h-auto rounded-full shadow-2xl hidden"></canvas>
+                                <canvas id="icon-previewCanvas" class="max-w-full h-auto rounded-full shadow-2xl hidden cursor-grab active:cursor-grabbing"></canvas>
                             </div>
                         </div>
                     </div>
@@ -649,6 +693,6 @@
     <!-- Cropper.js JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="js/common.js"></script>
-    <script src="js/scrapkiritan.js?v=4.1"></script>
+    <script src="js/scrapkiritan.js?v=4.2"></script>
 </body>
 </html>
