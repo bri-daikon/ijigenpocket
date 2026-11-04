@@ -50,6 +50,12 @@
             </div>
             
             <div class="flex items-center gap-3">
+                <a href="LineStampFixer.html" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 rounded-xl shadow-sm transition-all duration-200" title="LINEスタンプ修正工場へ戻る">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-emerald-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233l2.85-2.85a3.75 3.75 0 00-5.303-5.303l-2.85 2.85m5.303 5.303l-4.5-4.5" />
+                    </svg>
+                    LINEスタンプ修正工場
+                </a>
                 <a href="ScrapKiritan.html" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 rounded-xl shadow-sm transition-all duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-indigo-500">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
@@ -89,12 +95,18 @@
                 </div>
 
                 <!-- まとめて追加と全リセットボタン -->
-                <div class="flex justify-between items-center mt-2">
+                <div class="flex flex-wrap justify-between items-center gap-2 mt-2 pt-2 border-t border-slate-100">
                     <button id="btn-add-multiple" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                         画像をまとめて追加
+                    </button>
+                    <button id="btn-sync-fixer" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 transition-colors" title="LINEスタンプ修正工場で選択した画像を再読み込み">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        Fixerから反映
                     </button>
                     <button id="btn-reset-images" class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
@@ -326,6 +338,7 @@
         const imageCountBadge = document.getElementById('image-count');
         
         const btnAddMultiple = document.getElementById('btn-add-multiple');
+        const btnSyncFixer = document.getElementById('btn-sync-fixer');
         const bgTypeRadios = document.getElementsByName('bgType');
         const bgColorPicker = document.getElementById('bg-color-picker');
 
@@ -572,6 +585,88 @@
         }
 
         // 画像消去ボタン
+        // DataURLを特定スロットに直接読み込む関数
+        function setSlotImageDataUrl(dataUrl, index) {
+            if (index < 0 || index >= MAX_SLOTS) return;
+            const img = new Image();
+            img.onload = () => {
+                brushImages[index] = img;
+                const slot = slotsContainer.querySelector(`[data-index="${index}"]`);
+                if (!slot) return;
+                const imgEl = slot.querySelector('img');
+                const iconPlus = slot.querySelector('div');
+                const deleteBtn = slot.querySelector('button');
+
+                imgEl.src = dataUrl;
+                imgEl.classList.remove('hidden');
+                iconPlus.classList.add('hidden');
+                deleteBtn.classList.remove('hidden');
+
+                slot.classList.remove('border-dashed', 'border-slate-300', 'bg-slate-50');
+                slot.classList.add('border-indigo-100', 'bg-white', 'shadow-sm');
+
+                updateActiveBadge();
+            };
+            img.src = dataUrl;
+        }
+
+        // 外部（LineStampFixer等）から受け取った画像配列を一括反映する
+        function loadBrushImagesFromDataUrls(urls) {
+            if (!Array.isArray(urls) || urls.length === 0) return;
+            brushImages = Array(MAX_SLOTS).fill(null);
+            initImageSlots();
+            urls.slice(0, MAX_SLOTS).forEach((url, i) => {
+                setSlotImageDataUrl(url, i);
+            });
+            showToast(`LINEスタンプ修正工場から ${Math.min(urls.length, MAX_SLOTS)} 個のスタンプをセットしました！`);
+        }
+
+        // localStorageからスタンプ画像をチェックして反映する
+        function checkAndApplyFixerImages(isManual = false) {
+            try {
+                const stored = localStorage.getItem('linestamp_brush_images');
+                if (stored) {
+                    const urls = JSON.parse(stored);
+                    if (Array.isArray(urls) && urls.length > 0) {
+                        loadBrushImagesFromDataUrls(urls);
+                        return true;
+                    }
+                }
+            } catch (err) {
+                console.warn('localStorage read error:', err);
+            }
+            if (isManual) {
+                showToast('修正工場から読み込める画像が見つかりませんでした。先に修正工場でスタンプを選択してください。', 'error');
+            }
+            return false;
+        }
+
+        // Fixerから反映ボタン
+        if (btnSyncFixer) {
+            btnSyncFixer.addEventListener('click', () => {
+                checkAndApplyFixerImages(true);
+            });
+        }
+
+        // postMessage受信（ウィンドウ直接連携用）
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SET_BRUSH_IMAGES' && Array.isArray(event.data.images)) {
+                loadBrushImagesFromDataUrls(event.data.images);
+            }
+        });
+
+        // storageイベント監視（別タブで選択が変わったとき）
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'linestamp_brush_images' && event.newValue) {
+                try {
+                    const urls = JSON.parse(event.newValue);
+                    if (Array.isArray(urls) && urls.length > 0) {
+                        loadBrushImagesFromDataUrls(urls);
+                    }
+                } catch (e) {}
+            }
+        });
+
         btnResetImages.addEventListener('click', () => {
             brushImages = Array(MAX_SLOTS).fill(null);
             initImageSlots();
@@ -1019,6 +1114,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             initImageSlots();
             resizeCanvas();
+            checkAndApplyFixerImages(false);
         });
 
         // コンテナのサイズが変わったときに自動調整（サイドバーの伸縮などにも対応）

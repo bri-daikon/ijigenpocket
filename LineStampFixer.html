@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LINEスタンプ修正工場 - LINE Stamp Repair Factory</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            line: {
+              DEFAULT: '#06c755',
+              dark: '#05a646',
+              light: '#28e070',
+              bg: '#111e16'
+            },
+            factory: {
+              bg: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+              accent: '#38bdf8'
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', '"M PLUS Rounded 1c"', '"Zen Maru Gothic"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* 透過チェッカー模様 */
+    .bg-checker {
+      background-image: 
+        linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
+        linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #cbd5e1 75%), 
+        linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      background-color: #f1f5f9;
+    }
+    .bg-checker-dark {
+      background-image: 
+        linear-gradient(45deg, #334155 25%, transparent 25%), 
+        linear-gradient(-45deg, #334155 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #334155 75%), 
+        linear-gradient(-45deg, transparent 75%, #334155 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      background-color: #1e293b;
+    }
+    
+    /* LINE風トーク背景 */
+    .bg-line-talk {
+      background-color: #7ac660;
+    }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* カーソル */
+    .cursor-crosshair-custom {
+      cursor: crosshair;
+    }
+    .cursor-grab-custom {
+      cursor: grab;
+    }
+    .cursor-grabbing-custom {
+      cursor: grabbing;
+    }
+
+    /* 点滅ハイライトアニメーション（ゴミ発見用） */
+    @keyframes blink-bg {
+      0%, 100% { background-color: #000000; }
+      50% { background-color: #ffffff; }
+    }
+    .animate-blink-check {
+      animation: blink-bg 1.2s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-emerald-500 selection:text-white">
+
+  <!-- ヘッダー -->
+  <header class="bg-slate-900 border-b border-slate-800 px-5 py-3 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- タイトル＆バッジ -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20">
+          <i data-lucide="wrench" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              LINEスタンプ修正工場
+            </h1>
+            <span class="text-xs bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+              Pro v1.0
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">一括プレビュー・白黒背景透過チェック・精密レタッチ＆保存ツール</p>
+        </div>
+      </div>
+
+      <!-- 右上アクション -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- フォルダ読み込みボタン -->
+        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs sm:text-sm font-semibold py-2 px-3.5 rounded-lg transition-all flex items-center gap-2 shadow-sm">
+          <i data-lucide="folder-open" class="w-4 h-4 text-amber-400"></i>
+          <span>フォルダ読込</span>
+          <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
+        </label>
+
+        <!-- ファイル複数選択ボタン -->
+        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs sm:text-sm font-semibold py-2 px-3.5 rounded-lg transition-all flex items-center gap-2 shadow-sm">
+          <i data-lucide="image-plus" class="w-4 h-4 text-sky-400"></i>
+          <span>画像を選択</span>
+          <input type="file" id="fileInput" multiple accept="image/png,image/webp,image/jpeg" class="hidden">
+        </label>
+
+        <!-- ZIP一括ダウンロードボタン -->
+        <button id="btnDownloadAllZip" disabled class="disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-md shadow-emerald-900/30">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>修正後を一括ZIP保存</span>
+        </button>
+
+        <!-- ラインメーカー連携ボタン -->
+        <a href="IllustLineMaker.html" id="btnOpenLineMaker" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold py-2 px-3.5 rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-indigo-900/30" title="選択した画像（または先頭10枚）をブラシにして画像連結ラインメーカーを開く">
+          <i data-lucide="brush" class="w-4 h-4"></i>
+          <span>ラインメーカー</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+    <!-- コントロールツールバー（背景切り替え・拡大率・ソートなど） -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- 背景色切り替え（白／黒／チェッカー／LINE風） -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+          <i data-lucide="sun-moon" class="w-4 h-4 text-emerald-400"></i>
+          背景チェック:
+        </span>
+        
+        <div class="inline-flex bg-slate-950 p-1 rounded-xl border border-slate-800" role="group" id="bgModeSelector">
+          <button type="button" data-bg="black" class="bg-mode-btn active px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-800 text-white shadow-sm border border-slate-700">
+            <span class="w-3 h-3 rounded-full bg-black border border-slate-600 inline-block"></span>
+            黒 (白ゴミ発見)
+          </button>
+          <button type="button" data-bg="white" class="bg-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-white border border-slate-300 inline-block"></span>
+            白 (黒ゴミ発見)
+          </button>
+          <button type="button" data-bg="checker" class="bg-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-checker border border-slate-400 inline-block"></span>
+            市松模様 (透過)
+          </button>
+          <button type="button" data-bg="line" class="bg-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-[#7ac660] inline-block"></span>
+            LINEトーク風
+          </button>
+        </div>
+      </div>
+
+      <!-- 表示調整（カードサイズスライダー・並び順・情報） -->
+      <div class="flex items-center gap-4 flex-wrap">
+        <!-- カードサイズ変更 -->
+        <div class="flex items-center gap-2">
+          <i data-lucide="grid" class="w-4 h-4 text-slate-400"></i>
+          <span class="text-xs text-slate-400 font-semibold">表示サイズ:</span>
+          <input type="range" id="cardSizeSlider" min="140" max="320" value="200" class="w-24 accent-emerald-500 cursor-pointer">
+        </div>
+
+        <!-- 読み込み件数ステータス -->
+        <div class="text-xs bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-300 flex items-center gap-2 font-mono">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span id="stampCount">0 枚読み込み</span>
+        </div>
+
+        <!-- ブラシ選択ステータス＆操作 -->
+        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-xs">
+          <i data-lucide="brush" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span class="text-slate-400 font-semibold">ブラシ選択:</span>
+          <span id="brushCountText" class="font-mono font-bold text-indigo-400">0 / 10</span>
+          <div class="flex items-center gap-1 ml-1">
+            <button id="btnSelectFirst10" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors" title="先頭10枚をブラシ画像に一括選択">先頭10枚</button>
+            <button id="btnClearBrushSelection" type="button" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 text-[11px] transition-colors" title="ブラシ選択をクリア">解除</button>
+          </div>
+        </div>
+
+        <!-- 全クリアボタン -->
+        <button id="btnClearAll" title="読み込んだ画像をすべてクリア" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ドロップエリア 兼 プレビューグリッド -->
+    <section id="dropZone" class="relative min-h-[460px] rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/50 flex flex-col transition-all">
+      
+      <!-- ドラッグオーバー時のオーバーレイ -->
+      <div id="dragOverlay" class="absolute inset-0 bg-emerald-950/80 backdrop-blur-sm border-2 border-emerald-500 rounded-2xl flex flex-col items-center justify-center z-30 opacity-0 pointer-events-none transition-opacity">
+        <i data-lucide="upload-cloud" class="w-16 h-16 text-emerald-400 animate-bounce mb-3"></i>
+        <p class="text-xl font-bold text-white">ここにフォルダまたは画像をドロップ</p>
+        <p class="text-sm text-emerald-300 mt-1">PNG, WebP, JPEG, またはZIPファイル</p>
+      </div>
+
+      <!-- 画像未読み込み時のプレースホルダー -->
+      <div id="emptyState" class="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto">
+        <div class="w-20 h-20 rounded-3xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center mb-5 text-emerald-400 shadow-inner">
+          <i data-lucide="folder-down" class="w-10 h-10"></i>
+        </div>
+        <h2 class="text-xl font-bold text-white mb-2">スタンプ画像フォルダをドラッグ＆ドロップ</h2>
+        <p class="text-sm text-slate-400 max-w-md leading-relaxed mb-6">
+          LINEスタンプ画像（PNG/WebP）が入ったフォルダや、複数の画像、またはZIPファイルを直接ここに落としてください。
+        </p>
+
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/40">
+            <i data-lucide="folder-search" class="w-5 h-5"></i>
+            フォルダを一括選択
+            <input type="file" id="emptyFolderInput" webkitdirectory directory multiple class="hidden">
+          </label>
+          <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-3 px-5 rounded-xl transition-all flex items-center gap-2">
+            <i data-lucide="file-plus-2" class="w-5 h-5 text-sky-400"></i>
+            ファイルを選択
+            <input type="file" id="emptyFileInput" multiple accept="image/png,image/webp,image/jpeg" class="hidden">
+          </label>
+          <button id="btnLoadSample" type="button" class="bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold py-3 px-4 rounded-xl transition-all flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            サンプルで試す
+          </button>
+        </div>
+
+        <!-- ガイドヒント -->
+        <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl text-left">
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs mb-1">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+              白黒背景で即チェック
+            </div>
+            <p class="text-xs text-slate-400 leading-normal">
+              黒背景で透過漏れの白残りを発見。白背景で不要な黒点や線の途切れを瞬時にチェック。
+            </p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <div class="flex items-center gap-2 text-sky-400 font-bold text-xs mb-1">
+              <i data-lucide="eraser" class="w-4 h-4"></i>
+              クリックで精密レタッチ
+            </div>
+            <p class="text-xs text-slate-400 leading-normal">
+              気になるスタンプをクリックするだけで拡大。消しゴムやペンでその場で即座に修正可能。
+            </p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-xs mb-1">
+              <i data-lucide="package-check" class="w-4 h-4"></i>
+              そのまま一括ZIP保存
+            </div>
+            <p class="text-xs text-slate-400 leading-normal">
+              ファイル名を保ったまま修正済みの画像をまとめてZIPで書き出し。申請直前の最終確認に最適。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 画像カード一覧コンテナ -->
+      <div id="gridContainer" class="hidden p-4 sm:p-6 grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <!-- JSでカードを動的生成 -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ====================================================================== -->
+  <!-- 拡大・修正エディタ モーダル (Editor Modal) -->
+  <!-- ====================================================================== -->
+  <div id="editorModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col">
+    
+    <!-- モーダルヘッダー -->
+    <div class="bg-slate-900 border-b border-slate-800 px-5 py-3 flex items-center justify-between gap-4">
+      <!-- 左：ファイル情報＆前後ナビ -->
+      <div class="flex items-center gap-3">
+        <button id="btnPrevStamp" title="前のスタンプ (Left Arrow)" class="p-2 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700">
+          <i data-lucide="chevron-left" class="w-5 h-5"></i>
+        </button>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="editorFileName" class="text-base font-bold text-white font-mono">01.png</h3>
+            <span id="editorIndexBadge" class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">1 / 40</span>
+            <span id="editorSizeBadge" class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700 font-mono">370 × 320 px</span>
+          </div>
+          <p class="text-xs text-slate-400">クリック＆ドラッグで描画／消去。ホイールで拡大縮小、右クリックドラッグまたはスペース＋ドラッグで移動。</p>
+        </div>
+        <button id="btnNextStamp" title="次のスタンプ (Right Arrow)" class="p-2 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg transition-colors border border-slate-700">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 右：閉じる＆保存アクション -->
+      <div class="flex items-center gap-3">
+        <button id="btnSaveSingle" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs sm:text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center gap-1.5">
+          <i data-lucide="download" class="w-4 h-4 text-sky-400"></i>
+          <span>単体PNG保存</span>
+        </button>
+        <button id="btnApplyAndClose" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-900/30">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>修正を確定して閉じる</span>
+        </button>
+        <button id="btnCloseModal" title="閉じる (Esc)" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- モーダルボディ：ツールバー ＋ キャンバス作業エリア -->
+    <div class="flex-1 flex overflow-hidden relative">
+      
+      <!-- 左サイドツールバー -->
+      <aside class="w-72 bg-slate-900 border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto shrink-0 select-none">
+        
+        <!-- ツール選択（ペン / 消しゴム / スポイト / ハンド） -->
+        <div>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">ツール</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="toolPen" class="tool-btn active flex items-center gap-2 p-2.5 rounded-xl border border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold text-sm transition-all">
+              <i data-lucide="pen-tool" class="w-4 h-4"></i>
+              ペン (B)
+            </button>
+            <button id="toolEraser" class="tool-btn flex items-center gap-2 p-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white font-bold text-sm transition-all">
+              <i data-lucide="eraser" class="w-4 h-4"></i>
+              消しゴム (E)
+            </button>
+            <button id="toolTransform" class="tool-btn flex items-center gap-2 p-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white font-bold text-sm transition-all">
+              <i data-lucide="scaling" class="w-4 h-4"></i>
+              拡大縮小 (T)
+            </button>
+            <button id="toolPipette" class="tool-btn flex items-center gap-2 p-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white font-bold text-sm transition-all">
+              <i data-lucide="pipette" class="w-4 h-4"></i>
+              スポイト (I)
+            </button>
+            <button id="toolHand" class="tool-btn col-span-2 flex items-center justify-center gap-2 p-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-all">
+              <i data-lucide="hand" class="w-3.5 h-3.5"></i>
+              画面移動 (H / Space+ドラッグ)
+            </button>
+          </div>
+        </div>
+
+        <!-- 画像の拡大縮小・変形パネル（Transform Tool専用） -->
+        <div id="transformContainer" class="hidden bg-slate-950 p-3.5 rounded-xl border border-emerald-500/50 flex flex-col gap-3 shadow-lg">
+          <div class="flex items-center justify-between text-xs font-bold text-emerald-400">
+            <span class="flex items-center gap-1.5"><i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> 画像の拡大縮小・位置調整</span>
+            <span id="imgScaleVal" class="font-mono text-white">100%</span>
+          </div>
+
+          <!-- スケールスライダー -->
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+              <span>サイズ倍率</span>
+              <div class="flex gap-1">
+                <button id="btnScaleDownStep" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 font-mono text-[10px]">-5%</button>
+                <button id="btnScaleUpStep" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 font-mono text-[10px]">+5%</button>
+              </div>
+            </div>
+            <input type="range" id="imgScaleSlider" min="40" max="180" value="100" class="w-full accent-emerald-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+              <span>40% (縮小)</span>
+              <span>100% (等倍)</span>
+              <span>180% (拡大)</span>
+            </div>
+          </div>
+
+          <!-- 自動収める ＆ 位置リセットボタン -->
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button id="btnFitMargin" class="py-2 px-2 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1 transition-colors" title="周囲10pxの規定余白にイラストを自動フィット">
+              <i data-lucide="minimize" class="w-3.5 h-3.5"></i>
+              余白10pxに収める
+            </button>
+            <button id="btnCenterImage" class="py-2 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1 transition-colors" title="イラストを中央揃え">
+              <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
+              中央揃え
+            </button>
+          </div>
+
+          <p class="text-[11px] text-slate-400 leading-tight">
+            ※ キャンバス上をドラッグして、イラストの位置（上下左右）も自由に動かせます。
+          </p>
+
+          <button id="btnApplyTransform" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            変形を確定する
+          </button>
+        </div>
+
+        <!-- ブラシサイズ -->
+        <div id="brushSizeContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between text-xs font-semibold mb-2">
+            <span class="text-slate-400">ブラシサイズ</span>
+            <span id="brushSizeVal" class="text-emerald-400 font-mono font-bold">4 px</span>
+          </div>
+          <input type="range" id="brushSizeSlider" min="1" max="64" value="4" class="w-full accent-emerald-500 cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+            <span>1px (精密)</span>
+            <span>16px</span>
+            <span>64px (広範囲)</span>
+          </div>
+        </div>
+
+        <!-- 不透明度（ペン時のみ） -->
+        <div id="opacityContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between text-xs font-semibold mb-2">
+            <span class="text-slate-400">不透明度</span>
+            <span id="brushOpacityVal" class="text-emerald-400 font-mono font-bold">100 %</span>
+          </div>
+          <input type="range" id="brushOpacitySlider" min="5" max="100" value="100" class="w-full accent-emerald-500 cursor-pointer">
+        </div>
+
+        <!-- カラー選択（ペン時のみ） -->
+        <div id="colorContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400">描画カラー</span>
+            <div class="flex items-center gap-2">
+              <div id="currentColorPreview" class="w-6 h-6 rounded-md border border-slate-600 shadow-sm" style="background-color: #000000;"></div>
+              <input type="color" id="brushColorInput" value="#000000" class="w-0 h-0 opacity-0 cursor-pointer absolute">
+              <label for="brushColorInput" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer underline">パレット</label>
+            </div>
+          </div>
+
+          <!-- プリセットカラーパレット -->
+          <div class="grid grid-cols-6 gap-1.5">
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-black" data-color="#000000" title="黒"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-500 bg-white" data-color="#ffffff" title="白"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-red-500" data-color="#ef4444" title="赤"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-amber-400" data-color="#fbbf24" title="黄色"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-emerald-500" data-color="#10b981" title="緑"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-sky-500" data-color="#0ea5e9" title="水色"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-pink-400" data-color="#f472b6" title="ピンク"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-[#ffe5d9]" data-color="#ffe5d9" title="薄肌色"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-[#ffd1ba]" data-color="#ffd1ba" title="肌色"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-[#8c5a3c]" data-color="#8c5a3c" title="茶色"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-[#64748b]" data-color="#64748b" title="グレー"></button>
+            <button class="preset-color w-7 h-7 rounded-md border border-slate-700 bg-[#1e293b]" data-color="#1e293b" title="濃紺"></button>
+          </div>
+        </div>
+
+        <!-- 履歴操作（元に戻す / やり直す） -->
+        <div class="flex items-center gap-2">
+          <button id="btnUndo" disabled title="元に戻す (Ctrl+Z)" class="flex-1 disabled:opacity-30 disabled:cursor-not-allowed bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+            <i data-lucide="undo-2" class="w-4 h-4 text-emerald-400"></i>
+            元に戻す
+          </button>
+          <button id="btnRedo" disabled title="やり直す (Ctrl+Y)" class="flex-1 disabled:opacity-30 disabled:cursor-not-allowed bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+            <i data-lucide="redo-2" class="w-4 h-4 text-emerald-400"></i>
+            やり直し
+          </button>
+        </div>
+
+        <!-- リセットボタン -->
+        <button id="btnResetStamp" class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          修正を破棄して元画像に戻す
+        </button>
+
+        <hr class="border-slate-800">
+
+        <!-- エディタ内 背景チェック切り替え -->
+        <div>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">キャンバス背景</span>
+          <div class="grid grid-cols-2 gap-1.5" id="editorBgSelector">
+            <button data-bg="black" class="editor-bg-btn active px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white border border-slate-700 flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-black border border-slate-600"></span> 黒
+            </button>
+            <button data-bg="white" class="editor-bg-btn px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-white border border-slate-300"></span> 白
+            </button>
+            <button data-bg="checker" class="editor-bg-btn px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-checker border border-slate-400"></span> 市松
+            </button>
+            <button data-bg="line" class="editor-bg-btn px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-[#7ac660]"></span> LINE緑
+            </button>
+          </div>
+          
+          <!-- 白黒点滅（ゴミ発見ライト）スイッチ -->
+          <button id="btnBlinkCheck" class="w-full mt-2 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-950 hover:bg-slate-800 text-amber-300 border border-slate-800 hover:border-amber-500/40 transition-colors flex items-center justify-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>白黒点滅でゴミを発見</span>
+          </button>
+        </div>
+
+        <!-- ガイド表示切り替え -->
+        <div>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">表示補助</span>
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950 p-2 rounded-lg border border-slate-800">
+            <input type="checkbox" id="checkLineMargin" class="rounded accent-emerald-500">
+            <span>LINE規定の10px余白枠を表示</span>
+          </label>
+        </div>
+
+      </aside>
+
+      <!-- キャンバス表示ビューポートエリア -->
+      <div id="viewport" class="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center select-none cursor-crosshair-custom">
+        
+        <!-- ズーム・表示情報＆フローティングやり直しツールバー -->
+        <div class="absolute top-4 left-4 z-20 flex items-center gap-2 bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-xl">
+          <!-- 拡大縮小コントローラ -->
+          <button id="btnZoomOut" title="ズームアウト (-)" class="p-1 hover:bg-slate-800 text-slate-300 hover:text-white rounded">
+            <i data-lucide="zoom-out" class="w-4 h-4"></i>
+          </button>
+          <span id="zoomLevelText" class="text-xs font-mono font-bold text-slate-200 w-14 text-center">200%</span>
+          <button id="btnZoomIn" title="ズームイン (+)" class="p-1 hover:bg-slate-800 text-slate-300 hover:text-white rounded">
+            <i data-lucide="zoom-in" class="w-4 h-4"></i>
+          </button>
+          <button id="btnZoomReset" title="100%にリセット" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-mono ml-1">
+            1:1
+          </button>
+          <button id="btnZoomFit" title="画面に合わせる" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-mono">
+            FIT
+          </button>
+
+          <!-- 区切り線 -->
+          <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+
+          <!-- ホイール操作切替ボタン -->
+          <button id="btnToggleWheelMode" title="ホイール操作の切り替え (拡大縮小 ↔ 上下移動)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-0.5 rounded flex items-center gap-1.5 font-mono transition-colors border border-slate-700">
+            <i data-lucide="zoom-in" class="w-3.5 h-3.5 text-emerald-400" id="wheelModeIcon"></i>
+            <span id="wheelModeText">ホイール: 拡縮</span>
+          </button>
+
+          <!-- 区切り線 -->
+          <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+
+          <!-- やり直し（元に戻す / やり直し）クイックボタン -->
+          <button id="btnFloatingUndo" disabled title="元に戻す (Ctrl+Z)" class="disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border border-transparent hover:border-slate-700">
+            <i data-lucide="undo-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>元に戻す</span>
+          </button>
+          <button id="btnFloatingRedo" disabled title="やり直す (Ctrl+Y)" class="disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border border-transparent hover:border-slate-700">
+            <i data-lucide="redo-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>やり直す</span>
+          </button>
+        </div>
+
+        <!-- ショートカットヘルプバッジ -->
+        <div class="absolute bottom-4 left-4 z-20 hidden md:flex items-center gap-2 text-[11px] text-slate-400 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800/80">
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">ホイール</kbd> でカーソル中心に拡縮</span>
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Space</kbd> / 余白ドラッグで移動</span>
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Shift+ホイール</kbd> で上下移動</span>
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">[</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">]</kbd> で太さ変更</span>
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Ctrl+Z</kbd> 元に戻す</span>
+        </div>
+
+        <!-- スポイト時のカラー抽出チップ -->
+        <div id="pipettePreview" class="absolute z-30 pointer-events-none hidden items-center gap-2 bg-slate-900/90 border border-slate-700 px-2 py-1 rounded shadow-lg text-[11px] font-mono">
+          <div id="pipetteColorBox" class="w-4 h-4 rounded border border-white/50"></div>
+          <span id="pipetteColorText" class="text-white">#000000</span>
+        </div>
+
+        <!-- カーソルプレビュー（ブラシサイズ円）：viewport直下に配置し二重スケールを解消 -->
+        <div id="brushCursor" class="absolute pointer-events-none rounded-full border border-white/90 shadow-[0_0_2px_rgba(0,0,0,0.9)] z-30 hidden -translate-x-1/2 -translate-y-1/2"></div>
+
+        <!-- トランスフォームコンテナ（拡大・パン移動） -->
+        <div id="canvasTransformContainer" class="relative origin-center transition-transform duration-75">
+          
+          <!-- 背景レイヤー（白 / 黒 / チェッカー / 緑 / 点滅） -->
+          <div id="editorBackgroundLayer" class="absolute inset-0 bg-black rounded shadow-2xl transition-colors"></div>
+
+          <!-- LINEスタンプ 10px余白ガイドレイヤー -->
+          <div id="editorMarginGuide" class="absolute inset-[10px] border-2 border-dashed border-emerald-400/60 pointer-events-none z-10 hidden">
+            <span class="absolute top-1 left-1 text-[10px] bg-emerald-950/80 text-emerald-400 font-mono px-1 rounded">10px 余白内</span>
+          </div>
+
+          <!-- 描画キャンバス -->
+          <canvas id="paintCanvas" class="relative block shadow-lg"></canvas>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- フッター -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500">
+    <p>LINEスタンプ修正工場 - 異次元ポケット工房 &copy; 2026. すべての画像編集はブラウザローカル内で完結し、外部サーバーへ送信されません。</p>
+  </footer>
+
+  <!-- ====================================================================== -->
+  <!-- JavaScript ロジック -->
+  <!-- ====================================================================== -->
+  <script>
+    // アイコン初期化
+    lucide.createIcons();
+
+    // -------------------------------------------------------------
+    // アプリケーション状態管理
+    // -------------------------------------------------------------
+    const state = {
+      // 読み込んだ画像リスト
+      // { id, file, name, originalUrl, currentDataUrl, width, height, isModified, history: [], historyIndex: -1 }
+      images: [],
+
+      // ブラシ画像として選択されたスタンプID（最大10個）
+      selectedBrushIds: [],
+      
+      // 全体プレビューの背景モード: 'black' | 'white' | 'checker' | 'line'
+      previewBg: 'black',
+      
+      // 現在エディタで編集中の画像インデックス (-1: 未選択)
+      currentEditorIndex: -1,
+      
+      // エディタツール: 'pen' | 'eraser' | 'pipette' | 'hand'
+      currentTool: 'pen',
+      brushSize: 4,
+      brushColor: '#000000',
+      brushOpacity: 1.0,
+      
+      // エディタ背景モード: 'black' | 'white' | 'checker' | 'line'
+      editorBg: 'black',
+      isBlinkCheck: false,
+      showMarginGuide: false,
+      
+      // ビューポートトランスフォーム（ズーム＆パン）
+      zoom: 2.0, // 200%
+      panX: 0,
+      panY: 0,
+      isPanning: false,
+      panStartX: 0,
+      panStartY: 0,
+      spacePressed: false,
+      wheelMode: 'zoom', // 'zoom' (拡大縮小: デフォルト) | 'scroll' (上下移動)
+      
+      // 描画フラグ
+      isDrawing: false,
+      lastX: 0,
+      lastY: 0,
+
+      // 画像拡大縮小・変形状態 (Transform)
+      transform: {
+        scale: 1.0,
+        offsetX: 0,
+        offsetY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        initialOffsetX: 0,
+        initialOffsetY: 0,
+        baseImage: null
+      }
+    };
+
+    // DOM要素参照
+    const dropZone = document.getElementById('dropZone');
+    const dragOverlay = document.getElementById('dragOverlay');
+    const emptyState = document.getElementById('emptyState');
+    const gridContainer = document.getElementById('gridContainer');
+    const folderInput = document.getElementById('folderInput');
+    const fileInput = document.getElementById('fileInput');
+    const emptyFolderInput = document.getElementById('emptyFolderInput');
+    const emptyFileInput = document.getElementById('emptyFileInput');
+    const stampCount = document.getElementById('stampCount');
+    const btnDownloadAllZip = document.getElementById('btnDownloadAllZip');
+    const btnOpenLineMaker = document.getElementById('btnOpenLineMaker');
+    const brushCountText = document.getElementById('brushCountText');
+    const btnSelectFirst10 = document.getElementById('btnSelectFirst10');
+    const btnClearBrushSelection = document.getElementById('btnClearBrushSelection');
+    const btnClearAll = document.getElementById('btnClearAll');
+    const cardSizeSlider = document.getElementById('cardSizeSlider');
+    const bgModeSelector = document.getElementById('bgModeSelector');
+
+    // モーダル・エディタ関連DOM
+    const editorModal = document.getElementById('editorModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnApplyAndClose = document.getElementById('btnApplyAndClose');
+    const btnSaveSingle = document.getElementById('btnSaveSingle');
+    const btnPrevStamp = document.getElementById('btnPrevStamp');
+    const btnNextStamp = document.getElementById('btnNextStamp');
+    const editorFileName = document.getElementById('editorFileName');
+    const editorIndexBadge = document.getElementById('editorIndexBadge');
+    const editorSizeBadge = document.getElementById('editorSizeBadge');
+    
+    // ツールUI
+    const toolPen = document.getElementById('toolPen');
+    const toolEraser = document.getElementById('toolEraser');
+    const toolTransform = document.getElementById('toolTransform');
+    const toolPipette = document.getElementById('toolPipette');
+    const toolHand = document.getElementById('toolHand');
+    const brushSizeContainer = document.getElementById('brushSizeContainer');
+    const brushSizeSlider = document.getElementById('brushSizeSlider');
+    const brushSizeVal = document.getElementById('brushSizeVal');
+    const brushOpacitySlider = document.getElementById('brushOpacitySlider');
+    const brushOpacityVal = document.getElementById('brushOpacityVal');
+    const brushColorInput = document.getElementById('brushColorInput');
+    const currentColorPreview = document.getElementById('currentColorPreview');
+    const opacityContainer = document.getElementById('opacityContainer');
+    const colorContainer = document.getElementById('colorContainer');
+
+    // 画像変形（拡大縮小・配置）UI
+    const transformContainer = document.getElementById('transformContainer');
+    const imgScaleSlider = document.getElementById('imgScaleSlider');
+    const imgScaleVal = document.getElementById('imgScaleVal');
+    const btnScaleDownStep = document.getElementById('btnScaleDownStep');
+    const btnScaleUpStep = document.getElementById('btnScaleUpStep');
+    const btnFitMargin = document.getElementById('btnFitMargin');
+    const btnCenterImage = document.getElementById('btnCenterImage');
+    const btnApplyTransform = document.getElementById('btnApplyTransform');
+    
+    // 履歴
+    const btnUndo = document.getElementById('btnUndo');
+    const btnRedo = document.getElementById('btnRedo');
+    const btnFloatingUndo = document.getElementById('btnFloatingUndo');
+    const btnFloatingRedo = document.getElementById('btnFloatingRedo');
+    const btnResetStamp = document.getElementById('btnResetStamp');
+    
+    // エディタ背景・補助
+    const editorBgSelector = document.getElementById('editorBgSelector');
+    const editorBackgroundLayer = document.getElementById('editorBackgroundLayer');
+    const btnBlinkCheck = document.getElementById('btnBlinkCheck');
+    const checkLineMargin = document.getElementById('checkLineMargin');
+    const editorMarginGuide = document.getElementById('editorMarginGuide');
+    
+    // キャンバス＆ビューポート
+    const viewport = document.getElementById('viewport');
+    const canvasTransformContainer = document.getElementById('canvasTransformContainer');
+    const paintCanvas = document.getElementById('paintCanvas');
+    const ctx = paintCanvas.getContext('2d');
+    const brushCursor = document.getElementById('brushCursor');
+    const pipettePreview = document.getElementById('pipettePreview');
+    const pipetteColorBox = document.getElementById('pipetteColorBox');
+    const pipetteColorText = document.getElementById('pipetteColorText');
+    const zoomLevelText = document.getElementById('zoomLevelText');
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
+    const btnZoomFit = document.getElementById('btnZoomFit');
+    const btnToggleWheelMode = document.getElementById('btnToggleWheelMode');
+    const wheelModeText = document.getElementById('wheelModeText');
+    const wheelModeIcon = document.getElementById('wheelModeIcon');
+
+    // -------------------------------------------------------------
+    // ファイル読み込み処理
+    // -------------------------------------------------------------
+    
+    // ドラッグ＆ドロップイベント設定
+    ['dragenter', 'dragover'].forEach(eventName => {
+      window.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      window.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target === dragOverlay || eventName === 'drop') {
+          dragOverlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+      }, false);
+    });
+
+    window.addEventListener('drop', async (e) => {
+      const items = e.dataTransfer.items;
+      const files = e.dataTransfer.files;
+      if (items && items.length > 0) {
+        await handleDroppedItems(items, files);
+      } else if (files && files.length > 0) {
+        await processFileList(Array.from(files));
+      }
+    });
+
+    // フォルダ・ファイル入力のリスナー
+    [folderInput, emptyFolderInput].forEach(input => {
+      input.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          processFileList(Array.from(e.target.files), true);
+        }
+        e.target.value = '';
+      });
+    });
+
+    [fileInput, emptyFileInput].forEach(input => {
+      input.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          processFileList(Array.from(e.target.files), false);
+        }
+        e.target.value = '';
+      });
+    });
+
+    // フォルダドロップ階層探索
+    async function handleDroppedItems(items, fallbackFiles) {
+      const fileList = [];
+      const queue = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.webkitGetAsEntry) {
+          const entry = item.webkitGetAsEntry();
+          if (entry) queue.push(entry);
+        }
+      }
+
+      if (queue.length === 0) {
+        await processFileList(Array.from(fallbackFiles), true);
+        return;
+      }
+
+      while (queue.length > 0) {
+        const entry = queue.shift();
+        if (entry.isFile) {
+          await new Promise((resolve) => {
+            entry.file((file) => {
+              // パス情報を保持
+              file._fullPath = entry.fullPath || file.name;
+              fileList.push(file);
+              resolve();
+            }, () => resolve());
+          });
+        } else if (entry.isDirectory) {
+          const dirReader = entry.createReader();
+          // readEntries は空配列が返るまで繰り返す
+          let hasMore = true;
+          while (hasMore) {
+            const entries = await new Promise((resolve) => {
+              dirReader.readEntries((results) => resolve(results), () => resolve([]));
+            });
+            if (entries.length > 0) {
+              for (const child of entries) {
+                queue.push(child);
+              }
+            } else {
+              hasMore = false;
+            }
+          }
+        }
+      }
+
+      await processFileList(fileList, true);
+    }
+
+    // ファイル配列の処理（ZIPまたは画像ファイル、重複排除・浅い階層優先）
+    async function processFileList(files, isReplace = true) {
+      const rawImageFiles = [];
+      
+      for (const file of files) {
+        // Macの隠しファイル（._foo.png など）やシステムファイルを除外
+        if (file.name.startsWith('._') || file.name.startsWith('.DS_Store') || file.name.toLowerCase() === 'thumbs.db') {
+          continue;
+        }
+
+        if (file.name.toLowerCase().endsWith('.zip')) {
+          // ZIP解凍
+          try {
+            const zip = await JSZip.loadAsync(file);
+            const zipEntries = [];
+            zip.forEach((relativePath, zipEntry) => {
+              if (!zipEntry.dir && isImageExtension(zipEntry.name) && !zipEntry.name.split('/').pop().startsWith('._')) {
+                zipEntries.push({ relativePath, zipEntry });
+              }
+            });
+
+            for (const { relativePath, zipEntry } of zipEntries) {
+              const blob = await zipEntry.async('blob');
+              const fileName = relativePath.split('/').pop();
+              const extractedFile = new File([blob], fileName, { type: 'image/png' });
+              extractedFile._fullPath = relativePath;
+              rawImageFiles.push(extractedFile);
+            }
+          } catch (err) {
+            console.error('ZIPファイルの展開に失敗しました:', err);
+            alert('ZIPファイルの展開に失敗しました: ' + file.name);
+          }
+        } else if (isImageExtension(file.name)) {
+          if (!file._fullPath) {
+            file._fullPath = file.webkitRelativePath || file.name;
+          }
+          rawImageFiles.push(file);
+        }
+      }
+
+      if (rawImageFiles.length === 0) {
+        alert('読み込み可能な画像（PNG, WebP, JPEG）が見つかりませんでした。');
+        return;
+      }
+
+      // -------------------------------------------------------------
+      // 同一ファイル名の重複排除（Deduplication）
+      // サブフォルダ（backup, old等）に同名がある場合は、最も階層の浅いものを優先
+      // -------------------------------------------------------------
+      const uniqueMap = new Map();
+      let duplicateCount = 0;
+
+      for (const file of rawImageFiles) {
+        const path = file._fullPath || file.webkitRelativePath || file.name;
+        // スラッシュの数で階層の深さをカウント
+        const depth = (path.match(/[\\/]/g) || []).length;
+
+        if (!uniqueMap.has(file.name)) {
+          uniqueMap.set(file.name, { file, depth, path });
+        } else {
+          // すでに同名が存在する場合、より浅い階層のファイルを優先採用
+          const existing = uniqueMap.get(file.name);
+          if (depth < existing.depth) {
+            uniqueMap.set(file.name, { file, depth, path });
+          }
+          duplicateCount++;
+        }
+      }
+
+      const deduplicatedFiles = Array.from(uniqueMap.values()).map(item => item.file);
+
+      // 自然順ソート (01.png, 02.png, ... 10.png)
+      deduplicatedFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+      // 新規フォルダ読み込み時は既存リストを初期化
+      if (isReplace) {
+        state.images = [];
+      }
+
+      // 画像オブジェクトに変換
+      for (const file of deduplicatedFiles) {
+        const dataUrl = await readFileAsDataURL(file);
+        const { width, height } = await getImageDimensions(dataUrl);
+        
+        state.images.push({
+          id: 'stamp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+          file: file,
+          name: file.name,
+          originalUrl: dataUrl,
+          currentDataUrl: dataUrl,
+          width: width,
+          height: height,
+          isModified: false,
+          history: [dataUrl],
+          historyIndex: 0
+        });
+      }
+
+      if (duplicateCount > 0) {
+        console.log(`重複した同名ファイル ${duplicateCount} 件を自動除外しました。`);
+      }
+
+      renderGrid();
+    }
+
+    function isImageExtension(filename) {
+      const lower = filename.toLowerCase();
+      return lower.endsWith('.png') || lower.endsWith('.webp') || lower.endsWith('.jpg') || lower.endsWith('.jpeg');
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getImageDimensions(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve({ width: 0, height: 0 });
+        img.src = dataUrl;
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 一覧グリッド描画
+    // -------------------------------------------------------------
+    function renderGrid() {
+      const count = state.images.length;
+      stampCount.textContent = `${count} 枚読み込み`;
+
+      if (count === 0) {
+        emptyState.classList.remove('hidden');
+        gridContainer.classList.add('hidden');
+        btnDownloadAllZip.disabled = true;
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      gridContainer.classList.remove('hidden');
+      btnDownloadAllZip.disabled = false;
+
+      // 存在しなくなったIDをブラシ選択から掃除
+      state.selectedBrushIds = state.selectedBrushIds.filter(id => state.images.some(img => img.id === id));
+      updateBrushCountUI();
+
+      gridContainer.innerHTML = '';
+
+      state.images.forEach((item, index) => {
+        const selectIndex = state.selectedBrushIds.indexOf(item.id);
+        const isSelected = selectIndex !== -1;
+        const selectBadgeNumber = isSelected ? selectIndex + 1 : null;
+
+        const card = document.createElement('div');
+        card.className = `group relative bg-slate-900 rounded-2xl p-2.5 flex flex-col transition-all duration-200 shadow-md hover:shadow-xl hover:-translate-y-0.5 cursor-pointer border ${
+          isSelected 
+            ? 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-indigo-950/50' 
+            : 'border-slate-800 hover:border-emerald-500/50'
+        }`;
+        card.onclick = () => openEditor(index);
+
+        // 背景クラス判定
+        const bgClass = getBgClass(state.previewBg);
+
+        // LINE規格（スタンプ 370x320、絵文字 180x180、メイン 240x240、タブ 96x74）チェック
+        let badgeHtml = '';
+        if (item.width === 370 && item.height === 320) {
+          badgeHtml = '<span class="text-emerald-400 font-semibold text-[10px] bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/50">スタンプ規格</span>';
+        } else if (item.width === 180 && item.height === 180) {
+          badgeHtml = '<span class="text-emerald-400 font-semibold text-[10px] bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-800/50">絵文字規格</span>';
+        } else if (item.width === 240 && item.height === 240) {
+          badgeHtml = '<span class="text-sky-400 font-semibold text-[10px] bg-sky-950/70 px-1.5 py-0.5 rounded border border-sky-800/50">メイン画像</span>';
+        } else if (item.width === 96 && item.height === 74) {
+          badgeHtml = '<span class="text-purple-400 font-semibold text-[10px] bg-purple-950/70 px-1.5 py-0.5 rounded border border-purple-800/50">タブ画像</span>';
+        } else {
+          badgeHtml = `<span class="text-amber-400/90 font-semibold text-[10px]">${item.width}×${item.height}</span>`;
+        }
+
+        card.innerHTML = `
+          <!-- 画像プレビューエリア -->
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden ${bgClass} flex items-center justify-center p-2 border border-slate-800">
+            <img src="${item.currentDataUrl}" alt="${item.name}" class="max-w-full max-h-full object-contain pointer-events-none drop-shadow-sm transition-transform duration-200 group-hover:scale-105" />
+            
+            <!-- 編集済みバッジ -->
+            ${item.isModified ? `
+              <span class="absolute top-2 left-2 bg-emerald-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full shadow flex items-center gap-1 z-10">
+                <i data-lucide="check-circle" class="w-3 h-3"></i> 修正済
+              </span>
+            ` : ''}
+
+            <!-- ブラシ選択ボタン（最大10個） -->
+            <button type="button" 
+              class="absolute top-2 right-2 z-20 flex items-center justify-center rounded-full font-black transition-all shadow-md ${
+                isSelected 
+                  ? 'w-7 h-7 bg-indigo-600 text-white ring-2 ring-white text-xs' 
+                  : 'w-7 h-7 bg-slate-900/80 text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-500 border border-slate-700 opacity-70 group-hover:opacity-100 text-[10px]'
+              }" 
+              title="${isSelected ? `ブラシ ${selectBadgeNumber}番目（クリックで解除）` : 'ブラシ画像に選択（最大10個）'}" 
+              onclick="event.stopPropagation(); toggleBrushSelect('${item.id}')">
+              ${isSelected ? selectBadgeNumber : '<i data-lucide="brush" class="w-3.5 h-3.5"></i>'}
+            </button>
+
+            <!-- ホバー時 オーバーレイボタン -->
+            <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center gap-2">
+              <span class="bg-emerald-500 text-slate-950 text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 shadow-lg">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 拡大修正
+              </span>
+            </div>
+          </div>
+
+          <!-- カード情報 -->
+          <div class="mt-2.5 flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-slate-200 truncate" title="${item.name}">${item.name}</span>
+              <button class="btn-single-dl p-1 text-slate-400 hover:text-emerald-400 rounded transition-colors" title="この画像のみPNG保存" onclick="event.stopPropagation(); downloadSingleImage(${index})">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span class="font-mono">${item.width} × ${item.height}</span>
+              ${badgeHtml}
+            </div>
+          </div>
+        `;
+
+        gridContainer.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function updateBrushCountUI() {
+      if (brushCountText) {
+        brushCountText.textContent = `${state.selectedBrushIds.length} / 10`;
+      }
+    }
+
+    function toggleBrushSelect(itemId) {
+      const idx = state.selectedBrushIds.indexOf(itemId);
+      if (idx !== -1) {
+        state.selectedBrushIds.splice(idx, 1);
+      } else {
+        if (state.selectedBrushIds.length >= 10) {
+          alert('ブラシ画像として選択できるのは最大10枚までです。');
+          return;
+        }
+        state.selectedBrushIds.push(itemId);
+      }
+      renderGrid();
+    }
+
+    btnSelectFirst10.addEventListener('click', () => {
+      if (state.images.length === 0) return;
+      state.selectedBrushIds = state.images.slice(0, 10).map(img => img.id);
+      renderGrid();
+    });
+
+    btnClearBrushSelection.addEventListener('click', () => {
+      state.selectedBrushIds = [];
+      renderGrid();
+    });
+
+    // ラインメーカーへブラシ画像を連携して開く
+    function prepareAndOpenLineMaker(e) {
+      // 選択中の画像があればそれら（最大10個）、未選択なら先頭10枚
+      let targetImages = [];
+      if (state.selectedBrushIds.length > 0) {
+        state.selectedBrushIds.forEach(id => {
+          const item = state.images.find(img => img.id === id);
+          if (item) targetImages.push(item.currentDataUrl);
+        });
+      } else if (state.images.length > 0) {
+        targetImages = state.images.slice(0, 10).map(img => img.currentDataUrl);
+      }
+
+      if (targetImages.length > 0) {
+        try {
+          localStorage.setItem('linestamp_brush_images', JSON.stringify(targetImages));
+        } catch (err) {
+          console.warn('localStorage error:', err);
+        }
+      }
+
+      // postMessageでも補強して送信（別ウィンドウで開いた直後）
+      const newWin = window.open('IllustLineMaker.html', '_blank');
+      if (newWin && targetImages.length > 0) {
+        let attempts = 0;
+        const timer = setInterval(() => {
+          attempts++;
+          if (attempts > 15) {
+            clearInterval(timer);
+            return;
+          }
+          try {
+            newWin.postMessage({ type: 'SET_BRUSH_IMAGES', images: targetImages }, '*');
+          } catch (err) {}
+        }, 300);
+      }
+      if (e) e.preventDefault();
+    }
+
+    btnOpenLineMaker.addEventListener('click', prepareAndOpenLineMaker);
+
+    function getBgClass(mode) {
+      switch (mode) {
+        case 'white': return 'bg-white';
+        case 'checker': return 'bg-checker';
+        case 'line': return 'bg-line-talk';
+        case 'black':
+        default: return 'bg-black';
+      }
+    }
+
+    // カードサイズ調整
+    cardSizeSlider.addEventListener('input', (e) => {
+      const val = e.target.value;
+      gridContainer.style.gridTemplateColumns = `repeat(auto-fill, minmax(${val}px, 1fr))`;
+    });
+
+    // 背景切り替え（全体プレビュー）
+    bgModeSelector.querySelectorAll('.bg-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bgModeSelector.querySelectorAll('.bg-mode-btn').forEach(b => {
+          b.classList.remove('active', 'bg-slate-800', 'text-white', 'border', 'border-slate-700', 'shadow-sm');
+          b.classList.add('text-slate-400');
+        });
+        btn.classList.add('active', 'bg-slate-800', 'text-white', 'border', 'border-slate-700', 'shadow-sm');
+        btn.classList.remove('text-slate-400');
+
+        state.previewBg = btn.getAttribute('data-bg');
+        renderGrid();
+      });
+    });
+
+    // 全クリアボタン
+    btnClearAll.addEventListener('click', () => {
+      if (state.images.length === 0) return;
+      if (confirm('読み込んだ画像をすべてクリアしますか？')) {
+        state.images = [];
+        state.selectedBrushIds = [];
+        renderGrid();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // エディタモーダル機能
+    // -------------------------------------------------------------
+    function openEditor(index) {
+      if (index < 0 || index >= state.images.length) return;
+      
+      state.currentEditorIndex = index;
+      const item = state.images[index];
+
+      // ヘッダー情報設定
+      editorFileName.textContent = item.name;
+      editorIndexBadge.textContent = `${index + 1} / ${state.images.length}`;
+      editorSizeBadge.textContent = `${item.width} × ${item.height} px`;
+
+      // ナビゲーションボタンの有効/無効
+      btnPrevStamp.disabled = (index === 0);
+      btnNextStamp.disabled = (index === state.images.length - 1);
+      btnPrevStamp.classList.toggle('opacity-30', index === 0);
+      btnNextStamp.classList.toggle('opacity-30', index === state.images.length - 1);
+
+      // キャンバス初期化
+      paintCanvas.width = item.width;
+      paintCanvas.height = item.height;
+      
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+        ctx.drawImage(img, 0, 0);
+        updateHistoryButtons();
+      };
+      img.src = item.currentDataUrl;
+
+      // エディタ背景と余白ガイド設定
+      setEditorBackground(state.editorBg);
+      editorMarginGuide.classList.toggle('hidden', !state.showMarginGuide);
+
+      // ズーム＆パン初期化（FITに合わせる）
+      resetTransformToFit(item.width, item.height);
+
+      editorModal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeEditor() {
+      // 白黒点滅タイマー停止
+      stopBlinkCheck();
+      editorModal.classList.add('hidden');
+      state.currentEditorIndex = -1;
+    }
+
+    function applyAndClose() {
+      if (state.currentEditorIndex === -1) return;
+      
+      const item = state.images[state.currentEditorIndex];
+      const dataUrl = paintCanvas.toDataURL('image/png');
+      
+      // 画像データ更新
+      item.currentDataUrl = dataUrl;
+      item.isModified = (dataUrl !== item.originalUrl);
+      
+      // グリッド再描画
+      renderGrid();
+      closeEditor();
+    }
+
+    // 前後スタンプ移動
+    btnPrevStamp.addEventListener('click', () => {
+      if (state.currentEditorIndex > 0) {
+        // 現在の変更を保存してから移動
+        saveCurrentCanvasState();
+        openEditor(state.currentEditorIndex - 1);
+      }
+    });
+
+    btnNextStamp.addEventListener('click', () => {
+      if (state.currentEditorIndex < state.images.length - 1) {
+        saveCurrentCanvasState();
+        openEditor(state.currentEditorIndex + 1);
+      }
+    });
+
+    function saveCurrentCanvasState() {
+      if (state.currentEditorIndex !== -1) {
+        const item = state.images[state.currentEditorIndex];
+        const dataUrl = paintCanvas.toDataURL('image/png');
+        item.currentDataUrl = dataUrl;
+        item.isModified = (dataUrl !== item.originalUrl);
+      }
+    }
+
+    btnCloseModal.addEventListener('click', closeEditor);
+    btnApplyAndClose.addEventListener('click', applyAndClose);
+
+    // -------------------------------------------------------------
+    // エディタ キャンバス操作（描画・消しゴム・変形・スポイト・移動）
+    // -------------------------------------------------------------
+    
+    // ツール切り替え
+    function setTool(toolName) {
+      // もし変形ツールから別ツールに切り替わった場合、変形を確定
+      if (state.currentTool === 'transform' && toolName !== 'transform') {
+        applyTransformToCanvas();
+      }
+
+      state.currentTool = toolName;
+      [toolPen, toolEraser, toolTransform, toolPipette, toolHand].forEach(btn => {
+        if (!btn) return;
+        btn.classList.remove('active', 'border-emerald-500', 'bg-emerald-500/10', 'text-emerald-400');
+        btn.classList.add('border-slate-700', 'bg-slate-800', 'text-slate-300');
+      });
+
+      const activeBtn = {
+        pen: toolPen,
+        eraser: toolEraser,
+        transform: toolTransform,
+        pipette: toolPipette,
+        hand: toolHand
+      }[toolName];
+
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'border-emerald-500', 'bg-emerald-500/10', 'text-emerald-400');
+        activeBtn.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-300');
+      }
+
+      // UIパネル表示制御
+      if (toolName === 'pen') {
+        brushSizeContainer.style.display = 'block';
+        opacityContainer.style.display = 'block';
+        colorContainer.style.display = 'block';
+        transformContainer.classList.add('hidden');
+      } else if (toolName === 'eraser') {
+        brushSizeContainer.style.display = 'block';
+        opacityContainer.style.display = 'none';
+        colorContainer.style.display = 'none';
+        transformContainer.classList.add('hidden');
+      } else if (toolName === 'transform') {
+        brushSizeContainer.style.display = 'none';
+        opacityContainer.style.display = 'none';
+        colorContainer.style.display = 'none';
+        transformContainer.classList.remove('hidden');
+        initTransformMode();
+      } else {
+        brushSizeContainer.style.display = 'none';
+        opacityContainer.style.display = 'none';
+        colorContainer.style.display = 'none';
+        transformContainer.classList.add('hidden');
+      }
+
+      // ビューポートカーソル更新
+      updateViewportCursor();
+    }
+
+    toolPen.addEventListener('click', () => setTool('pen'));
+    toolEraser.addEventListener('click', () => setTool('eraser'));
+    toolTransform.addEventListener('click', () => setTool('transform'));
+    toolPipette.addEventListener('click', () => setTool('pipette'));
+    toolHand.addEventListener('click', () => setTool('hand'));
+
+    function updateViewportCursor() {
+      viewport.classList.remove('cursor-crosshair-custom', 'cursor-grab-custom', 'cursor-grabbing-custom');
+      if (state.currentTool === 'hand' || state.spacePressed) {
+        viewport.classList.add(state.isPanning ? 'cursor-grabbing-custom' : 'cursor-grab-custom');
+        brushCursor.classList.add('hidden');
+      } else if (state.currentTool === 'transform') {
+        viewport.classList.add('cursor-grab-custom');
+        brushCursor.classList.add('hidden');
+      } else {
+        viewport.classList.add('cursor-crosshair-custom');
+      }
+    }
+
+    // ブラシサイズ調整
+    brushSizeSlider.addEventListener('input', (e) => {
+      state.brushSize = parseInt(e.target.value, 10);
+      brushSizeVal.textContent = `${state.brushSize} px`;
+      updateCursorSize();
+    });
+
+    // 不透明度調整
+    brushOpacitySlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.brushOpacity = val / 100;
+      brushOpacityVal.textContent = `${val} %`;
+    });
+
+    // カラー設定
+    brushColorInput.addEventListener('input', (e) => {
+      setColor(e.target.value);
+    });
+
+    document.querySelectorAll('.preset-color').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setColor(btn.getAttribute('data-color'));
+      });
+    });
+
+    function setColor(hex) {
+      state.brushColor = hex;
+      brushColorInput.value = hex;
+      currentColorPreview.style.backgroundColor = hex;
+    }
+
+    // キャンバス座標変換
+    function getCanvasCoords(clientX, clientY) {
+      const rect = paintCanvas.getBoundingClientRect();
+      const scaleX = paintCanvas.width / rect.width;
+      const scaleY = paintCanvas.height / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    // -------------------------------------------------------------
+    // 画像拡大縮小・変形ロジック (Transform Tool)
+    // -------------------------------------------------------------
+    function initTransformMode() {
+      const img = new Image();
+      img.onload = () => {
+        state.transform.baseImage = img;
+        state.transform.scale = 1.0;
+        state.transform.offsetX = 0;
+        state.transform.offsetY = 0;
+        imgScaleSlider.value = 100;
+        imgScaleVal.textContent = '100%';
+        renderTransformedCanvas();
+      };
+      img.src = paintCanvas.toDataURL('image/png');
+    }
+
+    function renderTransformedCanvas() {
+      if (!state.transform.baseImage) return;
+      const bw = state.transform.baseImage.naturalWidth;
+      const bh = state.transform.baseImage.naturalHeight;
+      const cw = paintCanvas.width;
+      const ch = paintCanvas.height;
+
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.save();
+      const targetW = bw * state.transform.scale;
+      const targetH = bh * state.transform.scale;
+      const destX = (cw - targetW) / 2 + state.transform.offsetX;
+      const destY = (ch - targetH) / 2 + state.transform.offsetY;
+
+      ctx.drawImage(state.transform.baseImage, destX, destY, targetW, targetH);
+      ctx.restore();
+    }
+
+    function applyTransformToCanvas() {
+      if (state.transform.baseImage) {
+        state.transform.baseImage = null;
+        pushHistory();
+      }
+    }
+
+    imgScaleSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.transform.scale = val / 100;
+      imgScaleVal.textContent = `${val}%`;
+      renderTransformedCanvas();
+    });
+
+    btnScaleDownStep.addEventListener('click', () => {
+      let cur = parseInt(imgScaleSlider.value, 10);
+      cur = Math.max(40, cur - 5);
+      imgScaleSlider.value = cur;
+      imgScaleSlider.dispatchEvent(new Event('input'));
+    });
+
+    btnScaleUpStep.addEventListener('click', () => {
+      let cur = parseInt(imgScaleSlider.value, 10);
+      cur = Math.min(180, cur + 5);
+      imgScaleSlider.value = cur;
+      imgScaleSlider.dispatchEvent(new Event('input'));
+    });
+
+    // 余白10pxに自動収める
+    btnFitMargin.addEventListener('click', () => {
+      if (!state.transform.baseImage) return;
+      
+      // 一時キャンバスでバウンディングボックス（イラストの範囲）を検出
+      const tempC = document.createElement('canvas');
+      tempC.width = state.transform.baseImage.naturalWidth;
+      tempC.height = state.transform.baseImage.naturalHeight;
+      const tCtx = tempC.getContext('2d');
+      tCtx.drawImage(state.transform.baseImage, 0, 0);
+
+      const bbox = getBoundingBox(tempC);
+      const cw = paintCanvas.width;
+      const ch = paintCanvas.height;
+      const margin = 10;
+      const maxAllowedW = cw - (margin * 2);
+      const maxAllowedH = ch - (margin * 2);
+
+      // イラスト矩形が余白内に収まるスケールを計算
+      const scaleW = maxAllowedW / bbox.width;
+      const scaleH = maxAllowedH / bbox.height;
+      const autoScale = Math.min(scaleW, scaleH, 1.0); // 拡大はせず収める
+
+      state.transform.scale = Math.max(0.4, Math.min(1.8, autoScale));
+      // 中央揃え
+      const bboxCenterX = bbox.minX + bbox.width / 2;
+      const bboxCenterY = bbox.minY + bbox.height / 2;
+      state.transform.offsetX = (tempC.width / 2 - bboxCenterX) * state.transform.scale;
+      state.transform.offsetY = (tempC.height / 2 - bboxCenterY) * state.transform.scale;
+
+      const scalePercent = Math.round(state.transform.scale * 100);
+      imgScaleSlider.value = scalePercent;
+      imgScaleVal.textContent = `${scalePercent}%`;
+      renderTransformedCanvas();
+    });
+
+    // 中央揃え
+    btnCenterImage.addEventListener('click', () => {
+      state.transform.offsetX = 0;
+      state.transform.offsetY = 0;
+      renderTransformedCanvas();
+    });
+
+    btnApplyTransform.addEventListener('click', () => {
+      applyTransformToCanvas();
+      setTool('pen');
+    });
+
+    function getBoundingBox(canvas) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const imgData = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+      let found = false;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const alpha = imgData[(y * w + x) * 4 + 3];
+          if (alpha > 10) {
+            found = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (!found) return { minX: 0, minY: 0, maxX: w, maxY: h, width: w, height: h };
+      return { minX, minY, maxX, maxY, width: maxX - minX + 1, height: maxY - minY + 1 };
+    }
+
+    // -------------------------------------------------------------
+    // マウス・タッチイベント
+    // -------------------------------------------------------------
+    viewport.addEventListener('mousedown', (e) => {
+      // 右クリックまたはスペースキー押下、またはハンドツールの場合はパン移動開始
+      if (e.button === 2 || e.button === 1 || state.spacePressed || state.currentTool === 'hand') {
+        e.preventDefault();
+        state.isPanning = true;
+        state.panStartX = e.clientX - state.panX;
+        state.panStartY = e.clientY - state.panY;
+        canvasTransformContainer.style.transition = 'none';
+        updateViewportCursor();
+        return;
+      }
+
+      if (e.button === 0) { // 左クリック
+        if (state.currentTool === 'transform') {
+          // 変形モード時のドラッグ移動開始
+          state.transform.isDragging = true;
+          state.transform.dragStartX = e.clientX;
+          state.transform.dragStartY = e.clientY;
+          state.transform.initialOffsetX = state.transform.offsetX;
+          state.transform.initialOffsetY = state.transform.offsetY;
+          viewport.classList.add('cursor-grabbing-custom');
+          return;
+        }
+
+        const canvasRect = paintCanvas.getBoundingClientRect();
+        const inCanvas = (e.clientX >= canvasRect.left && e.clientX <= canvasRect.right && e.clientY >= canvasRect.top && e.clientY <= canvasRect.bottom);
+
+        // キャンバス外の余白をクリックした場合は即座に画面移動（パン）を開始
+        if (!inCanvas) {
+          state.isPanning = true;
+          state.panStartX = e.clientX - state.panX;
+          state.panStartY = e.clientY - state.panY;
+          canvasTransformContainer.style.transition = 'none';
+          updateViewportCursor();
+          return;
+        }
+
+        const coords = getCanvasCoords(e.clientX, e.clientY);
+        
+        if (state.currentTool === 'pipette') {
+          pickColorAt(coords.x, coords.y);
+          return;
+        }
+
+        // 描画開始
+        state.isDrawing = true;
+        state.lastX = coords.x;
+        state.lastY = coords.y;
+
+        drawPointOrLine(coords.x, coords.y, coords.x, coords.y);
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      // パン移動中
+      if (state.isPanning) {
+        state.panX = e.clientX - state.panStartX;
+        state.panY = e.clientY - state.panStartY;
+        applyTransform();
+        return;
+      }
+
+      // 変形モード中のドラッグ移動
+      if (state.transform.isDragging) {
+        const dx = (e.clientX - state.transform.dragStartX) / state.zoom;
+        const dy = (e.clientY - state.transform.dragStartY) / state.zoom;
+        state.transform.offsetX = state.transform.initialOffsetX + dx;
+        state.transform.offsetY = state.transform.initialOffsetY + dy;
+        renderTransformedCanvas();
+        return;
+      }
+
+      // カーソルプレビューの移動（viewport直下基準でズレを解消）
+      if (editorModal.classList.contains('hidden')) return;
+      const vpRect = viewport.getBoundingClientRect();
+      const canvasRect = paintCanvas.getBoundingClientRect();
+      const inCanvas = (e.clientX >= canvasRect.left && e.clientX <= canvasRect.right && e.clientY >= canvasRect.top && e.clientY <= canvasRect.bottom);
+
+      if (inCanvas && (state.currentTool === 'pen' || state.currentTool === 'eraser') && !state.spacePressed) {
+        brushCursor.classList.remove('hidden');
+        brushCursor.style.left = `${e.clientX - vpRect.left}px`;
+        brushCursor.style.top = `${e.clientY - vpRect.top}px`;
+        const displaySize = Math.max(2, state.brushSize * state.zoom);
+        brushCursor.style.width = `${displaySize}px`;
+        brushCursor.style.height = `${displaySize}px`;
+      } else {
+        brushCursor.classList.add('hidden');
+      }
+
+      // スポイトプレビュー
+      if (inCanvas && state.currentTool === 'pipette') {
+        const coords = getCanvasCoords(e.clientX, e.clientY);
+        showPipettePreview(coords.x, coords.y, e.clientX, e.clientY);
+      } else {
+        pipettePreview.classList.add('hidden');
+      }
+
+      // 描画中
+      if (state.isDrawing) {
+        const coords = getCanvasCoords(e.clientX, e.clientY);
+        drawPointOrLine(state.lastX, state.lastY, coords.x, coords.y);
+        state.lastX = coords.x;
+        state.lastY = coords.y;
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (state.isPanning) {
+        state.isPanning = false;
+        canvasTransformContainer.style.transition = '';
+        updateViewportCursor();
+      }
+      if (state.transform.isDragging) {
+        state.transform.isDragging = false;
+        viewport.classList.remove('cursor-grabbing-custom');
+      }
+      if (state.isDrawing) {
+        state.isDrawing = false;
+        pushHistory(); // 履歴に保存
+      }
+    });
+
+    // 右クリックのコンテキストメニュー無効化（右クリックドラッグでのパン用）
+    viewport.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // 描画コアロジック
+    function drawPointOrLine(x1, y1, x2, y2) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = state.brushSize;
+
+      if (state.currentTool === 'eraser') {
+        // 消しゴム: 透過にする
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+      } else if (state.currentTool === 'pen') {
+        // ペン: 指定色で描画
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = state.brushOpacity;
+        ctx.strokeStyle = state.brushColor;
+        ctx.fillStyle = state.brushColor;
+      }
+
+      ctx.beginPath();
+      if (x1 === x2 && y1 === y2) {
+        ctx.arc(x1, y1, state.brushSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // スポイト機能
+    function pickColorAt(x, y) {
+      const px = Math.floor(x);
+      const py = Math.floor(y);
+      if (px < 0 || px >= paintCanvas.width || py < 0 || py >= paintCanvas.height) return;
+
+      const pixel = ctx.getImageData(px, py, 1, 1).data;
+      if (pixel[3] === 0) return; // 完全透明なら取得しない
+
+      const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+      setColor(hex);
+      setTool('pen'); // スポイト後自動でペンに戻す
+      pipettePreview.classList.add('hidden');
+    }
+
+    function showPipettePreview(x, y, clientX, clientY) {
+      const px = Math.floor(x);
+      const py = Math.floor(y);
+      if (px < 0 || px >= paintCanvas.width || py < 0 || py >= paintCanvas.height) {
+        pipettePreview.classList.add('hidden');
+        return;
+      }
+
+      const pixel = ctx.getImageData(px, py, 1, 1).data;
+      const hex = pixel[3] === 0 ? '透明' : rgbToHex(pixel[0], pixel[1], pixel[2]);
+      
+      pipetteColorBox.style.backgroundColor = pixel[3] === 0 ? 'transparent' : hex;
+      pipetteColorText.textContent = hex;
+      
+      // viewport基準の相対位置へ変換（オフセットズレ解消）
+      const vpRect = viewport.getBoundingClientRect();
+      let posX = clientX - vpRect.left + 14;
+      let posY = clientY - vpRect.top + 14;
+
+      // 画面端で見切れないようにガード（右端・下端に近い場合は反転）
+      const tipWidth = 92;
+      const tipHeight = 32;
+      if (posX + tipWidth > vpRect.width) {
+        posX = clientX - vpRect.left - tipWidth - 12;
+      }
+      if (posY + tipHeight > vpRect.height) {
+        posY = clientY - vpRect.top - tipHeight - 12;
+      }
+
+      pipettePreview.style.left = `${posX}px`;
+      pipettePreview.style.top = `${posY}px`;
+      pipettePreview.classList.remove('hidden');
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      }).join("");
+    }
+
+    function updateCursorSize() {
+      const displaySize = Math.max(2, state.brushSize * state.zoom);
+      brushCursor.style.width = `${displaySize}px`;
+      brushCursor.style.height = `${displaySize}px`;
+    }
+
+    // -------------------------------------------------------------
+    // Undo / Redo 履歴管理
+    // -------------------------------------------------------------
+    function pushHistory() {
+      if (state.currentEditorIndex === -1) return;
+      const item = state.images[state.currentEditorIndex];
+      const dataUrl = paintCanvas.toDataURL('image/png');
+
+      // 履歴インデックス以降を切り捨て
+      item.history = item.history.slice(0, item.historyIndex + 1);
+      
+      // 最大30件保持
+      if (item.history.length >= 30) {
+        item.history.shift();
+      }
+
+      item.history.push(dataUrl);
+      item.historyIndex = item.history.length - 1;
+      item.currentDataUrl = dataUrl;
+      item.isModified = (dataUrl !== item.originalUrl);
+
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (state.currentEditorIndex === -1) return;
+      const item = state.images[state.currentEditorIndex];
+      if (item.historyIndex > 0) {
+        item.historyIndex--;
+        restoreCanvasFromDataUrl(item.history[item.historyIndex]);
+        updateHistoryButtons();
+      }
+    }
+
+    function redo() {
+      if (state.currentEditorIndex === -1) return;
+      const item = state.images[state.currentEditorIndex];
+      if (item.historyIndex < item.history.length - 1) {
+        item.historyIndex++;
+        restoreCanvasFromDataUrl(item.history[item.historyIndex]);
+        updateHistoryButtons();
+      }
+    }
+
+    function restoreCanvasFromDataUrl(dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = dataUrl;
+    }
+
+    function updateHistoryButtons() {
+      if (state.currentEditorIndex === -1) return;
+      const item = state.images[state.currentEditorIndex];
+      const canUndo = (item.historyIndex > 0);
+      const canRedo = (item.historyIndex < item.history.length - 1);
+
+      btnUndo.disabled = !canUndo;
+      btnRedo.disabled = !canRedo;
+      if (btnFloatingUndo) btnFloatingUndo.disabled = !canUndo;
+      if (btnFloatingRedo) btnFloatingRedo.disabled = !canRedo;
+    }
+
+    btnUndo.addEventListener('click', undo);
+    btnRedo.addEventListener('click', redo);
+    if (btnFloatingUndo) btnFloatingUndo.addEventListener('click', undo);
+    if (btnFloatingRedo) btnFloatingRedo.addEventListener('click', redo);
+
+    // リセットボタン（元画像に戻す）
+    btnResetStamp.addEventListener('click', () => {
+      if (state.currentEditorIndex === -1) return;
+      if (confirm('このスタンプの修正をすべて破棄し、元画像の状態に戻しますか？')) {
+        const item = state.images[state.currentEditorIndex];
+        restoreCanvasFromDataUrl(item.originalUrl);
+        item.currentDataUrl = item.originalUrl;
+        item.isModified = false;
+        item.history = [item.originalUrl];
+        item.historyIndex = 0;
+        updateHistoryButtons();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // ビューポート ズーム・パン・背景制御
+    // -------------------------------------------------------------
+    function applyTransform() {
+      canvasTransformContainer.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+      zoomLevelText.textContent = `${Math.round(state.zoom * 100)}%`;
+      updateCursorSize();
+    }
+
+    function setZoom(newZoom, cursorClientX = null, cursorClientY = null) {
+      const oldZoom = state.zoom;
+      const clampedZoom = Math.max(0.5, Math.min(10.0, newZoom));
+      if (clampedZoom === oldZoom) return;
+
+      if (cursorClientX !== null && cursorClientY !== null) {
+        const vpRect = viewport.getBoundingClientRect();
+        // viewportの中心を原点としたカーソル相対座標
+        const cursorX = cursorClientX - (vpRect.left + vpRect.width / 2);
+        const cursorY = cursorClientY - (vpRect.top + vpRect.height / 2);
+
+        // ズーム前後のカーソル位置がキャンバス上で一致するようにpanX/panYを補正
+        state.panX = cursorX - (cursorX - state.panX) * (clampedZoom / oldZoom);
+        state.panY = cursorY - (cursorY - state.panY) * (clampedZoom / oldZoom);
+      }
+
+      state.zoom = clampedZoom;
+      applyTransform();
+    }
+
+    function resetTransformToFit(imgW, imgH) {
+      const vpRect = viewport.getBoundingClientRect();
+      const padding = 80;
+      const availW = vpRect.width - padding;
+      const availH = vpRect.height - padding;
+
+      const scale = Math.min(availW / imgW, availH / imgH, 2.5);
+      state.zoom = Math.max(1.0, scale);
+      state.panX = 0;
+      state.panY = 0;
+      applyTransform();
+    }
+
+    btnZoomIn.addEventListener('click', () => setZoom(state.zoom * 1.25));
+    btnZoomOut.addEventListener('click', () => setZoom(state.zoom / 1.25));
+    btnZoomReset.addEventListener('click', () => {
+      state.zoom = 1.0;
+      state.panX = 0;
+      state.panY = 0;
+      applyTransform();
+    });
+    btnZoomFit.addEventListener('click', () => {
+      if (state.currentEditorIndex !== -1) {
+        const item = state.images[state.currentEditorIndex];
+        resetTransformToFit(item.width, item.height);
+      }
+    });
+
+    // ホイール操作切替（拡大縮小 ↔ 上下移動）
+    if (btnToggleWheelMode) {
+      btnToggleWheelMode.addEventListener('click', () => {
+        state.wheelMode = (state.wheelMode === 'zoom') ? 'scroll' : 'zoom';
+        if (state.wheelMode === 'zoom') {
+          wheelModeText.textContent = 'ホイール: 拡縮';
+          wheelModeIcon.setAttribute('data-lucide', 'zoom-in');
+        } else {
+          wheelModeText.textContent = 'ホイール: 上下移動';
+          wheelModeIcon.setAttribute('data-lucide', 'arrow-up-down');
+        }
+        lucide.createIcons();
+      });
+    }
+
+    // ホイールでのズームまたは移動
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+
+      if (state.wheelMode === 'scroll') {
+        // スクロール優先モード
+        if (e.ctrlKey || e.metaKey) {
+          // Ctrl+ホイール: カーソル中心の拡大縮小
+          const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+          canvasTransformContainer.style.transition = 'none';
+          setZoom(state.zoom * zoomFactor, e.clientX, e.clientY);
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        } else if (e.shiftKey) {
+          // Shift+ホイール: 左右スクロール
+          canvasTransformContainer.style.transition = 'none';
+          state.panX -= (e.deltaY || e.deltaX) * 0.8;
+          applyTransform();
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        } else {
+          // 通常ホイール: 上下スクロール
+          canvasTransformContainer.style.transition = 'none';
+          state.panY -= e.deltaY * 0.8;
+          if (Math.abs(e.deltaX) > 0) state.panX -= e.deltaX * 0.8;
+          applyTransform();
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        }
+      } else {
+        // 拡縮優先モード（デフォルト: ホイールを回して拡大縮小）
+        if (e.shiftKey) {
+          // Shift+ホイール: 上下にスクロール移動（ホイールで位置をずらせる補助機能）
+          canvasTransformContainer.style.transition = 'none';
+          state.panY -= (e.deltaY || e.deltaX) * 0.8;
+          applyTransform();
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        } else if (e.altKey) {
+          // Alt+ホイール: 左右スクロール移動
+          canvasTransformContainer.style.transition = 'none';
+          state.panX -= (e.deltaY || e.deltaX) * 0.8;
+          applyTransform();
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        } else {
+          // 通常ホイール: マウスカーソル位置を中心とした拡大縮小
+          const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+          canvasTransformContainer.style.transition = 'none';
+          setZoom(state.zoom * zoomFactor, e.clientX, e.clientY);
+          requestAnimationFrame(() => {
+            canvasTransformContainer.style.transition = '';
+          });
+        }
+      }
+    }, { passive: false });
+
+    // エディタ背景切り替え
+    function setEditorBackground(mode) {
+      stopBlinkCheck();
+      state.editorBg = mode;
+      
+      editorBgSelector.querySelectorAll('.editor-bg-btn').forEach(btn => {
+        const isTarget = (btn.getAttribute('data-bg') === mode);
+        btn.classList.toggle('active', isTarget);
+        btn.classList.toggle('bg-slate-800', isTarget);
+        btn.classList.toggle('text-white', isTarget);
+        btn.classList.toggle('border-slate-700', isTarget);
+        btn.classList.toggle('text-slate-400', !isTarget);
+        btn.classList.toggle('border-transparent', !isTarget);
+      });
+
+      editorBackgroundLayer.className = `absolute inset-0 rounded shadow-2xl transition-colors ${getBgClass(mode)}`;
+    }
+
+    editorBgSelector.querySelectorAll('.editor-bg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setEditorBackground(btn.getAttribute('data-bg'));
+      });
+    });
+
+    // 白黒点滅（ゴミ発見ライト）
+    let blinkInterval = null;
+    function startBlinkCheck() {
+      state.isBlinkCheck = true;
+      btnBlinkCheck.classList.add('bg-amber-500/20', 'border-amber-500', 'text-amber-200');
+      editorBackgroundLayer.classList.add('animate-blink-check');
+    }
+
+    function stopBlinkCheck() {
+      state.isBlinkCheck = false;
+      btnBlinkCheck.classList.remove('bg-amber-500/20', 'border-amber-500', 'text-amber-200');
+      editorBackgroundLayer.classList.remove('animate-blink-check');
+    }
+
+    btnBlinkCheck.addEventListener('click', () => {
+      if (state.isBlinkCheck) {
+        stopBlinkCheck();
+        setEditorBackground(state.editorBg);
+      } else {
+        startBlinkCheck();
+      }
+    });
+
+    // 10px余白ガイド
+    checkLineMargin.addEventListener('change', (e) => {
+      state.showMarginGuide = e.target.checked;
+      editorMarginGuide.classList.toggle('hidden', !state.showMarginGuide);
+    });
+
+    // -------------------------------------------------------------
+    // キーボードショートカット
+    // -------------------------------------------------------------
+    window.addEventListener('keydown', (e) => {
+      // モーダル非表示時は無効
+      if (editorModal.classList.contains('hidden')) return;
+
+      // Spaceキー押下で一時ハンドモード
+      if (e.code === 'Space' && !state.spacePressed && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        state.spacePressed = true;
+        updateViewportCursor();
+      }
+
+      // Ctrl+Z (Undo)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+
+      // Ctrl+Y or Ctrl+Shift+Z (Redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+        e.preventDefault();
+        redo();
+      }
+
+      // ツールショートカット
+      if (e.target.tagName !== 'INPUT') {
+        if (e.key.toLowerCase() === 'b') setTool('pen');
+        if (e.key.toLowerCase() === 'e') setTool('eraser');
+        if (e.key.toLowerCase() === 't') setTool('transform');
+        if (e.key.toLowerCase() === 'i') setTool('pipette');
+        if (e.key.toLowerCase() === 'h') setTool('hand');
+        
+        // ブラシサイズ短縮キー [ / ]
+        if (e.key === '[') {
+          brushSizeSlider.value = Math.max(1, state.brushSize - 2);
+          brushSizeSlider.dispatchEvent(new Event('input'));
+        }
+        if (e.key === ']') {
+          brushSizeSlider.value = Math.min(64, state.brushSize + 2);
+          brushSizeSlider.dispatchEvent(new Event('input'));
+        }
+
+        // 矢印キーで前後のスタンプへ
+        if (e.key === 'ArrowLeft') btnPrevStamp.click();
+        if (e.key === 'ArrowRight') btnNextStamp.click();
+        
+        // Escで閉じる
+        if (e.key === 'Escape') closeEditor();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        state.spacePressed = false;
+        updateViewportCursor();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // ダウンロード・保存処理
+    // -------------------------------------------------------------
+    
+    // 単体画像ダウンロード
+    function downloadSingleImage(index) {
+      if (index < 0 || index >= state.images.length) return;
+      const item = state.images[index];
+      const link = document.createElement('a');
+      link.download = item.name.replace(/\.[^.]+$/, '') + '.png';
+      link.href = item.currentDataUrl;
+      link.click();
+    }
+
+    btnSaveSingle.addEventListener('click', () => {
+      if (state.currentEditorIndex !== -1) {
+        const item = state.images[state.currentEditorIndex];
+        const dataUrl = paintCanvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = item.name.replace(/\.[^.]+$/, '') + '.png';
+        link.href = dataUrl;
+        link.click();
+      }
+    });
+
+    // 一括ZIP保存
+    btnDownloadAllZip.addEventListener('click', async () => {
+      if (state.images.length === 0) return;
+
+      const originalBtnHtml = btnDownloadAllZip.innerHTML;
+      btnDownloadAllZip.disabled = true;
+      btnDownloadAllZip.innerHTML = `
+        <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+        <span>ZIP圧縮中...</span>
+      `;
+      lucide.createIcons();
+
+      try {
+        const zip = new JSZip();
+
+        for (const item of state.images) {
+          // dataURLからBase64部分を抽出
+          const base64Data = item.currentDataUrl.replace(/^data:image\/png;base64,/, "");
+          const fileName = item.name.replace(/\.[^.]+$/, '') + '.png';
+          zip.file(fileName, base64Data, { base64: true });
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+        
+        const link = document.createElement('a');
+        link.download = `LINE_Stamp_Fixed_${dateStr}.zip`;
+        link.href = URL.createObjectURL(content);
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+      } catch (err) {
+        console.error('ZIP作成中にエラーが発生しました:', err);
+        alert('ZIP作成中にエラーが発生しました: ' + err.message);
+      } finally {
+        btnDownloadAllZip.disabled = false;
+        btnDownloadAllZip.innerHTML = originalBtnHtml;
+        lucide.createIcons();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // サンプルスタンプ生成（動作確認用）
+    // -------------------------------------------------------------
+    const btnLoadSample = document.getElementById('btnLoadSample');
+    if (btnLoadSample) {
+      btnLoadSample.addEventListener('click', () => {
+        loadSampleStamps();
+      });
+    }
+
+    function loadSampleStamps() {
+      state.images = [];
+      const samples = [
+        { name: '01_OK.png', text: 'OK!', color: '#06c755', hasWhiteDust: true, hasBlackDot: false },
+        { name: '02_ThankYou.png', text: 'ありがとう', color: '#f43f5e', hasWhiteDust: false, hasBlackDot: true },
+        { name: '03_Pien.png', text: 'ぴえん', color: '#0ea5e9', hasWhiteDust: true, hasBlackDot: true },
+        { name: '04_Hate.png', text: '？？？', color: '#eab308', hasWhiteDust: false, hasBlackDot: false }
+      ];
+
+      samples.forEach(s => {
+        const c = document.createElement('canvas');
+        c.width = 370;
+        c.height = 320;
+        const ctx = c.getContext('2d');
+
+        // キャラクター風の丸
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(185, 140, 90, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        // 目
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(155, 125, 18, 0, Math.PI * 2);
+        ctx.arc(215, 125, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(160, 125, 8, 0, Math.PI * 2);
+        ctx.arc(220, 125, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // ほっぺ
+        ctx.fillStyle = 'rgba(255, 182, 193, 0.7)';
+        ctx.beginPath();
+        ctx.arc(135, 155, 12, 0, Math.PI * 2);
+        ctx.arc(235, 155, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 口
+        ctx.beginPath();
+        ctx.arc(185, 150, 20, 0.2 * Math.PI, 0.8 * Math.PI, false);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        // 文字
+        ctx.font = 'bold 36px "Zen Maru Gothic", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#1e293b';
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText(s.text, 185, 275);
+        ctx.fillText(s.text, 185, 275);
+
+        // テスト用のゴミ・透過漏れ
+        if (s.hasWhiteDust) {
+          // 黒背景で目立つ「透過漏れの白い削り残し」
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(290, 80, 8, 8);
+          ctx.fillRect(300, 95, 5, 5);
+          ctx.fillRect(75, 210, 6, 6);
+        }
+        if (s.hasBlackDot) {
+          // 白背景で目立つ「黒い不要なゴミ」
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(80, 70, 5, 5);
+          ctx.fillRect(90, 85, 4, 4);
+          ctx.fillRect(310, 230, 6, 6);
+        }
+        ctx.restore();
+
+        const dataUrl = c.toDataURL('image/png');
+        state.images.push({
+          id: 'sample_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: s.name,
+          originalUrl: dataUrl,
+          currentDataUrl: dataUrl,
+          width: 370,
+          height: 320,
+          isModified: false,
+          history: [dataUrl],
+          historyIndex: 0
+        });
+      });
+
+      renderGrid();
+    }
+
+  </script>
+</body>
+</html>
