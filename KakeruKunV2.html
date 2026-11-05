@@ -218,6 +218,89 @@
         </div>
     </div>
 
+    <!-- セショサポ (.pec) 出力設定モーダル -->
+    <div id="pec-export-modal" class="modal-overlay no-print text-slate-900" style="display: none;">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-2xl w-full mx-4 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📋</span>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">セショサポ (.pec) 出力設定</h3>
+                        <p class="text-xs text-slate-500">シナリオデータをPdfEasyConverterで開けるカード形式に変換・出力します</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('pec-export-modal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold px-2 py-1 leading-none">&times;</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1 text-xs">
+                <!-- タブ・カラー振り分け設定 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold text-slate-700 flex items-center gap-1">🏷️ 要素別のタブ・カラー振り分け</span>
+                        <button type="button" onclick="resetPecExportSettings()" class="text-[11px] text-teal-600 hover:text-teal-800 font-bold hover:underline">初期値に戻す</button>
+                    </div>
+                    <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 pb-1 border-b border-slate-200 mb-2">
+                        <div class="col-span-4">要素タイプ</div>
+                        <div class="col-span-4">タブ名 (tabName)</div>
+                        <div class="col-span-4">カード色 (color)</div>
+                    </div>
+                    <div class="space-y-2" id="pec-type-settings-list">
+                        <!-- JSで動的に行を描画 -->
+                    </div>
+                </div>
+
+                <!-- 発言者抽出設定 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2.5">
+                    <span class="font-bold text-slate-700 block">🗣️ 発言者（キャラクター）の設定</span>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="pec-extract-speakers" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-700 font-medium">セリフ手前の名前（例: <code>KP「…」</code>, <code>【NPC】「…」</code>, <code>名前:「…」</code>）を発言者として自動抽出</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer ml-6">
+                        <input type="checkbox" id="pec-strip-speaker-prefix" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-600">カード本文から発言者名プレフィックスを除去（カード内テキストをセリフのみにする）</span>
+                    </label>
+                    <div class="flex items-center gap-2 pt-1 ml-6">
+                        <span class="text-slate-600 font-medium">KP情報・地の文の標準発言者:</span>
+                        <input type="text" id="pec-default-kp-speaker" placeholder="KP" class="w-24 bg-white border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-teal-500 font-bold">
+                        <span class="text-slate-400 text-[10px]">（空欄にすると未設定になります）</span>
+                    </div>
+                </div>
+
+                <!-- 分割・見出し設定 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2.5">
+                    <span class="font-bold text-slate-700 block">✂️ カード分割・出力設定</span>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="pec-split-paragraphs" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-700 font-medium">段落・改行（空行）ごとにカードを分割</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="pec-split-dialogues" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-700 font-medium">同一段落内の複数セリフ・地の文を独立カードに分割</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="pec-include-box-header" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-700 font-medium">ボックスの見出しタイトル（【KP情報】等）をカード本文に含める</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="pec-toc-headings" class="w-4 h-4 text-teal-600 rounded">
+                        <span class="text-slate-700 font-medium">見出し（H1〜H6）をセショサポの目次（TOC）カードとして登録</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center shrink-0">
+                <span class="text-[11px] text-slate-400">※ 設定内容はブラウザに自動保存されます</span>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('pec-export-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">閉じる</button>
+                    <button onclick="executePecExport()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                        <span>💾</span> .pec ファイルを出力
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="flex min-h-screen">
         <aside class="no-print w-64 bg-white border-r border-slate-200 sticky top-[0px] h-[calc(100vh-60px)] overflow-hidden flex flex-col hidden lg:flex">
             <div class="p-4 border-bottom bg-slate-50 font-bold text-slate-700">📋 目次</div>
@@ -226,6 +309,7 @@
                 <button onclick="openModal('confirm-modal')" class="w-full py-2 bg-white border border-slate-200 rounded text-xs hover:bg-slate-100 transition font-medium">➕ 新規作成</button>
                 <button onclick="executeDirectSave()" class="w-full py-2 bg-indigo-50 border border-indigo-100 rounded text-xs text-indigo-600 hover:bg-indigo-100 transition font-medium">💾 保存 (.weby)</button>
                 <button onclick="loadProjectWithPicker()" class="w-full py-2 bg-white border border-slate-200 rounded text-xs hover:bg-slate-100 transition font-medium">📂 読み込み</button>
+                <button onclick="openPecExportModal()" class="w-full py-2 bg-teal-50 border border-teal-200 rounded text-xs text-teal-700 hover:bg-teal-100 transition font-bold flex items-center justify-center gap-1.5 shadow-sm" title="セショサポ (PdfEasyConverter) 用の .pec ファイルを出力">📋 セショサポ (.pec)</button>
                 <div class="pt-2 text-[9px] text-slate-300 text-center font-mono opacity-50">Powered by 異次元ポケット</div>
             </div>
         </aside>
@@ -310,6 +394,7 @@
                             <button onclick="exportWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">Word</button>
                             <button onclick="exportGoogleDocs()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow transition">GDocs</button>
                             <button onclick="exportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition">PDF</button>
+                            <button onclick="openPecExportModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-2 px-3 rounded shadow transition flex items-center gap-1" title="セショサポ (PdfEasyConverter) 用の .pec ファイルを出力"><span>📋</span> .pec</button>
                         </div>
                     </div>
                 </div>
@@ -391,6 +476,7 @@
                             <button onclick="insertTRPGBox('listen')" class="px-2 h-7 border border-amber-300 bg-amber-50 rounded text-[10px] text-amber-800 font-bold">👂 聞き耳</button>
                             <button onclick="insertTRPGBox('library')" class="px-2 h-7 border border-cyan-300 bg-cyan-50 rounded text-[10px] text-cyan-800 font-bold">📚 図書館</button>
                             <button onclick="insertTRPGBox('san')" class="px-2 h-7 border border-rose-300 bg-rose-50 rounded text-[10px] text-rose-800 font-bold">🌀 正気度</button>
+                            <button onclick="eraseOrUnwrapBox()" class="px-2 h-7 border border-rose-300 bg-rose-50 hover:bg-rose-100 rounded text-[10px] text-rose-700 font-bold flex items-center gap-1 shadow-sm transition" title="枠消しゴム（文字があれば文字を残して枠を解除、枠のみなら枠ごと削除）">🧹 消しゴム</button>
                             <button onclick="insertBorderBox()" class="px-2 h-7 border border-slate-300 bg-white rounded text-[10px] text-slate-800 font-bold">🔳 枠</button>
                             <button onclick="insertQuote()" class="px-2 h-7 border border-slate-300 bg-slate-50 rounded text-[10px] text-slate-700 font-bold">💬 引用</button>
                             <button onclick="openTableModal()" class="px-2 h-7 border border-slate-300 bg-white rounded text-[10px] font-bold">📊 表</button>
