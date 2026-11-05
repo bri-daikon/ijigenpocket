@@ -3878,7 +3878,7 @@ if (editorArea) {
    ========================================================================== */
 
 const pecCardColors = [
-    { id: "slate", name: "標準 (slate)", bg: "#64748b" },
+    { id: "slate", name: "カラーなし (標準)", bg: "#94a3b8" },
     { id: "red", name: "赤 (red)", bg: "#ef4444" },
     { id: "orange", name: "オレンジ (orange)", bg: "#f97316" },
     { id: "amber", name: "黄 (amber)", bg: "#f59e0b" },
@@ -3890,36 +3890,41 @@ const pecCardColors = [
     { id: "pink", name: "ピンク (pink)", bg: "#ec4899" }
 ];
 
+const PEC_SETTINGS_VERSION = 2;
+
 const defaultPecSettings = {
+    _version: PEC_SETTINGS_VERSION,
     types: {
-        kp: { label: "KP情報", tab: "KP", color: "amber", speaker: "KP" },
-        secret: { label: "秘匿描写 (通常)", tab: "秘匿", color: "purple", speaker: "KP" },
-        ho1: { label: "HO1 (秘匿/個別)", tab: "HO1", color: "orange", speaker: "KP" },
-        ho2: { label: "HO2 (秘匿/個別)", tab: "HO2", color: "amber", speaker: "KP" },
-        ho3: { label: "HO3 (秘匿/個別)", tab: "HO3", color: "green", speaker: "KP" },
-        ho4: { label: "HO4 (秘匿/個別)", tab: "HO4", color: "teal", speaker: "KP" },
+        kp: { label: "KP情報", tab: "KP", color: "slate", speaker: "" },
+        secret: { label: "秘匿描写 (通常)", tab: "秘匿", color: "purple", speaker: "" },
+        ho1: { label: "HO1 (秘匿/個別)", tab: "HO1", color: "orange", speaker: "" },
+        ho2: { label: "HO2 (秘匿/個別)", tab: "HO2", color: "amber", speaker: "" },
+        ho3: { label: "HO3 (秘匿/個別)", tab: "HO3", color: "green", speaker: "" },
+        ho4: { label: "HO4 (秘匿/個別)", tab: "HO4", color: "teal", speaker: "" },
         info: { label: "情報・探索・概要", tab: "情報", color: "green", speaker: "" },
         check: { label: "判定・チェック", tab: "判定", color: "teal", speaker: "" },
-        speech: { label: "会話・セリフ", tab: "メイン", color: "blue", speaker: "" },
-        narrative: { label: "描写・地の文", tab: "描写", color: "orange", speaker: "KP" },
+        speech: { label: "会話・セリフ", tab: "メイン", color: "slate", speaker: "" },
+        narrative: { label: "描写・地の文", tab: "", color: "slate", speaker: "" },
         heading: { label: "見出し (目次)", tab: "", color: "slate", speaker: "" },
         enemy: { label: "エネミー・敵", tab: "エネミー", color: "red", speaker: "" },
         notice: { label: "諸注意・許諾", tab: "注意", color: "amber", speaker: "" }
     },
     extractSpeakers: true,
     stripSpeakerPrefix: true,
-    defaultKpSpeaker: "KP",
+    defaultKpSpeaker: "",
     splitParagraphs: true,
     splitDialogues: true,
     includeBoxHeader: true,
     tocHeadings: true
 };
 
-// HO番号・名前を抽出するヘルパー（例: 【HO1：秘匿描写】 -> "HO1"）
+// HO番号・名前を抽出するヘルパー（例: 【HO1：秘匿描写】 / ■ {HO1}秘匿 -> "HO1"）
 function extractHoName(text) {
     if (!text) return null;
-    const m = text.match(/(?:【|■|\(|\b)(HO\s*[\d０-９A-Za-z]+)(?:[：:\s】\)]|$)/i) ||
-              text.match(/(?:【|■)\s*\(?(HO\s*[\d０-９A-Za-z]+)\)?/i);
+    const firstLine = text.split('\n')[0] || text;
+    const m = firstLine.match(/(?:【|■|[\(\{\[（『]?)\s*(HO\s*[\d０-９A-Za-z]+)\s*(?:[：:\s】\)\}\]）』]|$)/i) ||
+              firstLine.match(/\b(HO\s*[\d０-９A-Za-z]+)\b/i) ||
+              text.match(/(?:【|■)\s*[\(\{（]?\s*(HO\s*[\d０-９A-Za-z]+)/i);
     if (!m) return null;
     let hoRaw = m[1].replace(/\s+/g, '');
     hoRaw = hoRaw.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
@@ -3948,6 +3953,11 @@ function getPecSettings() {
         const raw = localStorage.getItem('kakerukun_pec_export_settings');
         if (raw) {
             const parsed = JSON.parse(raw);
+            // バージョンが異なる場合は新しい初期設定にリセットして適用
+            if (parsed._version !== PEC_SETTINGS_VERSION) {
+                localStorage.removeItem('kakerukun_pec_export_settings');
+                return JSON.parse(JSON.stringify(defaultPecSettings));
+            }
             return {
                 ...defaultPecSettings,
                 ...parsed,
@@ -3965,6 +3975,7 @@ function getPecSettings() {
 
 function savePecSettings(settings) {
     try {
+        settings._version = PEC_SETTINGS_VERSION;
         localStorage.setItem('kakerukun_pec_export_settings', JSON.stringify(settings));
     } catch (e) {
         console.warn('savePecSettings error:', e);
@@ -3991,17 +4002,18 @@ function renderPecSettingsUI() {
     };
 
     for (const [key, typeInfo] of Object.entries(settings.types)) {
+        const badgeColor = pecCardColors.find(c => c.id === typeInfo.color)?.bg || '#94a3b8';
         html += `
             <div class="grid grid-cols-12 gap-2 items-center bg-white p-2 rounded border border-slate-200">
                 <div class="col-span-4 font-bold text-slate-700 flex items-center gap-1.5 truncate">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${pecCardColors.find(c => c.id === typeInfo.color)?.bg || '#64748b'};"></span>
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0 border border-slate-300" style="background-color: ${badgeColor};"></span>
                     <span title="${typeInfo.label}">${typeInfo.label}</span>
                 </div>
                 <div class="col-span-4">
-                    <input type="text" id="pec-tab-${key}" value="${typeInfo.tab || ''}" placeholder="(未設定)" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-teal-500 font-bold">
+                    <input type="text" id="pec-tab-${key}" value="${typeInfo.tab || ''}" placeholder="(未指定・全体)" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-teal-500 font-bold">
                 </div>
                 <div class="col-span-4">
-                    <select id="pec-color-${key}" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-teal-500 font-bold">
+                    <select id="pec-color-${key}" onchange="this.closest('.grid').querySelector('.rounded-full').style.backgroundColor = pecCardColors.find(c => c.id === this.value)?.bg || '#94a3b8';" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:border-teal-500 font-bold">
                         ${colorOptionsHtml(typeInfo.color)}
                     </select>
                 </div>
@@ -4016,7 +4028,7 @@ function renderPecSettingsUI() {
 
     setCheck('pec-extract-speakers', settings.extractSpeakers);
     setCheck('pec-strip-speaker-prefix', settings.stripSpeakerPrefix);
-    setText('pec-default-kp-speaker', settings.defaultKpSpeaker);
+    setText('pec-default-kp-speaker', settings.defaultKpSpeaker || '');
     setCheck('pec-split-paragraphs', settings.splitParagraphs);
     setCheck('pec-split-dialogues', settings.splitDialogues);
     setCheck('pec-include-box-header', settings.includeBoxHeader);
@@ -4143,18 +4155,19 @@ function generatePecData(settings) {
 
     // セクションモード判定
     let sourceHtml = "";
-    if (isSectionMode) {
+    if (isSectionMode && Array.isArray(sectionsData) && sectionsData.length > 0) {
         if (currentSectionIndex >= 0 && sectionsData[currentSectionIndex]) {
             sectionsData[currentSectionIndex].content = editor.innerHTML;
         }
-        sourceHtml = sectionsData.map(sec => sec.content).join('');
-    } else {
+        sourceHtml = sectionsData.map(sec => sec.content || "").join('\n');
+    }
+    if (!sourceHtml || !sourceHtml.trim()) {
         sourceHtml = editor.innerHTML;
     }
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = sourceHtml;
-    tempDiv.querySelectorAll('.drag-handle, .no-print, script, style').forEach(el => el.remove());
+    tempDiv.querySelectorAll('.drag-handle, .drag-handle-container, .no-print, script, style').forEach(el => el.remove());
 
     const items = [];
     const npcs = [];
@@ -4229,9 +4242,95 @@ function generatePecData(settings) {
         });
     }
 
-    // 段落テキストをセリフ/地の文に分解してカード化
-    function processTextParagraph(paragraphText) {
+    // ボックス内のテキストを、そのボックスのタブ・カラーを固定（ロック）してカード化
+    // ※ 秘匿枠やHO枠内のセリフであってもメインタブにならず、その秘匿タブ（HO1等）とカラーを厳格に保持する
+    function processBoxParagraphs(boxText, targetTab, targetColor, defaultSpeaker = "KP") {
+        if (!boxText || !boxText.trim()) return;
+
+        if (!settings.splitDialogues) {
+            let speaker = defaultSpeaker;
+            let text = boxText.trim();
+            if (settings.extractSpeakers) {
+                const m1 = text.match(speechPattern1);
+                if (m1) {
+                    speaker = (m1[1] || m1[2] || "").trim();
+                    if (settings.stripSpeakerPrefix) text = m1[3].trim();
+                }
+            }
+            createCardExplicit(text, targetTab, targetColor, speaker);
+            return;
+        }
+
+        const lines = boxText.split('\n');
+        let narrativeBuffer = [];
+
+        function flushNarrative() {
+            if (narrativeBuffer.length === 0) return;
+            const combined = narrativeBuffer.join('\n').trim();
+            if (combined) {
+                createCardExplicit(combined, targetTab, targetColor, defaultSpeaker);
+            }
+            narrativeBuffer = [];
+        }
+
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (!line) {
+                i++;
+                continue;
+            }
+
+            let matchedSpeaker = null;
+            let speechContent = null;
+
+            const m1 = line.match(speechPattern1);
+            if (m1 && settings.extractSpeakers) {
+                matchedSpeaker = (m1[1] || m1[2] || "").trim();
+                speechContent = settings.stripSpeakerPrefix ? m1[3] : line;
+            } else {
+                const m2 = line.match(speechPattern2);
+                if (m2 && settings.extractSpeakers) {
+                    matchedSpeaker = m2[1].trim();
+                    speechContent = settings.stripSpeakerPrefix ? m2[2] : line;
+                } else if (speechPattern3.test(line)) {
+                    matchedSpeaker = defaultSpeaker || "";
+                    speechContent = line;
+                }
+            }
+
+            if (speechContent !== null) {
+                flushNarrative();
+                let combinedSpeech = speechContent;
+                if (/^[「『]/.test(speechContent) && !/[」』]$/.test(speechContent)) {
+                    while (i + 1 < lines.length) {
+                        i++;
+                        const nextLine = lines[i].trim();
+                        combinedSpeech += '\n' + nextLine;
+                        if (/[」』]$/.test(nextLine)) break;
+                    }
+                }
+                // ★超重要：セリフであってもタブ・カラーは秘匿枠(targetTab/targetColor)のまま出力！
+                createCardExplicit(combinedSpeech, targetTab, targetColor, matchedSpeaker || defaultSpeaker);
+            } else {
+                narrativeBuffer.push(line);
+            }
+            i++;
+        }
+        flushNarrative();
+    }
+
+    // 段落テキストをセリフ/地の文に分解してカード化（見出しのHO指定があれば自動継承）
+    function processTextParagraph(paragraphText, activeHo = null) {
         if (!paragraphText || !paragraphText.trim()) return;
+
+        let targetTab = null;
+        let targetColor = null;
+        if (activeHo) {
+            const res = resolveHoTabAndColor(activeHo, settings);
+            targetTab = res.tab;
+            targetColor = res.color;
+        }
 
         if (!settings.splitDialogues) {
             // セリフ分解を行わない場合
@@ -4245,7 +4344,11 @@ function generatePecData(settings) {
                 }
             }
             const isSpeech = /^「|『/.test(text) || !!speaker;
-            createCard(text, isSpeech ? 'speech' : 'narrative', speaker || (isSpeech ? "" : settings.defaultKpSpeaker));
+            if (activeHo) {
+                createCardExplicit(text, targetTab, targetColor, speaker || (isSpeech ? "" : settings.defaultKpSpeaker));
+            } else {
+                createCard(text, isSpeech ? 'speech' : 'narrative', speaker || (isSpeech ? "" : settings.defaultKpSpeaker));
+            }
             return;
         }
 
@@ -4257,7 +4360,11 @@ function generatePecData(settings) {
             if (narrativeBuffer.length === 0) return;
             const combined = narrativeBuffer.join('\n').trim();
             if (combined) {
-                createCard(combined, 'narrative', settings.defaultKpSpeaker);
+                if (activeHo) {
+                    createCardExplicit(combined, targetTab, targetColor, settings.defaultKpSpeaker || "");
+                } else {
+                    createCard(combined, 'narrative', settings.defaultKpSpeaker || "");
+                }
             }
             narrativeBuffer = [];
         }
@@ -4301,7 +4408,11 @@ function generatePecData(settings) {
                         if (/[」』]$/.test(nextLine)) break;
                     }
                 }
-                createCard(combinedSpeech, 'speech', matchedSpeaker);
+                if (activeHo) {
+                    createCardExplicit(combinedSpeech, targetTab, targetColor, matchedSpeaker);
+                } else {
+                    createCard(combinedSpeech, 'speech', matchedSpeaker);
+                }
             } else {
                 narrativeBuffer.push(line);
             }
@@ -4310,13 +4421,31 @@ function generatePecData(settings) {
         flushNarrative();
     }
 
-    // DOMツリーの子要素を走査
+    // DOMツリーの子要素を走査（段落バッファリングにより、空行のない連続した行を1つのカードに結合）
+    let paragraphBuffer = [];
+    let currentSectionHo = null;
+
+    function flushParagraphBuffer() {
+        if (paragraphBuffer.length === 0) return;
+        const fullParagraph = paragraphBuffer.join('\n').trim();
+        paragraphBuffer = [];
+        if (fullParagraph) {
+            processTextParagraph(fullParagraph, currentSectionHo);
+        }
+    }
+
     const children = Array.from(tempDiv.childNodes);
     for (const node of children) {
         if (node.nodeType === Node.COMMENT_NODE) continue;
         if (node.nodeType === Node.TEXT_NODE) {
             const txt = node.textContent.trim();
-            if (txt) processTextParagraph(txt);
+            if (txt) {
+                if (settings.splitParagraphs) {
+                    paragraphBuffer.push(txt);
+                } else {
+                    paragraphBuffer.push(txt);
+                }
+            }
             continue;
         }
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
@@ -4325,6 +4454,7 @@ function generatePecData(settings) {
 
         // 改ページ判定
         if (el.classList.contains('page-break')) {
+            flushParagraphBuffer();
             currentPage++;
             continue;
         }
@@ -4336,12 +4466,28 @@ function generatePecData(settings) {
                        el.classList.contains('h8') || el.classList.contains('div_h8');
 
         if (isHTag || isDivH) {
+            flushParagraphBuffer();
             const hText = el.innerText.trim();
             if (hText) {
                 let level = 1;
                 if (isHTag) level = parseInt(tagName.substring(1), 10);
                 else level = 6;
-                createCard(hText, 'heading', "", settings.tocHeadings, level, hText);
+
+                // 見出し内に HO 指定（例: ■ {HO1}秘匿, ■ (HO2)など）があるか確認
+                const headingHo = extractHoName(hText);
+                if (headingHo) {
+                    currentSectionHo = headingHo;
+                } else {
+                    // HO指定がない汎用見出しならセクションHOをリセット
+                    currentSectionHo = null;
+                }
+
+                if (currentSectionHo) {
+                    const { tab: hoTab, color: hoColor } = resolveHoTabAndColor(currentSectionHo, settings);
+                    createCardExplicit(hText, hoTab, hoColor, "", settings.tocHeadings, level, hText);
+                } else {
+                    createCard(hText, 'heading', "", settings.tocHeadings, level, hText);
+                }
             }
             continue;
         }
@@ -4355,74 +4501,98 @@ function generatePecData(settings) {
         }
 
         if (boxContentEl) {
+            flushParagraphBuffer();
             const rawBoxText = extractBoxPlainText(boxContentEl, settings.includeBoxHeader);
             if (!rawBoxText) continue;
 
             const hoName = extractHoName(rawBoxText);
 
             if (boxContentEl.classList.contains('kp-info')) {
-                createCard(rawBoxText, 'kp');
+                const kpTab = settings.types.kp?.tab || "KP";
+                const kpColor = settings.types.kp?.color || "amber";
+                processBoxParagraphs(rawBoxText, kpTab, kpColor, settings.defaultKpSpeaker || "KP");
             } else if (boxContentEl.classList.contains('box-secret')) {
                 if (hoName) {
                     const { tab, color } = resolveHoTabAndColor(hoName, settings);
-                    createCardExplicit(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
+                    processBoxParagraphs(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
                 } else {
-                    createCard(rawBoxText, 'secret');
+                    const secTab = settings.types.secret?.tab || "秘匿";
+                    const secColor = settings.types.secret?.color || "purple";
+                    processBoxParagraphs(rawBoxText, secTab, secColor, settings.defaultKpSpeaker || "KP");
                 }
             } else if (boxContentEl.classList.contains('box-summary')) {
-                createCard(rawBoxText, 'info');
+                processBoxParagraphs(rawBoxText, settings.types.info?.tab || "情報", settings.types.info?.color || "green", "");
             } else if (boxContentEl.matches('.box-check, .box-spot, .box-listen, .box-library, .box-san')) {
-                createCard(rawBoxText, 'check');
+                processBoxParagraphs(rawBoxText, settings.types.check?.tab || "判定", settings.types.check?.color || "teal", "");
             } else if (boxContentEl.matches('.box-search, .box-gimmick, .box-tendency')) {
-                createCard(rawBoxText, 'info');
+                processBoxParagraphs(rawBoxText, settings.types.info?.tab || "情報", settings.types.info?.color || "green", "");
             } else if (boxContentEl.classList.contains('box-special')) {
                 const lower = rawBoxText.toLowerCase();
                 if (rawBoxText.includes('エネミー') || lower.includes('str:') || lower.includes('con:')) {
-                    createCard(rawBoxText, 'enemy');
+                    processBoxParagraphs(rawBoxText, settings.types.enemy?.tab || "エネミー", settings.types.enemy?.color || "red", "");
                     const npcObj = parseNpcFromBoxText(rawBoxText);
                     if (npcObj) npcs.push(npcObj);
                 } else if (rawBoxText.includes('諸注意') || rawBoxText.includes('注意')) {
-                    createCard(rawBoxText, 'notice');
+                    processBoxParagraphs(rawBoxText, settings.types.notice?.tab || "注意", settings.types.notice?.color || "amber", "");
                 } else if (rawBoxText.includes('HO') || hoName) {
                     if (hoName) {
                         const { tab, color } = resolveHoTabAndColor(hoName, settings);
-                        createCardExplicit(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
+                        processBoxParagraphs(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
                     } else {
-                        createCard(rawBoxText, 'secret');
+                        const secTab = settings.types.secret?.tab || "秘匿";
+                        const secColor = settings.types.secret?.color || "purple";
+                        processBoxParagraphs(rawBoxText, secTab, secColor, settings.defaultKpSpeaker || "KP");
                     }
                 } else {
-                    createCard(rawBoxText, 'info');
+                    processBoxParagraphs(rawBoxText, settings.types.info?.tab || "情報", settings.types.info?.color || "green", "");
                 }
             } else if (boxContentEl.classList.contains('box-custom-snippet')) {
                 const label = boxContentEl.querySelector('strong')?.innerText || '';
                 const snippetHo = extractHoName(label) || hoName;
                 if (snippetHo) {
                     const { tab, color } = resolveHoTabAndColor(snippetHo, settings);
-                    createCardExplicit(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
-                } else if (label.includes('KP')) createCard(rawBoxText, 'kp');
-                else if (label.includes('秘匿') || label.includes('HO')) createCard(rawBoxText, 'secret');
-                else createCard(rawBoxText, 'info');
+                    processBoxParagraphs(rawBoxText, tab, color, settings.defaultKpSpeaker || "KP");
+                } else if (label.includes('KP')) {
+                    processBoxParagraphs(rawBoxText, settings.types.kp?.tab || "KP", settings.types.kp?.color || "amber", settings.defaultKpSpeaker || "KP");
+                } else if (label.includes('秘匿') || label.includes('HO')) {
+                    processBoxParagraphs(rawBoxText, settings.types.secret?.tab || "秘匿", settings.types.secret?.color || "purple", settings.defaultKpSpeaker || "KP");
+                } else {
+                    processBoxParagraphs(rawBoxText, settings.types.info?.tab || "情報", settings.types.info?.color || "green", "");
+                }
             } else if (boxContentEl.classList.contains('quote')) {
-                createCard(rawBoxText, 'narrative');
+                processBoxParagraphs(rawBoxText, settings.types.narrative?.tab || "描写", settings.types.narrative?.color || "orange", settings.defaultKpSpeaker || "KP");
             } else {
-                createCard(rawBoxText, 'info');
+                processBoxParagraphs(rawBoxText, settings.types.info?.tab || "情報", settings.types.info?.color || "green", "");
             }
             continue;
         }
 
         // 一般ブロック (p, div, blockquote, ul, ol 等)
         const blockText = extractBlockPlainText(el);
-        if (!blockText) continue;
+        if (!blockText) {
+            // 空行（<p><br></p>等）に遭遇したら直前の段落をフラッシュしてカードを区切る
+            flushParagraphBuffer();
+            continue;
+        }
 
         if (settings.splitParagraphs) {
             const paragraphs = blockText.split(/\n{2,}/);
-            for (const p of paragraphs) {
-                processTextParagraph(p);
+            if (paragraphs.length > 1) {
+                for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
+                    const p = paragraphs[pIdx].trim();
+                    if (pIdx > 0) flushParagraphBuffer();
+                    if (p) paragraphBuffer.push(p);
+                    if (pIdx < paragraphs.length - 1) flushParagraphBuffer();
+                }
+            } else {
+                paragraphBuffer.push(blockText);
             }
         } else {
-            processTextParagraph(blockText);
+            paragraphBuffer.push(blockText);
         }
     }
+    // 残りの段落バッファをフラッシュ
+    flushParagraphBuffer();
 
     // tabColorMapping の構築（全使用タブに対応するカラーIDを設定）
     const tabColorMapping = {
@@ -4471,6 +4641,7 @@ function generatePecData(settings) {
                 scenario: title
             }
         },
+        items: items,
         itemCount: items.length,
         npcCount: npcs.length,
         title: title
@@ -4481,8 +4652,9 @@ function generatePecData(settings) {
 function executePecExport() {
     const settings = collectPecSettingsFromUI();
     const result = generatePecData(settings);
+    const items = result.items || result.saveObj?.items || [];
 
-    if (!result.items || result.items.length === 0) {
+    if (!items || items.length === 0) {
         alert("出力するテキストが存在しません。エディタに本文を入力してください。");
         return;
     }
