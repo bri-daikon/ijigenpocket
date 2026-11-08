@@ -1538,14 +1538,74 @@ function insertQuickSymbol(left, right) {
 
 /* --- 編集機能 --- */
 function execCommand(cmd) { 
-    editor.focus(); 
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        if (savedSelectionRange) restoreRange();
+    }
     if (cmd === 'indent') return manualIndent(true);
     if (cmd === 'outdent') return manualIndent(false);
     document.execCommand(cmd, false, null); 
     updateTOC(); autoUpdateUI();
 }
 
-function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
+function execCommandWithParam(cmd, param) { 
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        if (savedSelectionRange) restoreRange();
+    }
+    document.execCommand(cmd, false, param); 
+    autoUpdateUI(); 
+}
+
+// 枠内外を問わず選択した文字カラーを変更する関数
+function changeTextColor(color) {
+    if (!color) return;
+    const sel = window.getSelection();
+    let range = (sel && sel.rangeCount > 0 && !sel.isCollapsed) ? sel.getRangeAt(0) : savedSelectionRange;
+
+    if (!range || range.collapsed) return;
+
+    // 選択範囲をアクティブ化
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    let editableParent = range.commonAncestorContainer;
+    if (editableParent.nodeType === 3) editableParent = editableParent.parentElement;
+    const closestEditable = editableParent.closest('[contenteditable="true"]');
+    if (closestEditable) {
+        closestEditable.focus();
+    }
+
+    document.execCommand('styleWithCSS', false, true);
+    let success = false;
+    try {
+        success = document.execCommand('foreColor', false, color);
+    } catch (_) {}
+
+    // execCommandで反映されなかった場合の確実なフォールバック
+    if (!success) {
+        try {
+            const span = document.createElement('span');
+            span.style.color = color;
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            savedSelectionRange = newRange.cloneRange();
+        } catch (err) {
+            console.error('changeTextColor error:', err);
+        }
+    } else {
+        if (sel.rangeCount > 0) {
+            savedSelectionRange = sel.getRangeAt(0).cloneRange();
+        }
+    }
+    autoUpdateUI();
+}
 
 
 /* --- 配置処理（画像対応版） --- */
@@ -2012,6 +2072,17 @@ const throttle = (fn, wait) => {
 };
 editor.addEventListener('input', throttle(() => { autoUpdateUI(); }, 500));
 titleInput.oninput = () => { autoUpdateUI(); };
+
+// エディタ内の選択範囲を常に最新に保持（ツールバー操作時に選択範囲を失わないようにする）
+document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        if (editor && editor.contains(range.commonAncestorContainer)) {
+            savedSelectionRange = range.cloneRange();
+        }
+    }
+});
 
 // 未保存時のページ離脱・リロード防止警告
 window.addEventListener('beforeunload', (e) => {

@@ -32,7 +32,7 @@ function changeSelectionFontSize(deltaPx) {
         }
         el = el.parentElement;
     }
-    
+
     // 明示的なスタイルがなければ計算されたスタイルを使用
     if (currentSize === 16 && target) {
         currentSize = parseInt(window.getComputedStyle(target).fontSize) || 16;
@@ -47,18 +47,18 @@ function changeSelectionFontSize(deltaPx) {
             const fragment = range.extractContents();
             span.appendChild(fragment);
             range.insertNode(span);
-            
+
             selection.removeAllRanges();
             const newRange = document.createRange();
             newRange.selectNodeContents(span);
             selection.addRange(newRange);
-        } catch(e) {
+        } catch (e) {
             document.execCommand('fontSize', false, deltaPx > 0 ? "4" : "2");
         }
     } else {
         const span = document.createElement('span');
         span.style.fontSize = newSize + 'px';
-        span.innerHTML = '&#8203;'; 
+        span.innerHTML = '&#8203;';
         range.insertNode(span);
         const newRange = document.createRange();
         newRange.setStart(span.firstChild, 1);
@@ -74,7 +74,7 @@ function changeSelectionFontSize(deltaPx) {
 function updateEditorStyles() {
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
-    
+
     let fontCSS = '';
     if (fontFamily === 'sans-serif') {
         fontCSS = "system-ui, -apple-system, sans-serif";
@@ -95,10 +95,10 @@ function updateEditorStyles() {
     } else if (fontFamily === 'ms-pmincho') {
         fontCSS = '"MS PMincho", serif';
     }
-    
+
     editor.style.fontFamily = fontCSS;
     editor.style.lineHeight = lineHeight;
-    
+
     autoUpdateUI();
 }
 
@@ -124,7 +124,7 @@ function getSelectedHtmlAndRemove() {
         const div = document.createElement('div');
         div.appendChild(clonedSelection);
         const html = div.innerHTML;
-        
+
         range.deleteContents();
         return html;
     }
@@ -156,8 +156,8 @@ function showToast(msg) {
 
 /* --- プロジェクト管理 --- */
 
-function autoUpdateUI() { 
-    updateTOC(); 
+function autoUpdateUI() {
+    updateTOC();
     updateCharCount();
     updatePageBreakGuides();
     saveStatus.textContent = "変更あり（未保存）";
@@ -168,8 +168,8 @@ function autoUpdateUI() {
 // 保存を実行
 function executeDirectSave() {
     const title = titleInput.value.trim() || 'シナリオ';
-    const content = { 
-        title, 
+    const content = {
+        title,
         content: editor.innerHTML,
         lineLimit: document.getElementById('page-line-limit')?.value || '35',
         charLimit: document.getElementById('page-char-limit')?.value || '40',
@@ -187,13 +187,13 @@ function executeDirectSave() {
         snippets: getSnippets()
     };
     const jsonStr = JSON.stringify(content, null, 2);
-    
+
     saveStatus.textContent = "保存ダイアログを確認中...";
     saveStatus.classList.remove('text-amber-500');
     isDirty = false;
 
     try {
-        localStorage.setItem('weby_autosave', editor.innerHTML); 
+        localStorage.setItem('weby_autosave', editor.innerHTML);
         localStorage.setItem('weby_autosave_title', titleInput.value);
         localStorage.setItem('weby_autosave_fontFamily', document.getElementById('font-family-select')?.value || 'sans-serif');
         localStorage.setItem('weby_autosave_lineHeight', document.getElementById('line-height-select')?.value || '1.8');
@@ -204,9 +204,9 @@ function executeDirectSave() {
 
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); 
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${title}.weby`; 
+    a.download = `${title}.weby`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -275,7 +275,7 @@ function loadProjectFallback(input) {
                         loadSection(0);
                     }
                 } else {
-                    updateTOC(); 
+                    updateTOC();
                 }
                 updateCharCount();
                 updateEditorWidth();
@@ -285,7 +285,7 @@ function loadProjectFallback(input) {
                 saveStatus.classList.remove('text-amber-500');
                 isDirty = false;
                 showToast("読み込みました");
-            } catch(err) { alert('読み込み失敗: 正しいファイル形式ではありません。'); }
+            } catch (err) { alert('読み込み失敗: 正しいファイル形式ではありません。'); }
         };
         reader.readAsText(file);
     }
@@ -296,14 +296,14 @@ function upgradeBoxes(container) {
     boxes.forEach(box => {
         // すでにラップされているかチェック
         if (box.parentElement && box.parentElement.classList.contains('box-wrapper')) return;
-        
+
         const wrapper = document.createElement('div');
         wrapper.className = 'box-wrapper group relative my-4 block';
         wrapper.setAttribute('contenteditable', 'false');
         wrapper.setAttribute('draggable', 'true');
         wrapper.style.clear = 'both';
         wrapper.style.userSelect = 'none';
-        
+
         const handleContainer = document.createElement('div');
         handleContainer.className = 'drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10';
         handleContainer.setAttribute('contenteditable', 'false');
@@ -311,11 +311,11 @@ function upgradeBoxes(container) {
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         `;
-        
+
         box.setAttribute('contenteditable', 'true');
         box.style.margin = '0'; // ラッパー側にマージンを任せる
         box.style.userSelect = 'text';
-        
+
         box.parentNode.insertBefore(wrapper, box);
         wrapper.appendChild(handleContainer);
         wrapper.appendChild(box);
@@ -342,22 +342,22 @@ function confirmNewProject() {
 
 /* --- 書き出し機能 --- */
 function exportHTML() {
-    updateTOC(); 
+    updateTOC();
     const title = titleInput.value || '無題のシナリオ';
     const layout = document.getElementById('export-layout-select').value;
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
     let fontCSS = fontFamily === 'sans-serif' ? "system-ui, -apple-system, sans-serif" :
-                  fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
-                  fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
-                  fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
-                  fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
-                  fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
-                  fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
-                  fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
-                  fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
-                  "system-ui, -apple-system, sans-serif";
-    
+        fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
+            fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
+                fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
+                    fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
+                        fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
+                            fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
+                                fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
+                                    fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
+                                        "system-ui, -apple-system, sans-serif";
+
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
@@ -368,10 +368,10 @@ function exportHTML() {
             const newContainer = document.createElement('div');
             newContainer.className = 'char-stats-container';
             newContainer.style.lineHeight = '2';
-            
+
             const labels = ['STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'SAN'];
             const inputs = grid.querySelectorAll('.char-stat-input');
-            
+
             for (let i = 0; i < Math.min(labels.length, inputs.length); i++) {
                 const input = inputs[i];
                 let val = '0';
@@ -395,7 +395,7 @@ function exportHTML() {
     let pagesHtml = '', currentPageContent = '', currentLineCount = 0, pageNum = 1;
     // ユーザー指定の行数またはデフォルト35行
     const MAX_LINES = parseInt(document.getElementById('page-line-limit').value) || 35;
-   
+
     const flushPage = () => {
         pagesHtml += `
             <div class="page">
@@ -432,7 +432,7 @@ function exportHTML() {
             // 段組みに合わせて1行あたりの文字数を緩和して計算
             const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
             const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
-            
+
             const pbH1 = document.getElementById('export-page-break-h1');
             if (tag === 'H1' && pbH1 && pbH1.checked && typeof currentLineCount !== 'undefined' && currentLineCount > 0) {
                 if (typeof flushPage === 'function') {
@@ -747,18 +747,18 @@ function exportHTML() {
         for (let i = 0; i < pTags.length; i++) {
             let p = pTags[i];
             if (!p.parentNode) continue;
-            
+
             const isPEmpty = p.innerHTML.trim() === '' || p.innerHTML === '<br>' || p.querySelector('img, table, div');
             if (isPEmpty) {
                 if (p.innerHTML.trim() === '') p.innerHTML = '<br>';
                 continue;
             }
-            
+
             p.style.marginTop = '0';
             p.style.marginBottom = '0';
-            
+
             let next = p.nextElementSibling;
-            
+
             while (next && (next.tagName === 'P' || (next.tagName === 'DIV' && !next.className))) {
                 const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
                 if (isNextEmpty) {
@@ -771,7 +771,7 @@ function exportHTML() {
                 }
                 p.innerHTML += '<br>' + next.innerHTML;
                 let toRemove = next;
-                
+
                 next = next.nextElementSibling;
                 toRemove.remove();
             }
@@ -1083,20 +1083,20 @@ async function exportWord() {
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
     let fontCSS = fontFamily === 'sans-serif' ? '"ＭＳ ゴシック", sans-serif' :
-                  fontFamily === 'serif' ? '"ＭＳ 明朝", serif' :
-                  fontFamily === 'monospace' ? '"Courier New", monospace' :
-                  fontFamily === 'yu-gothic' ? '"游ゴシック", "Yu Gothic", sans-serif' :
-                  fontFamily === 'yu-mincho' ? '"游明朝", "Yu Mincho", serif' :
-                  fontFamily === 'meiryo' ? '"メイリオ", "Meiryo", sans-serif' :
-                  fontFamily === 'rounded-gothic' ? '"ＭＳ ゴシック", sans-serif' :
-                  fontFamily === 'ms-pgothic' ? '"ＭＳ Ｐゴシック", sans-serif' :
-                  fontFamily === 'ms-pmincho' ? '"ＭＳ Ｐ明朝", serif' :
-                  '"ＭＳ ゴシック", sans-serif';
-    
+        fontFamily === 'serif' ? '"ＭＳ 明朝", serif' :
+            fontFamily === 'monospace' ? '"Courier New", monospace' :
+                fontFamily === 'yu-gothic' ? '"游ゴシック", "Yu Gothic", sans-serif' :
+                    fontFamily === 'yu-mincho' ? '"游明朝", "Yu Mincho", serif' :
+                        fontFamily === 'meiryo' ? '"メイリオ", "Meiryo", sans-serif' :
+                            fontFamily === 'rounded-gothic' ? '"ＭＳ ゴシック", sans-serif' :
+                                fontFamily === 'ms-pgothic' ? '"ＭＳ Ｐゴシック", sans-serif' :
+                                    fontFamily === 'ms-pmincho' ? '"ＭＳ Ｐ明朝", serif' :
+                                        '"ＭＳ ゴシック", sans-serif';
+
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
-    
+
     // エクスポート用：ドラッグハンドルを削除
     tempDiv.querySelectorAll('.drag-handle, .drag-handle-container').forEach(el => el.remove());
 
@@ -1106,7 +1106,7 @@ async function exportWord() {
         const btn = document.querySelector('button[onclick="exportWord()"]');
         const origText = btn ? btn.textContent : '';
         if (btn) btn.textContent = '画像変換中...';
-        
+
         await Promise.all(svgs.map(svg => {
             return new Promise((resolve) => {
                 try {
@@ -1115,18 +1115,18 @@ async function exportWord() {
                         const actions = box.querySelector('.flowchart-actions');
                         if (actions) actions.remove();
                     }
-                    
+
                     if (!svg.getAttribute('xmlns')) {
                         svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                     }
-                    
+
                     svg.style.backgroundColor = '#ffffff';
-                    
+
                     let width = svg.getAttribute('width') || svg.getBoundingClientRect().width || 600;
                     let height = svg.getAttribute('height') || svg.getBoundingClientRect().height || 400;
                     width = parseInt(width) || 600;
                     height = parseInt(height) || 400;
-                    
+
                     const xml = new XMLSerializer().serializeToString(svg);
                     const svg64 = btoa(unescape(encodeURIComponent(xml)));
                     const image64 = 'data:image/svg+xml;base64,' + svg64;
@@ -1141,13 +1141,13 @@ async function exportWord() {
                         ctx.fillStyle = '#ffffff';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
+
                         const newImg = document.createElement('img');
                         newImg.src = canvas.toDataURL('image/png');
                         newImg.style.width = (img.width || width) + 'px';
                         newImg.style.maxWidth = '100%';
                         newImg.style.height = 'auto';
-                        
+
                         const parentPre = svg.closest('pre.mermaid');
                         if (parentPre) {
                             parentPre.innerHTML = '';
@@ -1159,7 +1159,7 @@ async function exportWord() {
                     };
                     img.onerror = () => resolve();
                     img.src = image64;
-                } catch(e) {
+                } catch (e) {
                     console.error('SVG conversion error:', e);
                     resolve();
                 }
@@ -1174,10 +1174,10 @@ async function exportWord() {
             const newContainer = document.createElement('div');
             newContainer.className = 'char-stats-container';
             newContainer.style.lineHeight = '2';
-            
+
             const labels = ['STR', 'CON', 'POW', 'DEX', 'APP', 'SIZ', 'INT', 'EDU', 'SAN'];
             const inputs = grid.querySelectorAll('.char-stat-input');
-            
+
             for (let i = 0; i < Math.min(labels.length, inputs.length); i++) {
                 const input = inputs[i];
                 let val = '0';
@@ -1231,7 +1231,7 @@ async function exportWord() {
     const limitInput = document.getElementById('page-line-limit');
     const MAX_LINES = limitInput ? (parseInt(limitInput.value) || 35) : 35;
     const layout = document.getElementById('export-layout-select').value;
-   
+
     const flushPage = () => {
         if (pagesHtml !== '') {
             // Word用の改ページコードを挿入
@@ -1271,7 +1271,7 @@ async function exportWord() {
                     if (typeof isManualPageBreak !== 'undefined') isManualPageBreak = true;
                 }
             }
-            
+
             if (tag === 'H1') weight = 3;
             else if (tag === 'H2') weight = 2;
             else if (tag === 'H3') weight = 2;
@@ -1301,7 +1301,7 @@ async function exportWord() {
     const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;
     const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;
     const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';
-    
+
     const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';
     const gridStyle = snapToGrid ? 'mso-layout-grid-align: auto;' : 'mso-layout-grid-align: none;';
     let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm; ${gridStyle}`;
@@ -1351,9 +1351,9 @@ function exportGoogleDocs() {
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
     let fontCSS = fontFamily === 'sans-serif' ? '"Arial", "MS PGothic", sans-serif' :
-                  fontFamily === 'serif' ? '"Times New Roman", "MS PMincho", serif' :
-                  '"Arial", "MS PGothic", sans-serif';
-    
+        fontFamily === 'serif' ? '"Times New Roman", "MS PMincho", serif' :
+            '"Arial", "MS PGothic", sans-serif';
+
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
@@ -1396,7 +1396,7 @@ function exportGoogleDocs() {
     const limitInput = document.getElementById('page-line-limit');
     const MAX_LINES = limitInput ? (parseInt(limitInput.value) || 35) : 35;
     const layout = document.getElementById('export-layout-select').value;
-   
+
     const flushPage = () => {
         if (pagesHtml !== '') {
             pagesHtml += `<br style="page-break-before:always; clear:both;">`;
@@ -1424,7 +1424,7 @@ function exportGoogleDocs() {
             const sizeRatio = fontSize / 16;
             const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
             const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
-            
+
             const pbH1 = document.getElementById('export-page-break-h1');
             if (tag === 'H1' && pbH1 && pbH1.checked && typeof currentLineCount !== 'undefined' && currentLineCount > 0) {
                 if (typeof flushPage === 'function') {
@@ -1461,7 +1461,7 @@ function exportGoogleDocs() {
     const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;
     const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;
     const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';
-    
+
     const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';
     let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm;`;
     if (isIndent) pStyles += ' text-indent: 1em;';
@@ -1524,7 +1524,7 @@ function manualIndent(isIndent) {
         let node = range.commonAncestorContainer;
         if (node.nodeType === 3) node = node.parentNode;
         let target = node.closest('p, h1, h2, h3, h4, h5, h6, .h7, .h8, div, table, blockquote');
-        
+
         // もし枠（box-wrapper）の中であれば、枠全体をインデントの対象にする
         const wrapper = node.closest('.box-wrapper');
         if (wrapper) {
@@ -1555,7 +1555,7 @@ function manualIndent(isIndent) {
         let currentMargin = parseFloat(block.style.marginLeft) || 0;
         block.style.marginLeft = isIndent ? (currentMargin + 1) + 'em' : Math.max(0, currentMargin - 1) + 'em';
     });
-    autoUpdateUI(); 
+    autoUpdateUI();
 }
 
 function handleHeadingChange(val) {
@@ -1587,7 +1587,7 @@ function handleHeadingChange(val) {
     } else {
         document.execCommand('formatBlock', false, val);
     }
-    
+
     setTimeout(() => {
         const sel = window.getSelection();
         if (sel.rangeCount > 0) {
@@ -1618,7 +1618,7 @@ function insertQuickSymbol(left, right) {
 
     // 記号を構築
     const fullInsert = left + selectedText + right;
-    
+
     // 挿入実行
     document.execCommand('insertText', false, fullInsert);
 
@@ -1626,7 +1626,7 @@ function insertQuickSymbol(left, right) {
     if (!selectedText && right !== '') {
         const currentSelection = window.getSelection();
         const currentRange = currentSelection.getRangeAt(0);
-        
+
         // カーソルを閉じ括弧の前に戻す
         currentRange.setStart(currentRange.startContainer, currentRange.startOffset - right.length);
         currentRange.collapse(true);
@@ -1639,14 +1639,74 @@ function insertQuickSymbol(left, right) {
 
 /* --- 編集機能 --- */
 function execCommand(cmd) { 
-    editor.focus(); 
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        if (savedSelectionRange) restoreRange();
+    }
     if (cmd === 'indent') return manualIndent(true);
     if (cmd === 'outdent') return manualIndent(false);
-    document.execCommand(cmd, false, null); 
+    document.execCommand(cmd, false, null);
     updateTOC(); autoUpdateUI();
 }
 
-function execCommandWithParam(cmd, param) { editor.focus(); document.execCommand(cmd, false, param); autoUpdateUI(); }
+function execCommandWithParam(cmd, param) { 
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+        if (savedSelectionRange) restoreRange();
+    }
+    document.execCommand(cmd, false, param); 
+    autoUpdateUI(); 
+}
+
+// 枠内外を問わず選択した文字カラーを変更する関数
+function changeTextColor(color) {
+    if (!color) return;
+    const sel = window.getSelection();
+    let range = (sel && sel.rangeCount > 0 && !sel.isCollapsed) ? sel.getRangeAt(0) : savedSelectionRange;
+
+    if (!range || range.collapsed) return;
+
+    // 選択範囲をアクティブ化
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    let editableParent = range.commonAncestorContainer;
+    if (editableParent.nodeType === 3) editableParent = editableParent.parentElement;
+    const closestEditable = editableParent.closest('[contenteditable="true"]');
+    if (closestEditable) {
+        closestEditable.focus();
+    }
+
+    document.execCommand('styleWithCSS', false, true);
+    let success = false;
+    try {
+        success = document.execCommand('foreColor', false, color);
+    } catch (_) {}
+
+    // execCommandで反映されなかった場合の確実なフォールバック
+    if (!success) {
+        try {
+            const span = document.createElement('span');
+            span.style.color = color;
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            savedSelectionRange = newRange.cloneRange();
+        } catch (err) {
+            console.error('changeTextColor error:', err);
+        }
+    } else {
+        if (sel.rangeCount > 0) {
+            savedSelectionRange = sel.getRangeAt(0).cloneRange();
+        }
+    }
+    autoUpdateUI();
+}
 
 
 /* --- 配置処理（画像対応版） --- */
@@ -1674,8 +1734,8 @@ function handleAlignment(cmd) {
         if (cmd === 'justifyLeft') targetImg.classList.add('img-left');
         else if (cmd === 'justifyCenter') targetImg.classList.add('img-center');
         else if (cmd === 'justifyRight') targetImg.classList.add('img-right');
-        
-        autoUpdateUI(); 
+
+        autoUpdateUI();
     } else {
         document.execCommand(cmd, false, null);
         autoUpdateUI();
@@ -1706,7 +1766,7 @@ function insertLink() {
         if (!h.id) h.id = `h-${i}`;
         const btn = document.createElement('button');
         btn.className = "w-full text-left p-2 hover:bg-slate-100 rounded text-xs truncate border-l-2 border-indigo-400 mb-1 text-slate-700";
-        btn.textContent = h.textContent.trim() || `無題の見出し ${i+1}`;
+        btn.textContent = h.textContent.trim() || `無題の見出し ${i + 1}`;
         btn.onclick = (e) => {
             e.preventDefault();
             if (!savedSelectionRange) return;
@@ -1762,7 +1822,7 @@ function insertTRPGBox(type) {
     const checkTpl = "成功：<br>失敗：";
     const col = document.getElementById('bg-color-picker').value;
     let borderColor = col;
-    switch(type) {
+    switch (type) {
         case 'summary': className = "box-summary"; label = "概要"; borderColor = "#7dd3fc"; break;
         case 'check': className = "box-check"; label = "判定：＜＞"; defaultContent = checkTpl; borderColor = "#86efac"; break;
         case 'spot': className = "box-spot"; label = "判定：＜目星＞"; defaultContent = checkTpl; borderColor = "#34d399"; break;
@@ -1843,7 +1903,7 @@ function insertSpecialBox(label) {
     const selectedHtml = getSelectedHtmlAndRemove();
     let defaultCol = "#64748b";
     let defaultContent = "詳細...";
-    switch(label) {
+    switch (label) {
         case '許諾': defaultCol = "#94a3b8"; defaultContent = `本作は、「株式会社アークライト」及び「株式会社KADOKAWA」が権利を有する『クトゥルフ神話TRPG』シリーズの二次創作物です。<br><br>Call of Cthulhu is copyright ©1981, 2015, 2019 by Chaosium Inc. ;all rights reserved. Arranged by Arclight Inc.<br>Call of Cthulhu is a registered trademark of Chaosium Inc.<br>PUBLISHED BY KADOKAWA CORPORATION　「クトゥルフ神話TRPG」「新クトゥルフ神話TRPG」`; break;
         case '諸注意': defaultCol = "#f59e0b"; defaultContent = `・本シナリオには以下の要素が含まれます：<br>・ロストの可能性：あり<br>・PvPの可能性：あり`; break;
         case 'HO': defaultCol = "#6366f1"; defaultContent = `公開HO：<br>貴方は……である。`; break;
@@ -1905,7 +1965,7 @@ function eraseOrUnwrapBox(targetBox = null) {
 
     // コンテンツ要素を取得
     const innerContent = box.querySelector('.mt-1, .mt-2, .text-sm, .box-custom, [contenteditable="true"]') || box;
-    
+
     // ヘッダーやドラッグ要素を除いた実質テキストを取得して判定
     const clone = innerContent.cloneNode(true);
     clone.querySelectorAll('.drag-handle-container, .drag-handle, .no-print, script, style').forEach(el => el.remove());
@@ -1970,12 +2030,12 @@ function handleImageUpload(input) {
     if (input.files?.[0]) {
         const reader = new FileReader();
         reader.onload = e => {
-            restoreRange(); 
+            restoreRange();
             // デフォルトは中央配置で挿入
             const imgHtml = `<img src="${e.target.result}" class="img-center">`;
             document.execCommand('insertHTML', false, imgHtml);
-            
-            autoUpdateUI(); 
+
+            autoUpdateUI();
             input.value = '';
         };
         reader.readAsDataURL(input.files[0]);
@@ -1986,15 +2046,15 @@ function handleImageUpload(input) {
 function parseIntoSections(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
-    
+
     sectionsData = [];
     let currentSection = { id: 'sec_intro', title: '導入', level: 1, content: '' };
     const tempContainer = document.createElement('div');
-    
+
     let secCounter = 1;
     const nodes = Array.from(tempDiv.childNodes);
     let hasContentInIntro = false;
-    
+
     nodes.forEach(node => {
         const isHeading = node.nodeType === 1 && (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3');
         if (isHeading) {
@@ -2002,7 +2062,7 @@ function parseIntoSections(html) {
             if (currentSection.id === 'sec_intro' && !hasContentInIntro && tempContainer.innerHTML.trim() === '') {
                 // skip
             } else {
-                sectionsData.push({...currentSection});
+                sectionsData.push({ ...currentSection });
             }
             tempContainer.innerHTML = '';
             tempContainer.appendChild(node.cloneNode(true));
@@ -2020,9 +2080,9 @@ function parseIntoSections(html) {
             }
         }
     });
-    
+
     currentSection.content = tempContainer.innerHTML;
-    sectionsData.push({...currentSection});
+    sectionsData.push({ ...currentSection });
 }
 
 // セクション並び替え用変数
@@ -2041,12 +2101,12 @@ function handleDragOver(e) {
 function handleDrop(e, dropIndex) {
     e.preventDefault();
     if (draggedSectionIndex === null || draggedSectionIndex === dropIndex) return;
-    
+
     saveCurrentSection();
 
     const moved = sectionsData.splice(draggedSectionIndex, 1)[0];
     sectionsData.splice(dropIndex, 0, moved);
-    
+
     if (currentSectionIndex === draggedSectionIndex) {
         currentSectionIndex = dropIndex;
     } else if (currentSectionIndex > draggedSectionIndex && currentSectionIndex <= dropIndex) {
@@ -2054,10 +2114,10 @@ function handleDrop(e, dropIndex) {
     } else if (currentSectionIndex < draggedSectionIndex && currentSectionIndex >= dropIndex) {
         currentSectionIndex++;
     }
-    
+
     draggedSectionIndex = null;
     updateTOC();
-    
+
     // 新しい位置のセクションを再描画
     editor.innerHTML = sectionsData[currentSectionIndex].content;
 }
@@ -2091,8 +2151,8 @@ function loadSection(index) {
         currentSectionSpan.className = 'text-emerald-600 font-bold';
         currentSectionSpan.textContent = sectionsData[index].title;
     }
-    updateTOC(); 
-    
+    updateTOC();
+
     // スクロールを一番上に戻す (ページ全体スクロール対応)
     window.scrollTo({ top: 0, behavior: 'instant' });
     const mainArea = document.querySelector('main');
@@ -2144,25 +2204,25 @@ function updateTOC() {
             item.ondragstart = (e) => handleDragStart(e, i);
             item.ondragover = handleDragOver;
             item.ondrop = (e) => handleDrop(e, i);
-            
+
             // ドラッグハンドル
             const handle = document.createElement('div');
             handle.className = 'w-6 h-full flex items-center justify-center cursor-move text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition';
             handle.innerHTML = '≡';
             handle.title = 'ドラッグで並び替え';
-            
+
             const link = document.createElement('a');
             link.href = '#';
             link.textContent = sec.title;
             link.className = 'flex-1 py-2 px-1 truncate block text-slate-600 ' + (currentSectionIndex === i ? 'text-emerald-700 font-bold' : '');
             link.style.paddingLeft = sec.level > 1 ? ((sec.level - 1) * 0.75) + 'em' : '0.25em';
             link.onclick = (e) => { e.preventDefault(); loadSection(i); };
-            
+
             item.appendChild(handle);
             item.appendChild(link);
             tocContainer.appendChild(item);
         });
-        
+
         const addBtnContainer = document.createElement('div');
         addBtnContainer.className = 'p-4 border-t border-slate-100 mt-2';
         const addBtn = document.createElement('button');
@@ -2171,7 +2231,7 @@ function updateTOC() {
         addBtn.onclick = addNewSection;
         addBtnContainer.appendChild(addBtn);
         tocContainer.appendChild(addBtnContainer);
-        
+
         updateCharCount();
         return;
     }
@@ -2231,7 +2291,7 @@ function openTableModal() {
                     table += '</tr>';
                 }
                 table += '</table><p><br></p>';
-                
+
                 restoreRange(); // 保存した位置にフォーカスを戻す
                 document.execCommand('insertHTML', false, table);
                 closeModal('table-modal');
@@ -2248,7 +2308,7 @@ window.onload = () => {
     document.execCommand('styleWithCSS', false, true);
     document.execCommand('defaultParagraphSeparator', false, 'p');
     renderSnippetSelector();
-    const savedContent = localStorage.getItem('weby_autosave'); 
+    const savedContent = localStorage.getItem('weby_autosave');
     const savedTitle = localStorage.getItem('weby_autosave_title');
     if (savedContent) { editor.innerHTML = savedContent; saveStatus.textContent = "ブラウザから復元済み"; }
     if (savedTitle) titleInput.value = savedTitle;
@@ -2360,7 +2420,7 @@ window.onload = () => {
                 if (clone && clone.querySelector && clone.querySelector(trpgBoxSelector)) {
                     isTarget = true;
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
 
         if (isTarget) {
@@ -2394,10 +2454,10 @@ window.onload = () => {
 
         const selection = window.getSelection();
         const range = (selection && selection.rangeCount > 0) ? selection.getRangeAt(0) : null;
-        
+
         // 1. 貼り付け先がTRPG枠内の場合：
         // 貼り付け元の背景色や文字色などの書式を引き継がず、枠本来の文字色・背景色になるようプレーンテキストとして挿入
-        const isTargetInsideBox = isInsideTRPGBox(e.target) 
+        const isTargetInsideBox = isInsideTRPGBox(e.target)
             || (range && (isInsideTRPGBox(range.commonAncestorContainer) || isInsideTRPGBox(range.startContainer) || isInsideTRPGBox(range.endContainer)));
 
         if (isTargetInsideBox) {
@@ -2464,6 +2524,17 @@ const throttle = (fn, wait) => {
 editor.addEventListener('input', throttle(() => { autoUpdateUI(); }, 500));
 titleInput.oninput = () => { autoUpdateUI(); };
 
+// エディタ内の選択範囲を常に最新に保持（ツールバー操作時に選択範囲を失わないようにする）
+document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        if (editor && editor.contains(range.commonAncestorContainer)) {
+            savedSelectionRange = range.cloneRange();
+        }
+    }
+});
+
 // 未保存時のページ離脱・リロード防止警告
 window.addEventListener('beforeunload', (e) => {
     if (isDirty) {
@@ -2509,7 +2580,7 @@ function updatePageBreakGuides() {
 
             const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
             const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
-            
+
             const pbH1 = document.getElementById('export-page-break-h1');
             if (tag === 'H1' && pbH1 && pbH1.checked && typeof currentLineCount !== 'undefined' && currentLineCount > 0) {
                 if (typeof pageNum !== 'undefined') {
@@ -2536,11 +2607,11 @@ function updatePageBreakGuides() {
                 const line = document.createElement('div');
                 line.className = 'page-break-line';
                 line.style.top = `${offsetTop - 8}px`; // 少し上に配置
-                
+
                 const labelLeft = document.createElement('span');
                 labelLeft.className = 'page-break-label';
                 labelLeft.textContent = `✂️ ページ境界 (約 ${MAX_LINES} 行目安)`;
-                
+
                 const labelRight = document.createElement('span');
                 labelRight.className = 'page-break-label';
                 labelRight.textContent = `${pageNum} ページ目 | 次は ${pageNum + 1} ページ目`;
@@ -2548,7 +2619,7 @@ function updatePageBreakGuides() {
                 line.appendChild(labelLeft);
                 line.appendChild(labelRight);
                 container.appendChild(line);
-                
+
                 pageNum++;
                 currentLineCount = 0;
             }
@@ -2563,22 +2634,22 @@ window.addEventListener('resize', throttle(() => { updatePageBreakGuides(); }, 3
 
 /* --- PDF（プレビュー・印刷）書き出し機能 --- */
 function exportPDF() {
-    updateTOC(); 
+    updateTOC();
     const title = titleInput.value || '無題のシナリオ';
     const layout = document.getElementById('export-layout-select').value;
     const fontFamily = document.getElementById('font-family-select').value;
     const lineHeight = document.getElementById('line-height-select').value;
     let fontCSS = fontFamily === 'sans-serif' ? "system-ui, -apple-system, sans-serif" :
-                  fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
-                  fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
-                  fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
-                  fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
-                  fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
-                  fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
-                  fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
-                  fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
-                  "system-ui, -apple-system, sans-serif";
-    
+        fontFamily === 'serif' ? 'Georgia, Cambria, "Times New Roman", Times, "YuMincho", "Hiragino Mincho ProN", serif' :
+            fontFamily === 'monospace' ? 'Consolas, Monaco, "Courier New", monospace' :
+                fontFamily === 'yu-gothic' ? '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif' :
+                    fontFamily === 'yu-mincho' ? '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif' :
+                        fontFamily === 'meiryo' ? '"Meiryo", "MS PGothic", sans-serif' :
+                            fontFamily === 'rounded-gothic' ? '"Hiragino Maru Gothic ProN", "Kosugi Maru", "HGMaruGothicMPRO", sans-serif' :
+                                fontFamily === 'ms-pgothic' ? '"MS PGothic", "MS UI Gothic", sans-serif' :
+                                    fontFamily === 'ms-pmincho' ? '"MS PMincho", serif' :
+                                        "system-ui, -apple-system, sans-serif";
+
     // ページ分割ロジック
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
@@ -2587,7 +2658,7 @@ function exportPDF() {
     let pagesHtml = '', currentPageContent = '', currentLineCount = 0, pageNum = 1;
     const limitInput = document.getElementById('page-line-limit');
     const MAX_LINES = limitInput ? (parseInt(limitInput.value) || 35) : 35;
-   
+
     const flushPage = () => {
         pagesHtml += `
             <div class="page">
@@ -2623,7 +2694,7 @@ function exportPDF() {
 
             const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
             const textLines = Math.ceil(text.length / (layout === '2' ? Math.ceil(charLimit / 2) : charLimit)) || 1;
-            
+
             const pbH1 = document.getElementById('export-page-break-h1');
             if (tag === 'H1' && pbH1 && pbH1.checked && typeof currentLineCount !== 'undefined' && currentLineCount > 0) {
                 if (typeof flushPage === 'function') {
@@ -2819,17 +2890,17 @@ function exportPDF() {
         for (let i = 0; i < pTags.length; i++) {
             let p = pTags[i];
             if (!p.parentNode) continue;
-            
+
             const isPEmpty = p.innerHTML.trim() === '' || p.innerHTML === '<br>' || p.querySelector('img, table, div');
             if (isPEmpty) {
                 if (p.innerHTML.trim() === '') p.innerHTML = '<br>';
                 continue;
             }
-            
+
             p.style.margin = '0';
-            
+
             let next = p.nextElementSibling;
-            
+
             while (next && (next.tagName === 'P' || (next.tagName === 'DIV' && !next.className))) {
                 const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
                 if (isNextEmpty) {
@@ -2838,7 +2909,7 @@ function exportPDF() {
                 }
                 p.innerHTML += '<br>' + next.innerHTML;
                 let toRemove = next;
-                
+
                 next = next.nextElementSibling;
                 toRemove.remove();
             }
@@ -2878,7 +2949,7 @@ function updateEditorWidth() {
     const limitInput = document.getElementById('page-char-limit');
     if (!editor || !limitInput) return;
     const maxChars = parseInt(limitInput.value) || 40;
-    
+
     // エディタのmax-widthを設定 (文字数 * 1em + 左右パディング 6rem)
     const wrapper = editor.parentElement;
     if (wrapper) {
@@ -2913,12 +2984,12 @@ function saveSnippets(snippets) {
 function renderSnippetSelector() {
     const selector = document.getElementById('snippet-selector');
     if (!selector) return;
-    
+
     selector.innerHTML = `
         <option value="">スニペット...</option>
         <option value="manage">⚙️ 管理...</option>
     `;
-    
+
     const snippets = getSnippets();
     snippets.forEach(snippet => {
         const opt = document.createElement('option');
@@ -2949,20 +3020,20 @@ function openSnippetManageModal() {
 function renderSnippetList() {
     const container = document.getElementById('snippet-list-container');
     if (!container) return;
-    
+
     const snippets = getSnippets();
     if (snippets.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-400 italic p-4 text-center">登録されたスニペットはありません</p>';
         return;
     }
-    
+
     container.innerHTML = '';
     snippets.forEach(snippet => {
         const item = document.createElement('div');
         item.className = "flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 shadow-sm gap-2";
-        
+
         const colorIndicator = `<span class="w-3 h-3 rounded-full inline-block" style="background-color: ${snippet.color || '#3b82f6'}"></span>`;
-        
+
         item.innerHTML = `
             <div class="flex items-center gap-2 overflow-hidden flex-1">
                 ${colorIndicator}
@@ -2983,7 +3054,7 @@ function showSnippetForm(isEdit = false) {
     document.getElementById('snippet-list-view').classList.add('hidden');
     document.getElementById('snippet-form-view').classList.remove('hidden');
     document.getElementById('snippet-form-view').classList.add('flex');
-    
+
     if (!isEdit) {
         document.getElementById('snippet-edit-id').value = '';
         document.getElementById('snippet-name-input').value = '';
@@ -3005,13 +3076,13 @@ function editSnippet(id) {
     const snippets = getSnippets();
     const snippet = snippets.find(s => s.id === id);
     if (!snippet) return;
-    
+
     document.getElementById('snippet-edit-id').value = snippet.id;
     document.getElementById('snippet-name-input').value = snippet.name;
     document.getElementById('snippet-label-input').value = snippet.label;
     document.getElementById('snippet-color-input').value = snippet.color || '#3b82f6';
     document.getElementById('snippet-content-input').value = snippet.content || '';
-    
+
     showSnippetForm(true);
 }
 
@@ -3031,12 +3102,12 @@ function saveSnippetForm() {
     const color = document.getElementById('snippet-color-input').value;
     const content = document.getElementById('snippet-content-input').value;
     const editId = document.getElementById('snippet-edit-id').value;
-    
+
     if (!name || !label) {
         alert('スニペット名と表示ラベルを入力してください。');
         return;
     }
-    
+
     const snippets = getSnippets();
     if (editId) {
         const index = snippets.findIndex(s => s.id === editId);
@@ -3047,7 +3118,7 @@ function saveSnippetForm() {
         const newId = 'snippet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         snippets.push({ id: newId, name, label, color, content });
     }
-    
+
     saveSnippets(snippets);
     hideSnippetForm();
     renderSnippetList();
@@ -3058,15 +3129,15 @@ function insertSnippet(id) {
     const snippets = getSnippets();
     const snippet = snippets.find(s => s.id === id);
     if (!snippet) return;
-    
+
     editor.focus();
     const selectedHtml = getSelectedHtmlAndRemove();
     const col = snippet.color || '#3b82f6';
-    
+
     const defaultContent = (snippet.content || "内容を入力...").replace(/\n/g, '<br>');
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(col, 0.4);
-    
+
     const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; break-inside: avoid; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
@@ -3089,10 +3160,10 @@ function renderAllMermaidCharts() {
     charts.forEach((chart, index) => {
         const code = chart.getAttribute('data-mermaid-code');
         if (!code) return;
-        
+
         // ユニークIDを生成
         const uniqueId = `mermaid-chart-${Date.now()}-${index}`;
-        
+
         // 既存のSVGレンダリング結果を破棄し、pre.mermaid要素を再構成する
         chart.innerHTML = `
             <pre class="mermaid" id="${uniqueId}">${code}</pre>
@@ -3108,7 +3179,7 @@ function renderAllMermaidCharts() {
             mermaid.run({
                 nodes: document.querySelectorAll('#editor .mermaid')
             });
-        } catch(e) {
+        } catch (e) {
             console.error("Mermaid.js レンダリングエラー", e);
         }
     }
@@ -3117,11 +3188,11 @@ function renderAllMermaidCharts() {
 // 新規作成用のフローチャートモーダルを開く
 function openFlowchartModal() {
     saveRange(); // 現在のカーソル位置を保存
-    
+
     document.getElementById('flowchart-edit-id').value = '';
     document.getElementById('flowchart-code-input').value = `graph TD\n  Start[開始] --> End[終了]`;
     document.getElementById('flowchart-save-btn').textContent = 'エディタに挿入';
-    
+
     openModal('flowchart-modal');
     updateFlowchartPreview();
 }
@@ -3130,7 +3201,7 @@ function openFlowchartModal() {
 function applyFlowchartTemplate(type) {
     const textarea = document.getElementById('flowchart-code-input');
     if (!textarea) return;
-    
+
     let code = '';
     if (type === 'simple') {
         code = `graph TD\n  Start[オープニング] --> Event1[事件発生]\n  Event1 --> Event2[探索開始]\n  Event2 --> Boss[決戦クライマックス]\n  Boss --> Ending[エンディング]`;
@@ -3139,7 +3210,7 @@ function applyFlowchartTemplate(type) {
     } else if (type === 'complex') {
         code = `graph TD\n  Start[オープニング] --> Event1[探索場所A]\n  Start --> Event2[探索場所B]\n  Event1 --> GetItem[フラグ鍵を入手]\n  GetItem & Event2 --> Boss[決戦]\n  Boss --> End[エンディング]`;
     }
-    
+
     textarea.value = code;
     updateFlowchartPreview();
 }
@@ -3153,7 +3224,7 @@ async function updateFlowchartPreview() {
         container.innerHTML = '<span class="text-slate-400">コードを入力してください</span>';
         return;
     }
-    
+
     const uniqueId = `mermaid-preview-${Date.now()}`;
     try {
         if (typeof mermaid !== 'undefined') {
@@ -3177,7 +3248,7 @@ function saveFlowchart() {
     const code = document.getElementById('flowchart-code-input').value.trim();
     const editId = document.getElementById('flowchart-edit-id').value;
     if (!code) return;
-    
+
     if (editId) {
         // 編集モードでの更新
         const target = document.getElementById(editId);
@@ -3195,11 +3266,11 @@ function saveFlowchart() {
         // 新規作成での挿入
         editor.focus();
         restoreRange();
-        
+
         const targetId = `flowchart-box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const uniqueId = `mermaid-chart-${Date.now()}`;
         const escapedCode = code.replace(/"/g, '&quot;');
-        
+
         const html = `
             <div id="${targetId}" class="box-flowchart" contenteditable="false" data-mermaid-code="${escapedCode}">
                 <pre class="mermaid" id="${uniqueId}">${code}</pre>
@@ -3211,9 +3282,9 @@ function saveFlowchart() {
         `;
         document.execCommand('insertHTML', false, html);
     }
-    
+
     closeModal('flowchart-modal');
-    
+
     // レンダリングを即時リフレッシュ
     setTimeout(() => {
         renderAllMermaidCharts();
@@ -3225,14 +3296,14 @@ function saveFlowchart() {
 function editFlowchart(el) {
     if (!el) return;
     if (!el.id) el.id = `flowchart-box-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     saveRange(); // 現在のカーソル位置をバックアップ
-    
+
     document.getElementById('flowchart-edit-id').value = el.id;
     const code = el.getAttribute('data-mermaid-code') || '';
     document.getElementById('flowchart-code-input').value = code;
     document.getElementById('flowchart-save-btn').textContent = '更新';
-    
+
     openModal('flowchart-modal');
     updateFlowchartPreview();
 }
@@ -3242,11 +3313,11 @@ function editFlowchart(el) {
 // キャラクターシートの新規挿入
 function insertCharacterSheet() {
     editor.focus();
-    
+
     const uniqueId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     const sheetId = `char-sheet-${uniqueId}`;
     const skillContainerId = `skill-container-${uniqueId}`;
-    
+
     const html = `
         <div class="box-char-sheet" contenteditable="false" id="${sheetId}">
             <div class="char-sheet-header bg-slate-100 p-3 rounded-t-lg border border-slate-200 border-b-0 flex justify-between items-center">
@@ -3362,7 +3433,7 @@ function insertCharacterSheet() {
         </div>
         <p><br></p>
     `;
-    
+
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -3373,10 +3444,10 @@ function addSkillToSheet(sheetId) {
     if (!sheet) return;
     const container = sheet.querySelector('#skill-container-' + sheetId.replace('char-sheet-', ''));
     if (!container) return;
-    
+
     const div = document.createElement('div');
     div.className = "char-skill-row flex items-center gap-1 border border-slate-100 rounded px-1.5 py-0.5 bg-slate-50";
-    
+
     const inputName = document.createElement('input');
     inputName.type = 'text';
     inputName.placeholder = '技能名';
@@ -3420,7 +3491,7 @@ function addSkillToSheet(sheetId) {
 function copyToCcfolia(sheetId) {
     const sheet = document.getElementById(sheetId);
     if (!sheet) return;
-    
+
     const inputs = sheet.querySelectorAll('.char-sheet-body .char-input');
     const name = inputs[0].value || '無題の探索者';
     const job = inputs[1].value || '';
@@ -3430,9 +3501,9 @@ function copyToCcfolia(sheetId) {
     const weight = inputs[5].value || '';
     const birthday = inputs[6].value || '';
     const color = inputs[7].value || '';
-    
+
     const memo = `職業: ${job}\n年齢: ${age} / 性別: ${gender}\n身長: ${height} / 体重: ${weight}\n誕生日: ${birthday}\n髪/目の色: ${color}`;
-    
+
     const stats = sheet.querySelectorAll('.char-stat-input');
     const str = (stats[0].value || stats[0].innerText || '0').trim();
     const con = (stats[1].value || stats[1].innerText || '0').trim();
@@ -3443,17 +3514,17 @@ function copyToCcfolia(sheetId) {
     const int = (stats[6].value || stats[6].innerText || '0').trim();
     const edu = (stats[7].value || stats[7].innerText || '0').trim();
     const san = (stats[8].value || stats[8].innerText || '0').trim();
-    
+
     // HP, MP の自動算出 (HP: (CON+SIZ)/2 切り上げ, MP: POW)
     const hp = Math.ceil((parseInt(con) + parseInt(siz)) / 2) || 0;
     const mp = parseInt(pow) || 0;
-    
+
     const skillNames = sheet.querySelectorAll('.char-skill-name');
     const skillValues = sheet.querySelectorAll('.char-skill-value');
-    
+
     const skills = [];
     const commands = [];
-    
+
     // 基本ステータスロール
     commands.push(`CCB<=${parseInt(san) || 0} 【SAN値チェック】`);
     commands.push(`CCB<=${(parseInt(str) || 0) * 5} 【STR×5】`);
@@ -3463,7 +3534,7 @@ function copyToCcfolia(sheetId) {
     commands.push(`CCB<=${(parseInt(app) || 0) * 5} 【APP×5】`);
     commands.push(`CCB<=${(parseInt(int) || 0) * 5} 【アイデア（INT×5）】`);
     commands.push(`CCB<=${(parseInt(edu) || 0) * 5} 【知識（EDU×5）】`);
-    
+
     // 技能ロールの追加
     skillNames.forEach((sNameEl, i) => {
         const sName = sNameEl.value.trim();
@@ -3473,7 +3544,7 @@ function copyToCcfolia(sheetId) {
             commands.push(`CCB<=${parseInt(sVal) || 0} 【${sName}】`);
         }
     });
-    
+
     // ココフォリア互換JSONオブジェクト
     const ccfoliaData = {
         kind: "character",
@@ -3504,7 +3575,7 @@ function copyToCcfolia(sheetId) {
             commands: commands.join('\n')
         }
     };
-    
+
     copyTextToClipboard(JSON.stringify(ccfoliaData, null, 2)).then(() => {
         showToast("ココフォリア用データをコピーしました！");
     }).catch(err => {
@@ -3558,7 +3629,7 @@ function handleCharImageUpload(input) {
             const container = input.closest('.char-image-container');
             const preview = container.querySelector('.char-image-preview');
             const placeholder = container.querySelector('.char-image-placeholder');
-            
+
             if (preview && placeholder) {
                 preview.src = dataUrl;
                 preview.setAttribute('src', dataUrl); // HTML上に固定して保存可能にする
@@ -3609,26 +3680,26 @@ function updateFloatingMenuPosition() {
     if (targetNode && targetNode.tagName === 'P' && targetNode.parentNode === editor) {
         const text = targetNode.textContent.trim();
         const hasImgOrTable = targetNode.querySelector('img, table, div, iframe');
-        
+
         // 空の段落の場合
         if (text === '' && !hasImgOrTable) {
             currentFloatingNode = targetNode;
-            
+
             const editorRect = editor.getBoundingClientRect();
             const nodeRect = targetNode.getBoundingClientRect();
-            
+
             const container = btn.parentElement;
             const containerRect = container.getBoundingClientRect();
-            
+
             const topOffset = nodeRect.top - containerRect.top;
             const leftOffset = editorRect.left - containerRect.left - 16; // エディタの左端より少し左
-            
+
             btn.style.top = `${topOffset}px`;
             btn.style.left = `${leftOffset}px`;
-            
+
             btn.classList.remove('hidden');
             btn.classList.add('flex');
-            
+
             if (!menu.classList.contains('hidden')) {
                 menu.style.top = `${topOffset}px`;
                 menu.style.left = `${leftOffset + 36}px`;
@@ -3636,7 +3707,7 @@ function updateFloatingMenuPosition() {
             return;
         }
     }
-    
+
     hideFloatingMenuUI(btn, menu);
 }
 
@@ -3660,7 +3731,7 @@ function toggleFloatingMenu() {
     if (menu.classList.contains('hidden')) {
         menu.classList.remove('hidden');
         menu.classList.add('flex');
-        
+
         const top = parseInt(btn.style.top || 0);
         const left = parseInt(btn.style.left || 0);
         menu.style.top = `${top}px`;
@@ -3677,7 +3748,7 @@ function handleFloatingAction(action) {
         menu.classList.add('hidden');
         menu.classList.remove('flex');
     }
-    
+
     if (currentFloatingNode) {
         const selection = window.getSelection();
         const range = document.createRange();
@@ -3686,8 +3757,8 @@ function handleFloatingAction(action) {
         selection.removeAllRanges();
         selection.addRange(range);
     }
-    
-    switch(action) {
+
+    switch (action) {
         case 'image':
             saveRange();
             document.getElementById('image-upload').click();
@@ -3735,7 +3806,7 @@ document.addEventListener('click', (e) => {
     const btn = document.getElementById('floating-plus-btn');
     const menu = document.getElementById('floating-menu');
     if (!btn || !menu) return;
-    
+
     if (!btn.contains(e.target) && !menu.contains(e.target)) {
         if (!menu.classList.contains('hidden')) {
             menu.classList.add('hidden');
@@ -3760,14 +3831,14 @@ function saveColorToPalette(color) {
     if (!color) return;
     const paletteStr = localStorage.getItem('weby_recent_colors');
     let colors = paletteStr ? JSON.parse(paletteStr) : [];
-    
+
     colors = colors.filter(c => c.toLowerCase() !== color.toLowerCase());
     colors.unshift(color);
-    
+
     if (colors.length > 20) {
         colors = colors.slice(0, 20);
     }
-    
+
     localStorage.setItem('weby_recent_colors', JSON.stringify(colors));
     updateColorPaletteUI(colors);
 }
@@ -3830,7 +3901,7 @@ function playBeep() {
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.3);
-    } catch(e) {
+    } catch (e) {
         console.log("Audio API not supported");
     }
 }
@@ -3848,7 +3919,7 @@ function startPomodoro() {
     isPomodoroRunning = true;
     document.getElementById('pomodoro-start-btn').classList.add('hidden');
     document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
-    
+
     pomodoroTimer = setInterval(() => {
         pomodoroTimeRemaining--;
         if (pomodoroTimeRemaining <= 0) {
@@ -3937,7 +4008,7 @@ document.addEventListener('dragstart', (e) => {
     if (box && box.getAttribute('draggable') === 'true') {
         currentDraggedBox = box;
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', 'box'); 
+        e.dataTransfer.setData('text/plain', 'box');
         setTimeout(() => box.style.opacity = '0.5', 0);
     }
 });
@@ -3961,7 +4032,7 @@ if (editorArea) {
     editorArea.addEventListener('drop', (e) => {
         if (currentDraggedBox) {
             e.preventDefault();
-            
+
             let range;
             if (document.caretRangeFromPoint) {
                 range = document.caretRangeFromPoint(e.clientX, e.clientY);
@@ -3969,27 +4040,27 @@ if (editorArea) {
                 range = document.createRange();
                 range.setStart(e.rangeParent, e.rangeOffset);
             }
-            
+
             if (range) {
                 // 自分自身の中へのドロップを防止
                 let node = range.startContainer;
-                while(node) {
+                while (node) {
                     if (node === currentDraggedBox) return;
                     node = node.parentNode;
                 }
-                
+
                 // ドロップ位置に挿入
                 range.insertNode(currentDraggedBox);
-                
+
                 // 挿入後に改行（空パラグラフ）を挟むことで、続けて文字を入力しやすくする
                 const p = document.createElement('p');
                 p.innerHTML = '<br>';
                 currentDraggedBox.parentNode.insertBefore(p, currentDraggedBox.nextSibling);
-                
-                updateTOC(); 
+
+                updateTOC();
                 autoUpdateUI();
             }
-            
+
             currentDraggedBox.style.opacity = '1';
             currentDraggedBox = null;
         }
@@ -4046,8 +4117,8 @@ function extractHoName(text) {
     if (!text) return null;
     const firstLine = text.split('\n')[0] || text;
     const m = firstLine.match(/(?:【|■|[\(\{\[（『]?)\s*(HO\s*[\d０-９A-Za-z]+)\s*(?:[：:\s】\)\}\]）』]|$)/i) ||
-              firstLine.match(/\b(HO\s*[\d０-９A-Za-z]+)\b/i) ||
-              text.match(/(?:【|■)\s*[\(\{（]?\s*(HO\s*[\d０-９A-Za-z]+)/i);
+        firstLine.match(/\b(HO\s*[\d０-９A-Za-z]+)\b/i) ||
+        text.match(/(?:【|■)\s*[\(\{（]?\s*(HO\s*[\d０-９A-Za-z]+)/i);
     if (!m) return null;
     let hoRaw = m[1].replace(/\s+/g, '');
     hoRaw = hoRaw.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
@@ -4586,7 +4657,7 @@ function generatePecData(settings) {
         const tagName = el.tagName.toUpperCase();
         const isHTag = /^H[1-6]$/.test(tagName);
         const isDivH = el.classList.contains('h7') || el.classList.contains('div_h7') ||
-                       el.classList.contains('h8') || el.classList.contains('div_h8');
+            el.classList.contains('h8') || el.classList.contains('div_h8');
 
         if (isHTag || isDivH) {
             flushParagraphBuffer();
