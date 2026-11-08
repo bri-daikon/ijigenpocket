@@ -2362,6 +2362,33 @@ video {
     #text-cards-view-container.hidden {
       display: none !important;
     }
+
+    /* 中央ツールバーの1行折りたたみ（コンパクト）スタイル */
+    #center-header-inner.is-compact {
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: nowrap !important;
+      gap: 0.5rem !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+    }
+    #center-header-inner.is-compact #center-header-tabs-row {
+      flex-shrink: 0 !important;
+      gap: 0.5rem !important;
+    }
+    #center-header-inner.is-compact #card-toolbar {
+      display: flex !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      border-top: none !important;
+      flex-wrap: nowrap !important;
+      gap: 0.375rem !important;
+      flex-shrink: 0 !important;
+    }
+    #center-header-inner.is-compact .compact-hide {
+      display: none !important;
+    }
     #text-list, .split-pane-list {
       min-height: 0 !important;
       flex: 1 1 0% !important;
@@ -4018,7 +4045,7 @@ video {
 <body class="bg-slate-50 text-slate-800 h-screen h-[100dvh] flex flex-col overflow-hidden">
 
   <!-- ヘッダー -->
-  <header id="main-header" class="bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md py-2.5 sm:py-3 px-3 sm:px-6 flex-shrink-0 transition-all">
+  <header class="bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md py-2.5 sm:py-3 px-3 sm:px-6 flex-shrink-0">
     <div class="max-w-[1800px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
       <div class="flex items-center justify-between w-full sm:w-auto gap-3">
         <div class="flex items-center gap-2.5">
@@ -4079,17 +4106,6 @@ video {
       </div>
     </div>
   </header>
-
-  <!-- 上部メニュー再表示バー（メニュー折りたたみ時に最上部に薄く表示） -->
-  <div id="top-menu-reopen-bar" onclick="toggleTopMenu()"
-    class="hidden bg-gradient-to-r from-teal-700 to-cyan-800 text-white text-xs px-4 py-1.5 flex items-center justify-between shadow-md cursor-pointer hover:brightness-110 transition-all select-none z-30">
-    <div class="flex items-center gap-2 font-bold">
-      <i data-lucide="chevron-down" class="w-4 h-4 text-teal-300"></i>
-      <span>上部メニューを開く</span>
-      <span class="text-[10px] text-teal-200 font-normal hidden sm:inline">（クリックするとヘッダーとメニューが再表示されます）</span>
-    </div>
-    <span class="text-[10px] bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition-colors">表示</span>
-  </div>
 
   <!-- 左ペイン用モバイル/細画面バックドロップ（暗幕） -->
   <div id="left-pane-backdrop" onclick="toggleLeftPane(false)"
@@ -4301,196 +4317,186 @@ video {
     <!-- 中央ペイン：テキストカードリスト / 探索者ビューア -->
     <div id="center-pane"
       class="flex-1 min-h-0 flex flex-col bg-white p-2.5 sm:p-4 lg:p-5 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="flex flex-col border-b border-slate-100 pb-3 mb-3 flex-shrink-0">
-        <div class="flex justify-between items-center gap-2 flex-wrap sm:flex-nowrap">
-          <div class="flex items-center gap-2 overflow-x-auto max-w-full pb-1 sm:pb-0">
-            <!-- 中央ペイン表示切り替えタブ -->
-            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 flex-shrink-0">
-              <button id="tab-switch-text" onclick="switchCentralTab('text')"
-                class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md bg-white text-teal-700 shadow-sm transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-                <i data-lucide="align-left" class="w-3.5 h-3.5"></i>
-                抽出テキスト
-                <span id="items-count"
-                  class="text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0件</span>
+      <div id="center-header-area" class="border-b border-slate-100 pb-2.5 mb-2.5 flex-shrink-0 transition-all">
+        <div id="center-header-inner" class="flex flex-col gap-2 transition-all">
+          <div id="center-header-tabs-row" class="flex justify-between items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div class="flex items-center gap-2 overflow-x-auto max-w-full pb-1 sm:pb-0 flex-shrink-0">
+              <!-- 中央ペイン表示切り替えタブ -->
+              <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 flex-shrink-0">
+                <button id="tab-switch-text" onclick="switchCentralTab('text')"
+                  class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md bg-white text-teal-700 shadow-sm transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                  <i data-lucide="align-left" class="w-3.5 h-3.5"></i>
+                  抽出テキスト
+                  <span id="items-count"
+                    class="text-[10px] bg-teal-50 text-teal-700 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0件</span>
+                </button>
+                <button id="tab-switch-chars" onclick="switchCentralTab('chars')"
+                  class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                  <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                  探索者ビューア
+                  <span id="chars-count"
+                    class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0人</span>
+                </button>
+                <button id="tab-switch-npc" onclick="switchCentralTab('npc')"
+                  class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                  <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                  NPCビューア
+                  <span id="npc-count"
+                    class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0人</span>
+                </button>
+                <button id="tab-switch-report" onclick="switchCentralTab('report')"
+                  class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                  <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+                  卓報告作成
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+              <!-- テキストタブ用ズーム機能 -->
+              <div id="text-zoom-controls"
+                class="compact-hide flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200"
+                title="カードの表示サイズ">
+                <i data-lucide="zoom-out" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600"
+                  onclick="changeCardZoom(-0.1)"></i>
+                <span id="card-zoom-level" class="text-[10px] font-bold w-8 text-center select-none">100%</span>
+                <i data-lucide="zoom-in" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600"
+                  onclick="changeCardZoom(0.1)"></i>
+              </div>
+              <!-- 画面縦分割コントロール（秘匿処理や並列作業向け） -->
+              <div id="split-screen-controls"
+                class="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200"
+                title="カード一覧の縦分割（複数列表示）">
+                <i data-lucide="columns" class="w-3.5 h-3.5 text-teal-600"></i>
+                <span class="text-xs font-bold text-slate-700 hidden sm:inline">分割:</span>
+                <button type="button" onclick="changeSplitCount(-1)" class="p-0.5 hover:bg-slate-200 text-slate-600 hover:text-rose-600 rounded transition-colors" title="列を1つ減らす">
+                  <i data-lucide="minus" class="w-3 h-3"></i>
+                </button>
+                <span id="split-count-display" class="text-xs font-bold text-teal-700 px-1 min-w-[20px] text-center select-none">1列</span>
+                <button type="button" onclick="changeSplitCount(1)" class="p-0.5 hover:bg-slate-200 text-slate-600 hover:text-teal-700 rounded transition-colors" title="列を1つ追加">
+                  <i data-lucide="plus" class="w-3 h-3"></i>
+                </button>
+                <select id="split-count-select" onchange="setSplitCount(Number(this.value))" class="text-[11px] font-bold bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-700 outline-none hover:border-teal-400 cursor-pointer ml-0.5" title="分割列数を直接指定">
+                  <option value="1">1列</option>
+                  <option value="2">2列</option>
+                  <option value="3">3列</option>
+                  <option value="4">4列</option>
+                  <option value="5">5列</option>
+                  <option value="6">6列</option>
+                </select>
+                <button id="btn-reset-split" type="button" onclick="resetSplitPanes()"
+                  class="hidden ml-1 px-2 py-0.5 text-[11px] font-bold bg-teal-600 hover:bg-teal-700 text-white rounded transition-all shadow-sm flex items-center gap-1 whitespace-nowrap"
+                  title="すべての分割を解除して1つにまとめる（1列に戻す）">
+                  <i data-lucide="maximize-2" class="w-3 h-3"></i>
+                  <span>1つにまとめる</span>
+                </button>
+              </div>
+              <!-- ツールバー折りたたみ/展開トグル（1行 ⇔ 2行） -->
+              <button id="btn-card-toolbar-toggle" onclick="toggleCardToolbar()"
+                class="text-slate-500 hover:text-teal-700 transition-colors p-1 bg-slate-50 hover:bg-teal-50 rounded-lg border border-slate-200 hover:border-teal-300 shadow-sm flex items-center gap-1"
+                title="ツールバーを1行に折りたたむ/展開する">
+                <i id="icon-chevron-up" data-lucide="chevron-up" class="w-4 h-4"></i>
+                <i id="icon-chevron-down" data-lucide="chevron-down" class="w-4 h-4 hidden text-teal-600"></i>
+                <span id="text-toolbar-toggle" class="text-[10px] font-bold hidden sm:inline text-slate-600">1行に</span>
               </button>
-              <button id="tab-switch-chars" onclick="switchCentralTab('chars')"
-                class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-                <i data-lucide="users" class="w-3.5 h-3.5"></i>
-                探索者ビューア
-                <span id="chars-count"
-                  class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0人</span>
+              <!-- 左の柱（PDF/設定）開閉ボタン -->
+              <button id="btn-toggle-left" onclick="toggleLeftPane()"
+                class="compact-hide text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all pl-2 sm:pl-3 border-l border-slate-200 h-6"
+                title="左の柱（PDF・目次・設定）の表示/非表示">
+                <i data-lucide="panel-left-close" class="w-3.5 h-3.5"></i>
+                <span id="btn-toggle-left-text" class="hidden sm:inline">左の柱を隠す</span>
               </button>
-              <button id="tab-switch-npc" onclick="switchCentralTab('npc')"
-                class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-                <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                NPCビューア
-                <span id="npc-count"
-                  class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-bold ml-0.5 sm:ml-1">0人</span>
-              </button>
-              <button id="tab-switch-report" onclick="switchCentralTab('report')"
-                class="px-2.5 sm:px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-                <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
-                卓報告作成
+              <!-- 右ペイン開閉ボタン -->
+              <button id="btn-toggle-right" onclick="toggleRightPane()"
+                class="compact-hide text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all pl-2 sm:pl-3 border-l border-slate-200 h-6"
+                title="右ツール設定パネルの表示/非表示">
+                <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+                <span id="btn-toggle-right-text" class="hidden sm:inline">ツールを隠す</span>
               </button>
             </div>
           </div>
-          <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <!-- テキストタブ用ズーム機能 -->
-            <div id="text-zoom-controls"
-              class="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200"
-              title="カードの表示サイズ">
-              <i data-lucide="zoom-out" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600"
-                onclick="changeCardZoom(-0.1)"></i>
-              <span id="card-zoom-level" class="text-[10px] font-bold w-8 text-center select-none">100%</span>
-              <i data-lucide="zoom-in" class="w-3.5 h-3.5 cursor-pointer hover:text-teal-600"
-                onclick="changeCardZoom(0.1)"></i>
-            </div>
-            <!-- 画面縦分割コントロール（秘匿処理や並列作業向け） -->
-            <div id="split-screen-controls"
-              class="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200"
-              title="カード一覧の縦分割（複数列表示）">
-              <i data-lucide="columns" class="w-3.5 h-3.5 text-teal-600"></i>
-              <span class="text-xs font-bold text-slate-700 hidden sm:inline">分割:</span>
-              <button type="button" onclick="changeSplitCount(-1)" class="p-0.5 hover:bg-slate-200 text-slate-600 hover:text-rose-600 rounded transition-colors" title="列を1つ減らす">
-                <i data-lucide="minus" class="w-3 h-3"></i>
+
+          <!-- テキストカード専用ツールバー -->
+          <div id="card-toolbar"
+            class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 transition-all duration-300">
+
+            <!-- モード切替 -->
+            <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1 flex-shrink-0">
+              <button id="btn-mode-edit" onclick="setGlobalMode('edit')"
+                class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1">
+                <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 編集/設定
               </button>
-              <span id="split-count-display" class="text-xs font-bold text-teal-700 px-1 min-w-[20px] text-center select-none">1列</span>
-              <button type="button" onclick="changeSplitCount(1)" class="p-0.5 hover:bg-slate-200 text-slate-600 hover:text-teal-700 rounded transition-colors" title="列を1つ追加">
-                <i data-lucide="plus" class="w-3 h-3"></i>
-              </button>
-              <select id="split-count-select" onchange="setSplitCount(Number(this.value))" class="text-[11px] font-bold bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-700 outline-none hover:border-teal-400 cursor-pointer ml-0.5" title="分割列数を直接指定">
-                <option value="1">1列</option>
-                <option value="2">2列</option>
-                <option value="3">3列</option>
-                <option value="4">4列</option>
-                <option value="5">5列</option>
-                <option value="6">6列</option>
-              </select>
-              <button id="btn-reset-split" type="button" onclick="resetSplitPanes()"
-                class="hidden ml-1 px-2 py-0.5 text-[11px] font-bold bg-teal-600 hover:bg-teal-700 text-white rounded transition-all shadow-sm flex items-center gap-1 whitespace-nowrap"
-                title="すべての分割を解除して1つにまとめる（1列に戻す）">
-                <i data-lucide="maximize-2" class="w-3 h-3"></i>
-                <span>1つにまとめる</span>
+              <button id="btn-mode-copy" onclick="setGlobalMode('copy')"
+                class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
               </button>
             </div>
-            <!-- 折りたたみトグル -->
-            <button id="btn-card-toolbar-toggle" onclick="toggleCardToolbar()"
-              class="text-slate-400 hover:text-teal-600 transition-colors p-1 bg-slate-50 rounded-lg border border-slate-200"
-              title="ツールバーの開閉">
-              <i id="icon-chevron-up" data-lucide="chevron-up" class="w-4 h-4"></i>
-              <i id="icon-chevron-down" data-lucide="chevron-down" class="w-4 h-4 hidden"></i>
+            <button onclick="clearAllCopied()" title="すべてのコピー済みマークを消去"
+              class="compact-hide text-xs text-amber-500 hover:text-amber-700 font-bold flex items-center gap-1 transition-all ml-1">
+              <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+              一括解除
             </button>
-            <!-- 左の柱（PDF/設定）開閉ボタン -->
-            <button id="btn-toggle-left" onclick="toggleLeftPane()"
-              class="text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all pl-2 sm:pl-3 border-l border-slate-200 h-6"
-              title="左の柱（PDF・目次・設定）の表示/非表示">
-              <i data-lucide="panel-left-close" class="w-3.5 h-3.5"></i>
-              <span id="btn-toggle-left-text" class="hidden sm:inline">左の柱を隠す</span>
+
+            <!-- ドラッグ動作切替 -->
+            <div class="compact-hide flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1 ml-2" title="カードをドラッグした時の動作">
+              <button id="btn-drag-move" onclick="setDragMode('move')"
+                class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1">
+                <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i> 移動
+              </button>
+              <button id="btn-drag-merge" onclick="setDragMode('merge')"
+                class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
+                <i data-lucide="combine" class="w-3.5 h-3.5"></i> 結合
+              </button>
+            </div>
+
+            <!-- シーン一覧ボタン -->
+            <button onclick="openSceneExportModal()" title="カード内の /scene シーン項目を検出して一覧表示・コピー"
+              class="compact-hide text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 border border-indigo-200 px-2.5 py-1 rounded-md font-bold flex items-center gap-1.5 transition-all shadow-sm">
+              <i data-lucide="clapperboard" class="w-3.5 h-3.5 text-indigo-600"></i>
+              シーン一覧
             </button>
-            <!-- 右ペイン開閉ボタン -->
-            <button id="btn-toggle-right" onclick="toggleRightPane()"
-              class="text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all pl-2 sm:pl-3 border-l border-slate-200 h-6"
-              title="右ツール設定パネルの表示/非表示">
-              <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
-              <span id="btn-toggle-right-text" class="hidden sm:inline">ツールを隠す</span>
+
+            <!-- 保存・読み込みボタン -->
+            <button onclick="downloadProjectFile()" title="編集データを .pec ファイルとして保存"
+              class="compact-hide text-xs text-teal-600 hover:text-teal-800 font-bold flex items-center gap-1 transition-all">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              保存
             </button>
-            <!-- 上部メニュー開閉ボタン -->
-            <button id="btn-toggle-header" type="button" onclick="toggleTopMenu()"
-              class="text-xs text-slate-500 hover:text-teal-600 font-bold flex items-center gap-1 transition-all pl-2 sm:pl-3 border-l border-slate-200 h-6"
-              title="上部ヘッダーメニューの表示/非表示（カード一覧を広く使う）">
-              <i id="icon-toggle-header" data-lucide="panel-top-close" class="w-3.5 h-3.5"></i>
-              <span id="btn-toggle-header-text" class="hidden sm:inline">メニューを隠す</span>
+            <label title=".pec ファイルから編集データを読み込む"
+              class="compact-hide text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 cursor-pointer transition-all">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              読込
+              <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
+            </label>
+
+            <!-- 検索項目 & 発言者フィルター -->
+            <div class="flex items-center gap-1.5 ml-auto flex-shrink-0">
+              <div class="flex items-center bg-white border border-purple-300 rounded-md px-1.5 py-1 shadow-sm hover:border-purple-400 transition-colors" title="発言者でカードを絞り込み">
+                <i data-lucide="user" class="w-3.5 h-3.5 text-purple-600 mr-1 flex-shrink-0"></i>
+                <select id="card-speaker-filter" onchange="handleSpeakerFilterChange(this.value)" class="bg-transparent text-xs outline-none text-slate-700 max-w-[120px] cursor-pointer">
+                  <option value="">すべての発言者</option>
+                </select>
+              </div>
+              <div class="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1 shadow-sm hover:border-teal-400 transition-colors">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5 flex-shrink-0"></i>
+                <input type="text" id="card-search-input" placeholder="本文・発言者検索..."
+                  class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-36 transition-all"
+                  oninput="handleSearchInput(this.value)">
+                <button id="btn-clear-search"
+                  onclick="clearCardSearch()"
+                  class="hidden text-slate-400 hover:text-rose-500 ml-1 outline-none flex-shrink-0 transition-colors"
+                  title="検索をクリア">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <button onclick="clearText()"
+              class="compact-hide text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全クリア
             </button>
           </div>
         </div>
-
-        <!-- テキストカード専用ツールバー -->
-        <div id="card-toolbar"
-          class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-50 transition-all duration-300">
-
-          <!-- モード切替 -->
-          <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1">
-            <button id="btn-mode-edit" onclick="setGlobalMode('edit')"
-              class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1">
-              <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 編集/設定
-            </button>
-            <button id="btn-mode-copy" onclick="setGlobalMode('copy')"
-              class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
-            </button>
-          </div>
-          <!-- コピーモード用 上のメニュー開閉ボタン -->
-          <button id="btn-copy-mode-menu" type="button" onclick="toggleTopMenu()"
-            class="text-xs font-bold px-2 py-1 rounded-md border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-700 transition-all flex items-center gap-1 shadow-sm ml-0.5"
-            title="上のメニュー（ヘッダー）を閉じてカード一覧を広く使えます。クリックで開閉できます。">
-            <i id="icon-copy-mode-menu" data-lucide="panel-top-close" class="w-3.5 h-3.5"></i>
-            <span id="text-copy-mode-menu">メニューを閉じる</span>
-          </button>
-          <button onclick="clearAllCopied()" title="すべてのコピー済みマークを消去"
-            class="text-xs text-amber-500 hover:text-amber-700 font-bold flex items-center gap-1 transition-all ml-1">
-            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-            一括解除
-          </button>
-
-          <!-- ドラッグ動作切替 -->
-          <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 mx-1 ml-2" title="カードをドラッグした時の動作">
-            <button id="btn-drag-move" onclick="setDragMode('move')"
-              class="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1">
-              <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i> 移動
-            </button>
-            <button id="btn-drag-merge" onclick="setDragMode('merge')"
-              class="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1">
-              <i data-lucide="combine" class="w-3.5 h-3.5"></i> 結合
-            </button>
-          </div>
-
-          <!-- シーン一覧ボタン -->
-          <button onclick="openSceneExportModal()" title="カード内の /scene シーン項目を検出して一覧表示・コピー"
-            class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 border border-indigo-200 px-2.5 py-1 rounded-md font-bold flex items-center gap-1.5 transition-all shadow-sm">
-            <i data-lucide="clapperboard" class="w-3.5 h-3.5 text-indigo-600"></i>
-            シーン一覧
-          </button>
-
-          <!-- 保存・読み込みボタン -->
-          <button onclick="downloadProjectFile()" title="編集データを .pec ファイルとして保存"
-            class="text-xs text-teal-600 hover:text-teal-800 font-bold flex items-center gap-1 transition-all">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            保存
-          </button>
-          <label title=".pec ファイルから編集データを読み込む"
-            class="text-xs text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 cursor-pointer transition-all">
-            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-            読込
-            <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
-          </label>
-
-          <!-- 検索項目 & 発言者フィルター -->
-          <div class="flex items-center gap-1.5 ml-auto">
-            <div class="flex items-center bg-white border border-purple-300 rounded-md px-1.5 py-1 shadow-sm hover:border-purple-400 transition-colors" title="発言者でカードを絞り込み">
-              <i data-lucide="user" class="w-3.5 h-3.5 text-purple-600 mr-1 flex-shrink-0"></i>
-              <select id="card-speaker-filter" onchange="handleSpeakerFilterChange(this.value)" class="bg-transparent text-xs outline-none text-slate-700 max-w-[120px] cursor-pointer">
-                <option value="">すべての発言者</option>
-              </select>
-            </div>
-            <div class="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1 shadow-sm hover:border-teal-400 transition-colors">
-              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5 flex-shrink-0"></i>
-              <input type="text" id="card-search-input" placeholder="本文・発言者検索..."
-                class="bg-transparent text-xs outline-none text-slate-700 w-24 focus:w-36 transition-all"
-                oninput="handleSearchInput(this.value)">
-              <button id="btn-clear-search"
-                onclick="clearCardSearch()"
-                class="hidden text-slate-400 hover:text-rose-500 ml-1 outline-none flex-shrink-0 transition-colors"
-                title="検索をクリア">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <button onclick="clearText()"
-            class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全クリア
-          </button>
-        </div>
+      </div>
 
         <!-- 探索者ビューア専用ツールバー -->
         <div id="chars-toolbar"
@@ -5472,7 +5478,7 @@ window.addEventListener("beforeunload",function(e){
     return e.returnValue;
   }
 });
-let rawTextBlocks=[];let processedItems=[];let splitMode="paragraph";let currentFileName="";let pdfDoc=null;let currentPreviewPage=1;let previewScale=.55;let currentRenderTask=null;let pdfOutline=[];let isCardToolbarOpen=true;let isTopMenuOpen=localStorage.getItem("pdf_tool_top_menu_open")!=="false";function toggleTopMenu(forceState){if(typeof forceState==="boolean"){isTopMenuOpen=forceState}else{isTopMenuOpen=!isTopMenuOpen}localStorage.setItem("pdf_tool_top_menu_open",isTopMenuOpen?"true":"false");const mainHeader=document.getElementById("main-header");const reopenBar=document.getElementById("top-menu-reopen-bar");const toggleBtnText=document.getElementById("btn-toggle-header-text");const toggleBtnIcon=document.getElementById("icon-toggle-header");const copyModeBtn=document.getElementById("btn-copy-mode-menu");const copyModeBtnText=document.getElementById("text-copy-mode-menu");const copyModeBtnIcon=document.getElementById("icon-copy-mode-menu");if(mainHeader){if(isTopMenuOpen){mainHeader.classList.remove("hidden")}else{mainHeader.classList.add("hidden")}}if(reopenBar){if(!isTopMenuOpen){reopenBar.classList.remove("hidden")}else{reopenBar.classList.add("hidden")}}if(toggleBtnText){toggleBtnText.textContent=isTopMenuOpen?"メニューを隠す":"メニューを表示"}if(toggleBtnIcon){toggleBtnIcon.setAttribute("data-lucide",isTopMenuOpen?"panel-top-close":"panel-top-open")}if(copyModeBtnText){copyModeBtnText.textContent=isTopMenuOpen?"メニューを閉じる":"メニューを開く"}if(copyModeBtnIcon){copyModeBtnIcon.setAttribute("data-lucide",isTopMenuOpen?"panel-top-close":"panel-top-open")}if(copyModeBtn){if(!isTopMenuOpen){copyModeBtn.className="text-xs font-bold px-2 py-1 rounded-md border border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all flex items-center gap-1 shadow-sm ml-0.5"}else{copyModeBtn.className="text-xs font-bold px-2 py-1 rounded-md border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-700 transition-all flex items-center gap-1 shadow-sm ml-0.5"}}if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons()}}function toggleCardToolbar(){isCardToolbarOpen=!isCardToolbarOpen;const tb=document.getElementById("card-toolbar");if(isCardToolbarOpen){tb.style.display="flex";document.getElementById("icon-chevron-up").classList.remove("hidden");document.getElementById("icon-chevron-down").classList.add("hidden")}else{tb.style.display="none";document.getElementById("icon-chevron-up").classList.add("hidden");document.getElementById("icon-chevron-down").classList.remove("hidden")}}let cardZoom=1;function changeCardZoom(delta){const oldZoom=cardZoom;cardZoom+=delta;if(cardZoom<.3)cardZoom=.3;if(cardZoom>2)cardZoom=2;cardZoom=Math.round(cardZoom*10)/10;document.getElementById("card-zoom-level").innerText=Math.round(cardZoom*100)+"%";let styleTag=document.getElementById("dynamic-zoom-style");if(!styleTag){styleTag=document.createElement("style");styleTag.id="dynamic-zoom-style";document.head.appendChild(styleTag)}styleTag.innerHTML=`\n        #text-list .card-container {\n          zoom: ${cardZoom};\n        }\n      `;if(typeof virtualCards!=="undefined"&&virtualCards.enabled&&virtualCards.root){const ratio=cardZoom/oldZoom;virtualCards.rowHeight=Math.max(25,virtualCards.rowHeight*ratio);renderList(true)}}let dragMode="move";function setDragMode(mode){dragMode=mode;const btnMove=document.getElementById("btn-drag-move");const btnMerge=document.getElementById("btn-drag-merge");if(mode==="move"){btnMove.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1";btnMerge.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1"}else{btnMerge.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-rose-600 shadow-sm transition-all flex items-center gap-1";btnMove.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1"}}let isOutlineOpen=false;let detectedSpeakers=new Set;let globalId=0;let kuroshiroEnabled=false;let kuroshiroReady=false;let kuroshiroWorker=null;let furiganaQueue=[];let isFuriganaConverting=false;let isCurrentFileText=false;let historyStack=[];let redoStack=[];function saveHistoryState(){const copy=processedItems.map(item=>({...item}));historyStack.push(copy);redoStack=[];updateUndoRedoButtons()}function updateUndoRedoButtons(){const btnUndo=document.getElementById("btn-undo");const btnRedo=document.getElementById("btn-redo");if(btnUndo){btnUndo.disabled=historyStack.length===0;btnUndo.className=historyStack.length>0?"p-1.5 text-white hover:bg-white/20 rounded-md transition-all":"p-1.5 text-white/50 cursor-not-allowed rounded-md transition-all"}if(btnRedo){btnRedo.disabled=redoStack.length===0;btnRedo.className=redoStack.length>0?"p-1.5 text-white hover:bg-white/20 rounded-md transition-all":"p-1.5 text-white/50 cursor-not-allowed rounded-md transition-all"}}function undoAction(){if(historyStack.length===0)return;const copy=processedItems.map(item=>({...item}));redoStack.push(copy);processedItems=historyStack.pop();updateUndoRedoButtons();renderList();saveToLocalStorage();showToast("Undo","1つ前の状態に戻しました。","info")}function redoAction(){if(redoStack.length===0)return;const copy=processedItems.map(item=>({...item}));historyStack.push(copy);processedItems=redoStack.pop();updateUndoRedoButtons();renderList();saveToLocalStorage();showToast("Redo","やり直しました。","info")}document.addEventListener("keydown",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"||e.target.isContentEditable){return}if(e.ctrlKey&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undoAction()}else if(e.ctrlKey&&(e.key.toLowerCase()==="y"||e.shiftKey&&e.key.toLowerCase()==="z")){e.preventDefault();redoAction()}});let globalMode="edit";let selectedCardIds=new Set;let lastSelectedId=null;let draggedCardId=null;const cardColors=[{id:"slate",name:"標準",bg:"bg-slate-50",pickerBg:"bg-slate-400",border:"border-slate-200",hoverBg:"hover:bg-slate-100",hoverBorder:"hover:border-slate-300"},{id:"red",name:"赤",bg:"bg-red-50",pickerBg:"bg-red-400",border:"border-red-200",hoverBg:"hover:bg-red-100",hoverBorder:"hover:border-red-300"},{id:"orange",name:"オレンジ",bg:"bg-orange-50",pickerBg:"bg-orange-400",border:"border-orange-200",hoverBg:"hover:bg-orange-100",hoverBorder:"hover:border-orange-300"},{id:"amber",name:"黄",bg:"bg-amber-50",pickerBg:"bg-amber-400",border:"border-amber-200",hoverBg:"hover:bg-amber-100",hoverBorder:"hover:border-amber-300"},{id:"green",name:"緑",bg:"bg-green-50",pickerBg:"bg-green-400",border:"border-green-200",hoverBg:"hover:bg-green-100",hoverBorder:"hover:border-green-300"},{id:"teal",name:"青緑",bg:"bg-teal-50",pickerBg:"bg-teal-400",border:"border-teal-200",hoverBg:"hover:bg-teal-100",hoverBorder:"hover:border-teal-300"},{id:"blue",name:"青",bg:"bg-blue-50",pickerBg:"bg-blue-400",border:"border-blue-200",hoverBg:"hover:bg-blue-100",hoverBorder:"hover:border-blue-300"},{id:"indigo",name:"藍色",bg:"bg-indigo-50",pickerBg:"bg-indigo-400",border:"border-indigo-200",hoverBg:"hover:bg-indigo-100",hoverBorder:"hover:border-indigo-300"},{id:"purple",name:"紫",bg:"bg-purple-50",pickerBg:"bg-purple-400",border:"border-purple-200",hoverBg:"hover:bg-purple-100",hoverBorder:"hover:border-purple-300"},{id:"pink",name:"ピンク",bg:"bg-pink-50",pickerBg:"bg-pink-400",border:"border-pink-200",hoverBg:"hover:bg-pink-100",hoverBorder:"hover:border-pink-300"}];function getColorObj(colorId){if(colorId&&colorId.startsWith("#")){return{id:colorId,name:"カスタム",isCustom:true,hex:colorId,bg:"",border:""}}return cardColors.find(c=>c.id===colorId)||cardColors[0]}function getSortedPaletteColors(){const sortedIds=[];Object.values(tabColorMapping).forEach(cId=>{if(cId&&cId!=="slate"&&!sortedIds.includes(cId)){sortedIds.push(cId)}});cardColors.forEach(c=>{if(!sortedIds.includes(c.id)){sortedIds.push(c.id)}});return sortedIds.map(cId=>getColorObj(cId))}let tabColorMapping={"":"slate","情報":"red",HO1:"orange",HO2:"amber",HO3:"green",HO4:"teal"};let customColors=JSON.parse(localStorage.getItem("pdf_tool_custom_colors")||"[]");function addCustomColor(hex){if(hex&&hex.startsWith("#")&&!customColors.includes(hex)){customColors.push(hex);localStorage.setItem("pdf_tool_custom_colors",JSON.stringify(customColors));if(typeof renderBulkColorPalette==="function")renderBulkColorPalette()}if(Array.isArray(data.characters)){explorerCharacters=data.characters;renderExplorerCards()}}function loadTabColorMapping(){const saved=localStorage.getItem("pdf_tool_tab_colors");if(saved){try{tabColorMapping=JSON.parse(saved)}catch(e){}}}loadTabColorMapping();function saveTabColorMapping(){const rows=document.querySelectorAll(".tab-color-row");const newMapping={};rows.forEach(row=>{let colorId=row.querySelector(".tab-color-select").value;if(colorId==="custom"){colorId=row.querySelector(".tab-custom-color").value}const tabName=row.querySelector(".tab-name-input").value.trim();if(tabName){newMapping[tabName]=colorId}});tabColorMapping=newMapping;localStorage.setItem("pdf_tool_tab_colors",JSON.stringify(tabColorMapping));saveHistoryState();processedItems.forEach(item=>{if(item.tabName&&tabColorMapping[item.tabName]){item.color=tabColorMapping[item.tabName]}});renderList();saveToLocalStorage();showToast("設定保存","タブとカラーの連携設定を保存し、カードに反映しました。","success")}function resetTabColorMapping(){if(!confirm("タブとカラーの連携設定を初期値に戻しますか？"))return;localStorage.removeItem("pdf_tool_tab_colors");tabColorMapping={"情報":"green","秘匿":"red","描写":"orange","注意":"amber","メイン":"blue","雑談":"slate"};renderTabColorSettings();if(typeof renderBulkColorPalette==="function")renderBulkColorPalette();showToast("リセット","初期設定に戻しました。","info")}function renderTabColorSettings(){const container=document.getElementById("tab-color-settings-list");if(!container)return;let html="";Object.keys(tabColorMapping).forEach(tabName=>{const colorId=tabColorMapping[tabName];html+=createTabColorRow(tabName,colorId)});container.innerHTML=html;lucide.createIcons()}let draggedTabRow=null;function handleTabRowDragStart(e){draggedTabRow=e.currentTarget;e.dataTransfer.effectAllowed="move";setTimeout(()=>{draggedTabRow.classList.add("opacity-50","bg-slate-50")},0)}function handleTabRowDragOver(e){e.preventDefault();e.dataTransfer.dropEffect="move";return false}function handleTabRowDragEnter(e){e.preventDefault();const targetRow=e.currentTarget;if(targetRow!==draggedTabRow){targetRow.classList.add("border-teal-400","bg-teal-50")}}function handleTabRowDragLeave(e){e.currentTarget.classList.remove("border-teal-400","bg-teal-50")}function handleTabRowDrop(e){e.preventDefault();e.stopPropagation();const targetRow=e.currentTarget;targetRow.classList.remove("border-teal-400","bg-teal-50");if(draggedTabRow&&targetRow!==draggedTabRow){const container=targetRow.parentNode;const allRows=Array.from(container.children);const draggedIndex=allRows.indexOf(draggedTabRow);const targetIndex=allRows.indexOf(targetRow);if(draggedIndex<targetIndex){container.insertBefore(draggedTabRow,targetRow.nextSibling)}else{container.insertBefore(draggedTabRow,targetRow)}}if(draggedTabRow){draggedTabRow.classList.remove("opacity-50","bg-slate-50");draggedTabRow=null}}function handleTabRowDragEnd(e){e.currentTarget.classList.remove("opacity-50","bg-slate-50");draggedTabRow=null;const rows=document.querySelectorAll(".tab-color-row");rows.forEach(r=>r.classList.remove("border-teal-400","bg-teal-50"))}function createTabColorRow(tabName="",colorId="slate"){let options=cardColors.map(c=>`<option value="${c.id}" ${c.id===colorId?"selected":""}>${c.name}</option>`).join("");options+=customColors.map(hex=>`<option value="${hex}" ${hex===colorId?"selected":""}>保存済カスタム (${hex})</option>`).join("");const colorObj=getColorObj(colorId);const isCustom=colorObj.isCustom;const customStyle=isCustom?`background-color: ${colorObj.hex}40; border-color: ${colorObj.hex};`:"";return`\n        <div class="flex items-center gap-1.5 tab-color-row border border-transparent rounded px-1 -mx-1 py-0.5 transition-colors" draggable="true" ondragstart="handleTabRowDragStart(event)" ondragover="handleTabRowDragOver(event)" ondrop="handleTabRowDrop(event)" ondragenter="handleTabRowDragEnter(event)" ondragleave="handleTabRowDragLeave(event)" ondragend="handleTabRowDragEnd(event)">\n          <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 cursor-grab flex-shrink-0"></i>\n          <label class="cursor-pointer relative block w-3 h-3 rounded-full overflow-hidden" title="クリックでカスタムカラーを選択">\n            <div class="${isCustom?"":`${colorObj.bg} ${colorObj.border}`} border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview" style="${customStyle}"></div>\n            <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer tab-custom-color" value="${isCustom?colorId:"#000000"}" onchange="updateTabCustomColor(this)">\n          </label>\n          <select class="tab-color-select text-xs border border-slate-300 rounded p-1 outline-none focus:ring-1 focus:ring-teal-500 bg-white" onchange="updateTabColorPreview(this)">\n            ${options}\n            <option value="custom" ${isCustom&&!customColors.includes(colorId)?"selected":""}>新規カスタム...</option>\n          </select>\n          <input type="text" value="${escapeHtml(tabName)}" placeholder="タブ名" class="tab-name-input flex-grow text-xs px-2 py-1 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 outline-none bg-white text-slate-800">\n          <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-rose-500 flex-shrink-0"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>\n        </div>\n      `}function addTabColorSetting(){const container=document.getElementById("tab-color-settings-list");container.insertAdjacentHTML("beforeend",createTabColorRow("","slate"));lucide.createIcons()}function updateTabCustomColor(inputEl){const row=inputEl.closest(".tab-color-row");const selectEl=row.querySelector(".tab-color-select");const hex=inputEl.value;addCustomColor(hex);renderTabColorSettings()}function updateTabColorPreview(selectEl){const val=selectEl.value;const preview=selectEl.closest(".tab-color-row").querySelector(".tab-color-preview");if(val==="custom"){const inputEl=selectEl.closest(".tab-color-row").querySelector(".tab-custom-color");inputEl.click()}else if(val&&val.startsWith("#")){preview.className="border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview";preview.style.backgroundColor=val+"40";preview.style.borderColor=val}else{const c=cardColors.find(c=>c.id===val)||cardColors[0];preview.className=`${c.bg} border ${c.border} w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview`;preview.style=""}}function initTheme(){const savedTheme=localStorage.getItem("pdf-converter-theme")||"light";changeTheme(savedTheme);const selector=document.getElementById("theme-selector");if(selector)selector.value=savedTheme}function changeTheme(themeName){if(themeName==="light"){document.body.removeAttribute("data-theme")}else{document.body.setAttribute("data-theme",themeName)}localStorage.setItem("pdf-converter-theme",themeName)}const dropZone=document.getElementById("drop-zone");const pdfInput=document.getElementById("pdf-input");["dragenter","dragover"].forEach(eventName=>{dropZone.addEventListener(eventName,e=>{e.preventDefault();dropZone.classList.add("border-teal-500","bg-teal-50/50")},false)});["dragleave","drop"].forEach(eventName=>{dropZone.addEventListener(eventName,e=>{e.preventDefault();dropZone.classList.remove("border-teal-500","bg-teal-50/50")},false)});dropZone.addEventListener("drop",e=>{const dt=e.dataTransfer;const files=dt.files;if(files.length){pdfInput.files=files;handleFileSelect(files[0])}});pdfInput.addEventListener("change",e=>{if(e.target.files.length){handleFileSelect(e.target.files[0])}});function handleFileSelect(file){
+let rawTextBlocks=[];let processedItems=[];let splitMode="paragraph";let currentFileName="";let pdfDoc=null;let currentPreviewPage=1;let previewScale=.55;let currentRenderTask=null;let pdfOutline=[];let isCardToolbarCompact=localStorage.getItem("pdf_tool_toolbar_compact")==="true";function toggleCardToolbar(forceState){if(typeof forceState==="boolean"){isCardToolbarCompact=forceState}else{isCardToolbarCompact=!isCardToolbarCompact}localStorage.setItem("pdf_tool_toolbar_compact",isCardToolbarCompact?"true":"false");const headerInner=document.getElementById("center-header-inner");const iconUp=document.getElementById("icon-chevron-up");const iconDown=document.getElementById("icon-chevron-down");const toggleBtnText=document.getElementById("text-toolbar-toggle");const toggleBtn=document.getElementById("btn-card-toolbar-toggle");if(headerInner){if(isCardToolbarCompact){headerInner.classList.add("is-compact")}else{headerInner.classList.remove("is-compact")}}if(iconUp)iconUp.classList.toggle("hidden",isCardToolbarCompact);if(iconDown)iconDown.classList.toggle("hidden",!isCardToolbarCompact);if(toggleBtnText){toggleBtnText.textContent=isCardToolbarCompact?"展開":"1行に"}if(toggleBtn){toggleBtn.title=isCardToolbarCompact?"ツールバーを2行に展開する":"ツールバーを1行に折りたたむ";if(isCardToolbarCompact){toggleBtn.className="text-teal-700 bg-teal-50 border border-teal-300 rounded-lg p-1 shadow-sm flex items-center gap-1 transition-all"}else{toggleBtn.className="text-slate-500 hover:text-teal-700 bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-lg p-1 shadow-sm flex items-center gap-1 transition-all"}}if(typeof lucide!=="undefined"&&lucide.createIcons){lucide.createIcons()}}let cardZoom=1;function changeCardZoom(delta){const oldZoom=cardZoom;cardZoom+=delta;if(cardZoom<.3)cardZoom=.3;if(cardZoom>2)cardZoom=2;cardZoom=Math.round(cardZoom*10)/10;document.getElementById("card-zoom-level").innerText=Math.round(cardZoom*100)+"%";let styleTag=document.getElementById("dynamic-zoom-style");if(!styleTag){styleTag=document.createElement("style");styleTag.id="dynamic-zoom-style";document.head.appendChild(styleTag)}styleTag.innerHTML=`\n        #text-list .card-container {\n          zoom: ${cardZoom};\n        }\n      `;if(typeof virtualCards!=="undefined"&&virtualCards.enabled&&virtualCards.root){const ratio=cardZoom/oldZoom;virtualCards.rowHeight=Math.max(25,virtualCards.rowHeight*ratio);renderList(true)}}let dragMode="move";function setDragMode(mode){dragMode=mode;const btnMove=document.getElementById("btn-drag-move");const btnMerge=document.getElementById("btn-drag-merge");if(mode==="move"){btnMove.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm transition-all flex items-center gap-1";btnMerge.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1"}else{btnMerge.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-rose-600 shadow-sm transition-all flex items-center gap-1";btnMove.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1"}}let isOutlineOpen=false;let detectedSpeakers=new Set;let globalId=0;let kuroshiroEnabled=false;let kuroshiroReady=false;let kuroshiroWorker=null;let furiganaQueue=[];let isFuriganaConverting=false;let isCurrentFileText=false;let historyStack=[];let redoStack=[];function saveHistoryState(){const copy=processedItems.map(item=>({...item}));historyStack.push(copy);redoStack=[];updateUndoRedoButtons()}function updateUndoRedoButtons(){const btnUndo=document.getElementById("btn-undo");const btnRedo=document.getElementById("btn-redo");if(btnUndo){btnUndo.disabled=historyStack.length===0;btnUndo.className=historyStack.length>0?"p-1.5 text-white hover:bg-white/20 rounded-md transition-all":"p-1.5 text-white/50 cursor-not-allowed rounded-md transition-all"}if(btnRedo){btnRedo.disabled=redoStack.length===0;btnRedo.className=redoStack.length>0?"p-1.5 text-white hover:bg-white/20 rounded-md transition-all":"p-1.5 text-white/50 cursor-not-allowed rounded-md transition-all"}}function undoAction(){if(historyStack.length===0)return;const copy=processedItems.map(item=>({...item}));redoStack.push(copy);processedItems=historyStack.pop();updateUndoRedoButtons();renderList();saveToLocalStorage();showToast("Undo","1つ前の状態に戻しました。","info")}function redoAction(){if(redoStack.length===0)return;const copy=processedItems.map(item=>({...item}));historyStack.push(copy);processedItems=redoStack.pop();updateUndoRedoButtons();renderList();saveToLocalStorage();showToast("Redo","やり直しました。","info")}document.addEventListener("keydown",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"||e.target.isContentEditable){return}if(e.ctrlKey&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undoAction()}else if(e.ctrlKey&&(e.key.toLowerCase()==="y"||e.shiftKey&&e.key.toLowerCase()==="z")){e.preventDefault();redoAction()}});let globalMode="edit";let selectedCardIds=new Set;let lastSelectedId=null;let draggedCardId=null;const cardColors=[{id:"slate",name:"標準",bg:"bg-slate-50",pickerBg:"bg-slate-400",border:"border-slate-200",hoverBg:"hover:bg-slate-100",hoverBorder:"hover:border-slate-300"},{id:"red",name:"赤",bg:"bg-red-50",pickerBg:"bg-red-400",border:"border-red-200",hoverBg:"hover:bg-red-100",hoverBorder:"hover:border-red-300"},{id:"orange",name:"オレンジ",bg:"bg-orange-50",pickerBg:"bg-orange-400",border:"border-orange-200",hoverBg:"hover:bg-orange-100",hoverBorder:"hover:border-orange-300"},{id:"amber",name:"黄",bg:"bg-amber-50",pickerBg:"bg-amber-400",border:"border-amber-200",hoverBg:"hover:bg-amber-100",hoverBorder:"hover:border-amber-300"},{id:"green",name:"緑",bg:"bg-green-50",pickerBg:"bg-green-400",border:"border-green-200",hoverBg:"hover:bg-green-100",hoverBorder:"hover:border-green-300"},{id:"teal",name:"青緑",bg:"bg-teal-50",pickerBg:"bg-teal-400",border:"border-teal-200",hoverBg:"hover:bg-teal-100",hoverBorder:"hover:border-teal-300"},{id:"blue",name:"青",bg:"bg-blue-50",pickerBg:"bg-blue-400",border:"border-blue-200",hoverBg:"hover:bg-blue-100",hoverBorder:"hover:border-blue-300"},{id:"indigo",name:"藍色",bg:"bg-indigo-50",pickerBg:"bg-indigo-400",border:"border-indigo-200",hoverBg:"hover:bg-indigo-100",hoverBorder:"hover:border-indigo-300"},{id:"purple",name:"紫",bg:"bg-purple-50",pickerBg:"bg-purple-400",border:"border-purple-200",hoverBg:"hover:bg-purple-100",hoverBorder:"hover:border-purple-300"},{id:"pink",name:"ピンク",bg:"bg-pink-50",pickerBg:"bg-pink-400",border:"border-pink-200",hoverBg:"hover:bg-pink-100",hoverBorder:"hover:border-pink-300"}];function getColorObj(colorId){if(colorId&&colorId.startsWith("#")){return{id:colorId,name:"カスタム",isCustom:true,hex:colorId,bg:"",border:""}}return cardColors.find(c=>c.id===colorId)||cardColors[0]}function getSortedPaletteColors(){const sortedIds=[];Object.values(tabColorMapping).forEach(cId=>{if(cId&&cId!=="slate"&&!sortedIds.includes(cId)){sortedIds.push(cId)}});cardColors.forEach(c=>{if(!sortedIds.includes(c.id)){sortedIds.push(c.id)}});return sortedIds.map(cId=>getColorObj(cId))}let tabColorMapping={"":"slate","情報":"red",HO1:"orange",HO2:"amber",HO3:"green",HO4:"teal"};let customColors=JSON.parse(localStorage.getItem("pdf_tool_custom_colors")||"[]");function addCustomColor(hex){if(hex&&hex.startsWith("#")&&!customColors.includes(hex)){customColors.push(hex);localStorage.setItem("pdf_tool_custom_colors",JSON.stringify(customColors));if(typeof renderBulkColorPalette==="function")renderBulkColorPalette()}if(Array.isArray(data.characters)){explorerCharacters=data.characters;renderExplorerCards()}}function loadTabColorMapping(){const saved=localStorage.getItem("pdf_tool_tab_colors");if(saved){try{tabColorMapping=JSON.parse(saved)}catch(e){}}}loadTabColorMapping();function saveTabColorMapping(){const rows=document.querySelectorAll(".tab-color-row");const newMapping={};rows.forEach(row=>{let colorId=row.querySelector(".tab-color-select").value;if(colorId==="custom"){colorId=row.querySelector(".tab-custom-color").value}const tabName=row.querySelector(".tab-name-input").value.trim();if(tabName){newMapping[tabName]=colorId}});tabColorMapping=newMapping;localStorage.setItem("pdf_tool_tab_colors",JSON.stringify(tabColorMapping));saveHistoryState();processedItems.forEach(item=>{if(item.tabName&&tabColorMapping[item.tabName]){item.color=tabColorMapping[item.tabName]}});renderList();saveToLocalStorage();showToast("設定保存","タブとカラーの連携設定を保存し、カードに反映しました。","success")}function resetTabColorMapping(){if(!confirm("タブとカラーの連携設定を初期値に戻しますか？"))return;localStorage.removeItem("pdf_tool_tab_colors");tabColorMapping={"情報":"green","秘匿":"red","描写":"orange","注意":"amber","メイン":"blue","雑談":"slate"};renderTabColorSettings();if(typeof renderBulkColorPalette==="function")renderBulkColorPalette();showToast("リセット","初期設定に戻しました。","info")}function renderTabColorSettings(){const container=document.getElementById("tab-color-settings-list");if(!container)return;let html="";Object.keys(tabColorMapping).forEach(tabName=>{const colorId=tabColorMapping[tabName];html+=createTabColorRow(tabName,colorId)});container.innerHTML=html;lucide.createIcons()}let draggedTabRow=null;function handleTabRowDragStart(e){draggedTabRow=e.currentTarget;e.dataTransfer.effectAllowed="move";setTimeout(()=>{draggedTabRow.classList.add("opacity-50","bg-slate-50")},0)}function handleTabRowDragOver(e){e.preventDefault();e.dataTransfer.dropEffect="move";return false}function handleTabRowDragEnter(e){e.preventDefault();const targetRow=e.currentTarget;if(targetRow!==draggedTabRow){targetRow.classList.add("border-teal-400","bg-teal-50")}}function handleTabRowDragLeave(e){e.currentTarget.classList.remove("border-teal-400","bg-teal-50")}function handleTabRowDrop(e){e.preventDefault();e.stopPropagation();const targetRow=e.currentTarget;targetRow.classList.remove("border-teal-400","bg-teal-50");if(draggedTabRow&&targetRow!==draggedTabRow){const container=targetRow.parentNode;const allRows=Array.from(container.children);const draggedIndex=allRows.indexOf(draggedTabRow);const targetIndex=allRows.indexOf(targetRow);if(draggedIndex<targetIndex){container.insertBefore(draggedTabRow,targetRow.nextSibling)}else{container.insertBefore(draggedTabRow,targetRow)}}if(draggedTabRow){draggedTabRow.classList.remove("opacity-50","bg-slate-50");draggedTabRow=null}}function handleTabRowDragEnd(e){e.currentTarget.classList.remove("opacity-50","bg-slate-50");draggedTabRow=null;const rows=document.querySelectorAll(".tab-color-row");rows.forEach(r=>r.classList.remove("border-teal-400","bg-teal-50"))}function createTabColorRow(tabName="",colorId="slate"){let options=cardColors.map(c=>`<option value="${c.id}" ${c.id===colorId?"selected":""}>${c.name}</option>`).join("");options+=customColors.map(hex=>`<option value="${hex}" ${hex===colorId?"selected":""}>保存済カスタム (${hex})</option>`).join("");const colorObj=getColorObj(colorId);const isCustom=colorObj.isCustom;const customStyle=isCustom?`background-color: ${colorObj.hex}40; border-color: ${colorObj.hex};`:"";return`\n        <div class="flex items-center gap-1.5 tab-color-row border border-transparent rounded px-1 -mx-1 py-0.5 transition-colors" draggable="true" ondragstart="handleTabRowDragStart(event)" ondragover="handleTabRowDragOver(event)" ondrop="handleTabRowDrop(event)" ondragenter="handleTabRowDragEnter(event)" ondragleave="handleTabRowDragLeave(event)" ondragend="handleTabRowDragEnd(event)">\n          <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 cursor-grab flex-shrink-0"></i>\n          <label class="cursor-pointer relative block w-3 h-3 rounded-full overflow-hidden" title="クリックでカスタムカラーを選択">\n            <div class="${isCustom?"":`${colorObj.bg} ${colorObj.border}`} border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview" style="${customStyle}"></div>\n            <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer tab-custom-color" value="${isCustom?colorId:"#000000"}" onchange="updateTabCustomColor(this)">\n          </label>\n          <select class="tab-color-select text-xs border border-slate-300 rounded p-1 outline-none focus:ring-1 focus:ring-teal-500 bg-white" onchange="updateTabColorPreview(this)">\n            ${options}\n            <option value="custom" ${isCustom&&!customColors.includes(colorId)?"selected":""}>新規カスタム...</option>\n          </select>\n          <input type="text" value="${escapeHtml(tabName)}" placeholder="タブ名" class="tab-name-input flex-grow text-xs px-2 py-1 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 outline-none bg-white text-slate-800">\n          <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-rose-500 flex-shrink-0"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>\n        </div>\n      `}function addTabColorSetting(){const container=document.getElementById("tab-color-settings-list");container.insertAdjacentHTML("beforeend",createTabColorRow("","slate"));lucide.createIcons()}function updateTabCustomColor(inputEl){const row=inputEl.closest(".tab-color-row");const selectEl=row.querySelector(".tab-color-select");const hex=inputEl.value;addCustomColor(hex);renderTabColorSettings()}function updateTabColorPreview(selectEl){const val=selectEl.value;const preview=selectEl.closest(".tab-color-row").querySelector(".tab-color-preview");if(val==="custom"){const inputEl=selectEl.closest(".tab-color-row").querySelector(".tab-custom-color");inputEl.click()}else if(val&&val.startsWith("#")){preview.className="border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview";preview.style.backgroundColor=val+"40";preview.style.borderColor=val}else{const c=cardColors.find(c=>c.id===val)||cardColors[0];preview.className=`${c.bg} border ${c.border} w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview`;preview.style=""}}function initTheme(){const savedTheme=localStorage.getItem("pdf-converter-theme")||"light";changeTheme(savedTheme);const selector=document.getElementById("theme-selector");if(selector)selector.value=savedTheme}function changeTheme(themeName){if(themeName==="light"){document.body.removeAttribute("data-theme")}else{document.body.setAttribute("data-theme",themeName)}localStorage.setItem("pdf-converter-theme",themeName)}const dropZone=document.getElementById("drop-zone");const pdfInput=document.getElementById("pdf-input");["dragenter","dragover"].forEach(eventName=>{dropZone.addEventListener(eventName,e=>{e.preventDefault();dropZone.classList.add("border-teal-500","bg-teal-50/50")},false)});["dragleave","drop"].forEach(eventName=>{dropZone.addEventListener(eventName,e=>{e.preventDefault();dropZone.classList.remove("border-teal-500","bg-teal-50/50")},false)});dropZone.addEventListener("drop",e=>{const dt=e.dataTransfer;const files=dt.files;if(files.length){pdfInput.files=files;handleFileSelect(files[0])}});pdfInput.addEventListener("change",e=>{if(e.target.files.length){handleFileSelect(e.target.files[0])}});function handleFileSelect(file){
   if(hasUnsavedChanges()){
     if(!confirm("保存されていない変更があります。別のファイルを読み込むと現在の内容は失われますが、よろしいですか？\n\n※画面の「保存」ボタンから .pec ファイルとして保存できます。")){
       const pdfInput=document.getElementById("pdf-input");
@@ -5569,7 +5575,7 @@ let rawTextBlocks=[];let processedItems=[];let splitMode="paragraph";let current
     }
   }
   return result.filter(line => line !== null).join("\n").trim();
-}let searchDebounceTimer=null;function handleSearchInput(value){const clearBtn=document.getElementById("btn-clear-search");if(clearBtn)clearBtn.classList.toggle("hidden",!value);if(searchDebounceTimer)clearTimeout(searchDebounceTimer);searchDebounceTimer=setTimeout(()=>{renderList()},150)}function clearCardSearch(){const input=document.getElementById("card-search-input");if(input)input.value="";const clearBtn=document.getElementById("btn-clear-search");if(clearBtn)clearBtn.classList.add("hidden");renderList()}function getCardSpeaker(item){if(!item)return"";if(item.charName)return item.charName;if(item.isCommand)return"";const text=(item.text||"").trimStart();if(!text)return"";const names=(speakerNames||[]).filter(Boolean).slice().sort((a,b)=>b.length-a.length);for(const name of names){if(!text.startsWith(name))continue;const rest=text.slice(name.length).trimStart();if(rest.startsWith("「")||rest.startsWith("『")||rest.startsWith(":")||rest.startsWith("："))return name}return""}function matchesSpeakerFilter(item,filter){if(!filter)return true;const speaker=getCardSpeaker(item);if(filter==="__AUTO__")return!item.charName&&!speaker;return item.charName===filter||speaker===filter}function matchesSearchQuery(item,query){if(!query)return true;const q=query.toLowerCase();const speaker=getCardSpeaker(item);return(item.text&&item.text.toLowerCase().includes(q))||(item.charName&&item.charName.toLowerCase().includes(q))||(speaker&&speaker.toLowerCase().includes(q))||(item.note&&item.note.toLowerCase().includes(q))||(item.tabName&&item.tabName.toLowerCase().includes(q))}function updateSpeakerFilterOptions(){const select=document.getElementById("card-speaker-filter");if(!select)return;const currentVal=select.value;const set=new Set((speakerNames||[]).filter(Boolean));(processedItems||[]).forEach(item=>{if(item.charName)set.add(item.charName);const sp=getCardSpeaker(item);if(sp)set.add(sp)});const names=Array.from(set);select.replaceChildren(new Option("すべての発言者",""),new Option("未設定・自動判定","__AUTO__"),...names.map(name=>new Option(name,name)));if(names.includes(currentVal)||currentVal==="__AUTO__"){select.value=currentVal}else{select.value=""}}function handleSpeakerFilterChange(val){renderList()}function filterBySpeaker(name){const select=document.getElementById("card-speaker-filter");if(select){updateSpeakerFilterOptions();select.value=name||""}renderList();if(name){showToast("発言者絞り込み",`発言者「${name}」でカードを絞り込みました。`, "info")}}
+}let searchDebounceTimer=null;function handleSearchInput(value){const clearBtn=document.getElementById("btn-clear-search");if(clearBtn)clearBtn.classList.toggle("hidden",!value);if(searchDebounceTimer)clearTimeout(searchDebounceTimer);searchDebounceTimer=setTimeout(()=>{renderList()},150)}function clearCardSearch(){const input=document.getElementById("card-search-input");if(input)input.value="";const clearBtn=document.getElementById("btn-clear-search");if(clearBtn)clearBtn.classList.add("hidden");renderList()}function getCardSpeaker(item){if(!item)return"";if(item.charName)return item.charName;if(item.isCommand)return"";const text=(item.text||"").trimStart();if(!text)return"";const names=(speakerNames||[]).filter(Boolean).slice().sort((a,b)=>b.length-a.length);for(const name of names){if(!text.startsWith(name))continue;const rest=text.slice(name.length).trimStart();if(rest.startsWith("「")||rest.startsWith("『")||rest.startsWith(":")||rest.startsWith("："))return name}return""}function matchesSpeakerFilter(item,filter){if(!filter)return true;const speaker=getCardSpeaker(item);if(filter==="__AUTO__")return!item.charName&&!speaker;return item.charName===filter||speaker===filter}function matchesSearchQuery(item,query){if(!query)return true;const q=query.toLowerCase();const speaker=getCardSpeaker(item);return(item.text&&item.text.toLowerCase().includes(q))||(item.charName&&item.charName.toLowerCase().includes(q))||(speaker&&speaker.toLowerCase().includes(q))||(item.note&&item.note.toLowerCase().includes(q))||(item.tabName&&item.tabName.toLowerCase().includes(q))}function updateSpeakerFilterOptions(){const select=document.getElementById("card-speaker-filter");if(!select)return;const currentVal=select.value;const set=new Set((speakerNames||[]).filter(Boolean));(processedItems||[]).forEach(item=>{if(item.charName)set.add(item.charName);const sp=getCardSpeaker(item);if(sp)set.add(sp)});const names=Array.from(set);select.replaceChildren(new Option("すべての発言者",""),new Option("未設定・自動判定","__AUTO__"),...names.map(name=>new Option(name,name)));if(names.includes(currentVal)||currentVal==="__AUTO__"){select.value=currentVal}else{select.value=""}}function handleSpeakerFilterChange(val){renderList();if(val){if(globalMode!=="edit")setGlobalMode("edit");clearSelection();let count=0;for(const item of processedItems){if(matchesSpeakerFilter(item,val)){selectedCardIds.add(item.id);updateSelectionCard(item);count++}}updateBulkActionBar();if(count>0){showToast("発言者絞り込み",`「${val==="__AUTO__"?"自動判定":val}」のカード（${count}件）を選択しました。`,"info")}}else{clearSelection()}}function filterBySpeaker(name){const select=document.getElementById("card-speaker-filter");if(select){updateSpeakerFilterOptions();select.value=name||""}renderList();if(name){showToast("発言者絞り込み",`発言者「${name}」でカードを絞り込みました。`, "info")}}
 // --- 画面縦分割（マルチペイン）管理システム ---
 let splitPanes = [
   { id: 0, speakerFilter: "", searchQuery: "" }
@@ -6470,7 +6476,7 @@ function safeFuriganaHtml(item){
  cache.set(item,{html:item.furiganaHtml,text:item.text});
  return item.furiganaHtml;
 }
-function applyFuriganaReading(itemId,wordIndex,baseText,reading,applyAll){reading=reading.trim();if(!reading||!baseText)return 0;const updates=[];let count=0;for(const item of processedItems){if(!item.furiganaHtml||!applyAll&&item.id!==itemId)continue;const template=document.createElement("template");template.innerHTML=item.furiganaHtml;let changed=0;template.content.querySelectorAll(".furigana-word").forEach((word,index)=>{if(word.textContent!==baseText||!applyAll&&index!==wordIndex)return;if(word.getAttribute("data-reading")===reading)return;word.setAttribute("data-reading",reading);changed++});if(changed){updates.push({item:item,html:template.innerHTML});count+=changed}}if(!count)return 0;saveHistoryState();for(const update of updates)update.item.furiganaHtml=update.html;renderList();saveToLocalStorage();return count}function editFurigana(event,element,itemId){event.stopPropagation();if(document.getElementById("furigana-edit-dialog"))return;const textDiv=element.closest("div.text-sm.text-slate-700");if(!textDiv)return;const wordIndex=Array.from(textDiv.querySelectorAll(".furigana-word")).indexOf(element);const baseText=element.textContent;if(wordIndex<0||!baseText)return;const dialog=document.createElement("dialog");dialog.id="furigana-edit-dialog";dialog.className="rounded-xl p-5 shadow-md bg-white text-slate-700";dialog.style.cssText="width:min(440px,calc(100vw - 32px));border:1px solid #cbd5e1;";dialog.setAttribute("aria-labelledby","furigana-edit-title");dialog.innerHTML=`\n        <form>\n          <h2 id="furigana-edit-title" class="font-bold mb-2">ふりがなの読み方を変更</h2>\n          <p id="furigana-edit-word" class="text-sm mb-2"></p>\n          <label for="furigana-edit-reading" class="text-sm">読み方</label>\n          <input id="furigana-edit-reading" class="w-full border rounded px-3 py-2 mb-2" required autocomplete="off">\n          <p class="text-xs text-slate-500 mb-2">「同じ表記をすべて変更」は、全カードのふりがなが付いた語を対象にします。検索・折りたたみ中のカードも含みます。</p>\n          <div class="flex flex-wrap gap-2 mt-4">\n            <button type="submit" value="all" class="bg-teal-600 text-white rounded px-3 py-2 text-sm">同じ表記をすべて変更</button>\n            <button type="submit" value="one" class="bg-slate-100 rounded px-3 py-2 text-sm">この箇所だけ</button>\n            <button type="button" id="furigana-edit-cancel" class="text-slate-500 rounded px-3 py-2 text-sm">キャンセル</button>\n          </div>\n        </form>`;dialog.querySelector("#furigana-edit-word").textContent=`対象の表記：「${baseText}」`;const input=dialog.querySelector("input");input.value=element.getAttribute("data-reading")||"";input.oninput=()=>input.setCustomValidity("");dialog.querySelector("form").onsubmit=e=>{e.preventDefault();const reading=input.value.trim();if(!reading){input.setCustomValidity("読み方を入力してください。");input.reportValidity();return}const applyAll=e.submitter&&e.submitter.value==="all";const count=applyFuriganaReading(itemId,wordIndex,baseText,reading,applyAll);dialog.close();showToast("ふりがな修正",`${count}箇所の読み方を変更しました。`,"success")};input.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();dialog.querySelector("form").requestSubmit(dialog.querySelector('button[value="one"]'))}};dialog.querySelector("#furigana-edit-cancel").onclick=()=>dialog.close();dialog.addEventListener("close",()=>dialog.remove(),{once:true});document.body.appendChild(dialog);dialog.showModal();input.focus();input.select()}function startEditCard(id){processedItems.forEach(item=>{if(item.isEditing)syncEditState(item.id);item.isEditing=false});const item=processedItems.find(i=>i.id===id);if(item){item._editOriginal=item.text;item.isEditing=true;renderList();const ta=document.getElementById(`edit-textarea-${id}`);if(ta)ta.focus()}}function saveEditCard(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(item){saveHistoryState();if(ta&&item.text!==ta.value){item.text=ta.value;item.furiganaHtml=undefined}item.isEditing=false;delete item._editOriginal;delete item._mergedNextItem;delete item._mergedNextInsertIdx;renderList(true);if(kuroshiroEnabled&&!item.furiganaHtml){toggleFurigana()}saveToLocalStorage();showToast("保存完了","テキストを更新しました。","success")}}function cancelEditCard(id){const item=processedItems.find(i=>i.id===id);if(item){if(item._editOriginal!==undefined){item.text=item._editOriginal}if(item._editOriginalFurigana!==undefined){item.furiganaHtml=item._editOriginalFurigana;delete item._editOriginalFurigana}if(item._mergedNextItem!==undefined){const idx=processedItems.findIndex(i=>i.id===id);const insertAt=item._mergedNextInsertIdx!==undefined?item._mergedNextInsertIdx:idx+1;processedItems.splice(insertAt,0,item._mergedNextItem);delete item._mergedNextItem;delete item._mergedNextInsertIdx}item.isEditing=false;delete item._editOriginal;renderList(true);showToast("戻しました","編集をキャンセルしました。","info")}}function splitCardAtCursor(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(!item||!ta)return;const cursorPos=ta.selectionStart;const fullText=ta.value;const before=fullText.substring(0,cursorPos).trimEnd();const after=fullText.substring(cursorPos).trimStart();if(!before&&!after){showToast("分割不可","テキストが空です。","error");return}if(!before||!after){showToast("分割不可","分割後に空のカードが生まれます。カーソルをテキストの中間に置いてください。","error");return}saveHistoryState();const idx=processedItems.findIndex(i=>i.id===id);const newItem={id:globalId++,original:after,text:after,bookmarked:false,note:"",page:item.page,isEditing:false};item.text=before;item.furiganaHtml=undefined;item.isEditing=false;delete item._editOriginal;delete item._mergedNextItem;delete item._mergedNextInsertIdx;processedItems.splice(idx+1,0,newItem);renderList(true);if(kuroshiroEnabled){toggleFurigana()}saveToLocalStorage();showToast("分割完了","カードを分割しました。","success")}function mergeCardWithNext(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx<0||idx>=processedItems.length-1){showToast("結合不可","次のカードがありません。","error");return}const ta=document.getElementById(`edit-textarea-${id}`);const item=processedItems[idx];const nextItem=processedItems[idx+1];saveHistoryState();const currentText=ta?ta.value:item.text;if(item._editOriginal===undefined)item._editOriginal=currentText;if(item._editOriginalFurigana===undefined)item._editOriginalFurigana=item.furiganaHtml;item._mergedNextItem={...nextItem};item._mergedNextInsertIdx=idx+1;item.text=currentText+"\n"+nextItem.text;item.furiganaHtml=undefined;item.isEditing=true;processedItems.splice(idx+1,1);const targetCard=document.querySelector(`[data-id="${item.id}"]`);if(targetCard)targetCard._cachedHTML=null;const sourceCard=document.querySelector(`[data-id="${nextItem.id}"]`);if(sourceCard)sourceCard.remove();renderList(true);const newTa=document.getElementById(`edit-textarea-${id}`);if(newTa)newTa.focus();saveToLocalStorage();showToast("結合完了","次のカードと結合しました。「戻す」で復元できます。","success")}function mergeCardWithPrev(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx<=0){showToast("結合不可","前のカードがありません。","error");return}const ta=document.getElementById(`edit-textarea-${id}`);const item=processedItems[idx];const prevItem=processedItems[idx-1];saveHistoryState();const currentText=ta?ta.value:item.text;if(prevItem._editOriginal===undefined)prevItem._editOriginal=prevItem.text;if(prevItem._editOriginalFurigana===undefined)prevItem._editOriginalFurigana=prevItem.furiganaHtml;prevItem._mergedNextItem={...item};prevItem._mergedNextInsertIdx=idx;prevItem.text=prevItem.text+"\n"+currentText;prevItem.furiganaHtml=undefined;prevItem.isEditing=true;processedItems.splice(idx,1);const targetCard=document.querySelector(`[data-id="${prevItem.id}"]`);if(targetCard)targetCard._cachedHTML=null;const sourceCard=document.querySelector(`[data-id="${item.id}"]`);if(sourceCard)sourceCard.remove();renderList(true);const newTa=document.getElementById(`edit-textarea-${prevItem.id}`);if(newTa)newTa.focus();saveToLocalStorage();showToast("結合完了","前のカードと結合しました。","success")}function deleteCard(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx>=0){saveHistoryState();processedItems.splice(idx,1);renderList();saveToLocalStorage()}}function setGlobalMode(mode){if(globalMode===mode)return;globalMode=mode;const btnEdit=document.getElementById("btn-mode-edit");const btnCopy=document.getElementById("btn-mode-copy");const btnCopyMenu=document.getElementById("btn-copy-mode-menu");if(mode==="edit"){btnEdit.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";btnCopy.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";if(btnCopyMenu){btnCopyMenu.className="text-xs font-bold px-2 py-1 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 transition-all flex items-center gap-1 shadow-sm ml-0.5"}}else{btnCopy.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";btnEdit.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";if(btnCopyMenu){btnCopyMenu.className="text-xs font-bold px-2 py-1 rounded-md border border-teal-400 bg-teal-50 hover:bg-teal-100 text-teal-700 transition-all flex items-center gap-1 shadow-sm ml-0.5"}}clearSelection();renderList()}function updateSelectionCard(item){const card=document.getElementById(`selection-card-${item.id}`);if(!card||card.hasAttribute("data-virtual-placeholder"))return;const selected=selectedCardIds.has(item.id);const color=getColorObj(item.color||"slate");let background;if(item.isEditing)background="bg-amber-50 border-amber-300";else if(selected)background="bg-teal-100 border-teal-400 outline outline-2 outline-teal-400";else if(color.isCustom)background="border hover:bg-slate-50";else background=`${color.bg} ${color.hoverBg} ${color.border} ${color.hoverBorder}`;card.className=`group relative ${background} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied?"border-l-4 border-l-teal-500":""} card-container`;const custom=!item.isEditing&&!selected&&color.isCustom;card.style.backgroundColor=custom?`${color.hex}15`:"";card.style.borderColor=custom?color.hex:"";const check=card.querySelector('[onclick^="toggleCardSelection"]');if(check){check.className=`cursor-pointer p-0.5 rounded transition-all flex items-center justify-center ${selected?"bg-teal-500 text-white":"border border-slate-300 text-transparent hover:border-teal-400"} shadow-sm bg-white`;const icon=check.querySelector("svg, i");if(icon){icon.classList.toggle("text-white",selected);for(const name of["hidden","group-hover:block","text-teal-400"])icon.classList.toggle(name,!selected)}}card._cachedHTML=null}function toggleCardSelection(id,event){if(event)event.stopPropagation();if(globalMode!=="edit")return;const index=processedItems.findIndex(item=>item.id===id);if(index<0)return;const select=!selectedCardIds.has(id);const anchor=event&&event.shiftKey&&lastSelectedId!==null?processedItems.findIndex(item=>item.id===lastSelectedId):index;const start=Math.min(index,anchor<0?index:anchor);const end=Math.max(index,anchor<0?index:anchor);for(let i=start;i<=end;i++){const item=processedItems[i];if(selectedCardIds.has(item.id)===select)continue;if(select)selectedCardIds.add(item.id);else selectedCardIds.delete(item.id);updateSelectionCard(item)}lastSelectedId=id;updateBulkActionBar()}function clearSelection(){const previous=new Set(selectedCardIds);selectedCardIds.clear();lastSelectedId=null;if(previous.size)for(const item of processedItems)if(previous.has(item.id))updateSelectionCard(item);updateBulkActionBar()}function bulkSelectCardsBySearch(){
+function applyFuriganaReading(itemId,wordIndex,baseText,reading,applyAll){reading=reading.trim();if(!reading||!baseText)return 0;const updates=[];let count=0;for(const item of processedItems){if(!item.furiganaHtml||!applyAll&&item.id!==itemId)continue;const template=document.createElement("template");template.innerHTML=item.furiganaHtml;let changed=0;template.content.querySelectorAll(".furigana-word").forEach((word,index)=>{if(word.textContent!==baseText||!applyAll&&index!==wordIndex)return;if(word.getAttribute("data-reading")===reading)return;word.setAttribute("data-reading",reading);changed++});if(changed){updates.push({item:item,html:template.innerHTML});count+=changed}}if(!count)return 0;saveHistoryState();for(const update of updates)update.item.furiganaHtml=update.html;renderList();saveToLocalStorage();return count}function editFurigana(event,element,itemId){event.stopPropagation();if(document.getElementById("furigana-edit-dialog"))return;const textDiv=element.closest("div.text-sm.text-slate-700");if(!textDiv)return;const wordIndex=Array.from(textDiv.querySelectorAll(".furigana-word")).indexOf(element);const baseText=element.textContent;if(wordIndex<0||!baseText)return;const dialog=document.createElement("dialog");dialog.id="furigana-edit-dialog";dialog.className="rounded-xl p-5 shadow-md bg-white text-slate-700";dialog.style.cssText="width:min(440px,calc(100vw - 32px));border:1px solid #cbd5e1;";dialog.setAttribute("aria-labelledby","furigana-edit-title");dialog.innerHTML=`\n        <form>\n          <h2 id="furigana-edit-title" class="font-bold mb-2">ふりがなの読み方を変更</h2>\n          <p id="furigana-edit-word" class="text-sm mb-2"></p>\n          <label for="furigana-edit-reading" class="text-sm">読み方</label>\n          <input id="furigana-edit-reading" class="w-full border rounded px-3 py-2 mb-2" required autocomplete="off">\n          <p class="text-xs text-slate-500 mb-2">「同じ表記をすべて変更」は、全カードのふりがなが付いた語を対象にします。検索・折りたたみ中のカードも含みます。</p>\n          <div class="flex flex-wrap gap-2 mt-4">\n            <button type="submit" value="all" class="bg-teal-600 text-white rounded px-3 py-2 text-sm">同じ表記をすべて変更</button>\n            <button type="submit" value="one" class="bg-slate-100 rounded px-3 py-2 text-sm">この箇所だけ</button>\n            <button type="button" id="furigana-edit-cancel" class="text-slate-500 rounded px-3 py-2 text-sm">キャンセル</button>\n          </div>\n        </form>`;dialog.querySelector("#furigana-edit-word").textContent=`対象の表記：「${baseText}」`;const input=dialog.querySelector("input");input.value=element.getAttribute("data-reading")||"";input.oninput=()=>input.setCustomValidity("");dialog.querySelector("form").onsubmit=e=>{e.preventDefault();const reading=input.value.trim();if(!reading){input.setCustomValidity("読み方を入力してください。");input.reportValidity();return}const applyAll=e.submitter&&e.submitter.value==="all";const count=applyFuriganaReading(itemId,wordIndex,baseText,reading,applyAll);dialog.close();showToast("ふりがな修正",`${count}箇所の読み方を変更しました。`,"success")};input.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();dialog.querySelector("form").requestSubmit(dialog.querySelector('button[value="one"]'))}};dialog.querySelector("#furigana-edit-cancel").onclick=()=>dialog.close();dialog.addEventListener("close",()=>dialog.remove(),{once:true});document.body.appendChild(dialog);dialog.showModal();input.focus();input.select()}function startEditCard(id){processedItems.forEach(item=>{if(item.isEditing)syncEditState(item.id);item.isEditing=false});const item=processedItems.find(i=>i.id===id);if(item){item._editOriginal=item.text;item.isEditing=true;renderList();const ta=document.getElementById(`edit-textarea-${id}`);if(ta)ta.focus()}}function saveEditCard(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(item){saveHistoryState();if(ta&&item.text!==ta.value){item.text=ta.value;item.furiganaHtml=undefined}item.isEditing=false;delete item._editOriginal;delete item._mergedNextItem;delete item._mergedNextInsertIdx;renderList(true);if(kuroshiroEnabled&&!item.furiganaHtml){toggleFurigana()}saveToLocalStorage();showToast("保存完了","テキストを更新しました。","success")}}function cancelEditCard(id){const item=processedItems.find(i=>i.id===id);if(item){if(item._editOriginal!==undefined){item.text=item._editOriginal}if(item._editOriginalFurigana!==undefined){item.furiganaHtml=item._editOriginalFurigana;delete item._editOriginalFurigana}if(item._mergedNextItem!==undefined){const idx=processedItems.findIndex(i=>i.id===id);const insertAt=item._mergedNextInsertIdx!==undefined?item._mergedNextInsertIdx:idx+1;processedItems.splice(insertAt,0,item._mergedNextItem);delete item._mergedNextItem;delete item._mergedNextInsertIdx}item.isEditing=false;delete item._editOriginal;renderList(true);showToast("戻しました","編集をキャンセルしました。","info")}}function splitCardAtCursor(id){const item=processedItems.find(i=>i.id===id);const ta=document.getElementById(`edit-textarea-${id}`);if(!item||!ta)return;const cursorPos=ta.selectionStart;const fullText=ta.value;const before=fullText.substring(0,cursorPos).trimEnd();const after=fullText.substring(cursorPos).trimStart();if(!before&&!after){showToast("分割不可","テキストが空です。","error");return}if(!before||!after){showToast("分割不可","分割後に空のカードが生まれます。カーソルをテキストの中間に置いてください。","error");return}saveHistoryState();const idx=processedItems.findIndex(i=>i.id===id);const newItem={id:globalId++,original:after,text:after,bookmarked:false,note:"",page:item.page,isEditing:false};item.text=before;item.furiganaHtml=undefined;item.isEditing=false;delete item._editOriginal;delete item._mergedNextItem;delete item._mergedNextInsertIdx;processedItems.splice(idx+1,0,newItem);renderList(true);if(kuroshiroEnabled){toggleFurigana()}saveToLocalStorage();showToast("分割完了","カードを分割しました。","success")}function mergeCardWithNext(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx<0||idx>=processedItems.length-1){showToast("結合不可","次のカードがありません。","error");return}const ta=document.getElementById(`edit-textarea-${id}`);const item=processedItems[idx];const nextItem=processedItems[idx+1];saveHistoryState();const currentText=ta?ta.value:item.text;if(item._editOriginal===undefined)item._editOriginal=currentText;if(item._editOriginalFurigana===undefined)item._editOriginalFurigana=item.furiganaHtml;item._mergedNextItem={...nextItem};item._mergedNextInsertIdx=idx+1;item.text=currentText+"\n"+nextItem.text;item.furiganaHtml=undefined;item.isEditing=true;processedItems.splice(idx+1,1);const targetCard=document.querySelector(`[data-id="${item.id}"]`);if(targetCard)targetCard._cachedHTML=null;const sourceCard=document.querySelector(`[data-id="${nextItem.id}"]`);if(sourceCard)sourceCard.remove();renderList(true);const newTa=document.getElementById(`edit-textarea-${id}`);if(newTa)newTa.focus();saveToLocalStorage();showToast("結合完了","次のカードと結合しました。「戻す」で復元できます。","success")}function mergeCardWithPrev(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx<=0){showToast("結合不可","前のカードがありません。","error");return}const ta=document.getElementById(`edit-textarea-${id}`);const item=processedItems[idx];const prevItem=processedItems[idx-1];saveHistoryState();const currentText=ta?ta.value:item.text;if(prevItem._editOriginal===undefined)prevItem._editOriginal=prevItem.text;if(prevItem._editOriginalFurigana===undefined)prevItem._editOriginalFurigana=prevItem.furiganaHtml;prevItem._mergedNextItem={...item};prevItem._mergedNextInsertIdx=idx;prevItem.text=prevItem.text+"\n"+currentText;prevItem.furiganaHtml=undefined;prevItem.isEditing=true;processedItems.splice(idx,1);const targetCard=document.querySelector(`[data-id="${prevItem.id}"]`);if(targetCard)targetCard._cachedHTML=null;const sourceCard=document.querySelector(`[data-id="${item.id}"]`);if(sourceCard)sourceCard.remove();renderList(true);const newTa=document.getElementById(`edit-textarea-${prevItem.id}`);if(newTa)newTa.focus();saveToLocalStorage();showToast("結合完了","前のカードと結合しました。","success")}function deleteCard(id){const idx=processedItems.findIndex(i=>i.id===id);if(idx>=0){saveHistoryState();processedItems.splice(idx,1);renderList();saveToLocalStorage()}}function setGlobalMode(mode){if(globalMode===mode)return;globalMode=mode;const btnEdit=document.getElementById("btn-mode-edit");const btnCopy=document.getElementById("btn-mode-copy");if(mode==="edit"){btnEdit.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";btnCopy.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";toggleCardToolbar(false)}else{btnCopy.className="px-2.5 py-1 text-xs font-bold rounded-md bg-white text-teal-600 shadow-sm transition-all flex items-center gap-1";btnEdit.className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all flex items-center gap-1";toggleCardToolbar(true)}clearSelection();renderList()}function updateSelectionCard(item){const card=document.getElementById(`selection-card-${item.id}`);if(!card||card.hasAttribute("data-virtual-placeholder"))return;const selected=selectedCardIds.has(item.id);const color=getColorObj(item.color||"slate");let background;if(item.isEditing)background="bg-amber-50 border-amber-300";else if(selected)background="bg-teal-100 border-teal-400 outline outline-2 outline-teal-400";else if(color.isCustom)background="border hover:bg-slate-50";else background=`${color.bg} ${color.hoverBg} ${color.border} ${color.hoverBorder}`;card.className=`group relative ${background} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm ${item.isCopied?"border-l-4 border-l-teal-500":""} card-container`;const custom=!item.isEditing&&!selected&&color.isCustom;card.style.backgroundColor=custom?`${color.hex}15`:"";card.style.borderColor=custom?color.hex:"";const check=card.querySelector('[onclick^="toggleCardSelection"]');if(check){check.className=`cursor-pointer p-0.5 rounded transition-all flex items-center justify-center ${selected?"bg-teal-500 text-white":"border border-slate-300 text-transparent hover:border-teal-400"} shadow-sm bg-white`;const icon=check.querySelector("svg, i");if(icon){icon.classList.toggle("text-white",selected);for(const name of["hidden","group-hover:block","text-teal-400"])icon.classList.toggle(name,!selected)}}card._cachedHTML=null}function toggleCardSelection(id,event){if(event)event.stopPropagation();if(globalMode!=="edit")return;const globalFilter=(document.getElementById("card-speaker-filter")?.value||"").trim();const searchInput=(document.getElementById("card-search-input")?.value||"").trim().toLowerCase();const visibleItems=processedItems.filter(item=>{if(globalFilter&&!matchesSpeakerFilter(item,globalFilter))return false;if(searchInput&&!matchesSearchQuery(item,searchInput))return false;return true});const vIndex=visibleItems.findIndex(item=>item.id===id);if(vIndex<0)return;const select=!selectedCardIds.has(id);const vAnchor=event&&event.shiftKey&&lastSelectedId!==null?visibleItems.findIndex(item=>item.id===lastSelectedId):vIndex;const start=Math.min(vIndex,vAnchor<0?vIndex:vAnchor);const end=Math.max(vIndex,vAnchor<0?vIndex:vAnchor);for(let i=start;i<=end;i++){const item=visibleItems[i];if(selectedCardIds.has(item.id)===select)continue;if(select)selectedCardIds.add(item.id);else selectedCardIds.delete(item.id);updateSelectionCard(item)}lastSelectedId=id;updateBulkActionBar()}function clearSelection(){const previous=new Set(selectedCardIds);selectedCardIds.clear();lastSelectedId=null;if(previous.size)for(const item of processedItems)if(previous.has(item.id))updateSelectionCard(item);updateBulkActionBar()}function bulkSelectCardsBySearch(){
   const text=document.getElementById("bulk-select-search").value.trim().toLowerCase();
   if(!text){
     if(!confirm("検索文字が空欄です。すべてのカード（" + processedItems.length + "件）を一括選択しますか？")){
@@ -7096,7 +7102,7 @@ function switchCentralTab(tab) {
   if (tab === "text") {
     if (tabTextBtn) tabTextBtn.className = activeBtnClass;
     if (textContainer) { textContainer.classList.remove("hidden"); textContainer.classList.add("flex"); }
-    if (isCardToolbarOpen && cardToolbar) {
+    if (cardToolbar) {
       cardToolbar.style.display = "flex";
     }
     if (textZoomControls) textZoomControls.classList.remove("hidden");
@@ -9989,8 +9995,8 @@ window.onload = function() {
     if (regEl) regEl.checked = p.registered !== false;
     if (kpEl) kpEl.checked = p.kp !== false;
   } catch(e) {}
-  if (!isTopMenuOpen) {
-    toggleTopMenu(false);
+  if (isCardToolbarCompact) {
+    toggleCardToolbar(true);
   }
   if (typeof lucide !== "undefined" && lucide.createIcons) {
     lucide.createIcons();
