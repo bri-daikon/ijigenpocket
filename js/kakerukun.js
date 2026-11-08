@@ -1871,6 +1871,73 @@ window.onload = () => {
             sel.addRange(range);
         }
     });
+
+    // --- TRPG枠内のテキストコピー＆ペースト制御 ---
+    // 目星等のTRPG枠内の文字をコピー/カットした際、文字色や背景色などの書式を含めずプレーンテキストのみをコピーする
+    const trpgBoxSelector = '.box-wrapper, .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet';
+    const isInsideTRPGBox = (node) => {
+        if (!node) return null;
+        const el = node.nodeType === 1 ? node : node.parentElement;
+        return el ? el.closest(trpgBoxSelector) : null;
+    };
+
+    const handleTRPGBoxCopy = (e, isCut = false) => {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            return;
+        }
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+        const range = selection.getRangeAt(0);
+        const commonBox = isInsideTRPGBox(range.commonAncestorContainer);
+        const startBox = isInsideTRPGBox(range.startContainer);
+        const endBox = isInsideTRPGBox(range.endContainer);
+
+        let isTarget = !!(commonBox || startBox || endBox);
+        if (!isTarget) {
+            try {
+                const clone = range.cloneContents();
+                if (clone && clone.querySelector && clone.querySelector(trpgBoxSelector)) {
+                    isTarget = true;
+                }
+            } catch (_) {}
+        }
+
+        if (isTarget) {
+            const text = selection.toString();
+            if (text) {
+                e.preventDefault();
+                if (e.clipboardData) {
+                    e.clipboardData.setData('text/plain', text);
+                } else if (window.clipboardData) {
+                    window.clipboardData.setData('Text', text);
+                }
+                if (isCut) {
+                    document.execCommand('delete');
+                }
+            }
+        }
+    };
+
+    document.addEventListener('copy', (e) => handleTRPGBoxCopy(e, false));
+    document.addEventListener('cut', (e) => handleTRPGBoxCopy(e, true));
+
+    // エディタ内貼り付け時、TRPG枠スタイルのHTML断片がペーストされるのを防ぐフォールバック
+    editor.addEventListener('paste', (e) => {
+        const html = e.clipboardData ? e.clipboardData.getData('text/html') : '';
+        if (html) {
+            const hasTrpgBoxClass = /box-(spot|check|listen|library|san|search|secret|gimmick|tendency|summary|custom|special|custom-snippet)|kp-info|quote/i.test(html);
+            if (hasTrpgBoxClass && !/<div[^>]*class=["'][^"']*box-wrapper/i.test(html)) {
+                const plainText = e.clipboardData.getData('text/plain');
+                if (plainText) {
+                    e.preventDefault();
+                    document.execCommand('insertText', false, plainText);
+                }
+            }
+        }
+    });
     updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides(); renderAllMermaidCharts();
 };
 
