@@ -1932,18 +1932,37 @@ window.onload = () => {
     document.addEventListener('cut', (e) => handleTRPGBoxCopy(e, true));
 
     // エディタ内貼り付け（ペースト）制御
-    editor.addEventListener('paste', (e) => {
+    const handlePaste = (e) => {
+        if (e.defaultPrevented) return;
+
+        // 入力欄やテキストエリアでの通常のペーストは除外
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            return;
+        }
+
         const selection = window.getSelection();
         const range = (selection && selection.rangeCount > 0) ? selection.getRangeAt(0) : null;
         
         // 1. 貼り付け先がTRPG枠内の場合：
         // 貼り付け元の背景色や文字色などの書式を引き継がず、枠本来の文字色・背景色になるようプレーンテキストとして挿入
-        const isTargetInsideBox = range ? !!(isInsideTRPGBox(range.commonAncestorContainer) || isInsideTRPGBox(range.startContainer) || isInsideTRPGBox(range.endContainer)) : false;
+        const isTargetInsideBox = isInsideTRPGBox(e.target) 
+            || (range && (isInsideTRPGBox(range.commonAncestorContainer) || isInsideTRPGBox(range.startContainer) || isInsideTRPGBox(range.endContainer)));
+
         if (isTargetInsideBox) {
             const plainText = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
             if (plainText) {
                 e.preventDefault();
-                document.execCommand('insertText', false, plainText);
+                const success = document.execCommand('insertText', false, plainText);
+                if (!success && range) {
+                    range.deleteContents();
+                    const textNode = document.createTextNode(plainText);
+                    range.insertNode(textNode);
+                    range.setStartAfter(textNode);
+                    range.setEndAfter(textNode);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
                 autoUpdateUI();
                 return;
             }
@@ -1962,7 +1981,9 @@ window.onload = () => {
                 }
             }
         }
-    });
+    };
+
+    document.addEventListener('paste', handlePaste);
     updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides(); renderAllMermaidCharts();
     isDirty = false; // 初回読み込み完了時は未保存フラグをリセット
 };
