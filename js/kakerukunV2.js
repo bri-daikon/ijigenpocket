@@ -5,6 +5,7 @@ const saveStatus = document.getElementById('save-status');
 const titleInput = document.getElementById('scenario-title');
 const toast = document.getElementById('toast');
 let savedSelectionRange = null;
+let isDirty = false; // 未保存の変更フラグ
 
 // セクション編集モード用変数
 let isSectionMode = false;
@@ -161,6 +162,7 @@ function autoUpdateUI() {
     updatePageBreakGuides();
     saveStatus.textContent = "変更あり（未保存）";
     saveStatus.classList.add('text-amber-500');
+    isDirty = true;
 }
 
 // 保存を実行
@@ -188,6 +190,7 @@ function executeDirectSave() {
     
     saveStatus.textContent = "保存ダイアログを確認中...";
     saveStatus.classList.remove('text-amber-500');
+    isDirty = false;
 
     try {
         localStorage.setItem('weby_autosave', editor.innerHTML); 
@@ -212,6 +215,7 @@ function executeDirectSave() {
     setTimeout(() => {
         saveStatus.textContent = "保存操作を完了しました";
         showToast("保存操作を実行しました");
+        isDirty = false;
     }, 1000);
 }
 
@@ -279,6 +283,7 @@ function loadProjectFallback(input) {
                 renderAllMermaidCharts();
                 saveStatus.textContent = "読み込み完了";
                 saveStatus.classList.remove('text-amber-500');
+                isDirty = false;
                 showToast("読み込みました");
             } catch(err) { alert('読み込み失敗: 正しいファイル形式ではありません。'); }
         };
@@ -330,6 +335,8 @@ function confirmNewProject() {
     closeModal('confirm-modal');
     updateTOC(); updateCharCount();
     saveStatus.textContent = "新規作成";
+    saveStatus.classList.remove('text-amber-500');
+    isDirty = false;
     showToast("新規作成しました");
 }
 
@@ -2375,8 +2382,25 @@ window.onload = () => {
     document.addEventListener('copy', (e) => handleTRPGBoxCopy(e, false));
     document.addEventListener('cut', (e) => handleTRPGBoxCopy(e, true));
 
-    // エディタ内貼り付け時、TRPG枠スタイルのHTML断片がペーストされるのを防ぐフォールバック
+    // エディタ内貼り付け（ペースト）制御
     editor.addEventListener('paste', (e) => {
+        const selection = window.getSelection();
+        const range = (selection && selection.rangeCount > 0) ? selection.getRangeAt(0) : null;
+        
+        // 1. 貼り付け先がTRPG枠内の場合：
+        // 貼り付け元の背景色や文字色などの書式を引き継がず、枠本来の文字色・背景色になるようプレーンテキストとして挿入
+        const isTargetInsideBox = range ? !!(isInsideTRPGBox(range.commonAncestorContainer) || isInsideTRPGBox(range.startContainer) || isInsideTRPGBox(range.endContainer)) : false;
+        if (isTargetInsideBox) {
+            const plainText = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+            if (plainText) {
+                e.preventDefault();
+                document.execCommand('insertText', false, plainText);
+                autoUpdateUI();
+                return;
+            }
+        }
+
+        // 2. 枠外への貼り付け時：TRPG枠スタイルのHTML断片が不完全にペーストされるのを防ぐフォールバック
         const html = e.clipboardData ? e.clipboardData.getData('text/html') : '';
         if (html) {
             const hasTrpgBoxClass = /box-(spot|check|listen|library|san|search|secret|gimmick|tendency|summary|custom|special|custom-snippet)|kp-info|quote/i.test(html);
@@ -2385,11 +2409,13 @@ window.onload = () => {
                 if (plainText) {
                     e.preventDefault();
                     document.execCommand('insertText', false, plainText);
+                    autoUpdateUI();
                 }
             }
         }
     });
     updateTOC(); updateCharCount(); updateEditorWidth(); updatePageBreakGuides(); renderAllMermaidCharts();
+    isDirty = false; // 初回読み込み完了時は未保存フラグをリセット
 };
 
 
@@ -2416,6 +2442,15 @@ const throttle = (fn, wait) => {
 };
 editor.addEventListener('input', throttle(() => { autoUpdateUI(); }, 500));
 titleInput.oninput = () => { autoUpdateUI(); };
+
+// 未保存時のページ離脱・リロード防止警告
+window.addEventListener('beforeunload', (e) => {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = ''; // ブラウザ標準の離脱確認ダイアログを表示
+        return '';
+    }
+});
 
 /* --- 改ページ境界線表示ロジック --- */
 function updatePageBreakGuides() {
