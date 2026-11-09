@@ -1708,6 +1708,18 @@ function changeTextColor(color) {
     autoUpdateUI();
 }
 
+// カラーピッカーをクリックした際に現在の色を即時適用する関数
+// （同じ色を連続して適用する際、Chromiumがvalue変化なしとしてinputイベントを発火させない仕様への対策）
+function handleColorPickerClick(input) {
+    if (!input) return;
+    const sel = window.getSelection();
+    const range = (sel && sel.rangeCount > 0 && !sel.isCollapsed) ? sel.getRangeAt(0) : savedSelectionRange;
+    if (range && !range.collapsed) {
+        changeTextColor(input.value);
+    }
+}
+window.handleColorPickerClick = handleColorPickerClick;
+
 
 /* --- 配置処理（画像対応版） --- */
 function handleAlignment(cmd) {
