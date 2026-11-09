@@ -263,8 +263,8 @@ function loadProjectFallback(input) {
                     if (document.getElementById('export-margin-right')) document.getElementById('export-margin-right').value = data.exportSettings.marginRight || '20';
                     if (document.getElementById('export-indent-paragraph')) document.getElementById('export-indent-paragraph').checked = data.exportSettings.indentParagraph || false;
                 }
-                if (data.snippets) {
-                    saveSnippets(data.snippets);
+                if (data.snippets && Array.isArray(data.snippets)) {
+                    mergeSnippets(data.snippets);
                 }
                 updateEditorStyles();
                 if (isSectionMode) {
@@ -3034,6 +3034,84 @@ function saveSnippets(snippets) {
     }
     renderSnippetSelector();
 }
+
+// スニペットをマージ（既存のローカルスニペットを絶対に消去せず、新しく読み込んだスニペットを統合）
+function mergeSnippets(importedSnippets) {
+    if (!Array.isArray(importedSnippets) || importedSnippets.length === 0) return;
+    
+    const currentSnippets = getSnippets();
+    let addedCount = 0;
+
+    importedSnippets.forEach(imp => {
+        if (!imp || !imp.name) return;
+        // 既存のスニペットと重複していないか判定（ID、または「スニペット名」と「ラベル」が両方一致するもの）
+        const exists = currentSnippets.some(cur => 
+            (cur.id && imp.id && cur.id === imp.id) || 
+            (cur.name === imp.name && cur.label === imp.label)
+        );
+        if (!exists) {
+            if (!imp.id) {
+                imp.id = 'snippet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            }
+            currentSnippets.push(imp);
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) {
+        saveSnippets(currentSnippets);
+    }
+}
+
+// スニペットをJSONファイルとして書き出し（バックアップ）
+function exportSnippetsJSON() {
+    const snippets = getSnippets();
+    if (snippets.length === 0) {
+        alert("書き出すスニペットがありません。");
+        return;
+    }
+    const jsonStr = JSON.stringify(snippets, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kakerukun_snippets_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("スニペットを書き出しました");
+}
+
+// スニペットJSONファイルを読み込んでマージ
+function importSnippetsJSON(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (Array.isArray(data)) {
+                const beforeCount = getSnippets().length;
+                mergeSnippets(data);
+                const afterCount = getSnippets().length;
+                const added = afterCount - beforeCount;
+                renderSnippetList();
+                showToast(`スニペットを読み込みました（${added}件追加）`);
+            } else {
+                alert("正しいスニペットJSONファイルではありません。");
+            }
+        } catch (err) {
+            alert("読み込みに失敗しました: " + err.message);
+        }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+window.mergeSnippets = mergeSnippets;
+window.exportSnippetsJSON = exportSnippetsJSON;
+window.importSnippetsJSON = importSnippetsJSON;
 
 // ツールバーのスニペット選択セレクトボックスを描画
 function renderSnippetSelector() {
