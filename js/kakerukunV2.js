@@ -2418,17 +2418,25 @@ window.onload = () => {
                 if (node.nodeType === 3) node = node.parentNode;
                 const wrapper = node.closest('.box-wrapper');
                 if (wrapper) {
-                    const inner = wrapper.querySelector('.mt-1, .mt-2, .text-sm, .box-custom, [contenteditable="true"]') || wrapper;
-                    const clone = inner.cloneNode(true);
+                    const innerEditable = wrapper.querySelector('[contenteditable="true"]') || wrapper;
+                    const clone = innerEditable.cloneNode(true);
                     clone.querySelectorAll('.drag-handle-container, .drag-handle, .no-print, script, style').forEach(x => x.remove());
-                    clone.querySelectorAll('strong').forEach(s => {
-                        if (/^[【■]/.test(s.innerText.trim())) s.remove();
-                    });
-                    const rawContent = clone.textContent.replace(/\s+/g, '');
-                    const selectedText = sel.toString().replace(/\s+/g, '');
-                    if (!rawContent || (selectedText.length >= rawContent.length && rawContent.length > 0)) {
-                        e.preventDefault();
-                        eraseOrUnwrapBox(wrapper);
+                    const allText = clone.textContent.replace(/\s+/g, '');
+
+                    if (!sel.isCollapsed) {
+                        const selectedText = sel.toString().replace(/\s+/g, '');
+                        if (allText.length > 0 && selectedText.length >= allText.length) {
+                            e.preventDefault();
+                            eraseOrUnwrapBox(wrapper);
+                            return;
+                        }
+                    } else {
+                        // 未選択（キャレット）時：見出しも含めて枠内の実質テキストが0文字で、Backspaceが押された場合のみ枠を消去
+                        if (allText.length === 0 && e.key === 'Backspace') {
+                            e.preventDefault();
+                            eraseOrUnwrapBox(wrapper);
+                            return;
+                        }
                     }
                 }
             }
