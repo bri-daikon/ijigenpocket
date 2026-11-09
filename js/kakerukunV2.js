@@ -113,7 +113,7 @@ function darkenColor(hex, percent) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-/* --- ヘルパー: 選択範囲のHTMLを取得して削除 --- */
+/* --- ヘルパー: 選択範囲のHTMLを取得（アンドゥ時にテキストが復元できるよう、削除はinsertHTMLに任せる） --- */
 function getSelectedHtmlAndRemove() {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -125,7 +125,9 @@ function getSelectedHtmlAndRemove() {
         div.appendChild(clonedSelection);
         const html = div.innerHTML;
 
-        range.deleteContents();
+        // 注意: ここで range.deleteContents() を呼ぶとブラウザのUndoスタック外でDOMが削除され、
+        // 枠挿入後にアンドゥ（Ctrl+Z）した際に枠ごと文字が消滅してしまいます。
+        // 削除は後続の document.execCommand('insertHTML', ...) による選択範囲の一括置換（アトミックなUndo操作）に委ねます。
         return html;
     }
     return null;
@@ -1987,15 +1989,32 @@ function eraseOrUnwrapBox(targetBox = null) {
     clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
     const contentText = clone.textContent.trim();
 
+    // スクロールコンテナのスクロール位置を保持
+    const scrollContainer = editor.closest('main') || document.documentElement || document.body;
+    const savedScrollTop = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+
     // 空またはデフォルト文言のみか判定
     const isDefaultOrEmpty = !contentText || defaultPatterns.some(pat => pat.test(contentText.replace(/\s+/g, ' ').trim()));
 
+    let caretTarget = null;
+
     if (isDefaultOrEmpty) {
         // 枠しかない場合 → 枠ごと削除
-        const next = box.nextSibling;
+        const nextElem = box.nextElementSibling;
+        const prevElem = box.previousElementSibling;
+
+        if (nextElem && nextElem.tagName === 'P') {
+            caretTarget = nextElem;
+        } else if (prevElem) {
+            caretTarget = prevElem;
+        } else {
+            const emptyP = document.createElement('p');
+            emptyP.innerHTML = '<br>';
+            box.parentNode.insertBefore(emptyP, box);
+            caretTarget = emptyP;
+        }
+
         box.remove();
-        if (next && next.focus) next.focus();
-        else editor.focus();
         showToast("枠を削除しました");
     } else {
         // 中に文字が入っている場合 → 文字を残して枠を消す
@@ -2008,20 +2027,44 @@ function eraseOrUnwrapBox(targetBox = null) {
         const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
         const fragment = document.createDocumentFragment();
+        let firstP = null;
         if (lines.length > 0) {
-            lines.forEach(line => {
+            lines.forEach((line, idx) => {
                 const p = document.createElement('p');
                 p.textContent = line;
                 fragment.appendChild(p);
+                if (idx === 0) firstP = p;
             });
         } else {
             const p = document.createElement('p');
             p.innerHTML = '<br>';
             fragment.appendChild(p);
+            firstP = p;
         }
 
+        caretTarget = firstP;
         box.parentNode.replaceChild(fragment, box);
         showToast("文字を残して枠を解除しました");
+    }
+
+    // キャレットを安全に配置（画面が最上部にスクロールするのを防ぐ）
+    if (caretTarget) {
+        try {
+            const sel = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(caretTarget);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch (_) {}
+    }
+
+    // スクロール位置の跳躍を確実に抑止
+    if (scrollContainer && scrollContainer.scrollTop !== savedScrollTop) {
+        scrollContainer.scrollTop = savedScrollTop;
+    }
+    if (window.scrollY !== savedScrollTop && !scrollContainer) {
+        window.scrollTo(0, savedScrollTop);
     }
 
     updateTOC();

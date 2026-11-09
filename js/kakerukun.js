@@ -108,7 +108,7 @@ function darkenColor(hex, percent) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-/* --- ヘルパー: 選択範囲のHTMLを取得して削除 --- */
+/* --- ヘルパー: 選択範囲のHTMLを取得（アンドゥ時にテキストが復元できるよう、削除はinsertHTMLに任せる） --- */
 function getSelectedHtmlAndRemove() {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -120,7 +120,9 @@ function getSelectedHtmlAndRemove() {
         div.appendChild(clonedSelection);
         const html = div.innerHTML;
         
-        range.deleteContents();
+        // 注意: ここで range.deleteContents() を呼ぶとブラウザのUndoスタック外でDOMが削除され、
+        // 枠挿入後にアンドゥ（Ctrl+Z）した際に枠ごと文字が消滅してしまいます。
+        // 削除は後続の document.execCommand('insertHTML', ...) による選択範囲の一括置換（アトミックなUndo操作）に委ねます。
         return html;
     }
     return null;
