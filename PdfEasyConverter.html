@@ -4276,6 +4276,7 @@ video {
           <span class="flex items-center gap-1.5">
             <i data-lucide="list" class="w-4 h-4 text-indigo-500"></i>
             目次項目
+            <button id="toc-target-pane-badge" onclick="cycleActiveSplitPane()" type="button" class="hidden text-[10px] bg-teal-100 hover:bg-teal-200 text-teal-800 font-bold px-1.5 py-0.5 rounded shadow-sm border border-teal-300 transition-colors cursor-pointer" title="クリックで目次ジャンプ対象の列を切り替え">ジャンプ先: 列 1</button>
           </span>
           <span id="toc-count"
             class="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
@@ -4293,6 +4294,7 @@ video {
           <span class="flex items-center gap-1.5">
             <i data-lucide="bookmark" class="w-4 h-4 text-amber-500 fill-amber-500"></i>
             しおりを挟んだ項目
+            <button id="bookmark-target-pane-badge" onclick="cycleActiveSplitPane()" type="button" class="hidden text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-1.5 py-0.5 rounded shadow-sm border border-amber-300 transition-colors cursor-pointer" title="クリックでジャンプ対象の列を切り替え">ジャンプ先: 列 1</button>
           </span>
           <span id="bookmark-count"
             class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
@@ -4635,11 +4637,11 @@ video {
         <!-- 分割ペインコンテナ（横スクロール可能・複数列並列表示） -->
         <div id="split-panes-container" class="flex-1 min-h-0 flex flex-row overflow-x-auto overflow-y-hidden gap-2 pb-0.5">
           <!-- ペイン 0 (メイン列) -->
-          <div id="split-pane-0" class="split-pane flex-1 min-w-[280px] sm:min-w-[320px] h-full flex flex-col overflow-hidden bg-white/70 rounded-xl border border-slate-200 shadow-sm transition-all">
+          <div id="split-pane-0" onclick="if(!event.target.closest('button, select, input, a, [contenteditable]')) setActiveSplitPane(0)" class="split-pane flex-1 min-w-[280px] sm:min-w-[320px] h-full flex flex-col overflow-hidden bg-white/70 rounded-xl border border-slate-200 shadow-sm transition-all">
             <!-- ペイン 0 ヘッダー（2列以上の時のみ表示） -->
             <div id="split-pane-header-0" class="split-pane-header hidden items-center justify-between px-2.5 py-1.5 bg-slate-100 border-b border-slate-200 text-xs flex-shrink-0">
               <div class="flex items-center gap-1.5 flex-1 min-w-0">
-                <span class="font-bold text-slate-700 px-1.5 py-0.5 bg-white rounded border border-slate-200 text-[10px] flex-shrink-0">列 1</span>
+                <span id="pane-badge-0" onclick="setActiveSplitPane(0)" class="pane-badge font-bold text-slate-700 px-1.5 py-0.5 bg-white rounded border border-slate-200 text-[10px] flex-shrink-0 cursor-pointer transition-colors" title="クリックして列 1 を目次ジャンプ対象に選択">列 1</span>
                 <select id="pane-speaker-filter-0" onchange="handlePaneSpeakerFilterChange(0, this.value)" class="pane-speaker-filter text-[11px] bg-white border border-slate-300 rounded px-1 py-0.5 max-w-[120px] truncate" title="列1の発言者絞り込み">
                   <option value="">すべての発言者</option>
                 </select>
@@ -5592,6 +5594,85 @@ let splitPanes = [
   { id: 0, speakerFilter: "", searchQuery: "" }
 ];
 let nextSplitPaneId = 1;
+let activeSplitPaneId = 0;
+
+function setActiveSplitPane(paneId, notify = false) {
+  const pane = splitPanes.find(p => p.id === paneId);
+  if (!pane) {
+    activeSplitPaneId = (splitPanes[0] ? splitPanes[0].id : 0);
+  } else {
+    activeSplitPaneId = paneId;
+  }
+  updateActiveSplitPaneUI();
+  if (notify && splitPanes.length > 1) {
+    const idx = splitPanes.findIndex(p => p.id === activeSplitPaneId);
+    showToast("列選択", `目次ジャンプ等の操作対象を【列 ${idx + 1}】に選択しました。`, "info");
+  }
+}
+
+function cycleActiveSplitPane() {
+  if (splitPanes.length <= 1) return;
+  const currentIdx = splitPanes.findIndex(p => p.id === activeSplitPaneId);
+  const nextIdx = (currentIdx + 1) % splitPanes.length;
+  setActiveSplitPane(splitPanes[nextIdx].id, true);
+}
+
+function updateActiveSplitPaneUI() {
+  const isMultiPane = splitPanes.length > 1;
+  const activeIdx = splitPanes.findIndex(p => p.id === activeSplitPaneId);
+  const displayColNum = activeIdx >= 0 ? activeIdx + 1 : 1;
+
+  // 目次・しおりヘッダーのジャンプ先バッジ更新
+  const tocBadge = document.getElementById("toc-target-pane-badge");
+  if (tocBadge) {
+    if (isMultiPane) {
+      tocBadge.innerText = `ジャンプ先: 列 ${displayColNum}`;
+      tocBadge.classList.remove("hidden");
+    } else {
+      tocBadge.classList.add("hidden");
+    }
+  }
+
+  const bmBadge = document.getElementById("bookmark-target-pane-badge");
+  if (bmBadge) {
+    if (isMultiPane) {
+      bmBadge.innerText = `ジャンプ先: 列 ${displayColNum}`;
+      bmBadge.classList.remove("hidden");
+    } else {
+      bmBadge.classList.add("hidden");
+    }
+  }
+
+  // 各ペインの枠線とバッジ更新
+  splitPanes.forEach((pane, idx) => {
+    const paneEl = document.getElementById(pane.id === 0 ? "split-pane-0" : `split-pane-${pane.id}`);
+    const badgeEl = document.getElementById(pane.id === 0 ? "pane-badge-0" : `pane-badge-${pane.id}`) ||
+                    (paneEl ? paneEl.querySelector(".split-pane-header span") : null);
+    const isActive = pane.id === activeSplitPaneId;
+
+    if (paneEl) {
+      if (isMultiPane && isActive) {
+        paneEl.classList.add("ring-2", "ring-teal-400", "border-teal-400");
+      } else {
+        paneEl.classList.remove("ring-2", "ring-teal-400", "border-teal-400");
+      }
+    }
+
+    if (badgeEl) {
+      badgeEl.innerText = `列 ${idx + 1}`;
+      if (isMultiPane && isActive) {
+        badgeEl.className = "pane-badge font-bold px-2 py-0.5 rounded text-[10px] flex-shrink-0 cursor-pointer transition-colors bg-teal-600 text-white shadow-sm border border-teal-600";
+        badgeEl.title = `列 ${idx + 1} (現在目次ジャンプ等の操作対象に選択中)`;
+      } else if (isMultiPane) {
+        badgeEl.className = "pane-badge font-bold text-slate-700 hover:text-teal-700 hover:bg-teal-50 px-1.5 py-0.5 bg-white rounded border border-slate-200 hover:border-teal-300 text-[10px] flex-shrink-0 cursor-pointer transition-colors";
+        badgeEl.title = `クリックして列 ${idx + 1} を選択`;
+      } else {
+        badgeEl.className = "pane-badge font-bold text-slate-700 px-1.5 py-0.5 bg-white rounded border border-slate-200 text-[10px] flex-shrink-0";
+        badgeEl.title = "";
+      }
+    }
+  });
+}
 
 function updateSplitControlsUI() {
   const count = splitPanes.length;
@@ -5617,23 +5698,17 @@ function renderSplitPanesDOM() {
   updateSplitControlsUI();
 
   const header0 = document.getElementById("split-pane-header-0");
-  const btnScrollUp = document.getElementById("btn-global-scroll-up");
-  const btnScrollDown = document.getElementById("btn-global-scroll-down");
 
   if (count > 1) {
     if (header0) {
       header0.classList.remove("hidden");
       header0.classList.add("flex");
     }
-    if (btnScrollUp) btnScrollUp.classList.add("hidden");
-    if (btnScrollDown) btnScrollDown.classList.add("hidden");
   } else {
     if (header0) {
       header0.classList.add("hidden");
       header0.classList.remove("flex");
     }
-    if (btnScrollUp) btnScrollUp.classList.remove("hidden");
-    if (btnScrollDown) btnScrollDown.classList.remove("hidden");
   }
 
   const existingPaneIds = new Set(splitPanes.map(p => p.id));
@@ -5657,11 +5732,11 @@ function renderSplitPanesDOM() {
       paneElem.innerHTML = `
         <div id="split-pane-header-${pane.id}" class="split-pane-header flex items-center justify-between px-2.5 py-1.5 bg-slate-100 border-b border-slate-200 text-xs flex-shrink-0">
           <div class="flex items-center gap-1.5 flex-1 min-w-0">
-            <span class="font-bold text-slate-700 px-1.5 py-0.5 bg-white rounded border border-slate-200 text-[10px] flex-shrink-0">列 ${idx + 1}</span>
-            <select id="pane-speaker-filter-${pane.id}" onchange="handlePaneSpeakerFilterChange(${pane.id}, this.value)" class="pane-speaker-filter text-[11px] bg-white border border-slate-300 rounded px-1 py-0.5 max-w-[120px] truncate" title="列${idx + 1}の発言者絞り込み">
+            <span id="pane-badge-${pane.id}" onclick="setActiveSplitPane(${pane.id}, true)" class="pane-badge font-bold text-slate-700 px-1.5 py-0.5 bg-white rounded border border-slate-200 text-[10px] flex-shrink-0 cursor-pointer transition-colors" title="クリックして列 ${idx + 1} を目次ジャンプ対象に選択">列 ${idx + 1}</span>
+            <select id="pane-speaker-filter-${pane.id}" onchange="handlePaneSpeakerFilterChange(${pane.id}, this.value)" class="pane-speaker-filter text-[11px] bg-white border border-slate-300 rounded px-1 py-0.5 max-w-[120px] truncate" title="列 ${idx + 1} の発言者絞り込み">
               <option value="">すべての発言者</option>
             </select>
-            <input type="text" id="pane-search-input-${pane.id}" oninput="handlePaneSearchInput(${pane.id}, this.value)" placeholder="列${idx + 1}を検索..." class="pane-search-input text-[11px] bg-white border border-slate-300 rounded px-1.5 py-0.5 flex-1 min-w-[60px] outline-none focus:border-teal-500" title="列${idx + 1}の本文検索">
+            <input type="text" id="pane-search-input-${pane.id}" oninput="handlePaneSearchInput(${pane.id}, this.value)" placeholder="列 ${idx + 1} 検索..." class="pane-search-input text-[11px] bg-white border border-slate-300 rounded px-1.5 py-0.5 flex-1 min-w-[60px] outline-none focus:border-teal-500" title="列 ${idx + 1} の本文検索">
           </div>
           <div class="flex items-center gap-1 ml-1 flex-shrink-0">
             <button type="button" onclick="scrollPaneList(${pane.id}, -1)" class="p-1 hover:bg-white rounded text-slate-500 hover:text-teal-600" title="前のカードへ"><i data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
@@ -5669,15 +5744,39 @@ function renderSplitPanesDOM() {
             <button type="button" onclick="closeSplitPane(${pane.id})" class="p-1 hover:bg-rose-100 rounded text-slate-400 hover:text-rose-600" title="この列を閉じる"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
+        <button type="button" id="btn-pane-${pane.id}-scroll-up" onclick="scrollPaneList(${pane.id}, -1)"
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
+          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+          <span>前のカードへ</span>
+        </button>
         <div id="text-list-pane-${pane.id}" class="split-pane-list flex-1 min-h-0 space-y-2.5 overflow-y-auto px-0.5 py-1"></div>
+        <button type="button" id="btn-pane-${pane.id}-scroll-down" onclick="scrollPaneList(${pane.id}, 1)"
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          <span>次のカードへ</span>
+        </button>
       `;
+      paneElem.onclick = (e) => {
+        if (!e.target.closest("button, select, input, a, [contenteditable]")) {
+          setActiveSplitPane(pane.id);
+        }
+      };
       container.appendChild(paneElem);
       if (typeof lucide !== "undefined" && lucide.createIcons) {
         lucide.createIcons({ root: paneElem });
       }
     } else {
+      paneElem.onclick = (e) => {
+        if (!e.target.closest("button, select, input, a, [contenteditable]")) {
+          setActiveSplitPane(pane.id);
+        }
+      };
       const badge = paneElem.querySelector(".split-pane-header span");
-      if (badge) badge.innerText = `列 ${idx + 1}`;
+      if (badge) {
+        badge.id = `pane-badge-${pane.id}`;
+        badge.onclick = () => setActiveSplitPane(pane.id, true);
+        badge.innerText = `列 ${idx + 1}`;
+      }
     }
   });
 
@@ -5693,13 +5792,15 @@ function renderSplitPanesDOM() {
       spSelect.value = pane.speakerFilter || "";
     }
   });
+
+  updateActiveSplitPaneUI();
 }
 
 function setSplitCount(count) {
   count = Math.max(1, Math.min(6, count));
   if (count === splitPanes.length) return;
 
-  // 分割前のメイン列のスクロール位置および表示中カードを取得して新しい列に引き継ぐ
+  // 直前のメインのスクロール位置・表示カードを取得して新規列に引き継ぐ
   const mainList = document.getElementById("text-list");
   const currentScrollTop = mainList ? mainList.scrollTop : 0;
   let anchorItemId = null;
@@ -5727,10 +5828,15 @@ function setSplitCount(count) {
     splitPanes.pop();
   }
 
+  if (!splitPanes.some(p => p.id === activeSplitPaneId)) {
+    activeSplitPaneId = (splitPanes[0] ? splitPanes[0].id : 0);
+  }
+
   renderSplitPanesDOM();
   renderList(true);
+  updateActiveSplitPaneUI();
 
-  // 新しく追加された列のスクロール位置をメイン列の位置に同期
+  // 新規追加された列のスクロール位置をメインの位置に同期
   if (newPaneIds.length > 0) {
     requestAnimationFrame(() => {
       newPaneIds.forEach(pId => {
@@ -5751,7 +5857,7 @@ function setSplitCount(count) {
   if (count === 1) {
     showToast("分割解除", "1列表示に戻しました。", "info");
   } else {
-    showToast("画面分割", `${count}列に縦分割しました。開いている場所から並列表示を開始します。`, "info");
+    showToast("画面分割", `${count}列に縦分割しました。開いている場所から表示開始します。`, "info");
   }
 }
 function changeSplitCount(delta) {
@@ -5760,7 +5866,7 @@ function changeSplitCount(delta) {
 
 function addSplitPane() {
   if (splitPanes.length >= 6) {
-    showToast("上限", "分割は最大6列までです。", "info");
+    showToast("分割制限", "分割は最大6列までです。", "info");
     return;
   }
   setSplitCount(splitPanes.length + 1);
@@ -5777,18 +5883,25 @@ function closeSplitPane(paneId) {
   if (splitPanes.length === 0) {
     splitPanes = [{ id: 0, speakerFilter: "", searchQuery: "" }];
   }
+  if (activeSplitPaneId === paneId) {
+    activeSplitPaneId = (splitPanes[0] ? splitPanes[0].id : 0);
+  }
   renderSplitPanesDOM();
   renderList(true);
+  updateActiveSplitPaneUI();
   showToast("列削除", "列を1つ閉じました。", "info");
 }
 
 function resetSplitPanes() {
   if (splitPanes.length <= 1) return;
   splitPanes = [{ id: 0, speakerFilter: "", searchQuery: "" }];
+  activeSplitPaneId = 0;
   renderSplitPanesDOM();
   renderList(true);
+  updateActiveSplitPaneUI();
   showToast("分割解除", "すべての分割を解除し、1つにまとめました。", "info");
 }
+
 
 function handlePaneSpeakerFilterChange(paneId, val) {
   const pane = splitPanes.find(p => p.id === paneId);
@@ -5810,30 +5923,60 @@ function handlePaneSearchInput(paneId, val) {
 }
 
 function scrollPaneList(paneId, direction) {
-  const listId = paneId === 0 ? "text-list" : `text-list-pane-${paneId}`;
+  setActiveSplitPane(paneId);
+  const pane = splitPanes.find(p => p.id === paneId) || splitPanes[0] || { id: 0 };
+  const listId = pane.id === 0 ? "text-list" : `text-list-pane-${pane.id}`;
   const list = document.getElementById(listId);
   if (!list) return;
-  const cards = Array.from(list.querySelectorAll(".card-container"));
+
+  const cards = Array.from(list.querySelectorAll(".card-container[data-id], [data-id]"));
   if (cards.length === 0) {
     list.scrollBy({ top: direction * 250, behavior: "smooth" });
     return;
   }
+
   const listRect = list.getBoundingClientRect();
-  let currentIdx = 0;
-  for (let i = 0; i < cards.length; i++) {
-    const cardRect = cards[i].getBoundingClientRect();
-    if (cardRect.bottom > listRect.top + 20) {
-      currentIdx = i;
-      break;
+  let currentIdx = -1;
+
+  if (direction > 0) {
+    for (let i = 0; i < cards.length; i++) {
+      const cardRect = cards[i].getBoundingClientRect();
+      if (cardRect.top >= listRect.top - 10) {
+        currentIdx = i;
+        break;
+      }
     }
+    if (currentIdx === -1) currentIdx = 0;
+  } else {
+    for (let i = 0; i < cards.length; i++) {
+      const cardRect = cards[i].getBoundingClientRect();
+      if (cardRect.bottom > listRect.top + 15) {
+        currentIdx = i;
+        break;
+      }
+    }
+    if (currentIdx === -1) currentIdx = cards.length - 1;
   }
-  const targetIdx = Math.max(0, Math.min(cards.length - 1, currentIdx + direction));
+
+  let targetIdx = currentIdx + direction;
+  targetIdx = Math.max(0, Math.min(cards.length - 1, targetIdx));
   const targetCard = cards[targetIdx];
+
   if (targetCard) {
+    const vState = getPaneVirtualState(pane);
+    if (vState && vState.enabled) {
+      vState.suppressScrollUntil = performance.now() + 1500;
+    }
     targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
     targetCard.style.outline = "2px solid #0d9488";
     setTimeout(() => { targetCard.style.outline = ""; }, 600);
+  } else {
+    list.scrollBy({ top: direction * 200, behavior: "smooth" });
   }
+}
+
+function scrollTextList(direction) {
+  scrollPaneList(0, direction);
 }
 
 function renderAllCards() {
@@ -6321,15 +6464,36 @@ function scrollToItem(targetId, options = {}) {
     }
   }
 
-  // 検索フィルター解除
-  const search = document.getElementById("card-search-input");
-  if (search && search.value && !document.getElementById("selection-card-" + targetId)) {
-    search.value = "";
+  // 操作対象ペイン（選択された列）の決定
+  const targetPaneId = (options.paneId !== undefined) ? options.paneId : activeSplitPaneId;
+  const pane = splitPanes.find(p => p.id === targetPaneId) || splitPanes[0] || { id: 0 };
+  const listId = pane.id === 0 ? "text-list" : `text-list-pane-${pane.id}`;
+  const list = document.getElementById(listId);
+  if (!list) return;
+
+  // フィルター解除（対象ペイン内でカードが隠れていたら自動クリア）
+  const sInput = document.getElementById(pane.id === 0 ? "card-search-input" : `pane-search-input-${pane.id}`);
+  const currentQuery = (pane.searchQuery !== undefined && pane.searchQuery !== "") ? pane.searchQuery : (pane.id === 0 && sInput ? sInput.value : "");
+  if (currentQuery && !matchesSearchQuery(item, currentQuery.toLowerCase())) {
+    if (sInput) sInput.value = "";
+    pane.searchQuery = "";
+    if (pane.id === 0) {
+      const btnClear = document.getElementById("btn-clear-search");
+      if (btnClear) btnClear.classList.add("hidden");
+    }
     changed = true;
   }
 
-  const list = document.getElementById("text-list");
-  if (!list) return;
+  if (pane.speakerFilter && !matchesSpeakerFilter(item, pane.speakerFilter)) {
+    pane.speakerFilter = "";
+    const spSelect = document.getElementById(pane.id === 0 ? "card-speaker-filter" : `pane-speaker-filter-${pane.id}`);
+    if (spSelect) spSelect.value = "";
+    changed = true;
+  }
+
+  if (changed) {
+    renderList(true);
+  }
 
   const block = options.block || "center";
   const hlClass = options.highlightClass || (options.block === "start" ? "bg-teal-50 border-teal-400" : "bg-indigo-100/60 border-indigo-400");
@@ -6344,26 +6508,27 @@ function scrollToItem(targetId, options = {}) {
     }, hlDuration);
   };
 
-  if (virtualCards.enabled) {
-    if (changed) {
-      renderList(true);
-    }
-    const virtualIndex = virtualCards.items.findIndex(record => record.item.id === targetId);
+  const cardSelector = pane.id === 0
+    ? `#selection-card-${targetId}, [data-id="${targetId}"]`
+    : `#pane-${pane.id}-selection-card-${targetId}, [data-id="${targetId}"]`;
+
+  const vState = getPaneVirtualState(pane);
+  if (vState && vState.enabled) {
+    const virtualIndex = vState.items.findIndex(record => record.item.id === targetId);
     if (virtualIndex >= 0) {
-      // スクロールイベントによる再計算の割り込みを2.5秒間確実にブロックして力尽きるのを防止
-      virtualCards.suppressScrollUntil = performance.now() + 2500;
+      vState.suppressScrollUntil = performance.now() + 2500;
+      vState.start = Math.max(0, virtualIndex - 30);
+      if (pane.id === 0) {
+        renderVirtualWindow(false);
+      } else {
+        renderVirtualWindowForPane(list, vState, false, pane);
+      }
 
-      // 目標アイテムを含むウィンドウを設定
-      virtualCards.start = Math.max(0, virtualIndex - 30);
-      renderVirtualWindow(false);
-
-      // 目標位置へ直接ワープ（長距離スムーススクロールによる失速・中断を防ぐ）
-      const targetScrollTop = Math.max(0, virtualIndex * virtualCards.rowHeight - (list.clientHeight / 3));
+      const targetScrollTop = Math.max(0, virtualIndex * vState.rowHeight - (list.clientHeight / 3));
       list.scrollTop = targetScrollTop;
 
-      // 描画された要素を取得して微調整とハイライト
       requestAnimationFrame(() => {
-        const card = document.getElementById("selection-card-" + targetId) || document.querySelector(`[data-id="${targetId}"]`);
+        const card = list.querySelector(cardSelector);
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: block });
           applyHighlight(card);
@@ -6374,10 +6539,7 @@ function scrollToItem(targetId, options = {}) {
   }
 
   // 非仮想スクロールの場合
-  if (changed) {
-    renderList(true);
-  }
-  const card = document.getElementById("selection-card-" + targetId) || document.querySelector(`[data-id="${targetId}"]`);
+  const card = list.querySelector(cardSelector);
   if (card) {
     card.scrollIntoView({ behavior: "smooth", block: block });
     applyHighlight(card);
