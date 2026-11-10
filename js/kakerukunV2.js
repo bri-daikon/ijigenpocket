@@ -1829,8 +1829,27 @@ function restoreRange() {
     if (savedSelectionRange) sel.addRange(savedSelectionRange);
 }
 
+function prepareRangeForInsertion() {
+    if (savedSelectionRange) {
+        restoreRange();
+    } else {
+        editor.focus();
+    }
+    const sel = window.getSelection();
+    let isInsideBox = false;
+    if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        let node = range.commonAncestorContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        if (node && node.closest('.box-wrapper, .box-custom, .box-special, .box-custom-snippet, .box-summary, .box-check, .box-spot, .box-listen, .box-library, .box-san, .box-search, .box-secret, .box-gimmick, .box-tendency, .kp-info, .quote')) {
+            isInsideBox = true;
+        }
+    }
+    return isInsideBox;
+}
+
 function insertTRPGBox(type) {
-    editor.focus();
+    const isInsideBox = prepareRangeForInsertion();
     const selectedHtml = getSelectedHtmlAndRemove();
     let className = "", label = "", defaultContent = "内容を入力...";
     const checkTpl = "成功：<br>失敗：";
@@ -1850,70 +1869,90 @@ function insertTRPGBox(type) {
     }
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(borderColor, 0.4);
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        html = `<div class="${className}" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-width: 1px; border-style: solid; clear: both; break-inside: avoid;"><strong>【${label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
+    } else {
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="${className}" contenteditable="true" style="background-color:${borderColor}11; border-color:${borderColor}; color:${textColor}; user-select:text; margin: 0;"><strong>【${label}】</strong><div class="mt-1">${content}</div></div>
     </div><p><br></p>`;
+    }
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
 
 function insertBorderBox() {
-    editor.focus();
+    const isInsideBox = prepareRangeForInsertion();
     const selectedHtml = getSelectedHtmlAndRemove();
     const content = selectedHtml || "内容を入力...";
     const col = document.getElementById('bg-color-picker').value;
     const textColor = darkenColor(col, 0.4);
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        html = `<div class="box-custom" style="border-color:${col}; background-color:${col}22; color:${textColor}; border-width: 2px; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-style: solid; clear: both; break-inside: avoid;">${content}</div><p><br></p>`;
+    } else {
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="box-custom" contenteditable="true" style="border-color:${col}; background-color:${col}22; color:${textColor}; border-width: 2px; margin: 0; user-select:text;">${content}</div>
     </div><p><br></p>`;
+    }
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
 
 function insertKPInfo() {
-    editor.focus();
+    const isInsideBox = prepareRangeForInsertion();
     const selectedHtml = getSelectedHtmlAndRemove();
     const content = selectedHtml || "内容...";
     const borderColor = "#fde047";
     const textColor = darkenColor(borderColor, 0.6);
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        html = `<div class="kp-info" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-style: solid; clear: both; break-inside: avoid;"><strong>【KP情報】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
+    } else {
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="kp-info" contenteditable="true" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px; margin: 0; user-select:text;"><strong>【KP情報】</strong><div class="mt-1">${content}</div></div>
     </div><p><br></p>`;
+    }
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
 
 function insertQuote() {
-    editor.focus();
+    const isInsideBox = prepareRangeForInsertion();
     const selectedHtml = getSelectedHtmlAndRemove();
     const content = selectedHtml || "内容...";
     const borderColor = "#94a3b8";
     const textColor = darkenColor(borderColor, 0.4);
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        html = `<div class="quote" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px; padding: 1rem; margin: 1rem 0; border-style: solid; clear: both; break-inside: avoid;">${content}</div><p><br></p>`;
+    } else {
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="quote" contenteditable="true" style="background-color:${borderColor}22; border-color:${borderColor}; color:${textColor}; border-width: 2px; margin: 0; user-select:text;">${content}</div>
     </div><p><br></p>`;
+    }
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
 
 function insertSpecialBox(label) {
-    editor.focus();
+    const isInsideBox = prepareRangeForInsertion();
     const selectedHtml = getSelectedHtmlAndRemove();
     let defaultCol = "#64748b";
     let defaultContent = "詳細...";
@@ -1926,13 +1965,18 @@ function insertSpecialBox(label) {
     }
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(defaultCol, 0.5);
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        html = `<div class="box-special" style="border-top-color:${defaultCol}; background-color:${defaultCol}22; color:${textColor}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-style: solid; clear: both; break-inside: avoid;"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div><p><br></p>`;
+    } else {
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-rose-400 hover:text-rose-600 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="box-special" contenteditable="true" style="border-top-color:${defaultCol}; background-color:${defaultCol}22; color:${textColor}; margin: 0; user-select:text;"><strong>■ ${label}</strong><div class="mt-2 text-sm">${content}</div></div>
     </div><p><br></p>`;
+    }
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
@@ -2587,10 +2631,10 @@ const throttle = (fn, wait) => {
 editor.addEventListener('input', throttle(() => { autoUpdateUI(); }, 500));
 titleInput.oninput = () => { autoUpdateUI(); };
 
-// エディタ内の選択範囲を常に最新に保持（ツールバー操作時に選択範囲を失わないようにする）
+// エディタ内の選択範囲・カーソル位置を常に最新に保持（ツールバー操作時に選択範囲やキャレット位置を失わないようにする）
 document.addEventListener('selectionchange', () => {
     const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+    if (sel && sel.rangeCount > 0) {
         const range = sel.getRangeAt(0);
         if (editor && editor.contains(range.commonAncestorContainer)) {
             savedSelectionRange = range.cloneRange();
@@ -3271,7 +3315,23 @@ function insertSnippet(id) {
     const snippet = snippets.find(s => s.id === id);
     if (!snippet) return;
 
-    editor.focus();
+    if (savedSelectionRange) {
+        restoreRange();
+    } else {
+        editor.focus();
+    }
+
+    const sel = window.getSelection();
+    let isInsideBox = false;
+    if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        let node = range.commonAncestorContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        if (node && node.closest('.box-wrapper, .box-custom, .box-special, .box-custom-snippet, .box-summary, .box-check, .box-spot, .box-listen, .box-library, .box-san, .box-search, .box-secret, .box-gimmick, .box-tendency, .kp-info, .quote')) {
+            isInsideBox = true;
+        }
+    }
+
     const selectedHtml = getSelectedHtmlAndRemove();
     const col = snippet.color || '#3b82f6';
 
@@ -3279,13 +3339,23 @@ function insertSnippet(id) {
     const content = selectedHtml || defaultContent;
     const textColor = darkenColor(col, 0.4);
 
-    const html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; break-inside: avoid; user-select:none;">
+    let html = '';
+    if (isInsideBox) {
+        // 枠内への追加時（旧Kakerukun.htmlと同様）：
+        // contenteditable="false" のラッパーを含めず直接枠要素を挿入することで、
+        // ブラウザが画面一番上へジャンプ・脱出してしまうバグを完全に防止し、枠内へ確実に追加する
+        html = `<div class="box-custom-snippet" data-snippet-id="${snippet.id}" style="border-color:${col}; background-color:${col}11; color:${textColor}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border-width: 2px; border-style: solid; clear: both; break-inside: avoid;"><strong>【${snippet.label}】</strong><div class="mt-1">${content}</div></div><p><br></p>`;
+    } else {
+        // 通常の本文領域への挿入：ドラッグハンドル付きラッパー
+        html = `<div class="box-wrapper group relative my-4 block" contenteditable="false" draggable="true" style="clear:both; break-inside: avoid; user-select:none;">
         <div class="drag-handle-container absolute -left-10 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 no-print select-none z-10" contenteditable="false">
             <button type="button" class="box-erase-btn cursor-pointer text-slate-400 hover:text-rose-500 hover:scale-125 text-xs p-0.5 transition" onclick="eraseOrUnwrapBox(this.closest('.box-wrapper'))" title="枠を消す（文字があれば文字を残して枠解除、枠のみなら枠ごと削除）">🧹</button>
             <div class="drag-handle cursor-move text-slate-300 hover:text-slate-600 font-bold" title="ドラッグで移動">≡</div>
         </div>
         <div class="box-custom-snippet" contenteditable="true" data-snippet-id="${snippet.id}" style="border-color:${col}; background-color:${col}11; color:${textColor}; padding: 1rem; border-radius: 0.5rem; margin: 0; border-width: 2px; border-style: solid; user-select:text;"><strong>【${snippet.label}】</strong><div class="mt-1">${content}</div></div>
     </div><p><br></p>`;
+    }
+
     document.execCommand('insertHTML', false, html);
     updateTOC(); autoUpdateUI();
 }
