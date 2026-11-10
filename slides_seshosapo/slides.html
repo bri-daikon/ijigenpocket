@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>セショサポ - Weby 機能紹介スライド</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Outfit:wght@500;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Noto Sans JP', 'Outfit', sans-serif;
+      background-color: #060911;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .slide-viewport {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+      background: radial-gradient(circle at 12% 18%, rgba(13, 148, 136, 0.18) 0%, transparent 45%),
+                  radial-gradient(circle at 88% 82%, rgba(56, 189, 248, 0.15) 0%, transparent 45%),
+                  linear-gradient(135deg, #090d16 0%, #0f172a 50%, #080c18 100%);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 72px;
+      page-break-after: always;
+    }
+    /* Grid decorative background */
+    .slide-viewport::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 54px 54px;
+      pointer-events: none;
+    }
+    
+    /* Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+      border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 20px;
+    }
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #0d9488, #0284c7);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(13, 148, 136, 0.4);
+    }
+    .brand-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-title .version {
+      font-size: 16px;
+      font-weight: 800;
+      color: #5eead4;
+      background: rgba(13, 148, 136, 0.3);
+      border: 1.5px solid rgba(45, 212, 191, 0.5);
+      padding: 4px 12px;
+      border-radius: 24px;
+      font-family: 'Outfit', sans-serif;
+    }
+    .brand-sub {
+      font-size: 17px;
+      color: #94a3b8;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .slide-indicator {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .category-chip {
+      font-size: 16px;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1.5px solid rgba(56, 189, 248, 0.4);
+      padding: 8px 20px;
+      border-radius: 30px;
+      letter-spacing: 0.08em;
+    }
+    .slide-page-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    /* Content Area */
+    .slide-body {
+      position: relative;
+      z-index: 10;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px 0;
+    }
+    
+    .slide-title-block {
+      margin-bottom: 24px;
+    }
+    .slide-section-tag {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: #2dd4bf;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slide-main-title {
+      font-size: 48px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      line-height: 1.2;
+    }
+    .slide-main-desc {
+      font-size: 21px;
+      color: #94a3b8;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* 2 Columns Layout */
+    .cols-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      flex-grow: 1;
+    }
+
+    /* Glass Card */
+    .feature-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1.5px solid rgba(255, 255, 255, 0.11);
+      border-radius: 22px;
+      padding: 26px 30px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #14b8a6, #38bdf8);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(20, 184, 166, 0.18);
+      border: 1.5px solid rgba(20, 184, 166, 0.4);
+      color: #2dd4bf;
+      flex-shrink: 0;
+    }
+    .card-icon.accent-cyan {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+    .card-icon.accent-purple {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+    }
+    .card-icon.accent-amber {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .card-title {
+      font-size: 27px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    .card-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    /* Feature Items List */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+    .feature-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 13px 18px;
+      border-radius: 14px;
+    }
+    .feature-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #14b8a6;
+      margin-top: 7px;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px #14b8a6;
+    }
+    .feature-dot.cyan { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
+    .feature-dot.purple { background: #c084fc; box-shadow: 0 0 10px #c084fc; }
+    .feature-dot.amber { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+
+    .feature-text-block {
+      flex-grow: 1;
+    }
+    .feature-name {
+      font-size: 21px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feature-badge {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .feature-desc {
+      font-size: 17px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* Footer */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+      border-top: 1.5px solid rgba(255, 255, 255, 0.1);
+      padding-top: 18px;
+      font-size: 17px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .footer-highlight {
+      color: #2dd4bf;
+      font-weight: 800;
+    }
+
+    /* Cover Specific */
+    .cover-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px 0;
+      gap: 36px;
+    }
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 19px;
+      font-weight: 800;
+      color: #5eead4;
+      background: rgba(13, 148, 136, 0.2);
+      border: 1.5px solid rgba(45, 212, 191, 0.45);
+      padding: 10px 28px;
+      border-radius: 40px;
+      letter-spacing: 0.1em;
+    }
+    .cover-title {
+      font-size: 88px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 45%, #5eead4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cover-sub {
+      font-size: 30px;
+      color: #cbd5e1;
+      max-width: 1300px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+    .cover-highlight {
+      color: #38bdf8;
+      font-weight: 800;
+    }
+    .cover-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      width: 100%;
+      max-width: 1540px;
+      margin-top: 10px;
+    }
+    .cover-pillar-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 22px;
+      padding: 32px 28px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6);
+    }
+    .cover-pillar-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #14b8a6, #38bdf8);
+    }
+    .pillar-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 900;
+      color: #14b8a6;
+      letter-spacing: 0.12em;
+    }
+    .pillar-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .pillar-desc {
+      font-size: 18px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    /* Single Slide Viewer Control */
+    #nav-controls {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(14px);
+      padding: 10px 20px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 9999;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    }
+    #nav-controls button {
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    #nav-controls button:hover {
+      background: #14b8a6;
+      color: #ffffff;
+    }
+    #nav-controls span {
+      font-size: 15px;
+      color: #cbd5e1;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    @media print {
+      body { background: transparent; }
+      #nav-controls { display: none !important; }
+      .slide-viewport {
+        page-break-after: always;
+        break-after: page;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== SLIDE 1: COVER ==================== -->
+  <section class="slide-viewport" id="slide-1">
+    <header class="slide-header">
+      <div class="brand-badge">
+        <div class="brand-icon">
+          <i data-lucide="file-text" style="width: 32px; height: 32px; color: #fff;"></i>
+        </div>
+        <div>
+          <div class="brand-title">セショサポ <span class="version">Ver.2.0.0</span></div>
+          <div class="brand-sub">Project by 異次元ポケット</div>
+        </div>
+      </div>
+      <div class="slide-indicator">
+        <span class="category-chip">OVERVIEW</span>
+        <span class="slide-page-num">01 / 05</span>
+      </div>
+    </header>
+
+    <div class="slide-body cover-body">
+      <div class="cover-badge">
+        <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+        TRPG KEYPER & GM WORKSPACE
+      </div>
+      <div>
+        <h1 class="cover-title">セショサポ - Weby</h1>
+        <p class="cover-sub" style="margin-top: 18px;">
+          PDF原本を見ながら改行を整え、<span class="cover-highlight">ココフォリアへワンクリック送信！</span><br>
+          クトゥルフ神話TRPGをはじめとするオンラインセッション準備・進行支援WEBツール
+        </p>
+      </div>
+
+      <div class="cover-grid">
+        <div class="cover-pillar-card">
+          <div class="pillar-num">PILLAR 01</div>
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="file-search" style="width: 28px; height: 28px;"></i></div>
+            <div class="pillar-title">PDF解析 & 日本語最適化</div>
+          </div>
+          <p class="pillar-desc">
+            原本プレビュー表示、目次自動抽出、2段組の自動順序補正、文末以外の不自然な折り返し改行の自動結合。
+          </p>
+        </div>
+
+        <div class="cover-pillar-card">
+          <div class="pillar-num">PILLAR 02</div>
+          <div class="card-header">
+            <div class="card-icon accent-cyan"><i data-lucide="send" style="width: 28px; height: 28px;"></i></div>
+            <div class="pillar-title">ココフォリア完全連携</div>
+          </div>
+          <p class="pillar-desc">
+            ワンクリックコピー、専用ブックマークレットで送信先タブ・発言キャラクターの自動切り替え、{}一括変換。
+          </p>
+        </div>
+
+        <div class="cover-pillar-card">
+          <div class="pillar-num">PILLAR 03</div>
+          <div class="card-header">
+            <div class="card-icon accent-purple"><i data-lucide="users" style="width: 28px; height: 28px;"></i></div>
+            <div class="pillar-title">探索者・NPC・卓報告 統合</div>
+          </div>
+          <p class="pillar-desc">
+            駒JSONドラッグ読込、本文を見ながらのNPC手動作成（6版/7版自動計算）、ワンクリック𝕏卓報告生成。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="footer-highlight">Client-Side Secure:</span> ブラウザ完結動作（外部へのデータ送信なし・完全自動保存対応）
+      </div>
+      <div>https://ijigenpocket.booth.pm/</div>
+    </footer>
+  </section>
+
+  <!-- ==================== SLIDE 2: PDF & TEXT PROCESSING ==================== -->
+  <section class="slide-viewport" id="slide-2">
+    <header class="slide-header">
+      <div class="brand-badge">
+        <div class="brand-icon">
+          <i data-lucide="file-text" style="width: 32px; height: 32px; color: #fff;"></i>
+        </div>
+        <div>
+          <div class="brand-title">セショサポ <span class="version">Ver.2.0.0</span></div>
+          <div class="brand-sub">Project by 異次元ポケット</div>
+        </div>
+      </div>
+      <div class="slide-indicator">
+        <span class="category-chip">IMPORT & CLEANING</span>
+        <span class="slide-page-num">02 / 05</span>
+      </div>
+    </header>
+
+    <div class="slide-body">
+      <div class="slide-title-block">
+        <div class="slide-section-tag">
+          <i data-lucide="cpu" style="width: 20px; height: 20px;"></i>
+          STEP 01 & 02: IMPORT & EXTRACTION
+        </div>
+        <h2 class="slide-main-title">PDF本紙プレビュー ＆ 高度テキスト整形</h2>
+        <p class="slide-main-desc">原本PDFの挿絵やルビを確認しながら、日本語シナリオに最適化されたスマートなテキスト抽出を実施します。</p>
+      </div>
+
+      <div class="cols-2">
+        <!-- Card 1 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="book-open" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">1. ファイル読込 & 本紙プレビュー</div>
+              <div class="card-subtitle">原本PDFと抽出テキストの双方向リアルタイム連携</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">PDF / テキストファイル即時読込 <span class="feature-badge">.pdf / .txt</span></div>
+                <div class="feature-desc">D&Dまたは選択でロード。TextファイルはUTF-8 / Shift-JIS / EUC-JPに対応。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">リアルタイム原本プレビュー表示</div>
+                <div class="feature-desc">左ペインにPDF原本を表示。ズーム（拡大・縮小）、ページ送り、ページ番号直入力ジャンプ。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ドキュメント目次ツリー抽出</div>
+                <div class="feature-desc">PDFに内蔵された目次（しおり）を自動解析してツリー表示。「カードに追加」でシナリオカード化。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">双方向ページ連動ジャンプ</div>
+                <div class="feature-desc">各テキストカードの「P.〇〇」バッジをクリックすると、左ペインのPDF原本が該当ページへ即座に移動。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon accent-cyan"><i data-lucide="sparkles" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">2. 高度テキスト自動抽出 & クリーニング</div>
+              <div class="card-subtitle">TRPGシナリオ特有の文章構造を自動判別して最適化</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">2段組レイアウト自動補正</div>
+                <div class="feature-desc">左右2段組みレイアウトを自動認識。「左段の上→下 → 右段の上→下」の正しい順序で抽出。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">列折り返し改行の自動結合</div>
+                <div class="feature-desc">行末で不自然に途切れた文章を検出し、句読点（。や！など）以外で改行された文章を自然に連結。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">不要要素の自動除外 & 整形</div>
+                <div class="feature-desc">ヘッダー・フッター・ノンブル・目次点線を自動スキップ。半角スペース除去や全角英数半角化も自動。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ふりがな（ルビ）ホバー表示機能</div>
+                <div class="feature-desc">形態素解析（kuroshiro）により、難しい漢字にカーソルを乗せると読み仮名をポップアップ表示。編集も可能。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="footer-highlight">Smart Parser:</span> 会話文（「……」）の前後を自動認識し、地の文とセリフを最適な段落カードに分割
+      </div>
+      <div>02 / 05</div>
+    </footer>
+  </section>
+
+  <!-- ==================== SLIDE 3: CARDS & CCFOLIA ==================== -->
+  <section class="slide-viewport" id="slide-3">
+    <header class="slide-header">
+      <div class="brand-badge">
+        <div class="brand-icon">
+          <i data-lucide="file-text" style="width: 32px; height: 32px; color: #fff;"></i>
+        </div>
+        <div>
+          <div class="brand-title">セショサポ <span class="version">Ver.2.0.0</span></div>
+          <div class="brand-sub">Project by 異次元ポケット</div>
+        </div>
+      </div>
+      <div class="slide-indicator">
+        <span class="category-chip">CARDS & INTEGRATION</span>
+        <span class="slide-page-num">03 / 05</span>
+      </div>
+    </header>
+
+    <div class="slide-body">
+      <div class="slide-title-block">
+        <div class="slide-section-tag">
+          <i data-lucide="layers" style="width: 20px; height: 20px;"></i>
+          STEP 03 & 04: EDITING & AUTOMATION
+        </div>
+        <h2 class="slide-main-title">カード自由編集 ＆ ココフォリア完全連携</h2>
+        <p class="slide-main-desc">手足のようにカードを整理し、ブラウザ連携でココフォリアのチャット送信を極限まで効率化します。</p>
+      </div>
+
+      <div class="cols-2">
+        <!-- Card 1 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon accent-amber"><i data-lucide="edit-3" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">3. テキストカードの自由な編集・管理</div>
+              <div class="card-subtitle">直感的なカード操作でセッションの進行台本を構築</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot amber"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">インライン編集 ＆ 即時分割・結合</div>
+                <div class="feature-desc">文字を直接修正可能。カーソル位置でEnterキー（または分割ボタン）を押すだけで即時分割。前後結合も自在。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot amber"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ドラッグ＆ドロップ（並び替え / 結合）</div>
+                <div class="feature-desc">「移動モード」でカード順序を自在に並べ替え。「結合モード」ならカードを重ねるだけで合体。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot amber"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">10色カラー分類 & 目次（TOC）折りたたみ</div>
+                <div class="feature-desc">標準・赤・緑など10色＋カスタム色分け。目次カード化（H1〜）、字下げ、配下一括折りたたみ対応。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot amber"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">しおり・付箋メモ ＆ 一括操作ツールバー</div>
+                <div class="feature-desc">左ペインにしおり/付箋一覧を自動集約。複数選択して「一括色変え」「一括タブ設定」「一括結合」が可能。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="send" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">4. 最強のココフォリア連携機能</div>
+              <div class="card-subtitle">タブ切替も発言者選択も自動化する専任アシスタント</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ワンクリックコピー ＆ コピー済マーク</div>
+                <div class="feature-desc">クリックするだけで即コピー。カードに「コピー済み」マークが付き、進行状況がひと目で把握可能。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ココフォリア専用ブックマークレット</div>
+                <div class="feature-desc">登録するだけでココフォリア上に「📋 貼付のみ」「🚀 貼付＆送信」ボタンが出現。送信までワンクリック完結。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">タブ ＆ 発言キャラクターの自動切り替え</div>
+                <div class="feature-desc">カードに設定された送信先タブへ自動切替。「名前『セリフ』」から発言者を自動認識・切替。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">TRPG {} 一括変換 ＆ シーン一覧抽出</div>
+                <div class="feature-desc">KPC, PC, HOを `{PC}` に一括変換。シナリオ内の `/scene` タグを自動検出し、一覧表示＆コマンド挿入。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="footer-highlight">Undo/Redo Ready:</span> Ctrl+Z（元に戻す） / Ctrl+Shift+Z（やり直し）完全対応でミスの心配ゼロ
+      </div>
+      <div>03 / 05</div>
+    </footer>
+  </section>
+
+  <!-- ==================== SLIDE 4: CHARACTERS ==================== -->
+  <section class="slide-viewport" id="slide-4">
+    <header class="slide-header">
+      <div class="brand-badge">
+        <div class="brand-icon">
+          <i data-lucide="file-text" style="width: 32px; height: 32px; color: #fff;"></i>
+        </div>
+        <div>
+          <div class="brand-title">セショサポ <span class="version">Ver.2.0.0</span></div>
+          <div class="brand-sub">Project by 異次元ポケット</div>
+        </div>
+      </div>
+      <div class="slide-indicator">
+        <span class="category-chip">CHARACTERS VIEW</span>
+        <span class="slide-page-num">04 / 05</span>
+      </div>
+    </header>
+
+    <div class="slide-body">
+      <div class="slide-title-block">
+        <div class="slide-section-tag">
+          <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+          STEP 05 & 06: PL & NPC MANAGEMENT
+        </div>
+        <h2 class="slide-main-title">探索者ビューア ＆ NPCビューア</h2>
+        <p class="slide-main-desc">駒JSONのドラッグ読み込みや、シナリオ本文を見ながらの直感的なNPC手動作成（6版/7版自動計算）に対応。</p>
+      </div>
+
+      <div class="cols-2">
+        <!-- Card 1 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="user-check" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">5. 探索者ビューア (PLキャラクター)</div>
+              <div class="card-subtitle">参加プレイヤーのステータス・技能を一覧カード化</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ココフォリア駒JSONを即時読込 <span class="feature-badge">D&D / Ctrl+V</span></div>
+                <div class="feature-desc">いあきゃら、Charaeno等で出力した駒JSONをドラッグ＆ドロップ、またはCtrl+V貼り付けで即登録。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">主要ステータス・能力値の一覧表示</div>
+                <div class="feature-desc">HP, MP, SAN, DB, アイデア, 幸運, 知識, 立ち絵アイコンを美しく表示。PLの状況を一目で把握。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">技能ロールのワンクリックコピー</div>
+                <div class="feature-desc">各技能ボタン（例：CCB&lt;=70 【目星】）をクリックするだけでダイスコマンドをクリップボードにコピー。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">HO（ハンドアウト）割り当て & 駒再出力</div>
+                <div class="feature-desc">HO1、HO2などの役職設定やメモ編集が可能。ココフォリア用駒JSONの再出力・コピーにも対応。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon accent-purple"><i data-lucide="user-plus" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">6. NPCビューア (手動作成・6版/7版)</div>
+              <div class="card-subtitle">本文参照入力 ＆ 自動計算でNPC駒を素早く生成</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot purple"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">本文参照からのNPC作成展開</div>
+                <div class="feature-desc">カードのNPCボタンを押すと、本文を画面上部に参照表示しながら作成モーダルを展開。数値入力が快適。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot purple"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">CoC 6版 / 新CoC 7版 両対応＆自動計算</div>
+                <div class="feature-desc">能力値（STR等）を入力すると、HP, MP, SAN, DB, 判定値（7版: ビルド, 移動率）を一括自動算出。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot purple"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">技能・チャットパレット・自由メモ設定</div>
+                <div class="feature-desc">技能名と数値を自由追加。チャットパレット末尾への追加コマンド（SANチェック等）や設定メモを完備。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot purple"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ココフォリア秘匿・非公開オプション</div>
+                <div class="feature-desc">「ステータス非公開」「発言時キャラ非表示」「盤面一覧に非表示」など、裏方NPC用の設定をワンタッチ付与。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="footer-highlight">Grid & List:</span> グリッド表示（横並び）と縦並び表示（1列）をワンタッチ切替可能
+      </div>
+      <div>04 / 05</div>
+    </footer>
+  </section>
+
+  <!-- ==================== SLIDE 5: REPORT & UTILITIES ==================== -->
+  <section class="slide-viewport" id="slide-5">
+    <header class="slide-header">
+      <div class="brand-badge">
+        <div class="brand-icon">
+          <i data-lucide="file-text" style="width: 32px; height: 32px; color: #fff;"></i>
+        </div>
+        <div>
+          <div class="brand-title">セショサポ <span class="version">Ver.2.0.0</span></div>
+          <div class="brand-sub">Project by 異次元ポケット</div>
+        </div>
+      </div>
+      <div class="slide-indicator">
+        <span class="category-chip">REPORT & UTILITIES</span>
+        <span class="slide-page-num">05 / 05</span>
+      </div>
+    </header>
+
+    <div class="slide-body">
+      <div class="slide-title-block">
+        <div class="slide-section-tag">
+          <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+          STEP 07 & 08: SESSION REPORT & BACKUP
+        </div>
+        <h2 class="slide-main-title">卓報告作成ツール ＆ データ保存・カスタマイズ</h2>
+        <p class="slide-main-desc">セッション終了後のSNS投稿文作成から、万全のローカル保存・プロジェクトファイル管理まで完備。</p>
+      </div>
+
+      <div class="cols-2">
+        <!-- Card 1 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon accent-cyan"><i data-lucide="file-check" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">7. 卓報告作成ツール (終了報告生成)</div>
+              <div class="card-subtitle">セッション終了の感動をそのままスタイリッシュに投稿</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">探索者ビューアからのワンクリック同期</div>
+                <div class="feature-desc">登録されたPC名やHOをワンタッチで自動取得。KP/GM名、作者名、END結果、部屋URL、日付を入力。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">3種のテンプレート ＆ 装飾フォント</div>
+                <div class="feature-desc">Classic（王道）、Simple（記号つき）、Emo（装飾重視）から選択。英数字のBold/Italic変換対応。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">区切り線 ＆ リスト記号カスタマイズ</div>
+                <div class="feature-desc">「───────」「✦ ✦ ✦」「🎲 📖」など、シナリオの雰囲気に合わせた記号装飾を自由にセレクト。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot cyan"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">140字カウント ＆ 𝕏 直接ポスト</div>
+                <div class="feature-desc">𝕏（旧Twitter）の全角目安文字数をリアルタイム確認。直接編集して「コピー」または「𝕏に投稿」するだけ。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="feature-card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="hard-drive" style="width: 30px; height: 30px;"></i></div>
+            <div>
+              <div class="card-title">8. データ保存・バックアップ & UI設定</div>
+              <div class="card-subtitle">ブラウザ内完結の安心保存と自由度の高い画面設計</div>
+            </div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">ブラウザ内完全自動保存 <span class="feature-badge">LocalStorage</span></div>
+                <div class="feature-desc">カード編集、しおり、メモ、探索者、NPC、卓報告をファイルごとに自動保存。再読み込み時に完全復元。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">独自プロジェクトファイル保存 <span class="feature-badge">.pec</span></div>
+                <div class="feature-desc">全作業データを1つの `.pec` ファイルとしてPCへ保存＆読み込み可能。別PCへの移行や配布にも最適。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">4種のカラーテーマ切替</div>
+                <div class="feature-desc">標準（ライト）、ダークモード、ベージュモード、薄いグリーンの4種類のテーマから外観を選択可能。</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <div class="feature-text-block">
+                <div class="feature-name">自由なドラッグリサイズ ＆ 仮想スクロール</div>
+                <div class="feature-desc">ペイン境界をドラッグして幅を自由変更。右ツールを隠すトグルや、大量カードでも軽快に動く仮想描画を搭載。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="footer-highlight">All-in-One TRPG Suite:</span> 準備からセッション中・終了後まで、キーパーの作業をトータルサポート
+      </div>
+      <div>05 / 05</div>
+    </footer>
+  </section>
+
+  <!-- Navigation floating bar for interactive presentation -->
+  <div id="nav-controls">
+    <button onclick="prevSlide()">◀ 前へ</button>
+    <span id="slide-num-label">Slide 1 / 5</span>
+    <button onclick="nextSlide()">次へ ▶</button>
+    <button onclick="toggleSingleView()" id="btn-toggle-view" style="margin-left: 8px;">1枚表示切替</button>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    let currentSlide = 1;
+    const totalSlides = 5;
+    let isSingleView = false;
+
+    // Check URL params
+    const params = new URLSearchParams(window.location.search);
+    const targetSlide = parseInt(params.get('slide'));
+    if (targetSlide >= 1 && targetSlide <= totalSlides) {
+      showOnlySlide(targetSlide);
+      const nav = document.getElementById('nav-controls');
+      if (nav) nav.style.display = 'none';
+    }
+
+    function showOnlySlide(n) {
+      isSingleView = true;
+      currentSlide = n;
+      document.querySelectorAll('.slide-viewport').forEach((el, i) => {
+        el.style.display = (i + 1 === n) ? 'flex' : 'none';
+      });
+      document.getElementById('slide-num-label').innerText = `Slide ${n} / ${totalSlides}`;
+      document.getElementById('btn-toggle-view').innerText = '全一覧表示';
+    }
+
+    function showAllSlides() {
+      isSingleView = false;
+      document.querySelectorAll('.slide-viewport').forEach((el) => {
+        el.style.display = 'flex';
+      });
+      document.getElementById('btn-toggle-view').innerText = '1枚表示切替';
+    }
+
+    function toggleSingleView() {
+      if (isSingleView) {
+        showAllSlides();
+      } else {
+        showOnlySlide(currentSlide);
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        if (isSingleView) {
+          showOnlySlide(currentSlide);
+        } else {
+          document.getElementById(`slide-${currentSlide}`).scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        if (isSingleView) {
+          showOnlySlide(currentSlide);
+        } else {
+          document.getElementById(`slide-${currentSlide}`).scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>

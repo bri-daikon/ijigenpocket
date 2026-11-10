@@ -81,6 +81,25 @@
                             <button onclick="startQuiz()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition text-lg transform active:scale-95">
                         <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
                     </button>
+                    <!-- Party Mode Button -->
+                    <div id="party-setup-container" class="mt-4 border-t border-indigo-100 pt-4 flex flex-col gap-2">
+                        <button id="btn-create-party" onclick="createPartyRoom()" class="w-full py-3 bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-bold rounded-xl transition text-sm flex items-center justify-center">
+                            <i class="fa-solid fa-people-group mr-2"></i> マルチプレイルームを作る
+                        </button>
+                        <div id="party-room-info" class="hidden bg-fuchsia-50 border border-fuchsia-200 p-3 rounded-xl text-left mt-2">
+                            <p class="text-xs text-fuchsia-800 font-bold mb-1">ルームURL (参加者に共有してね)</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="party-room-url" readonly class="flex-1 p-2 text-xs border rounded bg-white" value="">
+                                <button onclick="copyPartyUrl()" class="bg-fuchsia-600 text-white px-3 py-2 rounded text-xs font-bold hover:bg-fuchsia-700">コピー</button>
+                            </div>
+                        </div>
+                        <div id="party-join-info" class="hidden bg-fuchsia-100 border border-fuchsia-300 p-4 rounded-xl text-center mt-2">
+                            <p class="text-sm text-fuchsia-900 font-bold mb-3"><i class="fa-solid fa-users"></i> パーティルームに参加中です！</p>
+                            <button onclick="showPartyNameInput()" class="w-full py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold rounded-xl transition shadow-md shadow-fuchsia-200">
+                                <i class="fa-solid fa-play mr-2"></i> 診断をスタート！
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="settings-link-footer" class="hidden pt-2 flex justify-center gap-4 text-xs text-slate-500">
@@ -172,6 +191,17 @@
                 <button onclick="showView('home-view')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm">
                     <i class="fa-solid fa-rotate-left mr-2"></i> もう一度診断する
                 </button>
+
+                <!-- マルチプレイ結果エリア -->
+                <div id="party-results-container" class="hidden bg-fuchsia-50 border border-fuchsia-200 p-4 rounded-xl mt-6 space-y-3">
+                    <p class="text-xs font-bold text-fuchsia-600 uppercase tracking-wider flex items-center justify-between">
+                        <span><i class="fa-solid fa-people-group"></i> みんなの結果</span>
+                        <span id="party-member-count" class="text-fuchsia-800">0人</span>
+                    </p>
+                    <div id="party-results-list" class="space-y-2 text-left">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
             </section>
 
             <!-- 4. 設定・管理画面 -->
@@ -394,6 +424,21 @@
         </footer>
     </div>
 
+    <!-- Name Input Modal -->
+    <div id="name-input-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-slate-800 mb-2">パーティルームへようこそ！</h3>
+            <p class="text-sm text-slate-600 mb-4">結果画面で表示するあなたの名前を入力してください。</p>
+            <input type="text" id="party-player-name" placeholder="名前（ニックネーム）" class="w-full p-3 border rounded-xl font-bold focus:ring-2 focus:ring-fuchsia-500 outline-none mb-4" />
+            <button onclick="joinPartyAndStart()" class="w-full py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold rounded-xl transition">
+                参加して診断スタート！
+            </button>
+            <button onclick="closeNameInputModal()" class="w-full mt-2 py-2 text-slate-500 font-bold hover:text-slate-700 text-sm">
+                キャンセル
+            </button>
+        </div>
+    </div>
+
     <!-- 通知トースト -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 z-50">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -404,7 +449,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyAjUDkDztnXK63JK8wQD1Hl5SuUBf4RdKs",
@@ -421,7 +466,7 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        window.firebaseApp = { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, deleteDoc };
+        window.firebaseApp = { auth, db, provider, signInWithPopup, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot };
         if (window.initAppAfterFirebase) window.initAppAfterFirebase();
     </script>
 
@@ -525,7 +570,7 @@
             ]
         };
 
-        // アプリ状態管理
+        };
         let quizList = [];
         let currentQuizId = "";
         let currentQuiz = null;
@@ -668,14 +713,21 @@
             }
         }
 
-        // URLパラメータ(?id=xxx)で特定の診断を開く機能
+        // URLパラメータ(?id=xxx または ?partyRoom=xxx)の処理
         function checkUrlParameter() {
             const params = new URLSearchParams(window.location.search);
-            const targetId = params.get('id');
-            if (targetId && quizList.some(q => q.id === targetId)) {
-                currentQuizId = targetId;
-                currentQuiz = quizList.find(q => q.id === currentQuizId);
-                localStorage.setItem("shindan_maker_current_id", currentQuizId);
+            const partyRoom = params.get('partyRoom');
+            if (partyRoom) {
+                if (typeof joinPartyRoomInit === 'function') {
+                    joinPartyRoomInit(partyRoom);
+                }
+            } else {
+                const targetId = params.get('id');
+                if (targetId && quizList.some(q => q.id === targetId)) {
+                    currentQuizId = targetId;
+                    currentQuiz = quizList.find(q => q.id === currentQuizId);
+                    localStorage.setItem("shindan_maker_current_id", currentQuizId);
+                }
             }
         }
 
@@ -916,11 +968,17 @@
             }
 
             showView("result-view");
+            if (currentPartyRoomId && typeof sendResultToPartyRoom === 'function') {
+                sendResultToPartyRoom(currentResult.title, userScore);
+            }
         }
 
         // SNS共有(URLパラメータを含めた共有リンクを生成)
         function getShareUrl() {
             const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            if (currentPartyRoomId) {
+                return `${baseUrl}?partyRoom=${currentPartyRoomId}`;
+            }
             return `${baseUrl}?id=${currentQuizId}`;
         }
 
@@ -1652,6 +1710,169 @@
             setTimeout(() => {
                 toast.classList.add("opacity-0", "pointer-events-none");
             }, 3000);
+        }
+        // =======================
+        // パーティモード (共有ルーム)
+        // =======================
+        let currentPartyRoomId = null;
+        let currentPartyPlayerName = "";
+        let partyUnsubscribe = null;
+        let partyMembers = {};
+
+        async function createPartyRoom() {
+            if (!window.firebaseApp) {
+                showToast("Firebaseが未初期化です", "error");
+                return;
+            }
+            const { db, doc, setDoc } = window.firebaseApp;
+            const roomId = "pr_" + Date.now() + Math.random().toString(36).substr(2, 5);
+            try {
+                await setDoc(doc(db, "shindan_rooms", roomId), {
+                    quizId: currentQuizId,
+                    createdAt: Date.now(),
+                    participants: {}
+                });
+                currentPartyRoomId = roomId;
+                const url = window.location.protocol + "//" + window.location.host + window.location.pathname + '?partyRoom=' + roomId;
+                document.getElementById('party-room-url').value = url;
+                document.getElementById('party-room-info').classList.remove('hidden');
+                
+                document.getElementById('btn-create-party').classList.add('hidden');
+                document.getElementById('party-join-info').classList.remove('hidden');
+                
+                window.history.replaceState({ path: url }, '', url);
+                
+                listenToPartyRoom(roomId);
+            } catch(e) {
+                console.error(e);
+                showToast("パーティルームの作成に失敗しました", "error");
+            }
+        }
+
+        function copyPartyUrl() {
+            const urlInput = document.getElementById('party-room-url');
+            urlInput.select();
+            document.execCommand('copy');
+            showToast("ルームURLをコピーしました！");
+        }
+
+        async function joinPartyRoomInit(roomId) {
+            if (!window.firebaseApp) return;
+            const { db, doc, getDoc } = window.firebaseApp;
+            try {
+                const roomDoc = await getDoc(doc(db, "shindan_rooms", roomId));
+                if (roomDoc.exists()) {
+                    currentPartyRoomId = roomId;
+                    const data = roomDoc.data();
+                    const qId = data.quizId;
+                    if (qId) {
+                        currentQuizId = qId;
+                        currentQuiz = quizList.find(q => q.id === qId) || quizList[0];
+                        renderHome();
+                    }
+                    
+                    document.getElementById('btn-create-party').classList.add('hidden');
+                    document.getElementById('party-join-info').classList.remove('hidden');
+                    listenToPartyRoom(roomId);
+                } else {
+                    showToast("ルームが見つかりません", "error");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function showPartyNameInput() {
+            document.getElementById('name-input-modal').classList.remove('hidden');
+        }
+
+        function closeNameInputModal() {
+            document.getElementById('name-input-modal').classList.add('hidden');
+        }
+
+        function joinPartyAndStart() {
+            const nameInput = document.getElementById('party-player-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                showToast("名前を入力してください", "error");
+                return;
+            }
+            currentPartyPlayerName = name;
+            closeNameInputModal();
+            startQuiz();
+        }
+
+        function listenToPartyRoom(roomId) {
+            if (!window.firebaseApp || partyUnsubscribe) return;
+            const { db, doc, onSnapshot } = window.firebaseApp;
+            
+            partyUnsubscribe = onSnapshot(doc(db, "shindan_rooms", roomId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    partyMembers = data.participants || {};
+                    renderPartyResults();
+                }
+            });
+        }
+
+        async function sendResultToPartyRoom(resultTitle, score) {
+            if (!currentPartyRoomId || !currentPartyPlayerName || !window.firebaseApp) return;
+            const { db, doc, setDoc } = window.firebaseApp;
+            
+            let playerId = localStorage.getItem('weby_party_player_id');
+            if (!playerId) {
+                playerId = "p_" + Date.now() + Math.random().toString(36).substr(2, 5);
+                localStorage.setItem('weby_party_player_id', playerId);
+            }
+            
+            try {
+                await setDoc(doc(db, "shindan_rooms", currentPartyRoomId), {
+                    participants: {
+                        [playerId]: {
+                            name: currentPartyPlayerName,
+                            title: resultTitle,
+                            score: score,
+                            timestamp: Date.now()
+                        }
+                    }
+                }, { merge: true });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function renderPartyResults() {
+            const container = document.getElementById('party-results-container');
+            const listEl = document.getElementById('party-results-list');
+            const countEl = document.getElementById('party-member-count');
+            
+            if (!currentPartyRoomId) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            
+            listEl.innerHTML = "";
+            const members = Object.values(partyMembers).sort((a, b) => a.timestamp - b.timestamp);
+            countEl.textContent = members.length + "人";
+            
+            if (members.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-fuchsia-500 text-center py-2">まだ結果を出した人はいません。</p>`;
+                return;
+            }
+            
+            members.forEach(m => {
+                const item = document.createElement('div');
+                item.className = "bg-white border border-fuchsia-100 p-3 rounded-lg shadow-sm flex items-center justify-between";
+                item.innerHTML = `
+                    <div class="font-bold text-sm text-slate-800">${escapeHtml(m.name)}</div>
+                    <div class="text-right">
+                        <div class="text-xs text-fuchsia-600 font-bold">${escapeHtml(m.title)}</div>
+                        <div class="text-[10px] text-slate-400">Score: ${m.score}</div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
         }
     </script>
 </body>

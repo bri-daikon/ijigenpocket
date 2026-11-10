@@ -1,0 +1,254 @@
+/* POS & Inventory App Modern Styles */
+:root {
+    --bg-primary: #0f172a;
+    --bg-surface: #1e293b;
+    --bg-surface-elevated: #334155;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-focus: #3b82f6;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --radius-lg: 1rem;
+    --radius-md: 0.75rem;
+    --radius-sm: 0.5rem;
+}
+
+[data-theme="light"] {
+    --bg-primary: #f1f5f9;
+    --bg-surface: #ffffff;
+    --bg-surface-elevated: #e2e8f0;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+}
+
+/* Product Card Animation */
+.product-card {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.product-card:active {
+    transform: scale(0.96);
+}
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Big Image Card Mode */
+.product-card.card-mode-large .card-image-box {
+    height: 140px;
+    width: 100%;
+}
+.product-card.card-mode-compact .card-image-box {
+    height: 48px;
+    width: 48px;
+}
+
+/* Image fallback overlay & thumbnail */
+.product-thumbnail {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+.product-card:hover .product-thumbnail {
+    transform: scale(1.05);
+}
+
+/* Keypad Button Ripple / Active Effect */
+.num-key {
+    transition: all 0.1s ease;
+}
+.num-key:active {
+    transform: scale(0.94);
+    background-color: var(--accent);
+    color: #ffffff;
+}
+
+/* Badge Pulse for Low Stock */
+@keyframes pulse-low-stock {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.75; transform: scale(1.05); }
+}
+.badge-low-stock {
+    animation: pulse-low-stock 2s infinite ease-in-out;
+}
+
+/* Print Styles for Receipts and Labels */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    body * {
+        visibility: hidden;
+    }
+
+    /* レシート印刷時 */
+    body.printing-receipt #receipt-modal,
+    body.printing-receipt #receipt-print-area,
+    body.printing-receipt #receipt-print-area * {
+        visibility: visible;
+    }
+    body.printing-receipt #receipt-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 80mm;
+        margin: 0 auto;
+        padding: 10px;
+        background: white !important;
+        color: black !important;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
+    }
+
+    /* ラベル・名刺タグ印刷時 */
+    body.printing-labels #label-print-modal,
+    body.printing-labels #label-print-sheet,
+    body.printing-labels #label-print-sheet * {
+        visibility: visible;
+    }
+    body.printing-labels #label-print-modal {
+        position: static !important;
+        background: transparent !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+    body.printing-labels #label-print-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+    }
+    
+    /* 印刷時の名刺枠（カット線） */
+    body.printing-labels .label-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        border: 1px dashed #94a3b8 !important;
+        box-shadow: none !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+}
+[data-theme="light"] .glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ==================== ラベル・名刺タグデザイン ==================== */
+.label-sheet {
+    min-height: 400px;
+}
+
+/* 名刺サイズ 横型 (91mm x 55mm) */
+.label-card.business_card {
+    width: 91mm;
+    height: 55mm;
+    box-sizing: border-box;
+    padding: 3.5mm 4.5mm;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 名刺サイズ 縦型 (55mm x 91mm) */
+.label-card.business_card_vert {
+    width: 55mm;
+    height: 91mm;
+    box-sizing: border-box;
+    padding: 4mm;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* コンパクト値札タグ (65mm x 38mm) */
+.label-card.tag_compact {
+    width: 65mm;
+    height: 38mm;
+    box-sizing: border-box;
+    padding: 2.5mm 3.5mm;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.label-barcode-svg {
+    width: 100%;
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.label-qrcode-container img {
+    margin: 0 auto;
+    display: block;
+}

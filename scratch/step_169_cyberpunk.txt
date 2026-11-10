@@ -1,0 +1,98 @@
+Created At: 2026-06-04T05:39:01Z
+Completed At: 2026-06-04T05:39:02Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker.js`
+Total Lines: 2287
+Total Bytes: 87087
+Showing lines 1300 to 2000
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1300: 
+1301: replacePanelUpload.addEventListener('change', handleReplacePanelUpload);
+1302: if (undoActionBtn) {
+1303:   undoActionBtn.addEventListener('click', undoAction);
+1304: }
+1305: 
+1306: if (zoomInBtn && zoomOutBtn && zoomFitBtn) {
+1307:   zoomInBtn.addEventListener('click', () => adjustZoom(0.1));
+1308:   zoomOutBtn.addEventListener('click', () => adjustZoom(-0.1));
+1309:   zoomFitBtn.addEventListener('click', () => {
+1310:     zoomScale = null;
+1311:     updateUI();
+1312:   });
+1313: }
+1314: 
+1315: function adjustZoom(delta) {
+1316:   let currentScale = 1.0;
+1317:   if (zoomScale !== null) {
+1318:     currentScale = zoomScale;
+1319:   } else {
+1320:     const wrapper = document.getElementById('canvas-wrapper');
+1321:     if (wrapper) {
+1322:       const rect = wrapper.getBoundingClientRect();
+1323:       const pad = 32;
+1324:       const maxW = rect.width - pad;
+1325:       const maxH = rect.height - pad;
+1326:       const scaleX = maxW / canvasWidth;
+1327:       const scaleY = maxH / canvasHeight;
+1328:       currentScale = Math.max(0.05, Math.min(1, scaleX, scaleY));
+1329:     }
+1330:   }
+1331:   zoomScale = Math.max(0.1, Math.min(2.0, Math.round((currentScale + delta) * 10) / 10));
+1332:   updateUI();
+1333: }
+1334: 
+1335: function handleReplacePanelUpload(event) {
+1336:   const file = event.target.files[0];
+1337:   if (!file) return;
+1338:   if (selectedPanelIds.length !== 1) return;
+1339: 
+1340:   const panel = panels.find(p => p.id === selectedPanelIds[0]);
+1341:   if (!panel) return;
+1342: 
+1343:   const reader = new FileReader();
+1344:   reader.onload = (e) => {
+1345: 
+<truncated 36842 bytes>
+任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
+1959:           
+1960:           setTimeout(() => {
+1961:             addChatMessage(employees.takumi, `前景くり抜き窓は中央左、PLパネルは指定配置に。メニュー用とクリックアクション用（目星、聞き耳、図書館、アイデア、SAN、塩）のボタンを綺麗に自動整列させます！`);
+1962:             
+1963:             setTimeout(() => {
+1964:               addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
+1965:               
+1966:               generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType);
+1967:               
+1968:               aiGenerateBtn.disabled = false;
+1969:               aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+1970:               if (typeof lucide !== 'undefined') lucide.createIcons();
+1971:             }, 1500);
+1972:           }, 1500);
+1973:         }, 1500);
+1974:       }, 500);
+1975:     }
+1976:   });
+1977: }
+1978: 
+1979: function generateAndLoadLayout(theme, numPlayers, layoutType) {
+1980:   saveStateToHistory();
+1981:   
+1982:   const gen = themeSvgGenerators[theme];
+1983:   if (!gen) return;
+1984: 
+1985:   frame = null;
+1986:   panels = [];
+1987:   selectedPanelIds = [];
+1988: 
+1989:   const bgSvg = gen.bg();
+1990:   frame = {
+1991:     url: createSvgUrl(bgSvg),
+1992:     x: 0,
+1993:     y: 0,
+1994:     width: 1280,
+1995:     height: 720,
+1996:     originalRatio: 1280 / 720
+1997:   };
+1998: 
+1999:   const windowSvg = gen.window();
+2000:   const windowPanelWidth = 720;
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

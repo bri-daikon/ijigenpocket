@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Sorter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Settings -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-folder-tree"></i> File Sorter</h2>
+            </div>
+            
+            <div class="settings-section">
+                <h3><i class="fa-solid fa-gear"></i> 設定</h3>
+                <div class="form-group">
+                    <label for="source-folder">移動元フォルダパス</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="source-folder" placeholder="例: C:\Downloads">
+                        <button id="browse-source-btn" class="secondary-btn btn-sm" title="フォルダを選択"><i class="fa-solid fa-folder-open"></i> 参照</button>
+                    </div>
+                </div>
+                
+                <div class="destinations-container">
+                    <div class="dest-header">
+                        <label>移動先フォルダ</label>
+                        <button id="add-dest-btn" class="icon-btn" title="移動先を先頭に追加（すぐ下に追加）"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div id="destinations-list" class="dest-list">
+                        <!-- Dynamic destinations will be rendered here -->
+                    </div>
+                    <button id="add-dest-bottom-btn" class="secondary-btn btn-sm w-100 add-dest-bottom" title="移動先を末尾に追加">
+                        <i class="fa-solid fa-plus"></i> 移動先を追加
+                    </button>
+                </div>
+                
+                <button id="save-config-btn" class="primary-btn w-100">設定を保存</button>
+                <div id="config-msg" class="msg"></div>
+
+                <div class="config-actions">
+                    <button id="export-config-btn" class="secondary-btn btn-xs" title="設定をJSONファイルとして保存"><i class="fa-solid fa-download"></i> エクスポート</button>
+                    <label class="secondary-btn btn-xs file-import-label" title="設定JSONファイルを読み込む">
+                        <i class="fa-solid fa-upload"></i> インポート
+                        <input type="file" id="import-config-input" accept=".json" style="display: none;">
+                    </label>
+                    <button id="reset-config-btn" class="danger-btn btn-xs" title="設定を初期化"><i class="fa-solid fa-rotate-left"></i> リセット</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <div class="file-info">
+                    <h1 id="current-filename">ファイルがありません</h1>
+                    <span id="file-counter" class="badge">0 / 0</span>
+                </div>
+                <button id="refresh-btn" class="secondary-btn"><i class="fa-solid fa-rotate-right"></i> リロード</button>
+            </header>
+
+            <div class="preview-area">
+                <button id="preview-prev-btn" class="preview-nav-btn prev" title="前のファイル [← / A]">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="preview-container" id="preview-container">
+                    <div class="empty-state">
+                        <i class="fa-regular fa-image empty-icon"></i>
+                        <p>表示するファイルがありません。<br>設定から移動元フォルダを指定してリロードしてください。</p>
+                    </div>
+                </div>
+                <button id="preview-next-btn" class="preview-nav-btn next" title="スキップ [Space / → / S]">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="action-footer">
+                <div class="nav-controls">
+                    <button id="prev-btn" class="secondary-btn btn-nav" title="前のファイルへ戻る [← / A]">
+                        <i class="fa-solid fa-arrow-left"></i> 前へ <span class="shortcut-key">←</span>
+                    </button>
+                    <button id="skip-btn" class="skip-btn" title="このファイルを移動せずスキップ [Space / → / S]">
+                        <i class="fa-solid fa-forward-step"></i> スキップ <span class="shortcut-key">Space / →</span>
+                    </button>
+                </div>
+                <div class="action-title">フォルダへ仕分ける（数字キー 1〜9）</div>
+                <div class="action-bar" id="action-bar">
+                    <!-- Destination buttons will be rendered here -->
+                    <p class="text-muted">設定から移動先フォルダを追加してください。</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+    
+    <script src="/static/main.js"></script>
+</body>
+</html>

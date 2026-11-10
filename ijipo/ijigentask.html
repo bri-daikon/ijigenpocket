@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>異次元タスク｜期限・優先度・タグで整理できる無料タスク管理ツール</title>
+    <meta name="description" content="タスクを期限・優先度・タグ・メモ付きで整理できる無料のタスク管理ツールです。月別・タグ別の絞り込み、Googleカレンダー登録、CSVバックアップ、一覧の画像保存に対応しています。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/ijigentask.html">
+    <!-- html2canvasライブラリの読み込み（画像保存用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="css/ijigentask.css">
+</head>
+<body>
+
+<div class="content-wrapper">
+    <div class="container" id="captureTarget">
+        <h1>現在のタスク一覧</h1>
+
+        <div class="input-group" id="inputSection">
+            <div class="row">
+                <input type="text" id="taskInput" placeholder="タスク名を入力...">
+            </div>
+            <div class="row">
+                <input type="text" id="memoInput" placeholder="メモ・詳細（任意）">
+            </div>
+            <div class="row">
+                <input type="text" id="tagInput" placeholder="タグ（カンマ区切りで複数または下から選択）">
+            </div>
+            <div id="tagSelection" class="tag-selection"></div>
+            <div class="row">
+                <select id="prioritySelect">
+                    <option value="高">優先度：高</option>
+                    <option value="中" selected>優先度：中</option>
+                    <option value="低">優先度：低</option>
+                </select>
+                <input type="date" id="dateInput">
+                <button onclick="addTask()">追加</button>
+            </div>
+        </div>
+
+        <div class="filters" id="filterSection">
+            <div class="filter-row">
+                <div class="filter-item">
+                    <span>月：</span>
+                    <input type="month" id="monthFilter" onchange="renderTasks()">
+                    <label class="all-period-label">
+                        <input type="checkbox" id="showAllMonths" onchange="toggleMonthFilter()"> 全期間
+                    </label>
+                </div>
+                <div class="filter-item">
+                    <span>タグ：</span>
+                    <select id="tagFilter" onchange="renderTasks()">
+                        <option value="">すべて</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-item">
+                    <label>
+                        <input type="checkbox" id="hideCompleted" onchange="renderTasks()"> 完了済みを隠す
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <div class="data-actions" id="actionSection">
+            <button class="btn-secondary" onclick="exportCSV()">CSV保存</button>
+            <button class="btn-secondary" onclick="document.getElementById('csvFile').click()">CSV読込</button>
+            <button class="btn-success" onclick="saveAsImage()">画像として保存</button>
+            <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+        </div>
+    </div>
+</div>
+
+<section class="task-guide" aria-labelledby="guide-title">
+    <p class="guide-label">GUIDE</p>
+    <h2 id="guide-title">異次元タスクでできること</h2>
+    <p class="guide-lead">やることを登録し、期限・優先度・タグ・メモをまとめて管理できるブラウザ用タスク管理ツールです。締切の近いタスクから自動で並び、残り日数も表示されるため、創作、仕事、勉強、TRPGの準備など、複数の予定をひとつの一覧で整理できます。</p>
+
+    <div class="guide-grid">
+        <article><h3>期限と優先度を見やすく整理</h3><p>期限までの残り日数と、高・中・低の優先度を色分けして表示します。完了したタスクはチェックを付け、一覧から隠すこともできます。</p></article>
+        <article><h3>タグと月で絞り込み</h3><p>「仕事」「創作」「卓準備」など複数のタグを登録できます。月別・タグ別の表示に切り替え、今確認したいタスクだけを探せます。</p></article>
+        <article><h3>カレンダーへ登録</h3><p>各タスクの「Google」ボタンから、タスク名・メモ・優先度・タグ・期限をGoogleカレンダーの予定作成画面へ引き継げます。</p></article>
+        <article><h3>CSVと画像で保存</h3><p>タスク一覧をCSV形式でバックアップ・復元できます。一覧部分をPNG画像にして、進捗の共有や記録に使うこともできます。</p></article>
+    </div>
+
+    <h2>基本的な使い方</h2>
+    <div class="guide-steps">
+        <div><span>1</span><p>タスク名を入力し、必要に応じてメモ、タグ、優先度、期限を設定して「追加」を押します。</p></div>
+        <div><span>2</span><p>登録したタスクは期限が近い順に表示されます。終了したら左側のチェックボックスをオンにします。</p></div>
+        <div><span>3</span><p>月・タグ・「完了済みを隠す」を使い、目的に合うタスクだけを表示します。「全期間」を選ぶと期限のないタスクも確認できます。</p></div>
+        <div><span>4</span><p>定期的に「CSV保存」でバックアップします。保存したCSVは「CSV読込」から既存の一覧へ追加できます。</p></div>
+    </div>
+
+    <div class="guide-note">
+        <h2>タスクデータの保存について</h2>
+        <p>登録したタスクは、このページを開いているブラウザ内に保存され、通常はページを閉じても残ります。別の端末やブラウザには自動同期されません。ブラウザの保存データを削除すると消える場合があるため、大切な内容はCSV保存でバックアップしてください。</p>
+    </div>
+
+    <h2>よくある質問</h2>
+    <div class="guide-faq">
+        <details><summary>期限を設定していないタスクが見つかりません</summary><p>初期状態では今月のタスクを表示します。「全期間」にチェックを入れると、期限を設定していないタスクを含むすべての期間を確認できます。</p></details>
+        <details><summary>複数のタグを付けられますか？</summary><p>付けられます。タグ入力欄へカンマ、読点、空白などで区切って入力してください。一度使用したタグは入力欄の下に候補として表示されます。</p></details>
+        <details><summary>CSVを読み込むと現在のタスクは消えますか？</summary><p>消えません。読み込んだCSVのタスクは、現在のタスク一覧へ追加されます。同じCSVを複数回読み込むと重複するためご注意ください。</p></details>
+        <details><summary>画像として保存すると入力欄やボタンも写りますか？</summary><p>タスク追加欄とCSV・画像保存ボタンは画像から除外されます。絞り込み欄と現在表示されているタスク一覧がPNG画像として保存されます。</p></details>
+    </div>
+
+    <nav class="guide-links" aria-label="関連ページ">
+        <a class="guide-primary" href="/">ほかのツールを見る →</a>
+        <a href="/wordpress/">制作・改善記事を読む →</a>
+    </nav>
+</section>
+
+<!-- カスタムモーダルUI -->
+<div id="modalOverlay" class="modal-overlay">
+    <div class="modal-content">
+        <div id="modalMsg" class="modal-msg"></div>
+        <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+</div>
+
+<script src="js/ijigentask.js"></script>
+</body>
+</html>

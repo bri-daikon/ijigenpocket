@@ -120,6 +120,17 @@
                     <label class="block text-sm font-bold mb-1">メモ</label>
                     <textarea id="eventDescription" class="w-full border-gray-300 border rounded-lg p-3 h-24 outline-none resize-none" placeholder="メモを入力してください"></textarea>
                 </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">画像</label>
+                    <input type="file" id="eventImage" accept="image/*" class="w-full border-gray-300 border rounded-lg p-2 text-sm outline-none bg-white" onchange="previewImage(event)">
+                    <div id="imagePreviewContainer" class="mt-2 hidden">
+                        <div class="relative inline-block">
+                            <img id="eventImagePreview" src="" alt="Preview" class="max-h-32 rounded-lg border object-cover">
+                            <button type="button" onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="eventImageData" value="">
+                </div>
                 <div class="flex gap-2 pt-4">
                     <button id="saveBtn" onclick="saveEvent()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">保存する</button>
                     <button id="googleExportBtn" onclick="exportToGoogle()" class="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition text-sm font-bold">

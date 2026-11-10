@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickPrompt SidePanel</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-texts">
+          <h1 class="app-title">QuickPrompt</h1>
+          <span class="app-subtitle">定番プロンプト送信ツール</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-open-settings" class="icon-btn" title="設定・バックアップ" aria-label="設定">⚙️</button>
+        <button id="btn-add-prompt" class="btn btn-primary" title="新規プロンプト作成">
+          <span class="btn-icon">＋</span>新規追加
+        </button>
+      </div>
+    </header>
+
+    <!-- 検索 & フィルタ -->
+    <section class="search-filter-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="プロンプトやタグを検索..." autocomplete="off">
+        <button id="search-clear-btn" class="clear-btn" style="display:none;" title="クリア">×</button>
+      </div>
+
+      <!-- カテゴリタブ -->
+      <div class="category-tabs" id="category-tabs">
+        <button class="cat-tab active" data-category="all">すべて</button>
+        <button class="cat-tab" data-category="favorite">★ お気に入り</button>
+        <button class="cat-tab" data-category="writing">✍️ 文章・推敲</button>
+        <button class="cat-tab" data-category="idea">💡 アイデア</button>
+        <button class="cat-tab" data-category="image">🎨 画像生成</button>
+        <button class="cat-tab" data-category="code">💻 コード</button>
+        <button class="cat-tab" data-category="other">📁 その他</button>
+      </div>
+    </section>
+
+    <!-- プロンプト一覧 -->
+    <main class="prompt-list-container" id="prompt-list-container">
+      <div class="prompt-list" id="prompt-list">
+        <!-- JSで動的にプロンプトカードが描画されます -->
+      </div>
+      <!-- 空状態 -->
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <p class="empty-text">該当するプロンプトがありません</p>
+        <button id="btn-empty-add" class="btn btn-secondary">プロンプトを新規作成</button>
+      </div>
+    </main>
+
+    <!-- フッターステータスバー -->
+    <footer class="app-footer">
+      <div class="target-info" id="target-info">
+        <span class="status-dot"></span>
+        <span id="target-page-name">タブを検出中...</span>
+      </div>
+      <div class="prompt-count-info" id="prompt-count-info">0 件</div>
+    </footer>
+  </div>
+
+  <!-- プロンプト追加/編集モーダル -->
+  <div class="modal-overlay" id="prompt-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title">プロンプト作成</h2>
+        <button class="modal-close" id="btn-close-modal">×</button>
+      </div>
+      <form id="prompt-form" class="modal-body">
+        <input type="hidden" id="edit-prompt-id" value="">
+        
+        <div class="form-group">
+          <label for="form-title">タイトル <span class="required">*</span></label>
+          <input type="text" id="form-title" placeholder="例: 文章の要約と要点整理" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="form-category">カテゴリ</label>
+            <select id="form-category">
+              <option value="writing">✍️ 文章・推敲</option>
+              <option value="idea">💡 アイデア出し</option>
+              <option value="image">🎨 画像生成・指示</option>
+              <option value="code">💻 コード・技術</option>
+              <option value="other">📁 その他</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label for="form-tags">タグ (カンマ区切り)</label>
+            <input type="text" id="form-tags" placeholder="例: 要約, 箇条書き">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label-with-hint">
+            <label for="form-content">プロンプト本文 <span class="required">*</span></label>
+            <span class="hint"><code>{{変数名}}</code> で差し替え入力欄が作れます</span>
+          </div>
+          <textarea id="form-content" rows="6" placeholder="以下のテキストを箇条書きで分かりやすく要約してください。&#10;&#10;【対象テキスト】&#10;{{対象文章}}" required></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-prompt">キャンセル</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-prompt">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 変数置換・入力モーダル ({{変数}} がある場合) -->
+  <div class="modal-overlay" id="variable-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="variable-modal-title">変数の入力</h2>
+        <button class="modal-close" id="btn-close-variable-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">プロンプト内のプレースホルダーに入力してください：</p>
+        <div id="variable-inputs-container" class="variable-inputs-container">
+          <!-- JSで動的に変数入力欄を生成 -->
+        </div>
+        <div class="preview-box">
+          <div class="preview-label">完成プレビュー:</div>
+          <div class="preview-content" id="variable-preview-text"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-variable">キャンセル</button>
+        <button type="button" class="btn btn-secondary" id="btn-variable-copy">コピー</button>
+        <button type="button" class="btn btn-primary" id="btn-variable-insert">入力欄に挿入</button>
+        <button type="button" class="btn btn-accent" id="btn-variable-insert-send">挿入して送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定・バックアップモーダル -->
+  <div class="modal-overlay" id="settings-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>設定 & データ管理</h2>
+        <button class="modal-close" id="btn-close-settings">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h3>📥 バックアップ & 復元</h3>
+          <p class="settings-desc">保存したプロンプトをJSONファイルとして保存・復元できます。</p>
+          <div class="btn-group">
+            <button id="btn-export-json" class="btn btn-secondary">💾 JSONエクスポート</button>
+            <label class="btn btn-secondary file-upload-btn">
+              📂 JSONインポート
+              <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>🔄 プリセットプロンプト</h3>
+          <p class="settings-desc">標準で用意されている定番プロンプト（要約・校正・アイデア・画像プロンプト等）を再読み込みします。</p>
+          <button id="btn-reset-presets" class="btn btn-secondary">標準プリセットを追加 / 復元</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>ℹ️ 対応AIチャット</h3>
+          <p class="settings-desc">ChatGPT、Claude、Google Gemini、Microsoft Copilot、Perplexity、および一般的なWeb入力欄に対応しています。</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-close-settings-footer">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 削除確認カスタムモーダル（Vivaldi / 全ブラウザ対応） -->
+  <div class="modal-overlay" id="delete-confirm-modal" style="display: none;">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2>プロンプトの削除</h2>
+        <button class="modal-close" id="btn-close-delete-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" id="delete-confirm-text">このプロンプトを削除してもよろしいですか？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-delete">キャンセル</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div class="toast" id="toast" style="display: none;"></div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

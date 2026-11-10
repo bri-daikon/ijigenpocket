@@ -1,0 +1,108 @@
+Created At: 2026-06-06T13:04:37Z
+Completed At: 2026-06-06T13:04:38Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2567
+Total Bytes: 98238
+Showing lines 1601 to 2400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1601: updateUI();
+1602: 
+1603: // ==========================================
+1604: // AI Room Generator (AI社員に依頼) 機能
+1605: // ==========================================
+1606: 
+1607: const aiGenerateBtn = document.getElementById('ai-generate-btn');
+1608: const aiThemeSelect = document.getElementById('ai-theme-select');
+1609: const aiPlayersSelect = document.getElementById('ai-players-select');
+1610: const aiLayoutSelect = document.getElementById('ai-layout-select');
+1611: const aiChatBox = document.getElementById('ai-chat-box');
+1612: const aiPromptInput = document.getElementById('ai-prompt-input');
+1613: const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
+1614: const aiApiKeyInput = document.getElementById('ai-api-key');
+1615: 
+1616: if (aiApiKeyInput) {
+1617:   const savedApiKey = localStorage.getItem('stampToolApiKey');
+1618:   if (savedApiKey) aiApiKeyInput.value = savedApiKey;
+1619:   aiApiKeyInput.addEventListener('input', (e) => {
+1620:     localStorage.setItem('stampToolApiKey', e.target.value.trim());
+1621:   });
+1622: }
+1623: 
+1624: const actionIconsData = [
+1625:   {
+1626:     name: "spot",
+1627:     label: "目星",
+1628:     sub: "SPOT",
+1629:     path: `<path d="M15,40 Q40,15 65,40 Q40,65 15,40 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="8" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#ff007f"/>`
+1630:   },
+1631:   {
+1632:     name: "listen",
+1633:     label: "聞き耳",
+1634:     sub: "LISTEN",
+1635:     path: `<path d="M30,30 C30,20 45,15 50,25 C55,35 40,45 45,55 C48,6
+<truncated 40445 bytes>
+;
+2338:     }
+2339: 
+2340:     panels.push({
+2341:       id: `ai-action-${icon.name}-${Date.now()}`,
+2342:       url: createSvgUrl(actionSvg),
+2343:       x: actionX,
+2344:       y: actionY,
+2345:       width: actionW,
+2346:       height: actionH,
+2347:       originalRatio: actionW / actionH,
+2348:       flipH: false,
+2349:       flipV: false,
+2350:       visible: true,
+2351:       opacity: 1
+2352:     });
+2353:   });
+2354: 
+2355:   updateUI();
+2356: }
+2357: 
+2358: function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+2359:   saveStateToHistory();
+2360:   
+2361:   const gen = themeSvgGenerators.dynamic;
+2362: 
+2363:   frame = null;
+2364:   panels = [];
+2365:   selectedPanelIds = [];
+2366: 
+2367:   if (bgImageUrl) {
+2368:     frame = {
+2369:       url: bgImageUrl,
+2370:       x: 0,
+2371:       y: 0,
+2372:       width: 1280,
+2373:       height: 720,
+2374:       originalRatio: 1280 / 720
+2375:     };
+2376:   } else {
+2377:     const bgSvg = gen.bg(design);
+2378:     frame = {
+2379:       url: createSvgUrl(bgSvg),
+2380:       x: 0,
+2381:       y: 0,
+2382:       width: 1280,
+2383:       height: 720,
+2384:       originalRatio: 1280 / 720
+2385:     };
+2386:   }
+2387: 
+2388:   // 1. メイン画面の描画
+2389:   const windowSvg = gen.window(design);
+2390:   const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
+2391:   const windowPanelHeight = design.window_height !== undefined ? design.window_height : 405;
+2392:   let windowX = design.window_x !== undefined ? design.window_x : 50;
+2393:   let windowY = design.window_y !== undefined ? design.window_y : 110;
+2394: 
+2395:   if (design.window_x === undefined) {
+2396:     // 従来のフォールバック計算
+2397:     if (layoutType === 'bottom-horizontal') {
+2398:       windowX = 280;
+2399:       windowY = 50;
+2400:     }
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

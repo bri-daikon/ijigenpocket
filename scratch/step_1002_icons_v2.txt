@@ -1,0 +1,83 @@
+Created At: 2026-06-06T13:03:03Z
+Completed At: 2026-06-06T13:03:04Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2522
+Total Bytes: 96273
+Showing lines 2416 to 2490
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2416:     if (numPlayers <= 3) { plW = 180; plH = 200; }
+2417:     else if (numPlayers === 4) { plW = 170; plH = 150; }
+2418:     else { plW = 160; plH = 120; }
+2419:   }
+2420: 
+2421:   for (let i = 0; i < numPlayers; i++) {
+2422:     const plSvg = gen.pl(design);
+2423:     let plX = 1050;
+2424:     let plY = 40;
+2425:     
+2426:     if (layoutType === 'right-vertical') {
+2427:       plX = 1050;
+2428:       if (numPlayers === 1) {
+2429:         plY = 260;
+2430:       } else {
+2431:         plY = 40 + i * (640 - plH) / (numPlayers - 1);
+2432:       }
+2433:     } else {
+2434:       plY = 510;
+2435:       if (numPlayers === 1) {
+2436:         plX = 660;
+2437:       } else {
+2438:         plX = 280 + i * (720 - plW) / (numPlayers - 1);
+2439:       }
+2440:     }
+2441: 
+2442:     panels.push({
+2443:       id: `ai-pl-${i}-${Date.now()}`,
+2444:       url: createSvgUrl(plSvg),
+2445:       x: plX,
+2446:       y: plY,
+2447:       width: plW,
+2448:       height: plH,
+2449:       originalRatio: plW / plH,
+2450:       flipH: false,
+2451:       flipV: false,
+2452:       visible: true,
+2453:       opacity: 1
+2454:     });
+2455:   }
+2456: 
+2457:   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
+2458:   const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
+2459:   const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+2460: 
+2461:   menuLabels.forEach((label, i) => {
+2462:     const menuSvg = gen.menu(design, label);
+2463:     let menuX = 50;
+2464:     let menuY = 50;
+2465: 
+2466:     if (layoutType === 'right-vertical') {
+2467:       menuY = 50;
+2468:       menuX = 50 + i * 145;
+2469:     } else {
+2470:       menuX = 50;
+2471:       menuY = 50 + i * 55;
+2472:     }
+2473: 
+2474:     panels.push({
+2475:       id: `ai-menu-${label}-${Date.now()}`,
+2476:       url: createSvgUrl(menuSvg),
+2477:       x: menuX,
+2478:       y: menuY,
+2479:       width: menuW,
+2480:       height: menuH,
+2481:       originalRatio: menuW / menuH,
+2482:       flipH: false,
+2483:       flipV: false,
+2484:       visible: true,
+2485:       opacity: 1
+2486:     });
+2487:   });
+2488: 
+2489:   const actionW = 75;
+2490:   const actionH = 75;
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

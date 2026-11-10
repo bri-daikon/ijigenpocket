@@ -1,0 +1,122 @@
+Created At: 2026-06-07T08:00:32Z
+Completed At: 2026-06-07T08:00:33Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2939
+Total Bytes: 115851
+Showing lines 2330 to 2610
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2330: async function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl, partsImageUrl) {
+2331:   saveStateToHistory();
+2332:   
+2333:   const gen = themeSvgGenerators[theme];
+2334:   if (!gen) return;
+2335: 
+2336:   frame = null;
+2337:   panels = [];
+2338:   selectedPanelIds = [];
+2339: 
+2340:   if (bgImageUrl) {
+2341:     frame = {
+2342:       url: bgImageUrl,
+2343:       x: 0,
+2344:       y: 0,
+2345:       width: 1280,
+2346:       height: 720,
+2347:       originalRatio: 1280 / 720
+2348:     };
+2349:   } else {
+2350:     const bgSvg = gen.bg();
+2351:     frame = {
+2352:       url: createSvgUrl(bgSvg),
+2353:       x: 0,
+2354:       y: 0,
+2355:       width: 1280,
+2356:       height: 720,
+2357:       originalRatio: 1280 / 720
+2358:     };
+2359:   }
+2360: 
+2361:   let partsImg = null;
+2362:   const genParts = aiGenPartsToggle ? aiGenPartsToggle.checked : false;
+2363:   if (genParts && partsImageUrl) {
+2364:     partsImg = await new Promise((resolve) => {
+2365:       const img = new Image();
+2366:       img.crossOrigin = "anonymous";
+2367:       img.onload = () => resolve(img);
+2368:       img.onerror = () => resolve(null);
+2369:       img.src = partsImageUrl;
+2370:     });
+2371:   }
+2372: 
+2373:   let windowW = 720;
+2374:   let windowH = 405;
+2375:   let windowX = 50;
+2376:   let windowY = 110;
+2377: 
+2378:   if (layoutType === 'bottom-horizontal') {
+2379:     windowX = 280;
+2380:     windowY = 50;
+2381:   } else if (layoutType === 'pattern1') {
+2382:     windowX = 50; windowY = 50; windowW = 500; windowH = 300;
+2383:   } else if (layoutType === 'pattern2') {
+2384:     w
+<truncated 5678 bytes>
+2553:     if (layoutType === 'right-vertical') {
+2554:       menuY = 50;
+2555:       menuX = 50 + i * 145;
+2556:     } else if (layoutType === 'bottom-horizontal') {
+2557:       menuX = 50;
+2558:       menuY = 50 + i * 55;
+2559:     } else if (layoutType === 'pattern1') {
+2560:       menuX = 120;
+2561:       menuY = 380 + i * 40;
+2562:     } else if (layoutType === 'pattern2') {
+2563:       menuX = 120;
+2564:       menuY = 50 + i * 40;
+2565:     } else if (layoutType === 'pattern3') {
+2566:       menuX = 50;
+2567:       menuY = 100 + i * 40;
+2568:     } else if (layoutType === 'pattern4') {
+2569:       menuX = 50;
+2570:       menuY = 430 + i * 40;
+2571:     } else if (layoutType === 'pattern5') {
+2572:       menuX = 200 + i * 195;
+2573:       menuY = 30;
+2574:     } else if (layoutType === 'pattern6') {
+2575:       menuX = 150 + i * 195;
+2576:       menuY = 370;
+2577:     } else if (layoutType === 'pattern7') {
+2578:       menuX = 150 + i * 195;
+2579:       menuY = 30;
+2580:     }
+2581: 
+2582:     let menuUrl = createSvgUrl(menuSvg);
+2583:     if (partsImg) {
+2584:       menuUrl = await combineImageAndSvg(
+2585:         partsImg,
+2586:         partsImg.naturalWidth * 0.05, partsImg.naturalHeight * 0.65,
+2587:         partsImg.naturalWidth * 0.45, partsImg.naturalHeight * 0.25,
+2588:         menuSvg, menuW, menuH
+2589:       );
+2590:     }
+2591: 
+2592:     panels.push({
+2593:       id: `ai-menu-${label}-${Date.now()}`,
+2594:       url: menuUrl,
+2595:       x: menuX,
+2596:       y: menuY,
+2597:       width: menuW,
+2598:       height: menuH,
+2599:       originalRatio: menuW / menuH,
+2600:       flipH: false,
+2601:       flipV: false,
+2602:       visible: true,
+2603:       opacity: 1
+2604:     });
+2605:   }
+2606: 
+2607:   const actionW = 75;
+2608:   const actionH = 75;
+2609: 
+2610:   for (let i = 0; i < actionIconsData.length; i++) {
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

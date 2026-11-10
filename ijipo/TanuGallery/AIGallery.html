@@ -1,0 +1,3683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tanu Gallery Studio - イラスト＆4コマ漫画ギャラリー</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-main: #090d16;
+            --bg-card: rgba(18, 24, 38, 0.7);
+            --bg-card-hover: rgba(28, 36, 56, 0.85);
+            --bg-glass: rgba(15, 23, 42, 0.85);
+            --bg-input: rgba(10, 15, 26, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.6);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
+            background-attachment: fixed;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 15, 26, 0.9);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27354f;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: var(--bg-glass);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 1.5rem;
+            transition: var(--transition-smooth);
+            gap: 1rem;
+        }
+
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            color: #fff;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 40%, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 0.7rem;
+            color: var(--accent-cyan);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-glass);
+            padding: 4px;
+            border-radius: var(--radius-full);
+            gap: 4px;
+        }
+
+        .nav-tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.2rem;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+
+        .nav-tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .nav-tab-btn.active {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-shrink: 0;
+        }
+
+        .btn-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: 1px solid var(--border-glass);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+        .btn-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-pill.primary {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            border: none;
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(6, 182, 212, 0.3);
+        }
+
+        .storage-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.8rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-full);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .storage-pill .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+        .storage-pill.local .status-dot {
+            background: #f59e0b;
+            box-shadow: 0 0 8px #f59e0b;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 1.5rem 1.5rem 4rem 1.5rem;
+        }
+
+        .view-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .view-section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Controls & Filter Bar */
+        .controls-bar {
+            backdrop-filter: blur(12px);
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .controls-top-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1 1 280px;
+            max-width: 420px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 2.8rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-full);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Dynamic Category Chips Bar */
+        .category-tabs-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .category-chip {
+            padding: 0.4rem 1rem;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+        .category-chip:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .category-chip.active {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: var(--primary);
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+
+        .sort-select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-full);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Tags Bar */
+        .tags-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 0 0.5rem;
+        }
+        .tag-pill {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .tag-pill:hover, .tag-pill.active {
+            color: var(--accent-cyan);
+            border-color: rgba(6, 182, 212, 0.4);
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        /* Artworks Grid */
+        .artworks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.8rem;
+        }
+
+        .art-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+            position: relative;
+        }
+        .art-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 20px -5px var(--primary-glow);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .card-thumb-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            background: #0f172a;
+            overflow: hidden;
+        }
+        .card-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .art-card:hover .card-thumb {
+            transform: scale(1.05);
+        }
+
+        .card-type-badge {
+            position: absolute;
+            top: 0.8rem;
+            left: 0.8rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: var(--radius-full);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(99, 102, 241, 0.85);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .card-multi-badge {
+            position: absolute;
+            top: 0.8rem;
+            right: 3.4rem;
+            padding: 0.3rem 0.65rem;
+            border-radius: var(--radius-full);
+            font-size: 0.72rem;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-glass);
+            color: #38bdf8;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-fav-btn {
+            position: absolute;
+            top: 0.8rem;
+            right: 0.8rem;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            cursor: pointer;
+            z-index: 2;
+            transition: var(--transition-smooth);
+        }
+        .card-fav-btn:hover {
+            transform: scale(1.15);
+            background: rgba(236, 72, 153, 0.9);
+        }
+        .card-fav-btn.is-fav {
+            color: #f43f5e;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .card-info {
+            padding: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .card-model-tag {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            color: var(--accent-cyan);
+            font-size: 0.7rem;
+            font-family: monospace;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: auto;
+        }
+        .card-tag {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 5rem 2rem;
+            color: var(--text-muted);
+        }
+        .empty-icon {
+            font-size: 3rem;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+        }
+
+        /* ================= DETAILED VIEWER (THEATER MODAL) ================= */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 6, 12, 0.94);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            z-index: 100;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+        }
+
+        .viewer-container {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Overlay Controls (Fade in/out on tap in theater mode) */
+        .viewer-header-overlay {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 30;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .viewer-header-overlay > * {
+            pointer-events: auto;
+        }
+        .viewer-container.theater-hidden .viewer-header-overlay,
+        .viewer-container.theater-hidden .mobile-info-trigger-btn {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+
+        .modal-close-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .modal-close-btn:hover {
+            background: rgba(236, 72, 153, 0.9);
+            transform: rotate(90deg);
+        }
+
+        .viewer-controls-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 4px 8px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .viewer-mode-btn {
+            padding: 0.4rem 0.9rem;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: var(--transition-smooth);
+        }
+        .viewer-mode-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 10px var(--primary-glow);
+        }
+
+        /* Canvas Scroll Container (Maximized for Images) */
+        .viewer-canvas {
+            background: #05070d;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .viewer-scroll-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4.5rem 1rem 3rem 1rem;
+            scrollbar-gutter: stable;
+            cursor: pointer; /* Tap to toggle theater controls */
+        }
+
+        .manga-scroll-content {
+            width: 100%;
+            max-width: 680px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 auto;
+            gap: 2rem;
+        }
+        .manga-scroll-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .manga-scroll-page-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-glass);
+            padding: 0.2rem 0.7rem;
+            border-radius: var(--radius-full);
+            backdrop-filter: blur(8px);
+            align-self: flex-start;
+        }
+        .manga-scroll-img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius-md);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--border-glass);
+            display: block;
+        }
+
+        .manga-fit-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+        }
+        .manga-fit-viewport {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 100%;
+            max-height: 80vh;
+        }
+        .manga-fit-img {
+            max-height: 78vh;
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: var(--radius-md);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 1px solid var(--border-glass);
+            transition: opacity 0.15s ease, transform 0.2s ease;
+        }
+        .viewer-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .viewer-nav-btn:hover:not(:disabled) {
+            background: var(--primary);
+            transform: translateY(-50%) scale(1.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .viewer-nav-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .viewer-nav-btn.prev {
+            left: 1.2rem;
+        }
+        .viewer-nav-btn.next {
+            right: 1.2rem;
+        }
+        .viewer-page-badge {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            color: #f8fafc;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.35rem 1rem;
+            border-radius: var(--radius-full);
+            z-index: 20;
+            letter-spacing: 0.05em;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .viewer-strip-container {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: 90%;
+            overflow-x: auto;
+            padding: 0.4rem 0.6rem;
+            background: rgba(10, 15, 26, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            z-index: 20;
+            scrollbar-width: thin;
+        }
+        .viewer-strip-item {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            opacity: 0.45;
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+            background: #0f172a;
+        }
+        .viewer-strip-item:hover {
+            opacity: 0.85;
+            transform: scale(1.05);
+        }
+        .viewer-strip-item.active {
+            opacity: 1;
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+            transform: scale(1.08);
+        }
+        .viewer-strip-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Desktop Sidebar & Mobile Bottom-Sheet */
+        .viewer-sidebar {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-glass);
+            padding: 2.2rem 1.8rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 25;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .viewer-work-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            line-height: 1.3;
+            color: #fff;
+        }
+
+        .viewer-type-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        .meta-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .prompt-box {
+            background: rgba(5, 7, 13, 0.8);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: var(--transition-smooth);
+        }
+        .copy-btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .viewer-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 0.8rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: var(--transition-smooth);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-danger {
+            padding: 0.65rem 1rem;
+            border-radius: var(--radius-sm);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: var(--transition-smooth);
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.8);
+            color: #fff;
+        }
+
+        /* Floating Info Trigger Button (Mobile only) */
+        .mobile-info-trigger-btn {
+            position: absolute;
+            bottom: 1.2rem;
+            right: 1.2rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: var(--radius-full);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            z-index: 20;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .mobile-info-trigger-btn:hover {
+            background: var(--primary);
+        }
+
+        /* Mobile Bottom-sheet Handle */
+        .mobile-sheet-handle {
+            display: none;
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 0 auto 0.8rem auto;
+            cursor: pointer;
+        }
+
+        /* ================= STUDIO (POST EDITOR) ================= */
+        .studio-container {
+            max-width: 960px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 2.2rem;
+            box-shadow: var(--shadow-card);
+        }
+
+        .studio-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .studio-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.6rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .form-label span.req {
+            color: var(--accent-pink);
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.75rem 1.1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition-smooth);
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        /* Studio Tag Suggestions */
+        .studio-tags-container {
+            margin-top: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .studio-tags-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .studio-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 2px 1px;
+        }
+
+        .studio-tag-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.78rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            user-select: none;
+            line-height: 1.2;
+            font-family: inherit;
+        }
+
+        .studio-tag-badge:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.4);
+            color: var(--text-main);
+            transform: translateY(-1px);
+        }
+
+        .studio-tag-badge.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(236, 72, 153, 0.35));
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+            font-weight: 500;
+        }
+
+        .studio-tag-badge .tag-count {
+            font-size: 0.7rem;
+            opacity: 0.65;
+        }
+
+        /* Custom Category Selector in Studio */
+        .category-select-wrapper {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .custom-cat-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex: 1 1 200px;
+        }
+
+        /* X (Twitter) Post Importer */
+        .x-import-box {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.5));
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: var(--radius-md);
+            padding: 1.2rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+        .x-import-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-cyan), var(--accent-pink));
+        }
+        .x-import-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .x-import-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .x-logo-svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        .x-import-badge {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: var(--radius-full);
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            font-weight: 500;
+        }
+        .x-import-input-row {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .x-input-wrap {
+            position: relative;
+            flex: 1;
+        }
+        .x-input-icon {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+        .x-url-input {
+            padding-left: 2.4rem;
+        }
+        .x-fetch-btn {
+            white-space: nowrap;
+            padding: 0.75rem 1.4rem;
+            font-size: 0.88rem;
+        }
+        .x-import-preview {
+            background: rgba(10, 15, 26, 0.75);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .x-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            color: var(--accent-cyan);
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .x-preview-body {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 160px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-sm);
+        }
+        .x-preview-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .x-preview-tag-chip {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: var(--radius-full);
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+        }
+        .x-preview-actions {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            margin-top: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .x-import-loading {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: var(--accent-cyan);
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+        }
+        .x-import-error {
+            color: #f87171;
+            font-size: 0.82rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-sm);
+        }
+        .spinner-mini {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(6, 182, 212, 0.3);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Unified Upload Dropzone */
+        .illust-dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-md);
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            background: rgba(10, 15, 26, 0.5);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .illust-dropzone:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .dropzone-thumbs-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            padding: 0 0.2rem;
+        }
+        .dropzone-thumbs {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+        .dropzone-thumb-item {
+            width: 110px;
+            height: 140px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border-glass);
+            background: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: var(--transition-smooth);
+        }
+        .dropzone-thumb-item:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+        }
+        .dropzone-thumb-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .thumb-order-badge {
+            position: absolute;
+            top: 0.35rem;
+            left: 0.35rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: var(--radius-full);
+            font-size: 0.68rem;
+            font-weight: 700;
+            background: rgba(15, 23, 42, 0.85);
+            color: #cbd5e1;
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(4px);
+            z-index: 2;
+        }
+        .thumb-order-badge.is-cover {
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            color: #fff;
+            border: none;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+        }
+        .thumb-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.35rem 0.4rem;
+            background: linear-gradient(transparent, rgba(10, 15, 26, 0.95) 70%);
+            z-index: 2;
+        }
+        .thumb-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: var(--transition-smooth);
+        }
+        .thumb-btn:hover:not(:disabled) {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .thumb-btn:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .thumb-btn.danger:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+        .dropzone-add-more-box {
+            width: 110px;
+            height: 140px;
+            border-radius: var(--radius-sm);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .dropzone-add-more-box:hover {
+            border-color: var(--primary);
+            color: #fff;
+            background: rgba(99, 102, 241, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .form-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .studio-key-field {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-glass);
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+        }
+        .studio-key-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 0.85rem;
+            width: 160px;
+        }
+
+        .btn-primary {
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition-smooth);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--primary-glow);
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border-radius: var(--radius-md);
+            padding: 0.85rem 1.4rem;
+            color: #fff;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            z-index: 200;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition-smooth);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Settings Modal */
+        .settings-block {
+            background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .settings-block-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* ================= MOBILE OPTIMIZATION (SMARTPHONE VIEW) ================= */
+        @media (max-width: 960px) {
+            header {
+                padding: 0.6rem 1rem;
+            }
+            main {
+                padding: 1rem 0.8rem 3rem 0.8rem;
+            }
+            .brand-subtitle {
+                display: none;
+            }
+
+            /* Viewer becomes full screen image canvas with bottom-sheet drawer */
+            .viewer-container {
+                grid-template-columns: 1fr;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .viewer-scroll-container {
+                padding: 4.5rem 0.5rem 5rem 0.5rem;
+            }
+            .manga-scroll-content {
+                max-width: 100%;
+            }
+
+            /* Sidebar becomes Bottom-Sheet Drawer */
+            .viewer-sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-left: none;
+                border-top: 1px solid var(--border-glass);
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+                box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
+                max-height: 75vh;
+                transform: translateY(105%);
+                padding: 1.2rem 1.4rem 2.5rem 1.4rem;
+                background: rgba(13, 18, 32, 0.96);
+            }
+            .viewer-sidebar.mobile-open {
+                transform: translateY(0);
+            }
+
+            .mobile-info-trigger-btn {
+                display: flex;
+            }
+            .mobile-sheet-handle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .nav-tab-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            .artworks-grid {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-area" id="btnLogo">
+            <div class="brand-icon">
+                <i data-lucide="sparkles"></i>
+            </div>
+            <div>
+                <div class="brand-title">TANU GALLERY STUDIO</div>
+                <div class="brand-subtitle">ILLUSTRATION </div>
+            </div>
+        </div>
+
+        <nav class="nav-tabs" id="navTabsContainer">
+            <button class="nav-tab-btn active" id="tabGallery">
+                <i data-lucide="layout-grid"></i> Gallery（ギャラリー）
+            </button>
+            <button class="nav-tab-btn" id="tabStudio">
+                <i data-lucide="plus-circle"></i> Studio（作品投稿）
+            </button>
+        </nav>
+
+        <div class="header-actions">
+            <!-- Share Public Link Button -->
+            <button class="btn-pill primary" id="btnSharePublic" title="人に見せるための閲覧専用リンクをコピー">
+                <i data-lucide="share-2" style="width:14px;"></i>
+                <span id="shareBtnText">Share（閲覧用リンク共有）</span>
+            </button>
+
+            <!-- Storage Indicator (Admin only) -->
+            <div class="storage-pill" id="storageIndicator" title="クリックして保存先設定を開く">
+                <div class="status-dot" id="storageDot"></div>
+                <span id="storageLabel">Server Mode</span>
+            </div>
+
+            <!-- Settings Button (Admin only) -->
+            <button class="btn-pill" id="btnBackup" title="サーバー設定 / バックアップ">
+                <i data-lucide="settings" style="width:14px;"></i> Settings（設定）
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main>
+        <!-- ================= GALLERY VIEW ================= -->
+        <section class="view-section active" id="gallerySection">
+            <!-- Filter & Search Controls -->
+            <div class="controls-bar">
+                <div class="controls-top-row">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" class="search-input" id="searchInput" placeholder="タイトル、タグ、プロンプトで検索...">
+                    </div>
+
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <button class="category-chip" id="btnFavFilter">
+                            <i data-lucide="star" style="width:14px;"></i> Favorites（お気に入り）
+                        </button>
+                        <select class="sort-select" id="sortSelect">
+                            <option value="newest">Sort: Newest（新着順）</option>
+                            <option value="oldest">Sort: Oldest（古い順）</option>
+                            <option value="title">Sort: Title（タイトル順）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dynamic Custom Categories Bar -->
+                <div class="category-tabs-bar" id="categoryChipsBar">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Tags Cloud -->
+            <div class="tags-bar" id="tagsCloud"></div>
+
+            <!-- Artworks Grid -->
+            <div class="artworks-grid" id="artworksGrid"></div>
+        </section>
+
+        <!-- ================= STUDIO / POST VIEW ================= -->
+        <section class="view-section" id="studioSection">
+            <div class="studio-container">
+                <div class="studio-header">
+                    <div>
+                        <h2 class="studio-title" id="studioHeaderTitle">Create New Artwork（作品を投稿する）</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">イラストを登録してギャラリーに展示しましょう。</p>
+                    </div>
+                    <button class="btn-secondary" id="btnCancelEdit" style="display:none;">
+                        <i data-lucide="x"></i> Cancel（キャンセル）
+                    </button>
+                </div>
+
+                <form id="artworkForm">
+                    <input type="hidden" id="editArtworkId" value="">
+
+                    <div class="form-grid">
+                        <!-- X (Twitter) Post Text Importer -->
+                        <div class="x-import-box" id="xImportBox">
+                            <div class="x-import-header">
+                                <div class="x-import-title">
+                                    <svg viewBox="0 0 24 24" class="x-logo-svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                    <span>Import from X (Twitter) Post（ポストから文字データを取得）</span>
+                                </div>
+                                <span class="x-import-badge">URL貼り付けで自動入力</span>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+                                XのポストURLを貼り付けると、本文・タイトル・ハッシュタグ・投稿日を自動取得して入力欄にセットできます。（※画像はいつものように下の枠へドラッグ＆ドロップしてください）
+                            </p>
+                            <div class="x-import-input-row">
+                                <div class="x-input-wrap">
+                                    <i data-lucide="link" class="x-input-icon"></i>
+                                    <input type="url" id="xPostUrlInput" class="form-input x-url-input" placeholder="https://x.com/username/status/123456789... または https://twitter.com/...">
+                                </div>
+                                <button type="button" class="btn-primary x-fetch-btn" id="btnFetchXPost">
+                                    <i data-lucide="sparkles"></i> Fetch Post（データ取得）
+                                </button>
+                            </div>
+                            
+                            <!-- Loading Indicator -->
+                            <div class="x-import-loading" id="xImportLoading" style="display: none;">
+                                <div class="spinner-mini"></div>
+                                <span>Xのポストデータを解析・取得しています...</span>
+                            </div>
+
+                            <!-- Error Message -->
+                            <div class="x-import-error" id="xImportError" style="display: none;"></div>
+
+                            <!-- Preview & Confirmation Area -->
+                            <div class="x-import-preview" id="xImportPreview" style="display: none;">
+                                <div class="x-preview-header">
+                                    <span class="x-preview-author" id="xPreviewAuthor">@username</span>
+                                    <span class="x-preview-date" id="xPreviewDate">2026-09-24</span>
+                                </div>
+                                <div class="x-preview-body" id="xPreviewBody"></div>
+                                <div class="x-preview-tags" id="xPreviewTags"></div>
+                                <div class="x-preview-actions">
+                                    <button type="button" class="btn-primary" id="btnApplyXData" style="font-size: 0.85rem; padding: 0.55rem 1.4rem;">
+                                        <i data-lucide="check"></i> フォームにすべて反映する
+                                    </button>
+                                    <button type="button" class="btn-secondary" id="btnClearXData" style="font-size: 0.82rem; padding: 0.55rem 1rem;">
+                                        <i data-lucide="x"></i> クリア
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label class="form-label" for="workTitle">
+                                Title（作品タイトル） <span class="req">*</span>
+                            </label>
+                            <input type="text" id="workTitle" class="form-input" placeholder="例：食いしん坊のみのり / ほたるの星空観察" required>
+                        </div>
+
+                        <!-- Custom Category Selector -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                Category（カテゴリー） <span class="req">*</span>
+                                <span style="font-size:0.75rem; color:var(--text-dim); font-weight:normal;">既存から選択するか、自由な名前を入力してください</span>
+                            </label>
+                            <div class="category-select-wrapper">
+                                <select id="categoryPresetSelect" class="form-select" style="max-width: 220px;">
+                                    <option value="illust">イラスト (1枚絵・複数枚)</option>
+                                    <option value="4koma">4コマ漫画 (4-Koma)</option>
+                                    <option value="__new__">＋ 新規カテゴリを入力...</option>
+                                </select>
+                                <div class="custom-cat-input-wrap" id="customCatInputWrap" style="display: none;">
+                                    <input type="text" id="customCategoryInput" class="form-input" placeholder="新規カテゴリ名（例: 子狐の日常, 立ち絵）">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Display Style (Scroll or Fit) -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                Display Style（閲覧時の表示形式）
+                            </label>
+                            <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                                <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.85rem;">
+                                    <input type="radio" name="displayMode" value="fit" id="dispFit" checked>
+                                    <span>全体表示フィット（1枚絵・複数枚スライド切り替え向け）</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.85rem;">
+                                    <input type="radio" name="displayMode" value="scroll" id="dispScroll">
+                                    <span>縦スクロール読み（4コマ漫画・縦長画像・連続スクロール向け）</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Unified Image Upload Area -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                Artwork Images（作品画像 / 1枚または複数枚） <span class="req">*</span>
+                                <span style="font-size:0.75rem; color:var(--text-dim); font-weight:normal;">
+                                    （1枚絵、または複数枚の連作・差分イラスト、縦長4コマ画像をドラッグ＆ドロップ。複数選択・追加可能）
+                                </span>
+                            </label>
+                            <div class="illust-dropzone" id="illustDropzone">
+                                <i data-lucide="cloud-upload" style="width:40px; height:40px; color:var(--primary); margin-bottom:0.6rem;"></i>
+                                <div style="font-weight: 600; font-size: 1rem;">画像ファイルをここにドラッグ＆ドロップ</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">またはクリックしてファイルを選択（複数枚選択可 / PNG, JPG, WebP）</div>
+                            </div>
+                            <input type="file" id="illustFileInput" accept="image/*" multiple style="display: none;">
+                            <div class="dropzone-thumbs-header" id="illustThumbsHeader" style="display: none;">
+                                <span id="illustThumbsCount" style="font-weight:600; color:var(--text-main);">登録画像: 0枚</span>
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">※1枚目が一覧の表紙になります（← →で並び替え可能）</span>
+                            </div>
+                            <div class="dropzone-thumbs" id="illustThumbs"></div>
+                        </div>
+
+                        <!-- AI Model & Date -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label" for="workModel">AI Generator / Model（使用モデル）</label>
+                                <input type="text" id="workModel" class="form-input" list="modelSuggestions" placeholder="例：DALL-E 3, NijiJourney v6, Flux.1">
+                                <datalist id="modelSuggestions">
+                                    <option value="DALL-E 3">
+                                    <option value="NijiJourney v6">
+                                    <option value="Flux.1 [dev]">
+                                    <option value="Midjourney v6.1">
+                                    <option value="Stable Diffusion XL">
+                                </datalist>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="workDate">Created Date（制作日）</label>
+                                <input type="date" id="workDate" class="form-input">
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="form-group">
+                            <label class="form-label" for="workTags">Tags（タグ / カンマ区切り）</label>
+                            <input type="text" id="workTags" class="form-input" placeholder="例：4コマ, 子狐, みのり, 日常">
+                            <div class="studio-tags-container" id="studioTagsContainer">
+                                <div class="studio-tags-label">
+                                    <i data-lucide="tags" style="width:13px; height:13px; color:var(--accent-cyan);"></i>
+                                    <span>投稿済みタグから選択（クリックで追加 / 解除）:</span>
+                                </div>
+                                <div class="studio-tag-list" id="studioTagList"></div>
+                            </div>
+                        </div>
+
+                        <!-- Prompt & Negative Prompt -->
+                        <div class="form-group">
+                            <label class="form-label" for="workPrompt">Prompt（生成プロンプト）</label>
+                            <textarea id="workPrompt" class="form-textarea" placeholder="AIに入力したプロンプトを記録できます..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="workNegativePrompt">Negative Prompt（ネガティブプロンプト）</label>
+                            <textarea id="workNegativePrompt" class="form-textarea" style="min-height: 60px;" placeholder="除外したプロンプト要素..."></textarea>
+                        </div>
+
+                        <!-- Description / Note -->
+                        <div class="form-group">
+                            <label class="form-label" for="workNotes">Story / Notes（作品の解説・ストーリーメモ）</label>
+                            <textarea id="workNotes" class="form-textarea" placeholder="作品の背景ストーリーやオチのポイントをメモ..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <div class="studio-key-field" title="サーバーの gallery_api.php で設定されたパスワード">
+                            <i data-lucide="key" style="width:14px; color:var(--accent-amber);"></i>
+                            <input type="password" id="studioAdminKey" class="studio-key-input" placeholder="投稿キー（Admin Key）">
+                        </div>
+                        <button type="submit" class="btn-primary" id="btnSaveArtwork">
+                            <i data-lucide="check"></i> Save Artwork（作品を保存する）
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================= DETAILED ARTWORK VIEWER (FULLSCREEN THEATER) ================= -->
+    <div class="modal-overlay" id="viewerModal">
+        <div class="viewer-container" id="viewerContainer">
+            <!-- Top Floating Header Controls -->
+            <div class="viewer-header-overlay" id="viewerHeaderOverlay">
+                <div class="viewer-controls-group">
+                    <button class="viewer-mode-btn active" id="btnModeScroll" title="縦スクロール拡大読み">
+                        <i data-lucide="scroll"></i> 縦スクロール
+                    </button>
+                    <button class="viewer-mode-btn" id="btnModeFit" title="全体を画面に収める">
+                        <i data-lucide="maximize-2"></i> 全体表示
+                    </button>
+                </div>
+
+                <button class="modal-close-btn" id="btnCloseViewer" title="閉じる">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- Canvas Scroll Area (Tap image area to toggle theater controls) -->
+            <div class="viewer-canvas" id="viewerCanvas">
+                <div id="viewerDynamicContent" class="viewer-scroll-container"></div>
+            </div>
+
+            <!-- Mobile Info Trigger Button -->
+            <button class="mobile-info-trigger-btn" id="btnMobileInfoTrigger">
+                <i data-lucide="info" style="width:16px;"></i> 作品情報を見る
+            </button>
+
+            <!-- Sidebar (Desktop: Right Panel / Mobile: Swipe Bottom-Sheet) -->
+            <div class="viewer-sidebar" id="viewerSidebar">
+                <div class="mobile-sheet-handle" id="mobileSheetHandle"></div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                    <div id="viewerTypeBadge"></div>
+                    <h2 class="viewer-work-title" id="viewerTitle">Title</h2>
+                    <div style="font-size: 0.8rem; color: var(--text-dim);" id="viewerDate">2026-09-23</div>
+                </div>
+
+                <div class="meta-field-group" id="viewerNotesWrap">
+                    <span class="meta-label">Story & Notes（作品解説）</span>
+                    <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap;" id="viewerNotes"></p>
+                </div>
+
+                <div class="meta-field-group">
+                    <span class="meta-label">AI Generator</span>
+                    <div class="card-model-tag" style="width: fit-content; font-size: 0.8rem;" id="viewerModel">Unknown</div>
+                </div>
+
+                <div class="meta-field-group" id="viewerPromptWrap">
+                    <div class="meta-label">
+                        <span>Prompt</span>
+                        <button class="copy-btn" id="btnCopyPrompt">
+                            <i data-lucide="copy" style="width:12px;"></i> Copy
+                        </button>
+                    </div>
+                    <div class="prompt-box" id="viewerPrompt"></div>
+                </div>
+
+                <div class="meta-field-group" id="viewerNegativeWrap">
+                    <div class="meta-label">
+                        <span>Negative Prompt</span>
+                        <button class="copy-btn" id="btnCopyNegative">
+                            <i data-lucide="copy" style="width:12px;"></i> Copy
+                        </button>
+                    </div>
+                    <div class="prompt-box" id="viewerNegativePrompt"></div>
+                </div>
+
+                <div class="meta-field-group">
+                    <span class="meta-label">Tags</span>
+                    <div class="card-tags" id="viewerTags"></div>
+                </div>
+
+                <!-- Admin Action Buttons (Hidden in Public View Mode) -->
+                <div class="viewer-actions" id="viewerAdminActions">
+                    <button class="btn-secondary" id="btnEditCurrent">
+                        <i data-lucide="edit-3"></i> Edit（編集）
+                    </button>
+                    <button class="btn-danger" id="btnDeleteCurrent">
+                        <i data-lucide="trash-2"></i> Delete（削除）
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup & Settings Modal -->
+    <div class="modal-overlay" id="backupModal">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 2rem; max-width: 540px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close-btn" id="btnCloseBackup"><i data-lucide="x"></i></button>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Settings & Storage（保存先・設定）</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                ロリポップサーバーでの保存、またはブラウザ内（IndexedDB）でのローカル保存を設定できます。
+            </p>
+
+            <div class="settings-block">
+                <div class="settings-block-title">
+                    <i data-lucide="server"></i> Lolipop Server Connection（サーバー設定）
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label class="form-label" style="font-size: 0.78rem;">Server API URL</label>
+                    <input type="text" id="settingApiUrl" class="form-input" style="font-size: 0.82rem;" placeholder="./gallery_api.php">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                    <label class="form-label" style="font-size: 0.78rem;">Admin Key（投稿パスワード）</label>
+                    <input type="password" id="settingAdminKey" class="form-input" style="font-size: 0.82rem;">
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn-secondary" id="btnTestServer" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+                        <i data-lucide="activity"></i> 接続テスト
+                    </button>
+                    <button class="btn-primary" id="btnSaveServerSettings" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+                        <i data-lucide="save"></i> 設定を保存
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-block">
+                <div class="settings-block-title">
+                    <i data-lucide="share-2"></i> Public View Link（閲覧専用リンク）
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.8rem;">
+                    以下のURLをシェアすると、第三者は投稿・編集・設定メニューが隠れた「閲覧専用」で安全に鑑賞できます。
+                </p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="publicViewUrlInput" class="form-input" style="font-size: 0.8rem;" readonly>
+                    <button class="btn-secondary" id="btnCopyPublicUrl" style="white-space: nowrap;">
+                        <i data-lucide="copy"></i> コピー
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-block">
+                <div class="settings-block-title">
+                    <i data-lucide="database"></i> Backup & Restore（JSONバックアップ）
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <button class="btn-primary" id="btnExportJson" style="justify-content: center; font-size: 0.85rem;">
+                        <i data-lucide="download"></i> Export JSON
+                    </button>
+                    <label class="btn-secondary" style="justify-content: center; cursor: pointer; font-size: 0.85rem;">
+                        <i data-lucide="upload"></i> Import JSON
+                        <input type="file" id="importJsonInput" accept=".json" style="display: none;">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i data-lucide="check-circle" style="color:var(--accent-cyan);"></i>
+        <span id="toastMsg">通知メッセージ</span>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const STORAGE_CONFIG_KEY = 'ai_gallery_server_config';
+        let serverConfig = {
+            apiUrl: './gallery_api.php',
+            adminKey: 'eiswein123'
+        };
+
+        try {
+            const saved = localStorage.getItem(STORAGE_CONFIG_KEY);
+            if (saved) {
+                serverConfig = { ...serverConfig, ...JSON.parse(saved) };
+            }
+        } catch(e) {}
+
+        // Check if Public View Mode (Guest mode)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPublicViewMode = urlParams.get('mode') === 'view' || urlParams.get('view') === 'public' || urlParams.get('guest') === '1';
+
+        let isServerMode = false;
+
+        // IndexedDB Local Storage
+        const DB_NAME = 'AIGalleryDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'artworks';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        store.createIndex('category', 'category', { unique: false });
+                        store.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function localGetAll() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function localPut(artwork) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(artwork);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function localDelete(id) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.delete(id);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // Server API Helpers
+        function getApiHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (serverConfig.adminKey) headers['X-Admin-Key'] = serverConfig.adminKey;
+            return headers;
+        }
+
+        function buildApiUrl(action) {
+            const base = serverConfig.apiUrl || './gallery_api.php';
+            const sep = base.includes('?') ? '&' : '?';
+            let url = `${base}${sep}action=${action}`;
+            if (serverConfig.adminKey) url += `&admin_key=${encodeURIComponent(serverConfig.adminKey)}`;
+            return url;
+        }
+
+        async function handleApiResponse(res) {
+            if (res.status === 401) {
+                const keyInput = prompt('【パスワード認証エラー (HTTP 401)】\n管理者パスワード（Admin Key）を入力してください:', serverConfig.adminKey || '');
+                if (keyInput !== null && keyInput.trim() !== '') {
+                    serverConfig.adminKey = keyInput.trim();
+                    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(serverConfig));
+                    syncAdminKeyInputs();
+                    throw new Error('パスワードを更新しました。もう一度操作をお試しください。');
+                } else {
+                    throw new Error('パスワードが未入力です。');
+                }
+            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.error || 'Server error');
+            return json.data;
+        }
+
+        async function serverFetchList() {
+            const url = buildApiUrl('list');
+            const res = await fetch(url, { headers: getApiHeaders() });
+            return await handleApiResponse(res);
+        }
+
+        async function serverSaveArtwork(artwork) {
+            const url = buildApiUrl('save');
+            const payload = { ...artwork, admin_key: serverConfig.adminKey || '' };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: getApiHeaders(),
+                body: JSON.stringify(payload)
+            });
+            return await handleApiResponse(res);
+        }
+
+        async function serverDeleteArtwork(id) {
+            const url = buildApiUrl('delete');
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: getApiHeaders(),
+                body: JSON.stringify({ id, admin_key: serverConfig.adminKey || '' })
+            });
+            return await handleApiResponse(res);
+        }
+
+        async function serverToggleFav(id) {
+            const url = buildApiUrl('toggle_fav');
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: getApiHeaders(),
+                body: JSON.stringify({ id, admin_key: serverConfig.adminKey || '' })
+            });
+            return await handleApiResponse(res);
+        }
+
+        // Unified Storage Adapter
+        async function fetchAllArtworks() {
+            if (isServerMode) {
+                try {
+                    return await serverFetchList();
+                } catch(err) {
+                    console.warn('Server fetch fallback:', err);
+                    updateStorageIndicator(false);
+                    return await localGetAll();
+                }
+            } else {
+                return await localGetAll();
+            }
+        }
+
+        async function saveArtworkUnified(artwork) {
+            if (isServerMode) {
+                const saved = await serverSaveArtwork(artwork);
+                try { await localPut(saved); } catch(e){}
+                return saved;
+            } else {
+                await localPut(artwork);
+                return artwork;
+            }
+        }
+
+        async function deleteArtworkUnified(id) {
+            if (isServerMode) {
+                try {
+                    await serverDeleteArtwork(id);
+                } catch(err) {
+                    if (!err.message || !err.message.includes('404')) throw err;
+                }
+                try { await localDelete(id); } catch(e){}
+            } else {
+                await localDelete(id);
+            }
+        }
+
+        async function toggleFavUnified(id) {
+            if (isServerMode) {
+                return await serverToggleFav(id);
+            } else {
+                const item = artworks.find(a => a.id === id);
+                if (item) {
+                    item.isFavorite = !item.isFavorite;
+                    await localPut(item);
+                }
+                return item;
+            }
+        }
+
+        function updateStorageIndicator(serverOk) {
+            const indicator = document.getElementById('storageIndicator');
+            const label = document.getElementById('storageLabel');
+            isServerMode = serverOk;
+
+            if (serverOk) {
+                indicator.classList.remove('local');
+                label.textContent = 'Server (ロリポップ)';
+            } else {
+                indicator.classList.add('local');
+                label.textContent = 'Local (IndexedDB)';
+            }
+        }
+
+        function syncAdminKeyInputs() {
+            settingAdminKey.value = serverConfig.adminKey || '';
+            studioAdminKey.value = serverConfig.adminKey || '';
+        }
+
+        // State Management
+        let artworks = [];
+        let currentCategory = 'all';
+        let isFavoriteOnly = false;
+        let currentSort = 'newest';
+        let searchQuery = '';
+        let selectedTag = null;
+        let currentViewingArtwork = null;
+        let currentViewerDisplayMode = 'scroll';
+        let currentViewerImgIdx = 0;
+        let studioUploadedImages = [];
+
+        // DOM Elements
+        const artworksGrid = document.getElementById('artworksGrid');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const categoryChipsBar = document.getElementById('categoryChipsBar');
+        const btnFavFilter = document.getElementById('btnFavFilter');
+        const tagsCloud = document.getElementById('tagsCloud');
+        const gallerySection = document.getElementById('gallerySection');
+        const studioSection = document.getElementById('studioSection');
+        const tabGallery = document.getElementById('tabGallery');
+        const tabStudio = document.getElementById('tabStudio');
+
+        // Viewer Elements
+        const viewerModal = document.getElementById('viewerModal');
+        const viewerContainer = document.getElementById('viewerContainer');
+        const btnCloseViewer = document.getElementById('btnCloseViewer');
+        const viewerDynamicContent = document.getElementById('viewerDynamicContent');
+        const viewerSidebar = document.getElementById('viewerSidebar');
+        const viewerTitle = document.getElementById('viewerTitle');
+        const viewerDate = document.getElementById('viewerDate');
+        const viewerTypeBadge = document.getElementById('viewerTypeBadge');
+        const viewerNotes = document.getElementById('viewerNotes');
+        const viewerNotesWrap = document.getElementById('viewerNotesWrap');
+        const viewerModel = document.getElementById('viewerModel');
+        const viewerPrompt = document.getElementById('viewerPrompt');
+        const viewerPromptWrap = document.getElementById('viewerPromptWrap');
+        const viewerNegativePrompt = document.getElementById('viewerNegativePrompt');
+        const viewerNegativeWrap = document.getElementById('viewerNegativeWrap');
+        const viewerTags = document.getElementById('viewerTags');
+        const btnModeScroll = document.getElementById('btnModeScroll');
+        const btnModeFit = document.getElementById('btnModeFit');
+        const btnMobileInfoTrigger = document.getElementById('btnMobileInfoTrigger');
+        const mobileSheetHandle = document.getElementById('mobileSheetHandle');
+        const btnEditCurrent = document.getElementById('btnEditCurrent');
+        const btnDeleteCurrent = document.getElementById('btnDeleteCurrent');
+        const btnCopyPrompt = document.getElementById('btnCopyPrompt');
+        const btnCopyNegative = document.getElementById('btnCopyNegative');
+
+        // Studio Elements
+        const artworkForm = document.getElementById('artworkForm');
+        const studioHeaderTitle = document.getElementById('studioHeaderTitle');
+        const editArtworkId = document.getElementById('editArtworkId');
+        const btnCancelEdit = document.getElementById('btnCancelEdit');
+        const workTitle = document.getElementById('workTitle');
+        const categoryPresetSelect = document.getElementById('categoryPresetSelect');
+        const customCatInputWrap = document.getElementById('customCatInputWrap');
+        const customCategoryInput = document.getElementById('customCategoryInput');
+        const dispScroll = document.getElementById('dispScroll');
+        const dispFit = document.getElementById('dispFit');
+        const workModel = document.getElementById('workModel');
+        const workDate = document.getElementById('workDate');
+        const workTags = document.getElementById('workTags');
+        const workPrompt = document.getElementById('workPrompt');
+        const workNegativePrompt = document.getElementById('workNegativePrompt');
+        const workNotes = document.getElementById('workNotes');
+        const illustDropzone = document.getElementById('illustDropzone');
+        const illustFileInput = document.getElementById('illustFileInput');
+        const illustThumbs = document.getElementById('illustThumbs');
+        const studioAdminKey = document.getElementById('studioAdminKey');
+
+        // X (Twitter) Importer Elements
+        const xImportBox = document.getElementById('xImportBox');
+        const xPostUrlInput = document.getElementById('xPostUrlInput');
+        const btnFetchXPost = document.getElementById('btnFetchXPost');
+        const xImportLoading = document.getElementById('xImportLoading');
+        const xImportError = document.getElementById('xImportError');
+        const xImportPreview = document.getElementById('xImportPreview');
+        const xPreviewAuthor = document.getElementById('xPreviewAuthor');
+        const xPreviewDate = document.getElementById('xPreviewDate');
+        const xPreviewBody = document.getElementById('xPreviewBody');
+        const xPreviewTags = document.getElementById('xPreviewTags');
+        const btnApplyXData = document.getElementById('btnApplyXData');
+        const btnClearXData = document.getElementById('btnClearXData');
+        let currentExtractedXData = null;
+
+        // Backup & Settings
+        const backupModal = document.getElementById('backupModal');
+        const btnBackup = document.getElementById('btnBackup');
+        const btnCloseBackup = document.getElementById('btnCloseBackup');
+        const settingApiUrl = document.getElementById('settingApiUrl');
+        const settingAdminKey = document.getElementById('settingAdminKey');
+        const btnSaveServerSettings = document.getElementById('btnSaveServerSettings');
+        const btnTestServer = document.getElementById('btnTestServer');
+        const btnExportJson = document.getElementById('btnExportJson');
+        const importJsonInput = document.getElementById('importJsonInput');
+        const btnSharePublic = document.getElementById('btnSharePublic');
+        const publicViewUrlInput = document.getElementById('publicViewUrlInput');
+        const btnCopyPublicUrl = document.getElementById('btnCopyPublicUrl');
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Apply Public View Mode Constraints
+        function applyPublicViewMode() {
+            if (isPublicViewMode) {
+                // Hide Studio tab, Settings button, and Admin actions
+                tabStudio.style.display = 'none';
+                btnBackup.style.display = 'none';
+                storageIndicator.style.display = 'none';
+                document.getElementById('viewerAdminActions').style.display = 'none';
+                document.getElementById('shareBtnText').textContent = 'Link（共有）';
+            }
+        }
+
+        // Initialize App
+        async function init() {
+            applyPublicViewMode();
+            settingApiUrl.value = serverConfig.apiUrl;
+            syncAdminKeyInputs();
+
+            // Set Public Share URL in settings
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('mode', 'view');
+            publicViewUrlInput.value = currentUrl.toString();
+
+            let serverAvailable = false;
+            if (location.protocol === 'http:' || location.protocol === 'https:' || serverConfig.apiUrl.startsWith('http')) {
+                try {
+                    await serverFetchList();
+                    serverAvailable = true;
+                } catch(e) {
+                    serverAvailable = (e.message && e.message.includes('401'));
+                }
+            }
+            updateStorageIndicator(serverAvailable);
+
+            try {
+                artworks = await fetchAllArtworks();
+            } catch (err) {
+                console.warn('Load failed:', err);
+                artworks = [];
+            }
+
+            workDate.value = new Date().toISOString().split('T')[0];
+
+            updateCategoryOptions();
+            renderCategoryChips();
+            renderGallery();
+            renderStudioTagSuggestions();
+            setupEventListeners();
+            lucide.createIcons();
+        }
+
+        // HTML Escape Helper
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Current Input Tags Parser
+        function parseCurrentTags() {
+            if (!workTags) return [];
+            return workTags.value
+                .split(/[,、]/)
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+        }
+
+        // Render Studio Tag Suggestions from Existing Artworks
+        function renderStudioTagSuggestions() {
+            const container = document.getElementById('studioTagList');
+            if (!container) return;
+
+            // Collect all unique tags and their occurrence counts
+            const tagCounts = new Map();
+            artworks.forEach(a => {
+                if (Array.isArray(a.tags)) {
+                    a.tags.forEach(t => {
+                        const clean = (t || '').trim();
+                        if (clean) {
+                            tagCounts.set(clean, (tagCounts.get(clean) || 0) + 1);
+                        }
+                    });
+                }
+            });
+
+            if (tagCounts.size === 0) {
+                container.innerHTML = '<span style="font-size:0.75rem; color:var(--text-dim); padding:0.2rem 0;">（投稿済みのタグはまだありません）</span>';
+                return;
+            }
+
+            const currentTags = parseCurrentTags();
+            // Sort by count descending, then alphabetically
+            const sorted = Array.from(tagCounts.entries())
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'));
+
+            container.innerHTML = sorted.map(([tag, count]) => {
+                const isActive = currentTags.includes(tag);
+                return `
+                    <button type="button" class="studio-tag-badge ${isActive ? 'active' : ''}" data-tag="${escapeHtml(tag)}" title="クリックでタグを${isActive ? '解除' : '追加'}">
+                        <span>#${escapeHtml(tag)}</span>
+                        <span class="tag-count">(${count})</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.studio-tag-badge').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tag = btn.dataset.tag;
+                    toggleStudioTag(tag);
+                });
+            });
+        }
+
+        // Toggle Tag in workTags Input
+        function toggleStudioTag(tag) {
+            let currentTags = parseCurrentTags();
+            const index = currentTags.indexOf(tag);
+            if (index >= 0) {
+                currentTags.splice(index, 1);
+            } else {
+                currentTags.push(tag);
+            }
+            workTags.value = currentTags.join(', ');
+            updateStudioTagBadgesActiveState();
+        }
+
+        // Update Active Highlight on Studio Tag Badges
+        function updateStudioTagBadgesActiveState() {
+            const container = document.getElementById('studioTagList');
+            if (!container) return;
+            const currentTags = parseCurrentTags();
+            container.querySelectorAll('.studio-tag-badge').forEach(btn => {
+                const tag = btn.dataset.tag;
+                if (currentTags.includes(tag)) {
+                    btn.classList.add('active');
+                    btn.title = 'クリックでタグを解除';
+                } else {
+                    btn.classList.remove('active');
+                    btn.title = 'クリックでタグを追加';
+                }
+            });
+        }
+
+        // Extract all unique categories
+        function getAllCategories() {
+            const cats = new Set(['4koma', 'illust']);
+            artworks.forEach(a => {
+                if (a.category) cats.add(a.category);
+            });
+            return Array.from(cats);
+        }
+
+        function getCategoryDisplayName(cat) {
+            if (cat === '4koma') return '4コマ漫画';
+            if (cat === 'illust') return 'イラスト';
+            return cat;
+        }
+
+        // Update Category Dropdown in Studio
+        function updateCategoryOptions() {
+            const cats = getAllCategories();
+            const currentVal = categoryPresetSelect.value;
+            categoryPresetSelect.innerHTML = cats.map(c => 
+                `<option value="${c}">${getCategoryDisplayName(c)}</option>`
+            ).join('') + `<option value="__new__">＋ 新規カテゴリを入力...</option>`;
+
+            if (cats.includes(currentVal)) {
+                categoryPresetSelect.value = currentVal;
+            }
+        }
+
+        // Render Dynamic Category Filter Chips in Gallery
+        function renderCategoryChips() {
+            const cats = getAllCategories();
+            let html = `
+                <button class="category-chip ${currentCategory === 'all' ? 'active' : ''}" data-cat="all">
+                    <i data-lucide="layers" style="width:14px;"></i> すべて (${artworks.length})
+                </button>
+            `;
+
+            cats.forEach(c => {
+                const count = artworks.filter(a => a.category === c).length;
+                const active = currentCategory === c ? 'active' : '';
+                const icon = (c === '4koma') ? 'book-open' : 'image';
+                html += `
+                    <button class="category-chip ${active}" data-cat="${c}">
+                        <i data-lucide="${icon}" style="width:14px;"></i> ${getCategoryDisplayName(c)} (${count})
+                    </button>
+                `;
+            });
+
+            categoryChipsBar.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Render Gallery Grid
+        function renderGallery() {
+            renderCategoryChips();
+
+            let filtered = artworks.filter(item => {
+                if (currentCategory !== 'all' && item.category !== currentCategory) return false;
+                if (isFavoriteOnly && !item.isFavorite) return false;
+                if (selectedTag && !item.tags.includes(selectedTag)) return false;
+
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    const titleMatch = item.title && item.title.toLowerCase().includes(q);
+                    const promptMatch = item.prompt && item.prompt.toLowerCase().includes(q);
+                    const tagMatch = item.tags && item.tags.some(t => t.toLowerCase().includes(q));
+                    const modelMatch = item.model && item.model.toLowerCase().includes(q);
+                    const catMatch = item.category && item.category.toLowerCase().includes(q);
+                    if (!titleMatch && !promptMatch && !tagMatch && !modelMatch && !catMatch) return false;
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (currentSort === 'newest') return (b.createdAt || 0) - (a.createdAt || 0);
+                if (currentSort === 'oldest') return (a.createdAt || 0) - (b.createdAt || 0);
+                if (currentSort === 'title') return a.title.localeCompare(b.title);
+                return 0;
+            });
+
+            renderTagsCloud();
+
+            if (filtered.length === 0) {
+                artworksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="image-off" class="empty-icon"></i>
+                        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 0.5rem;">該当する作品が見つかりませんでした</h3>
+                        <p style="font-size: 0.85rem;">検索条件を変更するか、カテゴリを切り替えてみてください。</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            artworksGrid.innerHTML = filtered.map(item => {
+                const firstImg = (item.images && item.images[0]) || 'img/hotaru_20260908.png';
+                const catLabel = getCategoryDisplayName(item.category || 'illust');
+                const imgCount = (item.images && item.images.length) || 1;
+
+                return `
+                    <div class="art-card" data-id="${item.id}">
+                        <div class="card-thumb-wrapper">
+                            <span class="card-type-badge">${catLabel}</span>
+                            ${imgCount > 1 ? `
+                                <div class="card-multi-badge" title="全${imgCount}枚">
+                                    <i data-lucide="layers" style="width:12px; height:12px;"></i>
+                                    <span>${imgCount}枚</span>
+                                </div>
+                            ` : ''}
+                            <button class="card-fav-btn ${item.isFavorite ? 'is-fav' : ''}" data-fav-id="${item.id}" title="お気に入り">
+                                <i data-lucide="heart" style="width:16px; fill:${item.isFavorite ? '#f43f5e' : 'none'}"></i>
+                            </button>
+                            <img src="${firstImg}" alt="${item.title}" class="card-thumb" loading="lazy">
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">${item.title}</h3>
+                            <div class="card-meta">
+                                <span>${item.date || ''}</span>
+                                ${item.model ? `<span class="card-model-tag">${item.model}</span>` : ''}
+                            </div>
+                            <div class="card-tags">
+                                ${(item.tags || []).slice(0, 3).map(t => `<span class="card-tag">#${t}</span>`).join('')}
+                                ${(item.tags || []).length > 3 ? `<span class="card-tag">+${item.tags.length - 3}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderTagsCloud() {
+            const tagSet = new Set();
+            artworks.forEach(item => {
+                if (item.tags) item.tags.forEach(t => tagSet.add(t));
+            });
+
+            if (tagSet.size === 0) {
+                tagsCloud.innerHTML = '';
+                return;
+            }
+
+            const allActive = selectedTag === null ? 'active' : '';
+            let html = `<span class="tag-pill ${allActive}" data-tag="all">#すべて</span>`;
+            tagSet.forEach(tag => {
+                const active = selectedTag === tag ? 'active' : '';
+                html += `<span class="tag-pill ${active}" data-tag="${tag}">#${tag}</span>`;
+            });
+            tagsCloud.innerHTML = html;
+        }
+
+        // Swipe gesture state for fit view
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Open Detailed Viewer Modal
+        function openViewer(id) {
+            const item = artworks.find(a => a.id === id);
+            if (!item) return;
+            currentViewingArtwork = item;
+            currentViewerImgIdx = 0;
+
+            // Reset mobile sheet
+            viewerSidebar.classList.remove('mobile-open');
+            viewerContainer.classList.remove('theater-hidden');
+
+            // Default display mode
+            currentViewerDisplayMode = item.displayMode || (item.category === '4koma' ? 'scroll' : 'fit');
+            updateViewerModeButtons();
+
+            viewerTitle.textContent = item.title;
+            viewerDate.textContent = item.date ? `Created: ${item.date}` : '';
+            viewerModel.textContent = item.model || 'Unknown';
+
+            const catLabel = getCategoryDisplayName(item.category || 'illust');
+            const imgCount = (item.images && item.images.length) || 1;
+            const countBadge = imgCount > 1 ? ` <span style="font-size:0.75rem; font-weight:normal; opacity:0.85; margin-left:0.2rem;">(全${imgCount}枚)</span>` : '';
+            viewerTypeBadge.innerHTML = `<span class="viewer-type-pill" style="background: rgba(99,102,241,0.2); color:#a5b4fc; border:1px solid #6366f1;"><i data-lucide="tag" style="width:14px"></i> ${catLabel}${countBadge}</span>`;
+
+            if (item.prompt) {
+                viewerPromptWrap.style.display = 'flex';
+                viewerPrompt.textContent = item.prompt;
+            } else {
+                viewerPromptWrap.style.display = 'none';
+            }
+
+            if (item.negativePrompt) {
+                viewerNegativeWrap.style.display = 'flex';
+                viewerNegativePrompt.textContent = item.negativePrompt;
+            } else {
+                viewerNegativeWrap.style.display = 'none';
+            }
+
+            if (item.notes) {
+                viewerNotesWrap.style.display = 'flex';
+                viewerNotes.textContent = item.notes;
+            } else {
+                viewerNotesWrap.style.display = 'none';
+            }
+
+            viewerTags.innerHTML = (item.tags || []).map(t => `<span class="card-tag" style="background:rgba(255,255,255,0.08); padding:0.2rem 0.6rem;">#${t}</span>`).join('');
+
+            renderViewerCanvas();
+
+            viewerModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+
+        function updateViewerModeButtons() {
+            if (currentViewerDisplayMode === 'scroll') {
+                btnModeScroll.classList.add('active');
+                btnModeFit.classList.remove('active');
+            } else {
+                btnModeFit.classList.add('active');
+                btnModeScroll.classList.remove('active');
+            }
+        }
+
+        function renderViewerCanvas() {
+            if (!currentViewingArtwork) return;
+            const item = currentViewingArtwork;
+            const images = (item.images && item.images.length > 0) ? item.images : ['img/hotaru_20260908.png'];
+            const hasMultiple = images.length > 1;
+
+            if (currentViewerImgIdx < 0) currentViewerImgIdx = 0;
+            if (currentViewerImgIdx >= images.length) currentViewerImgIdx = images.length - 1;
+
+            if (currentViewerDisplayMode === 'scroll') {
+                // Vertical Scroll (Full width & readable from top to bottom)
+                viewerDynamicContent.innerHTML = `
+                    <div class="manga-scroll-content">
+                        ${images.map((src, idx) => `
+                            <div class="manga-scroll-item">
+                                ${hasMultiple ? `<div class="manga-scroll-page-label">${idx + 1} / ${images.length}</div>` : ''}
+                                <img src="${src}" alt="${item.title} (${idx + 1})" class="manga-scroll-img">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                viewerDynamicContent.scrollTop = 0;
+            } else {
+                // Fit View (Slide / Carousel for multi-images)
+                const currentImgSrc = images[currentViewerImgIdx];
+
+                viewerDynamicContent.innerHTML = `
+                    <div class="manga-fit-content" id="mangaFitContainer">
+                        ${hasMultiple ? `
+                            <button type="button" class="viewer-nav-btn prev" id="btnViewerPrev" ${currentViewerImgIdx === 0 ? 'disabled' : ''} title="前の画像 (←キー)">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <button type="button" class="viewer-nav-btn next" id="btnViewerNext" ${currentViewerImgIdx === images.length - 1 ? 'disabled' : ''} title="次の画像 (→キー)">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                            <div class="viewer-page-badge">${currentViewerImgIdx + 1} / ${images.length}</div>
+                        ` : ''}
+
+                        <div class="manga-fit-viewport">
+                            <img src="${currentImgSrc}" alt="${item.title} (${currentViewerImgIdx + 1})" class="manga-fit-img" id="viewerMainFitImg">
+                        </div>
+
+                        ${hasMultiple ? `
+                            <div class="viewer-strip-container" id="viewerStripContainer">
+                                ${images.map((src, idx) => `
+                                    <div class="viewer-strip-item ${idx === currentViewerImgIdx ? 'active' : ''}" data-strip-idx="${idx}" title="${idx + 1}枚目">
+                                        <img src="${src}" alt="Thumb ${idx + 1}">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                if (hasMultiple) {
+                    const btnPrev = document.getElementById('btnViewerPrev');
+                    const btnNext = document.getElementById('btnViewerNext');
+
+                    if (btnPrev) {
+                        btnPrev.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (currentViewerImgIdx > 0) {
+                                currentViewerImgIdx--;
+                                renderViewerCanvas();
+                            }
+                        });
+                    }
+                    if (btnNext) {
+                        btnNext.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (currentViewerImgIdx < images.length - 1) {
+                                currentViewerImgIdx++;
+                                renderViewerCanvas();
+                            }
+                        });
+                    }
+
+                    viewerDynamicContent.querySelectorAll('.viewer-strip-item').forEach(strip => {
+                        strip.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const idx = parseInt(strip.dataset.stripIdx, 10);
+                            currentViewerImgIdx = idx;
+                            renderViewerCanvas();
+                        });
+                    });
+
+                    // Swipe handling
+                    const fitContainer = document.getElementById('mangaFitContainer');
+                    if (fitContainer) {
+                        fitContainer.addEventListener('touchstart', (e) => {
+                            if (e.touches.length === 1) {
+                                touchStartX = e.touches[0].clientX;
+                                touchStartY = e.touches[0].clientY;
+                            }
+                        }, { passive: true });
+
+                        fitContainer.addEventListener('touchend', (e) => {
+                            if (e.changedTouches.length === 1) {
+                                const diffX = e.changedTouches[0].clientX - touchStartX;
+                                const diffY = e.changedTouches[0].clientY - touchStartY;
+                                if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+                                    if (diffX > 0 && currentViewerImgIdx > 0) {
+                                        currentViewerImgIdx--;
+                                        renderViewerCanvas();
+                                    } else if (diffX < 0 && currentViewerImgIdx < images.length - 1) {
+                                        currentViewerImgIdx++;
+                                        renderViewerCanvas();
+                                    }
+                                }
+                            }
+                        }, { passive: true });
+                    }
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function closeViewer() {
+            viewerModal.classList.remove('active');
+            viewerSidebar.classList.remove('mobile-open');
+            document.body.style.overflow = '';
+            currentViewingArtwork = null;
+            currentViewerImgIdx = 0;
+        }
+
+        // Setup Studio
+        function setupStudio(editItem = null) {
+            syncAdminKeyInputs();
+            updateCategoryOptions();
+
+            if (editItem) {
+                clearXImportState();
+                studioHeaderTitle.textContent = 'Edit Artwork（作品を編集する）';
+                editArtworkId.value = editItem.id;
+                workTitle.value = editItem.title;
+
+                // Category
+                const cats = getAllCategories();
+                if (cats.includes(editItem.category)) {
+                    categoryPresetSelect.value = editItem.category;
+                    customCatInputWrap.style.display = 'none';
+                } else {
+                    categoryPresetSelect.value = '__new__';
+                    customCatInputWrap.style.display = 'flex';
+                    customCategoryInput.value = editItem.category || '';
+                }
+
+                // Display mode
+                if (editItem.displayMode === 'fit') {
+                    dispFit.checked = true;
+                } else {
+                    dispScroll.checked = true;
+                }
+
+                workModel.value = editItem.model || '';
+                workDate.value = editItem.date || '';
+                workTags.value = editItem.tags ? editItem.tags.join(', ') : '';
+                workPrompt.value = editItem.prompt || '';
+                workNegativePrompt.value = editItem.negativePrompt || '';
+                workNotes.value = editItem.notes || '';
+                btnCancelEdit.style.display = 'inline-flex';
+
+                studioUploadedImages = [...(editItem.images || [])];
+                updateUploadThumbs();
+            } else {
+                clearXImportState();
+                studioHeaderTitle.textContent = 'Create New Artwork（作品を投稿する）';
+                editArtworkId.value = '';
+                artworkForm.reset();
+                workTitle.value = '';
+                workModel.value = '';
+                workPrompt.value = '';
+                workNegativePrompt.value = '';
+                workNotes.value = '';
+                workTags.value = '';
+                categoryPresetSelect.value = 'illust';
+                customCatInputWrap.style.display = 'none';
+                customCategoryInput.value = '';
+                dispFit.checked = true;
+                syncAdminKeyInputs();
+                workDate.value = new Date().toISOString().split('T')[0];
+                btnCancelEdit.style.display = 'none';
+                studioUploadedImages = [];
+                updateUploadThumbs();
+            }
+            renderStudioTagSuggestions();
+        }
+
+        function updateUploadThumbs() {
+            const header = document.getElementById('illustThumbsHeader');
+            const countSpan = document.getElementById('illustThumbsCount');
+            if (header && countSpan) {
+                if (studioUploadedImages.length > 0) {
+                    header.style.display = 'flex';
+                    countSpan.textContent = `登録画像: ${studioUploadedImages.length}枚`;
+                } else {
+                    header.style.display = 'none';
+                }
+            }
+
+            let thumbsHtml = studioUploadedImages.map((src, idx) => `
+                <div class="dropzone-thumb-item">
+                    <span class="thumb-order-badge ${idx === 0 ? 'is-cover' : ''}">${idx === 0 ? '表紙' : `#${idx + 1}`}</span>
+                    <img src="${src}" alt="Thumb ${idx + 1}">
+                    <div class="thumb-controls">
+                        <button type="button" class="thumb-btn" data-move-thumb="left" data-thumb-idx="${idx}" ${idx === 0 ? 'disabled' : ''} title="前へ移動 (←)">
+                            <i data-lucide="chevron-left" style="width:14px; height:14px;"></i>
+                        </button>
+                        <button type="button" class="thumb-btn danger" data-del-thumb="${idx}" title="削除">
+                            <i data-lucide="trash-2" style="width:13px; height:13px;"></i>
+                        </button>
+                        <button type="button" class="thumb-btn" data-move-thumb="right" data-thumb-idx="${idx}" ${idx === studioUploadedImages.length - 1 ? 'disabled' : ''} title="次へ移動 (→)">
+                            <i data-lucide="chevron-right" style="width:14px; height:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            if (studioUploadedImages.length > 0) {
+                thumbsHtml += `
+                    <div class="dropzone-add-more-box" id="btnAddMoreThumbs" title="さらに画像を追加">
+                        <i data-lucide="plus" style="width:24px; height:24px; color:var(--primary);"></i>
+                        <span>＋ 画像を追加</span>
+                    </div>
+                `;
+            }
+
+            illustThumbs.innerHTML = thumbsHtml;
+
+            // Delete handlers
+            illustThumbs.querySelectorAll('[data-del-thumb]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = parseInt(btn.dataset.delThumb, 10);
+                    studioUploadedImages.splice(idx, 1);
+                    updateUploadThumbs();
+                });
+            });
+
+            // Move left / right handlers
+            illustThumbs.querySelectorAll('[data-move-thumb]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const dir = btn.dataset.moveThumb;
+                    const idx = parseInt(btn.dataset.thumbIdx, 10);
+                    if (dir === 'left' && idx > 0) {
+                        const temp = studioUploadedImages[idx];
+                        studioUploadedImages[idx] = studioUploadedImages[idx - 1];
+                        studioUploadedImages[idx - 1] = temp;
+                        updateUploadThumbs();
+                    } else if (dir === 'right' && idx < studioUploadedImages.length - 1) {
+                        const temp = studioUploadedImages[idx];
+                        studioUploadedImages[idx] = studioUploadedImages[idx + 1];
+                        studioUploadedImages[idx + 1] = temp;
+                        updateUploadThumbs();
+                    }
+                });
+            });
+
+            // Add more button
+            const btnAddMore = document.getElementById('btnAddMoreThumbs');
+            if (btnAddMore) {
+                btnAddMore.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    illustFileInput.click();
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==========================================
+        // X (Twitter) Post Data Fetch & Parser
+        // ==========================================
+
+        function clearXImportState() {
+            if (xPostUrlInput) xPostUrlInput.value = '';
+            if (xImportLoading) xImportLoading.style.display = 'none';
+            if (xImportError) {
+                xImportError.style.display = 'none';
+                xImportError.textContent = '';
+            }
+            if (xImportPreview) xImportPreview.style.display = 'none';
+            currentExtractedXData = null;
+        }
+
+        function normalizeXUrl(rawUrl) {
+            if (!rawUrl) return null;
+            const trimmed = rawUrl.trim();
+            const match = trimmed.match(/(?:twitter\.com|x\.com)\/(?:#!\/)?(?:[a-zA-Z0-9_]+)\/status\/(\d+)/i);
+            if (match) {
+                return {
+                    id: match[1],
+                    canonicalUrl: `https://x.com/i/status/${match[1]}`,
+                    originalUrl: trimmed
+                };
+            }
+            return null;
+        }
+
+        function fetchJsonp(url, timeoutMs = 9000) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                const script = document.createElement('script');
+                const separator = url.includes('?') ? '&' : '?';
+
+                const timer = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('リクエストがタイムアウトしました。'));
+                }, timeoutMs);
+
+                function cleanup() {
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    delete window[callbackName];
+                    clearTimeout(timer);
+                }
+
+                window[callbackName] = function(data) {
+                    cleanup();
+                    resolve(data);
+                };
+
+                script.src = `${url}${separator}callback=${callbackName}`;
+                script.onerror = function() {
+                    cleanup();
+                    reject(new Error('スクリプトの読み込みに失敗しました。'));
+                };
+
+                document.body.appendChild(script);
+            });
+        }
+
+        function parseDateString(dateStr) {
+            if (!dateStr) return '';
+            // 2024年4月1日 などの日本語表記
+            const jpMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (jpMatch) {
+                const y = jpMatch[1];
+                const m = jpMatch[2].padStart(2, '0');
+                const d = jpMatch[3].padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            // 英語表記 (March 21, 2006 など)
+            const parsed = Date.parse(dateStr);
+            if (!isNaN(parsed)) {
+                const dt = new Date(parsed);
+                const y = dt.getFullYear();
+                const m = String(dt.getMonth() + 1).padStart(2, '0');
+                const d = String(dt.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function parseOembedHtml(html, authorName) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const p = doc.querySelector('p');
+
+            let fullText = '';
+            let tags = [];
+            let postDate = '';
+
+            if (p) {
+                // <br> を改行に置換
+                p.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+
+                // ハッシュタグの収集 (<a href="...#...">#tag</a>)
+                const links = p.querySelectorAll('a');
+                links.forEach(a => {
+                    const text = a.textContent.trim();
+                    if (text.startsWith('#')) {
+                        tags.push(text.slice(1));
+                    }
+                });
+
+                // 画像リンク (pic.twitter.com 等) や短縮URLの除去
+                const cloneP = p.cloneNode(true);
+                cloneP.querySelectorAll('a').forEach(a => {
+                    const linkText = a.textContent.trim();
+                    if (linkText.includes('pic.twitter.com') || linkText.includes('t.co/')) {
+                        a.remove();
+                    }
+                });
+                fullText = cloneP.textContent.trim();
+            }
+
+            // 正規表現でもハッシュタグを補足
+            const regTags = fullText.match(/#([\w\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]+)/g);
+            if (regTags) {
+                regTags.forEach(t => tags.push(t.slice(1)));
+            }
+            tags = [...new Set(tags)];
+
+            // 日付リンクの取得
+            const dateLink = doc.querySelector('blockquote > a:last-of-type, blockquote a:last-child');
+            if (dateLink && dateLink.textContent) {
+                postDate = parseDateString(dateLink.textContent.trim());
+            } else {
+                postDate = new Date().toISOString().split('T')[0];
+            }
+
+            // タイトル候補：本文からハッシュタグを取り除き、最初の1行を取得
+            let cleanTitleText = fullText.replace(/#[\w\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]+/g, '').trim();
+            let firstLine = cleanTitleText.split('\n').map(l => l.trim()).filter(l => l.length > 0)[0] || '';
+            if (firstLine.length > 40) {
+                firstLine = firstLine.slice(0, 38) + '…';
+            }
+            if (!firstLine) {
+                firstLine = authorName ? `${authorName}のイラスト` : '無題の作品';
+            }
+
+            // カテゴリと表示スタイルの自動判定
+            let guessedCategory = 'illust';
+            let guessedDisplayMode = 'fit';
+            const lowerCheck = (fullText + ' ' + tags.join(' ')).toLowerCase();
+            if (lowerCheck.includes('4コマ') || lowerCheck.includes('４コマ') || lowerCheck.includes('漫画') || lowerCheck.includes('まんが') || lowerCheck.includes('comic')) {
+                guessedCategory = '4koma';
+                guessedDisplayMode = 'scroll';
+            }
+
+            return {
+                title: firstLine,
+                text: cleanTitleText || fullText,
+                rawText: fullText,
+                tags: tags,
+                date: postDate,
+                author: authorName || '',
+                category: guessedCategory,
+                displayMode: guessedDisplayMode
+            };
+        }
+
+        async function handleFetchXPost() {
+            const url = xPostUrlInput.value.trim();
+            if (!url) {
+                alert('X（旧Twitter）のポストURLを入力してください。');
+                xPostUrlInput.focus();
+                return;
+            }
+
+            const normalized = normalizeXUrl(url);
+            if (!normalized) {
+                xImportError.textContent = '有効なX（Twitter）のポストURLを入力してください。（例: https://x.com/ユーザー名/status/123456789）';
+                xImportError.style.display = 'block';
+                return;
+            }
+
+            xImportError.style.display = 'none';
+            xImportPreview.style.display = 'none';
+            xImportLoading.style.display = 'flex';
+            btnFetchXPost.disabled = true;
+
+            try {
+                // X公式 oEmbed API (JSONP形式でCORS回避)
+                const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(normalized.canonicalUrl)}`;
+                let oembedData = null;
+
+                try {
+                    oembedData = await fetchJsonp(oembedUrl);
+                } catch (e1) {
+                    // フォールバック: 元のURLで再試行
+                    const fallbackUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(normalized.originalUrl)}`;
+                    oembedData = await fetchJsonp(fallbackUrl);
+                }
+
+                if (!oembedData || !oembedData.html) {
+                    throw new Error('ポストの文字データを取得できませんでした。非公開アカウントか削除されたポストの可能性があります。');
+                }
+
+                const extracted = parseOembedHtml(oembedData.html, oembedData.author_name);
+                currentExtractedXData = extracted;
+
+                // プレビュー表示
+                xPreviewAuthor.textContent = `${extracted.author} (@${oembedData.author_url ? oembedData.author_url.split('/').pop() : ''})`;
+                xPreviewDate.textContent = `投稿日: ${extracted.date}`;
+                xPreviewBody.textContent = extracted.text || '(本文なし)';
+                
+                if (extracted.tags && extracted.tags.length > 0) {
+                    xPreviewTags.innerHTML = extracted.tags.map(t => `<span class="x-preview-tag-chip">#${t}</span>`).join('');
+                } else {
+                    xPreviewTags.innerHTML = '<span style="font-size:0.75rem; color:var(--text-dim);">タグなし</span>';
+                }
+
+                xImportPreview.style.display = 'flex';
+                showToast('Xポストから文字データを取得しました！');
+                lucide.createIcons();
+            } catch (err) {
+                console.error('Xポスト取得エラー:', err);
+                xImportError.textContent = 'データの取得に失敗しました: ' + (err.message || 'URLを確認してください。');
+                xImportError.style.display = 'block';
+            } finally {
+                xImportLoading.style.display = 'none';
+                btnFetchXPost.disabled = false;
+            }
+        }
+
+        function applyExtractedXData() {
+            if (!currentExtractedXData) return;
+
+            const data = currentExtractedXData;
+            if (data.title) workTitle.value = data.title;
+            if (data.date) workDate.value = data.date;
+            if (data.tags && data.tags.length > 0) {
+                workTags.value = data.tags.join(', ');
+                updateStudioTagBadgesActiveState();
+            }
+            if (data.text) {
+                workNotes.value = data.text;
+            }
+
+            // カテゴリと表示モードの設定
+            if (data.category === '4koma') {
+                categoryPresetSelect.value = '4koma';
+                dispScroll.checked = true;
+            } else {
+                categoryPresetSelect.value = 'illust';
+                dispFit.checked = true;
+            }
+            customCatInputWrap.style.display = 'none';
+
+            showToast('タイトル・タグ・日付・解説メモに反映しました！');
+
+            // フォームの先頭項目へスムーズにスクロール
+            workTitle.focus();
+            workTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Setup All Event Listeners
+        function setupEventListeners() {
+            // Navigation Tabs
+            tabGallery.addEventListener('click', () => {
+                tabGallery.classList.add('active');
+                tabStudio.classList.remove('active');
+                gallerySection.classList.add('active');
+                studioSection.classList.remove('active');
+            });
+
+            tabStudio.addEventListener('click', () => {
+                tabStudio.classList.add('active');
+                tabGallery.classList.remove('active');
+                studioSection.classList.add('active');
+                gallerySection.classList.remove('active');
+                setupStudio();
+            });
+
+            document.getElementById('btnLogo').addEventListener('click', () => {
+                tabGallery.click();
+            });
+
+            // Public Share Link Copy
+            btnSharePublic.addEventListener('click', () => {
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('mode', 'view');
+                navigator.clipboard.writeText(currentUrl.toString());
+                showToast('閲覧専用URLをコピーしました！人への共有にご利用ください');
+            });
+            btnCopyPublicUrl.addEventListener('click', () => {
+                navigator.clipboard.writeText(publicViewUrlInput.value);
+                showToast('閲覧専用URLをコピーしました！');
+            });
+
+            // Storage Indicator & Settings
+            storageIndicator.addEventListener('click', () => {
+                backupModal.classList.add('active');
+            });
+            btnBackup.addEventListener('click', () => {
+                backupModal.classList.add('active');
+            });
+            btnCloseBackup.addEventListener('click', () => {
+                backupModal.classList.remove('active');
+            });
+            backupModal.addEventListener('click', (e) => {
+                if (e.target === backupModal) backupModal.classList.remove('active');
+            });
+
+            // Category Chips Click in Gallery
+            categoryChipsBar.addEventListener('click', (e) => {
+                const chip = e.target.closest('.category-chip');
+                if (!chip) return;
+                currentCategory = chip.dataset.cat;
+                renderGallery();
+            });
+
+            // Favorite Filter
+            btnFavFilter.addEventListener('click', () => {
+                isFavoriteOnly = !isFavoriteOnly;
+                btnFavFilter.classList.toggle('active', isFavoriteOnly);
+                renderGallery();
+            });
+
+            sortSelect.addEventListener('change', (e) => {
+                currentSort = e.target.value;
+                renderGallery();
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.trim();
+                renderGallery();
+            });
+
+            tagsCloud.addEventListener('click', (e) => {
+                const target = e.target.closest('.tag-pill');
+                if (!target) return;
+                const tag = target.dataset.tag;
+                selectedTag = (tag === 'all' || selectedTag === tag) ? null : tag;
+                renderGallery();
+            });
+
+            // Gallery Card Click
+            artworksGrid.addEventListener('click', async (e) => {
+                const favBtn = e.target.closest('.card-fav-btn');
+                if (favBtn) {
+                    e.stopPropagation();
+                    const favId = favBtn.dataset.favId;
+                    await toggleFavorite(favId);
+                    return;
+                }
+
+                const card = e.target.closest('.art-card');
+                if (card) {
+                    openViewer(card.dataset.id);
+                }
+            });
+
+            // Close Viewer
+            btnCloseViewer.addEventListener('click', closeViewer);
+            viewerModal.addEventListener('click', (e) => {
+                if (e.target === viewerModal) closeViewer();
+            });
+
+            // Toggle Theater Mode (Tap canvas to hide/show UI header)
+            viewerDynamicContent.addEventListener('click', (e) => {
+                if (window.innerWidth <= 960) {
+                    viewerContainer.classList.toggle('theater-hidden');
+                }
+            });
+
+            // Mobile Bottom-Sheet Toggle
+            btnMobileInfoTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewerSidebar.classList.add('mobile-open');
+            });
+            mobileSheetHandle.addEventListener('click', () => {
+                viewerSidebar.classList.remove('mobile-open');
+            });
+
+            // Viewer Display Mode Switch
+            btnModeScroll.addEventListener('click', () => {
+                currentViewerDisplayMode = 'scroll';
+                updateViewerModeButtons();
+                renderViewerCanvas();
+            });
+            btnModeFit.addEventListener('click', () => {
+                currentViewerDisplayMode = 'fit';
+                updateViewerModeButtons();
+                renderViewerCanvas();
+            });
+
+            // Copy Prompts
+            btnCopyPrompt.addEventListener('click', () => {
+                if (currentViewingArtwork && currentViewingArtwork.prompt) {
+                    navigator.clipboard.writeText(currentViewingArtwork.prompt);
+                    showToast('プロンプトをコピーしました！');
+                }
+            });
+            btnCopyNegative.addEventListener('click', () => {
+                if (currentViewingArtwork && currentViewingArtwork.negativePrompt) {
+                    navigator.clipboard.writeText(currentViewingArtwork.negativePrompt);
+                    showToast('ネガティブプロンプトをコピーしました！');
+                }
+            });
+
+            // Edit Current Artwork
+            btnEditCurrent.addEventListener('click', () => {
+                if (!currentViewingArtwork) return;
+                const toEdit = currentViewingArtwork;
+                closeViewer();
+                tabStudio.click();
+                setupStudio(toEdit);
+            });
+
+            // Delete Current Artwork
+            btnDeleteCurrent.addEventListener('click', async () => {
+                if (!currentViewingArtwork) return;
+                if (confirm(`作品「${currentViewingArtwork.title}」を削除してもよろしいですか？`)) {
+                    try {
+                        await deleteArtworkUnified(currentViewingArtwork.id);
+                        artworks = artworks.filter(a => a.id !== currentViewingArtwork.id);
+                        closeViewer();
+                        renderGallery();
+                        showToast('作品を削除しました');
+                    } catch(err) {
+                        alert('削除に失敗しました: ' + err.message);
+                    }
+                }
+            });
+
+            btnCancelEdit.addEventListener('click', () => {
+                setupStudio();
+                tabGallery.click();
+            });
+
+            // Sync tag badges on manual input
+            workTags.addEventListener('input', () => {
+                updateStudioTagBadgesActiveState();
+            });
+
+            // ==========================================
+            // X (Twitter) Post Events
+            // ==========================================
+            btnFetchXPost.addEventListener('click', handleFetchXPost);
+            btnApplyXData.addEventListener('click', applyExtractedXData);
+            btnClearXData.addEventListener('click', clearXImportState);
+
+            // Enterキーで取得
+            xPostUrlInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleFetchXPost();
+                }
+            });
+
+            // ペースト時に自動取得
+            xPostUrlInput.addEventListener('paste', () => {
+                setTimeout(() => {
+                    if (xPostUrlInput.value.trim().includes('http')) {
+                        handleFetchXPost();
+                    }
+                }, 100);
+            });
+
+            // Studio Category Dropdown Change
+            categoryPresetSelect.addEventListener('change', () => {
+                if (categoryPresetSelect.value === '__new__') {
+                    customCatInputWrap.style.display = 'flex';
+                    customCategoryInput.focus();
+                } else {
+                    customCatInputWrap.style.display = 'none';
+                    if (categoryPresetSelect.value === '4koma') {
+                        dispScroll.checked = true;
+                    } else if (categoryPresetSelect.value === 'illust') {
+                        dispFit.checked = true;
+                    }
+                }
+            });
+
+            // Dropzone Handlers
+            illustDropzone.addEventListener('click', () => illustFileInput.click());
+            illustDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                illustDropzone.style.borderColor = 'var(--primary)';
+            });
+            illustDropzone.addEventListener('dragleave', () => {
+                illustDropzone.style.borderColor = '';
+            });
+            illustDropzone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                illustDropzone.style.borderColor = '';
+                const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                for (const f of files) {
+                    studioUploadedImages.push(await readFileAsDataURL(f));
+                }
+                updateUploadThumbs();
+            });
+
+            illustFileInput.addEventListener('change', async (e) => {
+                if (e.target.files) {
+                    for (const f of Array.from(e.target.files)) {
+                        studioUploadedImages.push(await readFileAsDataURL(f));
+                    }
+                    updateUploadThumbs();
+                    illustFileInput.value = '';
+                }
+            });
+
+            // Studio Admin Key sync
+            studioAdminKey.addEventListener('input', (e) => {
+                serverConfig.adminKey = e.target.value.trim();
+                localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(serverConfig));
+                settingAdminKey.value = serverConfig.adminKey;
+            });
+
+            // Save Artwork Form
+            artworkForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const title = workTitle.value.trim();
+                if (!title) {
+                    alert('タイトルを入力してください。');
+                    return;
+                }
+
+                if (studioUploadedImages.length === 0) {
+                    alert('作品画像をアップロードしてください。');
+                    return;
+                }
+
+                // Determine category
+                let chosenCategory = categoryPresetSelect.value;
+                if (chosenCategory === '__new__') {
+                    chosenCategory = customCategoryInput.value.trim();
+                    if (!chosenCategory) chosenCategory = 'illust';
+                }
+
+                // Determine display mode
+                const chosenDisplayMode = dispScroll.checked ? 'scroll' : 'fit';
+
+                if (studioAdminKey.value.trim()) {
+                    serverConfig.adminKey = studioAdminKey.value.trim();
+                    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(serverConfig));
+                }
+
+                const tags = workTags.value.split(/[,、]/).map(t => t.trim()).filter(t => t.length > 0);
+                const isEditing = !!editArtworkId.value;
+                const targetId = isEditing ? editArtworkId.value : 'art_' + Date.now();
+                const existingItem = isEditing ? artworks.find(a => a.id === targetId) : null;
+
+                const artwork = {
+                    id: targetId,
+                    title: title,
+                    category: chosenCategory,
+                    displayMode: chosenDisplayMode,
+                    images: [...studioUploadedImages],
+                    model: workModel.value.trim() || 'Custom AI',
+                    date: workDate.value || new Date().toISOString().split('T')[0],
+                    tags: tags,
+                    prompt: workPrompt.value.trim(),
+                    negativePrompt: workNegativePrompt.value.trim(),
+                    notes: workNotes.value.trim(),
+                    isFavorite: existingItem ? existingItem.isFavorite : false,
+                    createdAt: existingItem ? existingItem.createdAt : Date.now()
+                };
+
+                try {
+                    const saved = await saveArtworkUnified(artwork);
+                    if (isEditing) {
+                        const idx = artworks.findIndex(a => a.id === targetId);
+                        if (idx !== -1) artworks[idx] = saved;
+                        showToast('作品を更新しました！');
+                    } else {
+                        artworks.unshift(saved);
+                        showToast('新しい作品を保存しました！');
+                    }
+                    setupStudio();
+                    updateCategoryOptions();
+                    renderCategoryChips();
+                    renderGallery();
+                    tabGallery.click();
+                } catch(err) {
+                    alert('保存に失敗しました: ' + err.message);
+                }
+            });
+
+            // Settings Save
+            btnSaveServerSettings.addEventListener('click', () => {
+                serverConfig.apiUrl = settingApiUrl.value.trim() || './gallery_api.php';
+                serverConfig.adminKey = settingAdminKey.value.trim();
+                localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(serverConfig));
+                syncAdminKeyInputs();
+                showToast('設定を保存しました！');
+            });
+
+            btnTestServer.addEventListener('click', async () => {
+                btnTestServer.disabled = true;
+                const prevHtml = btnTestServer.innerHTML;
+                btnTestServer.innerHTML = '<i data-lucide="loader"></i> テスト中...';
+                lucide.createIcons();
+                try {
+                    serverConfig.apiUrl = settingApiUrl.value.trim() || './gallery_api.php';
+                    serverConfig.adminKey = settingAdminKey.value.trim();
+                    const list = await serverFetchList();
+                    updateStorageIndicator(true);
+                    showToast(`接続成功！サーバー上に ${list.length} 件の作品があります`);
+                } catch(err) {
+                    updateStorageIndicator(false);
+                    alert(`サーバー接続に失敗しました:\n${err.message}`);
+                } finally {
+                    btnTestServer.disabled = false;
+                    btnTestServer.innerHTML = prevHtml;
+                    lucide.createIcons();
+                }
+            });
+
+            // Export JSON
+            btnExportJson.addEventListener('click', () => {
+                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(artworks, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute('href', dataStr);
+                downloadAnchor.setAttribute('download', `ai_gallery_backup_${Date.now()}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                showToast('JSONエクスポートが完了しました');
+            });
+
+            // Import JSON
+            importJsonInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const text = await file.text();
+                    const imported = JSON.parse(text);
+                    if (Array.isArray(imported)) {
+                        for (const item of imported) {
+                            await saveArtworkUnified(item);
+                        }
+                        artworks = await fetchAllArtworks();
+                        updateCategoryOptions();
+                        renderGallery();
+                        backupModal.classList.remove('active');
+                        showToast(`${imported.length}件のデータをインポートしました！`);
+                    } else {
+                        alert('不正なJSONフォーマットです。');
+                    }
+                } catch (err) {
+                    alert('ファイルの読み込みに失敗しました: ' + err.message);
+                }
+                importJsonInput.value = '';
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (!viewerModal.classList.contains('active')) return;
+                if (e.key === 'Escape') {
+                    closeViewer();
+                    return;
+                }
+
+                // Arrow keys for navigating multiple images in fit mode
+                if (currentViewerDisplayMode === 'fit' && currentViewingArtwork && Array.isArray(currentViewingArtwork.images) && currentViewingArtwork.images.length > 1) {
+                    if (e.key === 'ArrowLeft') {
+                        if (currentViewerImgIdx > 0) {
+                            currentViewerImgIdx--;
+                            renderViewerCanvas();
+                        }
+                    } else if (e.key === 'ArrowRight') {
+                        if (currentViewerImgIdx < currentViewingArtwork.images.length - 1) {
+                            currentViewerImgIdx++;
+                            renderViewerCanvas();
+                        }
+                    }
+                }
+            });
+        }
+
+        async function toggleFavorite(id) {
+            try {
+                const res = await toggleFavUnified(id);
+                const item = artworks.find(a => a.id === id);
+                if (item) {
+                    item.isFavorite = (res && typeof res.isFavorite !== 'undefined') ? res.isFavorite : !item.isFavorite;
+                }
+                renderGallery();
+                showToast(item && item.isFavorite ? 'お気に入りに追加しました' : 'お気に入りから解除しました');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

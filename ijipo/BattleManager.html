@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRPG Battle Manager｜状態・バフ・デバフをラウンド管理</title>
+    <meta name="description" content="TRPGの戦闘中に、複数キャラクターの状態・バフ・デバフをラウンド単位で整理できる無料ツールです。効果期間の設定、プリセット登録、共有ルームでのリアルタイム同期に対応しています。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/BattleManager.html">
+    <script src="https://cdn.tailwindcss.com"></script>
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/battlemanager.css">
+</head>
+<body class="transition-colors duration-500 min-h-screen p-4 pb-32">
+
+    <div id="theme-container" class="max-w-7xl mx-auto border-b p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-blue-500">⚔️</span> TRPG Battle Manager
+            </h1>
+            <p class="text-[10px] opacity-60">Powered by 異次元ポケット</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs" id="theme-buttons"></div>
+    </div>
+
+    <!-- セットアップセクション -->
+    <div id="setup-section" class="max-w-2xl mx-auto backdrop-blur-md bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">🚀 戦闘セッションの開始</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">参加人数 (PC/NPC)</label>
+                <input type="number" id="input-num-people" value="3" min="1" max="20" oninput="generateNameFields()" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium opacity-80">最大ラウンド数</label>
+                <input type="number" id="input-num-rounds" value="10" min="1" max="50" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <label class="block text-sm font-medium opacity-80 mb-3">参加者の名前</label>
+            <div id="names-input-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 pt-6 border-t border-white/10">
+            <button onclick="deployManager()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-95">マネージャーを展開する</button>
+        </div>
+    </div>
+
+    <!-- メインマネージャー -->
+    <div id="main-manager" class="hidden max-w-full mx-auto animate-in fade-in duration-500">
+        <!-- プリセット領域 -->
+        <div class="mb-4">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm font-bold opacity-80">⭐ よく使う項目（プリセット）</span>
+            </div>
+            <div id="presets-container" class="flex flex-wrap gap-2 p-3 bg-white/5 border border-white/10 rounded-xl min-h-[48px] items-center">
+                <!-- プリセットがここに入る -->
+            </div>
+        </div>
+
+        <div class="backdrop-blur-xl bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-xl">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                <div class="lg:col-span-2">
+                    <label class="block text-[9px] font-bold uppercase opacity-50 mb-1 ml-1">対象者 (Ctrl+クリックで複数)</label>
+                    <select id="action-person-select" multiple size="3" class="w-full p-2 bg-white/10 border border-white/20 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"></select>
+                </div>
+                <div class="lg:col-span-3">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">カテゴリー</label>
+                    <div class="flex gap-1 bg-black/20 p-1 rounded-xl">
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="status" class="hidden peer" checked><span class="peer-checked:bg-slate-500 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">状態</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="buff" class="hidden peer"><span class="peer-checked:bg-green-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">バフ</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="debuff" class="hidden peer"><span class="peer-checked:bg-red-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">デバフ</span></label>
+                        <label class="cursor-pointer flex-1"><input type="radio" name="action-cat" value="other" class="hidden peer"><span class="peer-checked:bg-amber-600 peer-checked:text-white block py-2 text-center rounded-lg text-[11px] font-bold transition-all opacity-40 peer-checked:opacity-100">他</span></label>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">開始Rd</label>
+                        <input type="number" id="action-start-round" onfocus="this.select()" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">終了Rd</label>
+                        <input type="number" id="action-end-round" onfocus="this.select()" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                </div>
+                <div class="lg:col-span-3">
+                    <label class="block text-[10px] font-bold uppercase opacity-50 mb-1 ml-1">状況の内容</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="action-content" placeholder="例: 防御、毒など" onfocus="this.select()" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400">
+                        <button onclick="savePreset()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-3 rounded-xl transition-all shadow-lg active:scale-95 text-sm" title="現在の内容をプリセットに登録">⭐</button>
+                    </div>
+                    <label class="flex items-center gap-1 mt-2 cursor-pointer w-fit">
+                        <input type="checkbox" id="action-overwrite" checked class="accent-blue-500">
+                        <span class="text-[10px] opacity-80">同名の状況を上書きする</span>
+                    </label>
+                </div>
+                <div class="lg:col-span-2 flex gap-2">
+                    <button id="btn-apply-action" onclick="applyAction()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95">適用する</button>
+                    <button id="btn-cancel-action" onclick="cancelEdit()" class="hidden bg-slate-600 hover:bg-slate-500 text-white font-bold px-4 py-3 rounded-xl transition-all shadow-lg active:scale-95">✕</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end mb-2 px-2">
+            <div class="flex items-center gap-4">
+                <h3 class="text-sm font-bold opacity-80">タイムライン</h3>
+                <button onclick="nextRound()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center gap-1">▶ 次のラウンドへ</button>
+            </div>
+            <button onclick="addCharacter()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center gap-1"><span>＋</span> キャラクター追加</button>
+        </div>
+
+        <div id="table-scroll-container" class="overflow-x-auto rounded-3xl border border-white/10 shadow-2xl bg-black/10 backdrop-blur-sm cursor-grab active:cursor-grabbing">
+            <table class="combat-table border-collapse text-left table-fixed">
+                <thead>
+                    <tr id="round-headers" class="bg-white/5 border-b border-white/10"></tr>
+                </thead>
+                <tbody id="status-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-8 flex flex-wrap justify-between items-center gap-6 p-6 rounded-3xl bg-white/5 border border-white/10">
+            <div class="flex flex-wrap gap-4 items-center w-full md:w-auto">
+                <button onclick="clearEntries()" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 whitespace-nowrap">状況のみリセット</button>
+                
+                <div class="flex gap-2 items-center bg-black/20 p-2 rounded-xl border border-white/5 flex-1 min-w-[280px]">
+                    <input type="text" id="room-url" readonly class="flex-1 p-2 rounded-lg bg-white/10 border border-white/10 text-xs focus:outline-none text-white/70" placeholder="ローカル専用セッション">
+                    <button onclick="createRoom()" id="btn-create-room" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all whitespace-nowrap">共有ルームを作成</button>
+                    <button onclick="copyRoomUrl()" id="btn-copy-room" class="hidden bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-xs font-bold text-white transition-all whitespace-nowrap">URLをコピー</button>
+                </div>
+            </div>
+            <button onclick="newSession()" class="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all border border-white/10 ml-auto md:ml-0 whitespace-nowrap">新しいセッションを始める</button>
+        </div>
+    </div>
+
+    <section class="max-w-5xl mx-auto mt-10 mb-8 rounded-3xl bg-white text-slate-900 shadow-2xl border border-slate-200 p-6 md:p-10" aria-labelledby="guide-title">
+        <p class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-2">Guide</p>
+        <h2 id="guide-title" class="text-3xl font-black tracking-tight mb-4">TRPG Battle Managerでできること</h2>
+        <p class="leading-8 text-slate-600 mb-8">TRPGの戦闘で発生する状態変化、強化、弱体化などを、キャラクターとラウンドごとのタイムラインで整理できます。効果がいつ始まり、いつ終了するのかを一覧で確認できるため、複数の効果が同時に動く戦闘の進行補助に利用できます。</p>
+
+        <div class="grid md:grid-cols-2 gap-5 mb-10">
+            <article class="rounded-2xl bg-blue-50 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">ラウンド単位で効果を管理</h3><p class="text-sm leading-7 text-slate-600">状態・バフ・デバフ・その他の4種類に分け、開始ラウンドから終了ラウンドまで効果を表示します。現在のラウンドも色付きで確認できます。</p></article>
+            <article class="rounded-2xl bg-blue-50 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">複数キャラクターへ一括適用</h3><p class="text-sm leading-7 text-slate-600">対象者を複数選択し、同じ効果をまとめて追加できます。キャラクターの途中参加や離脱にも対応しています。</p></article>
+            <article class="rounded-2xl bg-blue-50 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">よく使う効果をプリセット化</h3><p class="text-sm leading-7 text-slate-600">毒、防御、攻撃力上昇など、繰り返し使う項目をプリセットとしてブラウザに保存し、必要なときにすぐ適用できます。</p></article>
+            <article class="rounded-2xl bg-blue-50 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">共有ルームで同期</h3><p class="text-sm leading-7 text-slate-600">共有ルームを作成してURLを参加者へ渡すと、同じ戦闘タイムラインを複数人で確認・更新できます。</p></article>
+        </div>
+
+        <h2 class="text-2xl font-black mb-4">基本的な使い方</h2>
+        <ol class="list-decimal pl-6 space-y-3 leading-7 text-slate-600 mb-10">
+            <li>参加人数、最大ラウンド数、PC・NPCの名前を入力し、「マネージャーを展開する」を押します。</li>
+            <li>対象者とカテゴリーを選び、効果の開始・終了ラウンドと内容を入力して「適用する」を押します。</li>
+            <li>タイムライン上の効果をクリックすると編集でき、ドラッグすると別のキャラクター・カテゴリー・ラウンドへ移動できます。</li>
+            <li>ラウンドが進んだら「次のラウンドへ」を押します。必要に応じてプリセット登録や共有ルームも利用してください。</li>
+        </ol>
+
+        <div class="rounded-2xl bg-amber-50 border border-amber-200 p-5 mb-10">
+            <h2 class="text-xl font-black mb-2">共有ルームを利用するときの注意</h2>
+            <p class="text-sm leading-7 text-slate-600">共有ルームを作成すると、キャラクター名、状態内容、ラウンド設定がオンライン同期されます。共有URLを知っている人はルームへアクセスできるため、本名・連絡先・秘密情報などは入力せず、URLの取り扱いにもご注意ください。</p>
+        </div>
+
+        <h2 class="text-2xl font-black mb-4">よくある質問</h2>
+        <div class="space-y-4">
+            <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">複数のキャラクターへ同じ効果を追加できますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">できます。対象者の一覧でCtrlキーを押しながら複数選択し、カテゴリー・期間・内容を入力して適用してください。</p></details>
+            <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">効果の期間や対象をあとから変更できますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">タイムライン上の効果をクリックすると、入力欄へ内容が読み込まれます。対象者、カテゴリー、開始・終了ラウンド、内容を直して「更新する」を押してください。</p></details>
+            <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">プリセットはどこに保存されますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">プリセットは利用中のブラウザ内に保存されます。別の端末やブラウザには自動で引き継がれず、ブラウザの保存データを削除すると消える場合があります。</p></details>
+            <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">共有ルームを作らずに使えますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">使えます。ひとりで進行を管理するときは、共有ルームを作成せず、そのままタイムラインへ状態を登録してください。</p></details>
+        </div>
+
+        <nav class="mt-10 flex flex-wrap gap-3" aria-label="関連ページ">
+            <a href="/" class="inline-flex items-center px-5 py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-slate-700">ほかのツールを見る →</a>
+            <a href="/wordpress/" class="inline-flex items-center px-5 py-3 rounded-full border border-slate-300 font-bold hover:bg-slate-50">制作・改善記事を読む →</a>
+        </nav>
+    </section>
+
+    <!-- フッタークレジット -->
+    <footer class="fixed bottom-0 left-0 w-full p-4 text-center backdrop-blur-sm bg-black/20 border-t border-white/10 z-50">
+        <p class="text-xs opacity-70 tracking-wide">
+            Product by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" class="underline hover:text-blue-400 transition-colors">https://ijigenpocket.booth.pm/</a>
+        </p>
+    </footer>
+
+    <div id="message-box" style="opacity:0" class="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-300 font-bold"></div>
+
+    <script type="module" src="js/battlemanager.js"></script>
+</body>
+</html>

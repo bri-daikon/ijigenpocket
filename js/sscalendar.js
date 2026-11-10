@@ -261,6 +261,14 @@ function createEventElement(e, currentStr, showDesc = false) {
         const d = document.createElement('div'); d.className = "text-[10px] opacity-75 italic leading-tight mt-1";
         d.innerText = e.description; ev.appendChild(d);
     }
+    
+    if (e.imageData) {
+        const imgIcon = document.createElement('div');
+        imgIcon.className = "mt-1 flex items-center gap-1 text-[10px] font-bold";
+        imgIcon.innerHTML = `<i data-lucide="image" class="w-3 h-3"></i> 添付画像あり`;
+        ev.appendChild(imgIcon);
+    }
+    
     ev.onclick = (event) => { event.stopPropagation(); editEvent(e.id); };
     return ev;
 }
@@ -408,6 +416,7 @@ function openModal(date = '', time = '') {
     document.getElementById('eventStartTime').value = time || '';
     document.getElementById('eventEndTime').value = time ? (parseInt(time.split(':')[0])+1).toString().padStart(2,'0')+':00' : '';
     document.getElementById('duplicateBtn').classList.add('hidden'); document.getElementById('deleteBtn').classList.add('hidden'); 
+    clearImage(); // 追加
     document.getElementById('eventModal').classList.remove('hidden'); toggleTimeInputs();
 }
 window.openModal = openModal;
@@ -418,7 +427,7 @@ window.closeModal = closeModal;
 function saveEvent() {
     const title = document.getElementById('eventTitle').value; const start = document.getElementById('eventStartDate').value;
     if (!title || !start) return alert('入力内容を確認してください');
-    const data = { title, start, end: document.getElementById('eventEndDate').value || start, startTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventStartTime').value, endTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventEndTime').value, category: document.getElementById('eventCategory').value, isAllDay: document.getElementById('eventAllDay').checked, description: document.getElementById('eventDescription').value };
+    const data = { title, start, end: document.getElementById('eventEndDate').value || start, startTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventStartTime').value, endTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventEndTime').value, category: document.getElementById('eventCategory').value, isAllDay: document.getElementById('eventAllDay').checked, description: document.getElementById('eventDescription').value, imageData: document.getElementById('eventImageData').value };
     if (editingEventId) { const idx = events.findIndex(e => e.id === editingEventId); events[idx] = { ...data, id: editingEventId }; } else { events.push({ ...data, id: Date.now().toString() }); }
     localStorage.setItem('weby_events', JSON.stringify(events)); closeModal(); render();
 }
@@ -437,6 +446,15 @@ function editEvent(id) {
     document.getElementById('eventAllDay').checked = ev.isAllDay; document.getElementById('eventStartDate').value = ev.start;
     document.getElementById('eventEndDate').value = ev.end; document.getElementById('eventStartTime').value = ev.startTime;
     document.getElementById('eventEndTime').value = ev.endTime; document.getElementById('eventDescription').value = ev.description;
+    
+    if (ev.imageData) {
+        document.getElementById('eventImagePreview').src = ev.imageData;
+        document.getElementById('eventImageData').value = ev.imageData;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+    } else {
+        clearImage();
+    }
+    
     document.getElementById('duplicateBtn').classList.remove('hidden'); document.getElementById('deleteBtn').classList.remove('hidden'); 
     document.getElementById('eventModal').classList.remove('hidden'); toggleTimeInputs();
 }
@@ -455,3 +473,27 @@ function exportToGoogle() {
     window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t)}&dates=${dp}&details=${encodeURIComponent(document.getElementById('eventDescription').value)}`, '_blank');
 }
 window.exportToGoogle = exportToGoogle;
+
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('eventImagePreview').src = e.target.result;
+        document.getElementById('eventImageData').value = e.target.result;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+window.previewImage = previewImage;
+
+function clearImage() {
+    const fileInput = document.getElementById('eventImage');
+    if (fileInput) fileInput.value = '';
+    document.getElementById('eventImagePreview').src = '';
+    document.getElementById('eventImageData').value = '';
+    document.getElementById('imagePreviewContainer').classList.add('hidden');
+}
+window.clearImage = clearImage;
+
+

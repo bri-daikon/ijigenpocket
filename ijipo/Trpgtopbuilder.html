@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRPGシナリオ冒頭ビルダー - 導入＆骨子メーカー</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans JP', sans-serif; }
+    .font-title { font-family: 'Shippori Mincho', serif; }
+    .font-en { font-family: 'Cinzel', serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col selection:bg-rose-900 selection:text-white">
+
+  <!-- ヘッダー -->
+  <header class="border-b border-zinc-800 bg-zinc-900/90 backdrop-blur sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div id="brandIcon" class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-rose-600 flex items-center justify-center shadow-lg transition-colors">
+        <i id="brandIconInner" class="fa-solid fa-feather-pointed text-white text-base"></i>
+      </div>
+      <div>
+        <h1 class="font-title text-base sm:text-lg font-bold tracking-wide text-zinc-100 flex items-center gap-2">
+          シナリオ冒頭ビルダー
+          <span id="modeBadge" class="text-[10px] font-en tracking-wider px-2 py-0.5 rounded border">MODE A: BUDDY</span>
+        </h1>
+        <p class="text-xs text-zinc-400 hidden sm:block">用途特化型のテンプレート＆リアルタイム導入プロットジェネレーター</p>
+      </div>
+    </div>
+
+    <!-- プリセットボタン ＆ APIキー設定 -->
+    <div class="flex items-center gap-2">
+      <!-- プリセット読込ドロップダウン -->
+      <div class="relative">
+        <button id="presetBtn" class="px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-zinc-700 transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+          <span>特化プリセット</span>
+          <i class="fa-solid fa-chevron-down text-[10px] text-zinc-400"></i>
+        </button>
+        <div id="presetMenu" class="hidden absolute right-0 mt-2 w-64 rounded-lg bg-zinc-900 border border-zinc-700/80 shadow-2xl z-50 py-1.5 text-xs text-zinc-300 backdrop-blur-md">
+          <div id="presetMenuLabel" class="px-3 py-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">現在モードの見本</div>
+          <div id="presetItemsContainer">
+            <!-- モードに応じて動的生成 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 全リセット -->
+      <button onclick="resetCurrentForm()" title="現在のモード入力を初期化" class="p-1.5 px-2.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 transition">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+
+      <!-- APIキー設定ボタン -->
+      <button onclick="openApiKeyModal()" title="Gemini APIキー設定" class="p-1.5 px-2.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs text-amber-400 border border-zinc-700 transition flex items-center gap-1">
+        <i class="fa-solid fa-key"></i>
+        <span class="hidden sm:inline text-[11px]">APIキー設定</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 4大特化モード切り替えバー -->
+  <div class="bg-zinc-900 border-b border-zinc-800 px-4 sm:px-8 py-2 overflow-x-auto">
+    <div class="max-w-7xl mx-auto flex items-center gap-2 text-xs">
+      <span class="text-zinc-500 font-semibold text-[11px] whitespace-nowrap mr-1">特化モード:</span>
+      
+      <button onclick="switchMode('A')" id="modeTab-A" class="mode-tab px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition whitespace-nowrap bg-amber-500/10 border-amber-500/40 text-amber-300">
+        <i class="fa-solid fa-heart text-amber-400"></i>
+        <span>A. エモ・うちよそ・バディ</span>
+      </button>
+
+      <button onclick="switchMode('B')" id="modeTab-B" class="mode-tab px-3 py-1.5 rounded-lg border border-transparent font-medium flex items-center gap-1.5 transition whitespace-nowrap text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800">
+        <i class="fa-solid fa-skull text-rose-500"></i>
+        <span>B. ホラー・緊張感演出</span>
+      </button>
+
+      <button onclick="switchMode('C')" id="modeTab-C" class="mode-tab px-3 py-1.5 rounded-lg border border-transparent font-medium flex items-center gap-1.5 transition whitespace-nowrap text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800">
+        <i class="fa-solid fa-shield-halved text-cyan-400"></i>
+        <span>C. 初心者KP・事故防止</span>
+      </button>
+
+      <button onclick="switchMode('D')" id="modeTab-D" class="mode-tab px-3 py-1.5 rounded-lg border border-transparent font-medium flex items-center gap-1.5 transition whitespace-nowrap text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800">
+        <i class="fa-solid fa-lightbulb text-violet-400"></i>
+        <span>D. ネタ出し・企画マーケ</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- メインレイアウト（左：特化入力欄／右：リアルタイム出力） -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左カラム: 特化フォーム (7 col) -->
+    <div class="lg:col-span-7 flex flex-col gap-5">
+
+      <!-- モード解説バナー -->
+      <div id="modeDescriptionBanner" class="p-3.5 rounded-xl border bg-amber-950/20 border-amber-900/40 text-xs text-amber-200 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-amber-400 text-sm mt-0.5"></i>
+        <div id="modeDescText">
+          <strong>エモ・うちよそ・バディ特化モード:</strong> 2人の関係性、秘匿HOの擦り合わせ、感情を動かす「NPCの死・別れ」、タイトル回収の仕掛けをスムーズに設計します。
+        </div>
+      </div>
+
+      <!-- フォーム本体（各モード用パネル） -->
+      <form id="builderForm" onsubmit="return false;" class="space-y-4">
+
+        <!-- ==================== MODE A: エモ・うちよそ・バディ ==================== -->
+        <div id="modePanel-A" class="mode-panel space-y-4">
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-user-group"></i> 1. 関係性＆レギュレーション設計
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">シナリオタイトル</label>
+                <input type="text" id="a_title" placeholder="例: 夕暮れの標本箱、黄昏にさよならを" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-amber-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">季節・時間帯（エモの空気感）</label>
+                <input type="text" id="a_timeSeason" placeholder="例: 8月末のヒグラシが鳴く夕暮れ、小雨の降る朝" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">PC1（HO1）の立ち位置・性格</label>
+                <input type="text" id="a_pc1" placeholder="例: 奔放で直感派、秘密: 過去の記憶がない" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">PC2（HO2）の立ち位置・性格</label>
+                <input type="text" id="a_pc2" placeholder="例: 冷静で保護者役、秘密: PC1の延命を望んでいる" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-sparkles"></i> 2. 導入の距離感＆2人の対面アクション
+            </h2>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">2人の開幕シチュエーション（関係性を表す一幕）</label>
+              <textarea id="a_situation" rows="2" placeholder="例: いつものカフェの窓際。PC2がため息をつきながらPC1の散らかした荷物を片付けている。" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-100 focus:border-amber-500 focus:outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">開幕インタビュー（2人への問いかけ）</label>
+                <input type="text" id="a_interview" placeholder="例: 「お互いに相手のどんな癖に呆れていますか？」" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">共有の象徴モチーフ（小物・約束）</label>
+                <input type="text" id="a_motif" placeholder="例: お揃いのキーホルダー、昔交わした他愛ない約束" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-heart-crack"></i> 3. 感情を揺さぶる事件契機（NPC・喪失）
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">重要NPC（愛着フック）</label>
+                <input type="text" id="a_npc" placeholder="例: 2人を可愛がってくれた老喫茶店主" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] text-zinc-300 mb-1">失われる日常・届いた手紙</label>
+                <input type="text" id="a_lossTrigger" placeholder="例: NPCが突然姿を消し、机の上に2人宛ての切ない遺言状が残される" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">タイトル回収の予告伏線</label>
+              <input type="text" id="a_titleEcho" placeholder="例: 壁に飾られた空の標本箱。「いつかここを満たそう」と語られた言葉。" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== MODE B: ホラー・緊張感演出 ==================== -->
+        <div id="modePanel-B" class="mode-panel space-y-4 hidden">
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-biohazard"></i> 1. ホラー基本設計＆不穏の種
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">シナリオタイトル</label>
+                <input type="text" id="b_title" placeholder="例: 嗤う受話器、無人の箱庭" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">舞台・天候・閉鎖空間</label>
+                <input type="text" id="b_env" placeholder="例: 豪雨の廃病院、深夜2時のワンルーム、密室エレベーター" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-rose-500 focus:outline-none">
+              </div>
+            </div>
+            <!-- 五感演出 -->
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-zinc-400 mb-0.5">聴覚（異音）</label>
+                <input type="text" id="b_sound" placeholder="例: 爪で引っ掻く音" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-zinc-100 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-zinc-400 mb-0.5">視覚（光・陰影）</label>
+                <input type="text" id="b_sight" placeholder="例: 点滅する赤色灯" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-zinc-100 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-zinc-400 mb-0.5">嗅覚・触覚（異臭・冷気）</label>
+                <input type="text" id="b_smellTouch" placeholder="例: 湿った鉄錆の匂い" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-zinc-100 focus:border-rose-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-ghost"></i> 2. 日常の亀裂と「1つの違和感」
+            </h2>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">日常崩壊のトリガー（たった1つの異常現象）</label>
+              <textarea id="b_anomaly" rows="2" placeholder="例: 鏡を覗き込むと、自分の後ろに立つ友人の影だけが首を真後ろに向けている。" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-100 focus:border-rose-500 focus:outline-none"></textarea>
+            </div>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">都市伝説・噂話・電話のフック</label>
+              <input type="text" id="b_rumor" placeholder="例: 「深夜2時にかかってくる無言電話に3回出ると、部屋のドアが開く」という噂" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-rose-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-skull-crossbones"></i> 3. 初動SANチェック＆初動ダイス
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">初動の正気度（SAN）チェック契機</label>
+                <input type="text" id="b_sanCheck" placeholder="例: 友人から届いた動画の末尾に映る異形の顔（0/1D3）" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">最初の脱出/調査ダイス</label>
+                <input type="text" id="b_firstRoll" placeholder="例: 聞き耳 または 目星（物陰の気配に気づくか）" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-rose-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <input type="text" id="b_rollSuccess" placeholder="成功時: 怪異の接近方向を察知、逃走経路確保" class="bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-emerald-400">
+              <input type="text" id="b_rollFail" placeholder="失敗時: 背後に立たれるが、床に落ちた御札に手が触れる" class="bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-amber-400">
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== MODE C: 初心者KP・回しやすさ改善 ==================== -->
+        <div id="modePanel-C" class="mode-panel space-y-4 hidden">
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-map-location-dot"></i> 1. 絶対に迷わせない合流＆動機づけ
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">シナリオタイトル</label>
+                <input type="text" id="c_title" placeholder="例: 碧海荘の怪異、雨過天晴の依頼" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-cyan-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">推奨人数＆プレイ時間</label>
+                <input type="text" id="c_specs" placeholder="例: 3〜4人 / ボイセ3時間（サクッと回せる設計）" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-cyan-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">PCが拒否できない合流動機（レール敷設）</label>
+              <textarea id="c_joinMotive" rows="2" placeholder="例: 警察関係者や探偵、または依頼人の甥として『高額報酬と個人的恩義』を事前に確約して現場に集める。" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-100 focus:border-cyan-500 focus:outline-none"></textarea>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-clock"></i> 2. 事故防止：雑談切り上げ＆手詰まり防止ダイス
+            </h2>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">雑談をスマートに切り上げる「介入イベント」</label>
+              <input type="text" id="c_cutEvent" placeholder="例: 雑談が弾み始めたところで、突然館の電灯が激しい音とともに全消灯する。" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-cyan-500 focus:outline-none">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">開始5分のファーストロール技能</label>
+                <input type="text" id="c_skill" placeholder="例: 目星（誰でも持っている技能）" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-cyan-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">失敗時のリカバリ（情報担保）</label>
+                <input type="text" id="c_failSafe" placeholder="例: 失敗しても『別の物音』が導いて同じ部屋へ誘導される" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-cyan-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-bell"></i> 3. KP向け進行補助メモ＆注意点
+            </h2>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">KPへの事前アラート（卓崩壊を防ぐ注意書き）</label>
+              <input type="text" id="c_kpAlert" placeholder="例: 「PCが単独行動しそうな場合はNPCに同行させる」「描写は1分以内で切る」" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-cyan-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== MODE D: ネタ出し・構想・マーケティング ==================== -->
+        <div id="modePanel-D" class="mode-panel space-y-4 hidden">
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-bullhorn"></i> 1. キャッチコピー＆3行プロット
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">仮タイトル・コンセプトワード</label>
+                <input type="text" id="d_title" placeholder="例: 箱庭のアポトーシス、深海エレジー" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-violet-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">ターゲット層（刺したい読者）</label>
+                <input type="text" id="d_target" placeholder="例: 秘匿HO好き、地獄の選択肢を味わいたいPL" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 placeholder-zinc-500 focus:border-violet-500 focus:outline-none">
+              </div>
+            </div>
+            <!-- 3行プロット -->
+            <div class="space-y-1.5 text-xs">
+              <input type="text" id="d_core1" placeholder="起（日常）: 平穏な孤島に招待された旧友たち" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-violet-500 focus:outline-none">
+              <input type="text" id="d_core2" placeholder="承（崩壊）: 1人ずつ存在ごと記憶から消滅していく" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-violet-500 focus:outline-none">
+              <input type="text" id="d_core3" placeholder="決断（結末）: 自らを犠牲にして全員を救うか、1人だけ生き残るか" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-violet-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 space-y-3.5">
+            <h2 class="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-compass"></i> 2. クライマックスからの逆算＆推奨技能
+            </h2>
+            <div class="text-xs">
+              <label class="block text-[11px] text-zinc-300 mb-1">やりたい見せ場・ラストシーン（逆算の基点）</label>
+              <textarea id="d_climax" rows="2" placeholder="例: 燃える灯台の頂上で、互いの銃口を向け合いながら最後の真実を告白するシーン" 
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-100 focus:border-violet-500 focus:outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">推奨技能（序盤から活躍させる技能）</label>
+                <input type="text" id="d_skills" placeholder="例: 拳銃 / 心理学 / 操縦（ボート）" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-violet-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[11px] text-zinc-300 mb-1">PC職業フック（なぜ呼ばれたか）</label>
+                <input type="text" id="d_jobHook" placeholder="例: 元軍人・ルポライター・精神科医" 
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-100 focus:border-violet-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Gemini AI アシストボックス -->
+      <div id="aiAssistContainer" class="p-4 rounded-xl border bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-md transition-colors">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span id="aiStatusDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span class="text-xs font-semibold text-zinc-200">AI描写アシスト (Gemini 3 Flash連携)</span>
+          </div>
+          <span id="aiModeTag" class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-amber-300 border border-amber-500/20">MODE A 執筆</span>
+        </div>
+        <p id="aiDescPrompt" class="text-[11px] text-zinc-400 mb-3">
+          現在の特化モードのパラメータを元に、セッションで即読める情景テキストや導入要約をAIに清書させます。
+        </p>
+        <button id="aiGenerateBtn" onclick="generateSceneWithAI()" class="w-full py-2 px-3 bg-zinc-800 hover:bg-zinc-700 active:scale-[0.99] text-amber-300 hover:text-white border border-amber-500/30 rounded-lg text-xs font-medium transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-sparkles"></i>
+          <span id="aiBtnText">この設定から「特化導入テキスト」をAIで生成する</span>
+        </button>
+        <!-- AI結果プレビュー -->
+        <div id="aiResultContainer" class="hidden mt-3 p-3 bg-zinc-950 rounded-lg border space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-semibold border-b border-zinc-800/80 pb-1">
+            <span id="aiResultHeader" class="text-amber-400"><i class="fa-solid fa-scroll mr-1"></i> AI生成テキスト</span>
+            <button onclick="copyAiText()" class="text-zinc-400 hover:text-zinc-200 text-[10px]"><i class="fa-regular fa-copy"></i> コピー</button>
+          </div>
+          <div id="aiOutputText" class="text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap font-serif"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 右カラム: リアルタイム出力プレビュー (5 col) -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col flex-1 shadow-2xl overflow-hidden sticky top-20">
+        <!-- カードヘッダー -->
+        <div class="px-4 py-3 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i id="outputHeaderIcon" class="fa-solid fa-file-lines text-amber-400 text-sm"></i>
+            <span id="outputHeaderTitle" class="text-xs font-bold uppercase tracking-wider text-zinc-200">完成シナリオ仕様シート</span>
+          </div>
+          <!-- アクションボタン群 -->
+          <div class="flex items-center gap-1.5">
+            <button onclick="copyOutput()" title="クリップボードにコピー" class="p-1.5 px-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs transition flex items-center gap-1">
+              <i class="fa-regular fa-copy"></i>
+              <span class="text-[10px]">コピー</span>
+            </button>
+            <button onclick="downloadOutput()" title="テキストファイルとして保存" class="p-1.5 px-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs transition flex items-center gap-1">
+              <i class="fa-solid fa-download"></i>
+              <span class="text-[10px]">保存</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- プレビュー表示エリア -->
+        <div class="p-4 overflow-y-auto max-h-[calc(100vh-180px)] text-xs font-mono leading-relaxed text-zinc-300 space-y-4" id="outputArea">
+          <!-- リアルタイム構築 -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 簡易トースト通知 -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-zinc-800 text-zinc-100 border border-zinc-700 px-4 py-2.5 rounded-lg text-xs shadow-2xl flex items-center gap-2 pointer-events-none transition-all duration-300 opacity-0 transform translate-y-3 z-50">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">クリップボードにコピーしました</span>
+  </div>
+
+  <!-- APIキー設定モーダル -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+          <i class="fa-solid fa-key"></i>
+          <span>Gemini APIキー設定</span>
+        </div>
+        <button onclick="closeApiKeyModal()" class="text-zinc-400 hover:text-zinc-200 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="text-xs text-zinc-300 space-y-2">
+        <p>ツールを外部サイトやローカル環境で動かす場合、ご自身のGoogle Gemini APIキーが必要です。</p>
+        <p class="text-zinc-400 text-[11px]">キーはお使いのブラウザ内部（LocalStorage）にのみ安全に保存され、外部サーバーに送信されることはありません。</p>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:text-amber-300 underline inline-flex items-center gap-1 text-[11px]">
+          <span>Google AI Studioで無料のAPIキーを取得する</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+        </a>
+      </div>
+      <div>
+        <label class="block text-[11px] font-medium text-zinc-300 mb-1">API Key</label>
+        <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-500 font-mono">
+      </div>
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="clearCustomApiKey()" class="text-[11px] text-zinc-400 hover:text-rose-400 transition">キーを削除</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeApiKeyModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300">キャンセル</button>
+          <button onclick="saveCustomApiKey()" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-md">保存する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 状態管理 ---
+    let currentMode = 'A'; // 'A', 'B', 'C', 'D'
+
+    const modeConfigs = {
+      A: {
+        name: "エモ・うちよそ・バディ",
+        badge: "MODE A: BUDDY",
+        colorClass: "amber",
+        icon: "fa-heart",
+        desc: "<strong>エモ・うちよそ・バディ特化モード:</strong> 2人の関係性、秘匿HOの擦り合わせ、感情を動かす「NPCの死・別れ」、タイトル回収の仕掛けをスムーズに設計します。",
+        inputs: ['a_title', 'a_timeSeason', 'a_pc1', 'a_pc2', 'a_situation', 'a_interview', 'a_motif', 'a_npc', 'a_lossTrigger', 'a_titleEcho'],
+        presets: {
+          a_sample1: {
+            name: "夕暮れの標本箱（切ない約束系）",
+            data: {
+              a_title: "夕暮れの標本箱",
+              a_timeSeason: "8月末、ヒグラシが鳴く夏の終わりの黄昏時",
+              a_pc1: "HO1: 奔放で直感派。秘密: 余命が残り少なく、相棒にだけは隠している",
+              a_pc2: "HO2: 冷静沈着なまとめ役。秘密: HO1の病気に気づいており、奇跡を探している",
+              a_situation: "いつもの古い喫茶店の窓際。西日が差し込む中、他愛ない昔話をしているが、どこか終わりを予感している。",
+              a_interview: "「夕暮れの暑さの中、相手に奢ってもらった冷たい飲み物は何ですか？」",
+              a_motif: "青い蝶が彫られたアンティークの懐中時計。昔2人で買った揃いの品。",
+              a_npc: "九条 辰巳（2人の恩師である老画家。温和だが最近様子がおかしい）",
+              a_lossTrigger: "恩師の訃報、あるいは失踪。アトリエには『標本箱を開けるな』と血文字で書かれた手紙が遺されている。",
+              a_titleEcho: "「いつか君の笑顔を標本にして遺せたら」と過去に交わした冗談。"
+            }
+          },
+          a_sample2: {
+            name: "硝子の中の共犯者（ダークバディ）",
+            data: {
+              a_title: "硝子の中の共犯者",
+              a_timeSeason: "真冬の午前2時、凍てつく深夜の路地裏",
+              a_pc1: "HO1: 悪徳探偵（金に汚いが相棒だけは裏切らない）",
+              a_pc2: "HO2: 逃亡中の天才ハッカー（冷淡だがHO1に拾われた恩義がある）",
+              a_situation: "探偵事務所の薄暗いソファ。1本の安タバコを回しながら、警察のサイレンを遠くに聞いている。",
+              a_interview: "「相棒のピンチの時、咄嗟に差し出した武器や道具は何？」",
+              a_motif: "銀のジッポライター。互いの背中を預ける合図。",
+              a_npc: "黒川（2人を繋いだ情報屋の少女）",
+              a_lossTrigger: "情報屋の少女が何者かに始末され、事務所のドアに彼女の壊れたスマートフォンが投げ込まれる。",
+              a_titleEcho: "「俺たちが割れちまったら、誰が世界を欺くんだ？」という台詞。"
+            }
+          }
+        }
+      },
+      B: {
+        name: "ホラー・緊張感演出",
+        badge: "MODE B: HORROR",
+        colorClass: "rose",
+        icon: "fa-skull",
+        desc: "<strong>ホラー・緊張感演出特化モード:</strong> 五感（音・光・匂い）の不穏な配置、日常が崩壊する1つの違和感、初動のSANチェックと脱出ダイスを構築します。",
+        inputs: ['b_title', 'b_env', 'b_sound', 'b_sight', 'b_smellTouch', 'b_anomaly', 'b_rumor', 'b_sanCheck', 'b_firstRoll', 'b_rollSuccess', 'b_rollFail'],
+        presets: {
+          b_sample1: {
+            name: "宵闇の鳴動（王道日常崩壊）",
+            data: {
+              b_title: "宵闇の鳴動、あるいは静止した部屋",
+              b_env: "10月下旬、冷え込む秋の小雨が降り続く深夜のアパート",
+              b_sound: "屋根を叩く激しい雨音と、壁の奥から響く微かな秒針の逆回転音",
+              b_sight: "点滅を繰り返す蛍光灯、暗闇に浮かぶ郵便受けの隙間",
+              b_smellTouch: "肌にまとわりつく湿った冷気、ほんのりと香る腐敗臭",
+              b_anomaly: "友人の部屋の呼び鈴を押しても応答はないが、ドアノブを回すと鍵は開いており、部屋中の家具がすべて天井に向かって積み上げられている。",
+              b_rumor: "「最近、深夜にあの部屋から奇妙な祝詞のような声が聞こえていた」という隣人の証言",
+              b_sanCheck: "天井に逆さに貼り付いた友人の衣服と、壁の黒い血痕（SAN 1/1D3）",
+              b_firstRoll: "聞き耳 または 目星（部屋の奥の気配）",
+              b_rollSuccess: "机の引き出しで激しく震える黒い箱と、クローゼットから伸びる蒼白い腕に気づく。",
+              b_rollFail: "不気味なノイズに耳を塞ぐが、足元に落ちた友人の引き裂かれた日記帳を踏み抜く。"
+            }
+          },
+          b_sample2: {
+            name: "密閉された呼吸（密室サバイバル）",
+            data: {
+              b_title: "密閉された呼吸",
+              b_env: "無機質な地下コンクリート室、気温15度、酸素濃度低下中",
+              b_sound: "低く唸る換気口の停止音、壁のタイマーの電子音",
+              b_sight: "青白いLEDライト、壁に赤くカウントダウンする「00:30:00」",
+              b_smellTouch: "冷たいコンクリートの粉塵、消毒液とオゾンの混ざった乾いた空気",
+              b_anomaly: "全員の左手首に見知らぬデジタルリングが固定されており、心拍数が上がるほど壁のタイマーが加速する。",
+              b_rumor: "かつてこの地下室で行われていた極限心理実験の噂",
+              b_sanCheck: "部屋の隅に転がる、直前まで生きていたらしき前任者の白骨死体（SAN 1/1D4）",
+              b_firstRoll: "目星 または 機械修理（排気口のネジ）",
+              b_rollSuccess: "換気ダクトの隙間に挟まれた鍵と、暗号が書かれた名札を発見する。",
+              b_rollFail: "鍵は見つからないが、壁のタイマーの裏に隠された予備の酸素マスクを見つける。"
+            }
+          }
+        }
+      },
+      C: {
+        name: "初心者KP・事故防止",
+        badge: "MODE C: EASY-KP",
+        colorClass: "cyan",
+        icon: "fa-shield-halved",
+        desc: "<strong>初心者KP・事故防止特化モード:</strong> プレイヤーが拒否できない動機づけ、長引く雑談のスマートな切り上げ、失敗しても進行が止まらない二重ダイスを設計します。",
+        inputs: ['c_title', 'c_specs', 'c_joinMotive', 'c_cutEvent', 'c_skill', 'c_failSafe', 'c_kpAlert'],
+        presets: {
+          c_sample1: {
+            name: "碧海荘の怪異（王道クローズド・事故防止）",
+            data: {
+              c_title: "碧海荘の怪異",
+              c_specs: "3〜4人 / ボイセ3時間（初心者KP推奨）",
+              c_joinMotive: "PCたちは全員、資産家の知人から『別荘の遺品整理を手伝えば、1人あたり50万円の謝礼を支払う』という正式な契約書を受け取って現地に集合している（動機の確約）。",
+              c_cutEvent: "プレイヤー同士の自己紹介と雑談が2分続いたところで、突然激しい雷鳴が轟き、館のブレーカーが落ちて停電する。",
+              c_skill: "目星 または 懐中電灯（電気系統・配電盤の調査）",
+              c_failSafe: "【失敗時の手詰まり防止】ダイスに失敗しても暗闇で転んだ拍子に『廊下の非常灯』が点き、隣接する書斎のドアが開いているのが見える。",
+              c_kpAlert: "※PCが別行動しようとしたら「外は暴風雨で電話線も切れている」と強調し、必ず全員同じ部屋を調べさせてください。"
+            }
+          },
+          c_sample2: {
+            name: "深夜タクシーの行き先（シティ事故防止）",
+            data: {
+              c_title: "深夜タクシーの行き先",
+              c_specs: "2〜3人 / ボイセ2.5時間",
+              c_joinMotive: "終電を逃したPCたちが、雨の中でたまたま相乗りしたタクシーの車内から開始（物理的な同席）。",
+              c_cutEvent: "車内での雑談中、運転手がバックミラー越しに不気味に微笑み、急ブレーキとともに車内灯が赤く変色する。",
+              c_skill: "聞き耳 または ナビゲート（ラジオの音声や走行ルートの違和感）",
+              c_failSafe: "失敗してもメーターの金額が異常な速度で跳ね上がる異常現象に自動で気づき、物語が必ず前進する。",
+              c_kpAlert: "※運転手に暴力判定を仕掛けられた場合、即死させず「霧のようにすり抜ける」として怪異であることを早めに開示してください。"
+            }
+          }
+        }
+      },
+      D: {
+        name: "ネタ出し・企画マーケ",
+        badge: "MODE D: CONCEPT",
+        colorClass: "violet",
+        icon: "fa-lightbulb",
+        desc: "<strong>ネタ出し・企画マーケ特化モード:</strong> SNSで目を引く3行トレーラー、クライマックスからの逆算プロット、推奨技能と職業フックを短時間で練り上げます。",
+        inputs: ['d_title', 'd_target', 'd_core1', 'd_core2', 'd_core3', 'd_climax', 'd_skills', 'd_jobHook'],
+        presets: {
+          d_sample1: {
+            name: "深海エレジー（エモサスペンス企画）",
+            data: {
+              d_title: "深海エレジー",
+              d_target: "密室の極限状態で『感情のぶつかり合い』を体験したいPL・エモミステリ好き",
+              d_core1: "海底研究施設で観測を続ける、閉ざされた日常",
+              d_core2: "ソナーが『深海から迫る巨大な歌声』を捉え、酸素供給が遮断される",
+              d_core3: "生還ポッドは残り1人分。互いの絆を確かめながら最後のスイッチを押す",
+              d_climax: "浸水する展望室で、外の光る深海生物を眺めながら交わす最後の通信",
+              d_skills: "操縦（潜水艇） / 電子工学 / 心理学",
+              d_jobHook: "深海学者、施設エンジニア、外部監査官"
+            }
+          },
+          d_sample2: {
+            name: "箱庭のアポトーシス（秘匿サスペンス企画）",
+            data: {
+              d_title: "箱庭のアポトーシス",
+              d_target: "人狼要素・疑心暗鬼・どんでん返しが好きなCoCプレイヤー",
+              d_core1: "記憶を失った4人が目覚めた、美しい花咲く温室",
+              d_core2: "花が枯れるたびに、1人の秘密が全世界に暴かれていく",
+              d_core3: "誰か1人を『黒幕』として温室に残さなければ、外の世界は崩壊する",
+              d_climax: "全員の記憶が戻った瞬間、かつて交わした約束の残酷な真実が明かされる",
+              d_skills: "図書館 / 心理学 / 隠密",
+              d_jobHook: "記憶を失う前の職業（医師・政治家・ジャーナリスト・被験者）"
+            }
+          }
+        }
+      }
+    };
+
+    // 初期化ロード
+    window.onload = function() {
+      // 全入力欄にイベントリスナー付与
+      Object.keys(modeConfigs).forEach(mKey => {
+        modeConfigs[mKey].inputs.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener('input', generateAll);
+        });
+      });
+
+      // プリセットメニュー開閉
+      const presetBtn = document.getElementById('presetBtn');
+      const presetMenu = document.getElementById('presetMenu');
+      presetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        presetMenu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', () => {
+        presetMenu.classList.add('hidden');
+      });
+
+      // APIキーの初期読み込み
+      const savedKey = localStorage.getItem('trpg_builder_gemini_api_key');
+      if (savedKey) {
+        document.getElementById('customApiKeyInput').value = savedKey;
+      }
+
+      // デフォルトでMode Aのプリセット1をロード
+      switchMode('A');
+      loadPreset('a_sample1');
+    };
+
+    // モード切り替え
+    function switchMode(modeKey) {
+      currentMode = modeKey;
+      const conf = modeConfigs[modeKey];
+
+      // タブの見た目更新
+      ['A', 'B', 'C', 'D'].forEach(k => {
+        const tab = document.getElementById(`modeTab-${k}`);
+        const panel = document.getElementById(`modePanel-${k}`);
+        if (k === modeKey) {
+          tab.className = `mode-tab px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition whitespace-nowrap bg-${conf.colorClass}-500/10 border-${conf.colorClass}-500/40 text-${conf.colorClass}-300`;
+          panel.classList.remove('hidden');
+        } else {
+          tab.className = 'mode-tab px-3 py-1.5 rounded-lg border border-transparent font-medium flex items-center gap-1.5 transition whitespace-nowrap text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800';
+          panel.classList.add('hidden');
+        }
+      });
+
+      // ヘッダーやバナーの更新
+      const badge = document.getElementById('modeBadge');
+      badge.innerText = conf.badge;
+      badge.className = `text-[10px] font-en tracking-wider px-2 py-0.5 rounded border border-${conf.colorClass}-500/30 text-${conf.colorClass}-400 bg-${conf.colorClass}-500/10`;
+
+      const brandIcon = document.getElementById('brandIcon');
+      brandIcon.className = `w-9 h-9 rounded-lg bg-gradient-to-br from-${conf.colorClass}-600 to-zinc-700 flex items-center justify-center shadow-lg transition-colors`;
+      document.getElementById('brandIconInner').className = `fa-solid ${conf.icon} text-white text-base`;
+
+      const banner = document.getElementById('modeDescriptionBanner');
+      banner.className = `p-3.5 rounded-xl border bg-${conf.colorClass}-950/20 border-${conf.colorClass}-900/40 text-xs text-${conf.colorClass}-200 flex items-start gap-3`;
+      document.getElementById('modeDescText').innerHTML = conf.desc;
+
+      // AIボックスの装飾
+      document.getElementById('aiModeTag').innerText = `${conf.badge} 執筆`;
+      document.getElementById('aiModeTag').className = `text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-${conf.colorClass}-300 border border-${conf.colorClass}-500/20`;
+      document.getElementById('aiGenerateBtn').className = `w-full py-2 px-3 bg-zinc-800 hover:bg-zinc-700 active:scale-[0.99] text-${conf.colorClass}-300 hover:text-white border border-${conf.colorClass}-500/30 rounded-lg text-xs font-medium transition flex items-center justify-center gap-2`;
+
+      // プリセット一覧の動的再描画
+      renderPresetMenu(modeKey);
+
+      generateAll();
+    }
+
+    // プリセットメニューのHTML生成
+    function renderPresetMenu(modeKey) {
+      const container = document.getElementById('presetItemsContainer');
+      const presets = modeConfigs[modeKey].presets;
+      container.innerHTML = '';
+
+      Object.keys(presets).forEach(pKey => {
+        const item = presets[pKey];
+        const btn = document.createElement('button');
+        btn.className = 'w-full text-left px-3 py-2 hover:bg-zinc-800 flex items-center gap-2 text-zinc-200';
+        btn.onclick = () => loadPreset(pKey);
+        btn.innerHTML = `
+          <span class="text-${modeConfigs[modeKey].colorClass}-400"><i class="fa-solid fa-file-signature"></i></span>
+          <div class="font-medium text-xs">${item.name}</div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    // プリセット適用
+    function loadPreset(presetKey) {
+      const conf = modeConfigs[currentMode];
+      const preset = conf.presets[presetKey];
+      if (!preset) return;
+
+      Object.keys(preset.data).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = preset.data[id];
+      });
+
+      generateAll();
+      showToast(`「${preset.name}」を読み込みました`);
+    }
+
+    // 現在モードのリセット
+    function resetCurrentForm() {
+      const conf = modeConfigs[currentMode];
+      conf.inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      generateAll();
+      showToast('入力内容を初期化しました');
+    }
+
+    // 出力テキスト生成（リアルタイム更新）
+    function generateAll() {
+      const outArea = document.getElementById('outputArea');
+      const conf = modeConfigs[currentMode];
+      const val = {};
+      conf.inputs.forEach(id => {
+        const el = document.getElementById(id);
+        val[id] = el ? el.value.trim() : '';
+      });
+
+      let html = '';
+
+      if (currentMode === 'A') {
+        html = `
+<div class="space-y-4">
+  <div class="border-b border-zinc-800 pb-2.5">
+    <div class="text-[10px] uppercase font-en tracking-wider text-amber-400">Buddy & Emotion Scenario Spec</div>
+    <div class="text-base font-bold text-zinc-100 font-title tracking-wide">${escapeHtml(val.a_title || '【無題のバディシナリオ】')}</div>
+    <div class="text-[11px] text-zinc-400 mt-1">環境: ${escapeHtml(val.a_timeSeason || '未設定')}</div>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-users text-[10px]"></i> 2人の関係性・秘匿HO設定
+    </div>
+    <div class="text-xs text-zinc-300 space-y-1 pl-2 border-l-2 border-amber-500/40">
+      <div><strong>PC1 (HO1):</strong> ${escapeHtml(val.a_pc1 || '設定なし')}</div>
+      <div><strong>PC2 (HO2):</strong> ${escapeHtml(val.a_pc2 || '設定なし')}</div>
+    </div>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-2">
+    <div class="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-mug-hot text-[10px]"></i> 冒頭の日常と距離感
+    </div>
+    <p class="text-xs text-zinc-300 leading-relaxed">${escapeHtml(val.a_situation || '（2人の開幕シチュエーションを記述）')}</p>
+    ${val.a_interview ? `
+    <div class="text-[11px] text-amber-200/90 bg-amber-950/20 p-2 rounded border border-amber-900/30">
+      <strong>開幕の問いかけ:</strong> KP「${escapeHtml(val.a_interview)}」
+    </div>` : ''}
+    ${val.a_motif ? `
+    <div class="text-[11px] text-zinc-400"><strong>共有モチーフ:</strong> ${escapeHtml(val.a_motif)}</div>` : ''}
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-rose-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-heart-crack text-[10px]"></i> 事件契機（喪失と手紙）
+    </div>
+    <div class="text-xs text-zinc-300"><strong>重要NPC:</strong> ${escapeHtml(val.a_npc || '未設定')}</div>
+    <div class="text-xs text-zinc-300"><strong>喪失のトリガー:</strong> ${escapeHtml(val.a_lossTrigger || '未設定')}</div>
+    ${val.a_titleEcho ? `
+    <div class="text-[11px] text-zinc-400 pt-1 border-t border-zinc-800/60">
+      <strong class="text-amber-400">タイトル回収の予告:</strong> ${escapeHtml(val.a_titleEcho)}
+    </div>` : ''}
+  </div>
+</div>`;
+      } else if (currentMode === 'B') {
+        html = `
+<div class="space-y-4">
+  <div class="border-b border-zinc-800 pb-2.5">
+    <div class="text-[10px] uppercase font-en tracking-wider text-rose-400">Horror & Suspense Tension Spec</div>
+    <div class="text-base font-bold text-zinc-100 font-title tracking-wide">${escapeHtml(val.b_title || '【無題のホラーシナリオ】')}</div>
+    <div class="text-[11px] text-zinc-400 mt-1">舞台: ${escapeHtml(val.b_env || '未設定')}</div>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-2">
+    <div class="text-[11px] font-bold text-rose-400 flex items-center gap-1.5">
+      <i class="fa-solid fa-eye text-[10px]"></i> シーン0：五感の不穏フック
+    </div>
+    <div class="text-[11px] text-zinc-400 space-y-0.5 pl-2 border-l-2 border-rose-500/40">
+      <div><strong>【音】</strong> ${escapeHtml(val.b_sound || '静寂')}</div>
+      <div><strong>【視界】</strong> ${escapeHtml(val.b_sight || '暗闇')}</div>
+      <div><strong>【匂い/肌】</strong> ${escapeHtml(val.b_smellTouch || '冷気')}</div>
+    </div>
+    <div class="pt-1">
+      <div class="text-[10px] uppercase font-bold text-rose-300">日常崩壊の違和感</div>
+      <p class="text-xs text-zinc-200 mt-0.5 bg-zinc-900 p-2 rounded border border-zinc-800/50">${escapeHtml(val.b_anomaly || '未設定')}</p>
+    </div>
+    ${val.b_rumor ? `<div class="text-[11px] text-zinc-400"><strong>都市伝説・噂:</strong> ${escapeHtml(val.b_rumor)}</div>` : ''}
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-rose-400 flex items-center gap-1.5">
+      <i class="fa-solid fa-dice-d20 text-[10px]"></i> 初動ダイス＆正気度チェック
+    </div>
+    <div class="text-xs text-rose-300 bg-rose-950/20 p-2 rounded border border-rose-900/30">
+      <strong>SANチェック:</strong> ${escapeHtml(val.b_sanCheck || '未設定')}
+    </div>
+    <div class="text-xs text-zinc-300 pt-1"><strong>初動判定:</strong> ${escapeHtml(val.b_firstRoll || '未設定')}</div>
+    <div class="text-[11px] grid grid-cols-1 gap-1">
+      <div class="text-emerald-400 bg-emerald-950/20 px-2 py-0.5 rounded"><strong>成功:</strong> ${escapeHtml(val.b_rollSuccess || '危機回避')}</div>
+      <div class="text-amber-400 bg-amber-950/20 px-2 py-0.5 rounded"><strong>失敗:</strong> ${escapeHtml(val.b_rollFail || '代替の手がかり')}</div>
+    </div>
+  </div>
+</div>`;
+      } else if (currentMode === 'C') {
+        html = `
+<div class="space-y-4">
+  <div class="border-b border-zinc-800 pb-2.5">
+    <div class="text-[10px] uppercase font-en tracking-wider text-cyan-400">KP Friendly & Safe Session Spec</div>
+    <div class="text-base font-bold text-zinc-100 font-title tracking-wide">${escapeHtml(val.c_title || '【無題のシナリオ】')}</div>
+    <div class="text-[11px] text-zinc-400 mt-1">仕様: ${escapeHtml(val.c_specs || '未設定')}</div>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-train text-[10px]"></i> レール敷設：絶対的な合流動機
+    </div>
+    <p class="text-xs text-zinc-300 leading-relaxed">${escapeHtml(val.c_joinMotive || '（PCが断れない理由を記述）')}</p>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-2">
+    <div class="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-bolt text-[10px]"></i> 雑談切り上げ＆手詰まり防止
+    </div>
+    <div class="text-xs text-zinc-300"><strong>介入イベント:</strong> ${escapeHtml(val.c_cutEvent || '未設定')}</div>
+    <div class="text-xs text-zinc-300"><strong>推奨技能:</strong> ${escapeHtml(val.c_skill || '目星')}</div>
+    <div class="text-[11px] text-emerald-400 bg-emerald-950/20 p-2 rounded border border-emerald-900/30">
+      <strong>手詰まり防止策:</strong> ${escapeHtml(val.c_failSafe || '失敗しても別の手がかりを開示')}
+    </div>
+  </div>
+
+  ${val.c_kpAlert ? `
+  <div class="bg-cyan-950/20 p-3 rounded-lg border border-cyan-800/40 text-xs text-cyan-200">
+    <strong class="text-cyan-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i> KPアラート:</strong> ${escapeHtml(val.c_kpAlert)}
+  </div>` : ''}
+</div>`;
+      } else if (currentMode === 'D') {
+        html = `
+<div class="space-y-4">
+  <div class="border-b border-zinc-800 pb-2.5">
+    <div class="text-[10px] uppercase font-en tracking-wider text-violet-400">Marketing & Concept Spec</div>
+    <div class="text-base font-bold text-zinc-100 font-title tracking-wide">${escapeHtml(val.d_title || '【無題の企画】')}</div>
+    <div class="text-[11px] text-zinc-400 mt-1">ターゲット: ${escapeHtml(val.d_target || '未設定')}</div>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-violet-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-bullhorn text-[10px]"></i> 3行キャッチコピー（トレーラー用）
+    </div>
+    <p class="text-xs text-zinc-300 leading-relaxed pl-2 border-l-2 border-violet-500/50">
+      ${escapeHtml(val.d_core1 || '日常の情景')}<br>
+      ${escapeHtml(val.d_core2 || '突如訪れる異変')}<br>
+      <span class="text-violet-300 font-semibold">${escapeHtml(val.d_core3 || '探索者の重大な決断')}</span>
+    </p>
+  </div>
+
+  <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800/80 space-y-1.5">
+    <div class="text-[11px] font-bold text-violet-300 flex items-center gap-1.5">
+      <i class="fa-solid fa-flag-checkered text-[10px]"></i> クライマックス逆算＆推奨技能
+    </div>
+    <div class="text-xs text-zinc-300"><strong>見せ場（ラスト）:</strong> ${escapeHtml(val.d_climax || '未設定')}</div>
+    <div class="text-xs text-zinc-300"><strong>推奨技能:</strong> ${escapeHtml(val.d_skills || '未設定')}</div>
+    <div class="text-xs text-zinc-300"><strong>職業フック:</strong> ${escapeHtml(val.d_jobHook || '未設定')}</div>
+  </div>
+</div>`;
+      }
+
+      outArea.innerHTML = html;
+    }
+
+    // プレーンテキスト出力生成
+    function getPlainTextOutput() {
+      const conf = modeConfigs[currentMode];
+      const val = {};
+      conf.inputs.forEach(id => {
+        const el = document.getElementById(id);
+        val[id] = el ? el.value.trim() : '';
+      });
+
+      if (currentMode === 'A') {
+        return `========================================
+TRPGシナリオ冒頭設計シート 【エモ・うちよそ・バディ特化】
+タイトル: ${val.a_title || '無題'}
+環境・空気感: ${val.a_timeSeason}
+========================================
+
+■ 2人の関係性・秘匿HO
+[PC1 (HO1)]: ${val.a_pc1}
+[PC2 (HO2)]: ${val.a_pc2}
+
+■ 冒頭シチュエーション＆距離感
+${val.a_situation}
+
+【開幕インタビュー】
+KP「${val.a_interview}」
+
+【共有モチーフ】
+${val.a_motif}
+
+■ 事件契機（喪失と手紙）
+重要NPC: ${val.a_npc}
+喪失のトリガー: ${val.a_lossTrigger}
+タイトル回収予告: ${val.a_titleEcho}
+========================================
+Generated by TRPG Scenario Kickstarter`;
+      } else if (currentMode === 'B') {
+        return `========================================
+TRPGシナリオ冒頭設計シート 【ホラー・緊張感演出特化】
+タイトル: ${val.b_title || '無題'}
+舞台・環境: ${val.b_env}
+========================================
+
+■ シーン0 五感の不穏フック
+・音: ${val.b_sound}
+・視界: ${val.b_sight}
+・匂い/肌感覚: ${val.b_smellTouch}
+
+■ 日常崩壊の違和感
+${val.b_anomaly}
+
+【都市伝説・噂】
+${val.b_rumor}
+
+■ 初動ダイス＆正気度チェック
+正気度(SAN)チェック: ${val.b_sanCheck}
+初動判定: ${val.b_firstRoll}
+・成功: ${val.b_rollSuccess}
+・失敗: ${val.b_rollFail}
+========================================
+Generated by TRPG Scenario Kickstarter`;
+      } else if (currentMode === 'C') {
+        return `========================================
+TRPGシナリオ冒頭設計シート 【初心者KP・事故防止特化】
+タイトル: ${val.c_title || '無題'}
+スペック: ${val.c_specs}
+========================================
+
+■ 迷わせない合流動機（レール敷設）
+${val.c_joinMotive}
+
+■ 進行コントロール
+雑談切り上げ介入: ${val.c_cutEvent}
+推奨技能: ${val.c_skill}
+手詰まり防止策: ${val.c_failSafe}
+
+■ KPアラート（事前注意事項）
+${val.c_kpAlert}
+========================================
+Generated by TRPG Scenario Kickstarter`;
+      } else {
+        return `========================================
+TRPGシナリオ冒頭設計シート 【ネタ出し・企画マーケ特化】
+タイトル: ${val.d_title || '無題'}
+ターゲット: ${val.d_target}
+========================================
+
+■ 3行キャッチコピー（トレーラー用）
+1. ${val.d_core1}
+2. ${val.d_core2}
+3. ${val.d_core3}
+
+■ クライマックスからの逆算設計
+見せ場（ラスト）: ${val.d_climax}
+推奨技能: ${val.d_skills}
+PC職業フック: ${val.d_jobHook}
+========================================
+Generated by TRPG Scenario Kickstarter`;
+      }
+    }
+
+    // クリップボードへコピー
+    function copyOutput() {
+      const text = getPlainTextOutput();
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = text;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('シートをクリップボードにコピーしました！');
+      } catch (err) {
+        showToast('コピーに失敗しました');
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    // ダウンロード
+    function downloadOutput() {
+      const text = getPlainTextOutput();
+      const conf = modeConfigs[currentMode];
+      const titleId = conf.inputs[0];
+      const titleVal = document.getElementById(titleId)?.value.trim() || 'TRPG_Scenario_Spec';
+      const filename = `${titleVal.replace(/[\\/:*?"<>|]/g, '_')}_${conf.badge.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('テキストファイルを保存しました');
+    }
+
+    // Gemini APIによるモード別テキスト生成
+    async function generateSceneWithAI() {
+      const btn = document.getElementById('aiGenerateBtn');
+      const btnText = document.getElementById('aiBtnText');
+      const resultContainer = document.getElementById('aiResultContainer');
+      const outputText = document.getElementById('aiOutputText');
+
+      const conf = modeConfigs[currentMode];
+      const val = {};
+      conf.inputs.forEach(id => {
+        const el = document.getElementById(id);
+        val[id] = el ? el.value.trim() : '';
+      });
+
+      // 入力チェック
+      if (!val[conf.inputs[0]] && !val[conf.inputs[1]]) {
+        showToast('先にタイトルや基本設定を入力してください');
+        return;
+      }
+
+      const userApiKey = localStorage.getItem('trpg_builder_gemini_api_key');
+      const apiKey = userApiKey ? userApiKey.trim() : "";
+
+      btn.disabled = true;
+      btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 特化テキストを生成中...';
+
+      let systemPrompt = "";
+      let userPrompt = "";
+
+      if (currentMode === 'A') {
+        systemPrompt = `あなたはエモ系・バディTRPGに精通したシナリオライターです。
+与えられた2人のキャラクター設定、関係性、開幕シチュエーションを元に、セッション冒頭でKPが読み上げる「叙情的で美しい開幕情景テキスト（400〜600文字）」を執筆してください。
+2人の距離感や共通のモチーフを自然に織り込み、最後に開幕インタビューの問いかけでPLへ発言権を渡して締めくくってください。`;
+        userPrompt = `タイトル: ${val.a_title}\n空気感: ${val.a_timeSeason}\nPC1: ${val.a_pc1}\nPC2: ${val.a_pc2}\nシチュエーション: ${val.a_situation}\nモチーフ: ${val.a_motif}\nNPC・喪失: ${val.a_npc} / ${val.a_lossTrigger}\n問いかけ: ${val.a_interview}`;
+      } else if (currentMode === 'B') {
+        systemPrompt = `あなたは本格ホラー・サスペンスTRPGのベテランシナリオライターです。
+与えられた五感（音・光・匂い）と日常崩壊の違和感を元に、PLの背筋を凍らせる「シーン0の開幕ホラー朗読文（400〜600文字）」を執筆してください。
+緊張感を徐々に高め、違和感が目の前に現れた瞬間の不穏さを強調してください。`;
+        userPrompt = `タイトル: ${val.b_title}\n舞台: ${val.b_env}\n五感: 音(${val.b_sound}) / 視界(${val.b_sight}) / 肌感覚(${val.b_smellTouch})\n違和感: ${val.b_anomaly}\n噂・都市伝説: ${val.b_rumor}\nSANチェック契機: ${val.b_sanCheck}`;
+      } else if (currentMode === 'C') {
+        systemPrompt = `あなたは初心者が絶対に失敗しないTRPGセッションを熟知したゲームマスター指南役です。
+与えられたシナリオ設定から、KPが卓冒頭でスムーズに口頭説明・朗読できる「簡潔で噛みにくいシーン0の情景文（300〜400文字程度）」と、PCたちが自然に合流して最初の行動に移るまでの「KP進行ガイド」を出力してください。`;
+        userPrompt = `タイトル: ${val.c_title}\n仕様: ${val.c_specs}\n合流動機: ${val.c_joinMotive}\n介入イベント: ${val.c_cutEvent}\n判定技能: ${val.c_skill} (リカバリ: ${val.c_failSafe})\nKPアラート: ${val.c_kpAlert}`;
+      } else {
+        systemPrompt = `あなたはTRPGシナリオの企画・マーケティングに長けた編集者です。
+与えられた3行プロットとクライマックス設定を元に、BOOTHやTwitter(X)でプレイヤーの目を一瞬で惹きつける「魅力的なあらすじトレーラー文（250〜400文字）」を執筆してください。`;
+        userPrompt = `タイトル: ${val.d_title}\nターゲット: ${val.d_target}\n3行プロット:\n1. ${val.d_core1}\n2. ${val.d_core2}\n3. ${val.d_core3}\n見せ場: ${val.d_climax}\n推奨技能: ${val.d_skills}`;
+      }
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          if (data.error.code === 400 || data.error.code === 403) {
+            openApiKeyModal();
+            showToast('Gemini APIキーを設定してください（右上から登録可能）');
+            return;
+          }
+          throw new Error(data.error.message || 'API Error');
+        }
+
+        const candidate = data.candidates?.[0];
+        if (candidate && candidate.content?.parts?.[0]?.text) {
+          outputText.innerText = candidate.content.parts[0].text.trim();
+          resultContainer.classList.remove('hidden');
+          showToast('特化テキストを生成しました！');
+        } else {
+          showToast('生成結果の取得に失敗しました');
+        }
+      } catch (err) {
+        showToast('通信エラー：外部で動かす場合はAPIキーを設定してください');
+      } finally {
+        btn.disabled = false;
+        btnText.innerHTML = 'この設定から「特化導入テキスト」をAIで再生成する';
+      }
+    }
+
+    // AI結果のコピー
+    function copyAiText() {
+      const text = document.getElementById('aiOutputText').innerText;
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = text;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempTextArea);
+      showToast('テキストをコピーしました！');
+    }
+
+    // トースト通知表示
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2500);
+    }
+
+    // APIキーモーダル操作
+    function openApiKeyModal() {
+      const savedKey = localStorage.getItem('trpg_builder_gemini_api_key') || '';
+      document.getElementById('customApiKeyInput').value = savedKey;
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+    function closeApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.add('hidden');
+    }
+    function saveCustomApiKey() {
+      const key = document.getElementById('customApiKeyInput').value.trim();
+      if (key) {
+        localStorage.setItem('trpg_builder_gemini_api_key', key);
+        showToast('APIキーをブラウザに保存しました');
+      } else {
+        localStorage.removeItem('trpg_builder_gemini_api_key');
+        showToast('APIキーを解除しました');
+      }
+      closeApiKeyModal();
+    }
+    function clearCustomApiKey() {
+      localStorage.removeItem('trpg_builder_gemini_api_key');
+      document.getElementById('customApiKeyInput').value = '';
+      showToast('APIキーを削除しました');
+      closeApiKeyModal();
+    }
+
+    // HTMLエスケープ
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>

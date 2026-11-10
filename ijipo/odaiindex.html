@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日のお題｜創作アイデアをランダム生成する無料ツール</title>
+    <meta name="description" content="創作のきっかけになるお題をランダムに生成する無料ツールです。小説、イラスト、TRPG、キャラクター制作などに使えるお題を引き、テキストコピー、X投稿、PNG画像保存ができます。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/odaiindex.html">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <!-- Google Fonts: エレガントな明朝体を使用 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 画像生成ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link rel="stylesheet" href="css/odaiindex.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+    </div>
+
+    <div class="main-wrapper">
+        <main class="container">
+            <!-- 撮影対象となるエリア -->
+            <div id="capture-area" class="capture-frame">
+                <div class="capture-wrapper">
+                    <header class="capture-header">
+                        <p class="subtitle">Creative Inspiration</p>
+                        <h1>今日のお題</h1>
+                    </header>
+
+                    <section class="card glass">
+                        <div id="theme-display" class="theme-text">
+                            <span class="placeholder">準備中...</span>
+                        </div>
+                        
+                        <!-- 撮影時にはJSで隠すボタン -->
+                        <button id="generate-btn" class="generate-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                            新しいお題を引く
+                        </button>
+                    </section>
+
+                    <footer class="capture-footer">
+                        <p>Product by 異次元ポケット工房</p>
+                    </footer>
+                </div>
+            </div>
+
+            <!-- 操作パネル（ここは画像に含まれない） -->
+            <div class="flex flex-wrap justify-center gap-4 mt-12">
+                <button onclick="shareOnX()" class="action-btn bg-slate-900 text-white px-8 py-4 rounded-full font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl">
+                    <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    結果をポスト
+                </button>
+                
+                <button onclick="saveAsImage(event)" class="action-btn bg-amber-600 text-white px-8 py-4 rounded-full font-bold hover:bg-amber-700 transition-all flex items-center gap-2 shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    画像を保存
+                </button>
+
+                <button onclick="copyToClipboard(event)" class="action-btn bg-white/10 text-white border border-white/20 px-8 py-4 rounded-full font-bold hover:bg-white/20 transition-all shadow-lg backdrop-blur-md">
+                    お題をコピー
+                </button>
+            </div>
+            
+            <p id="data-status" class="text-center mt-8 text-xs text-slate-500 opacity-50"></p>
+        </main>
+    </div>
+
+    <section class="odai-guide" aria-labelledby="guide-title">
+        <p class="guide-label">GUIDE</p>
+        <h2 id="guide-title">「今日のお題」でできること</h2>
+        <p class="guide-lead">創作を始めたいのにテーマが決まらないとき、ランダムなお題をきっかけに発想を広げられるツールです。小説やイラストだけでなく、TRPGのシナリオ・NPC、キャラクター設定、短い練習作品など、ジャンルを問わず利用できます。</p>
+
+        <div class="guide-grid">
+            <article><h3>お題をランダム生成</h3><p>「新しいお題を引く」を押すたびに、公開中のお題一覧からひとつをランダムに表示します。気になる言葉が出るまで何度でも引き直せます。</p></article>
+            <article><h3>お題をすぐにコピー</h3><p>「お題をコピー」を押すと、お題・ページURL・ハッシュタグをまとめてコピーします。メモ帳や制作アプリへ貼り付けて使えます。</p></article>
+            <article><h3>Xへ投稿して共有</h3><p>「結果をポスト」から、現在のお題とハッシュタグを入れたXの投稿作成画面を開けます。内容は投稿前に自由に編集できます。</p></article>
+            <article><h3>お題カードを画像保存</h3><p>表示中のお題をデザインカードとして高解像度のPNG画像に保存できます。制作記録やSNSでのお題共有にも利用できます。</p></article>
+        </div>
+
+        <h2>基本的な使い方</h2>
+        <ol class="guide-steps">
+            <li><span>1</span><p>ページを開くと、自動的にお題一覧を読み込み、最初のお題を表示します。</p></li>
+            <li><span>2</span><p>別のお題を見たいときは「新しいお題を引く」を押します。</p></li>
+            <li><span>3</span><p>表示された言葉から、人物・場所・出来事・感情などを自由に連想して作品へ取り入れます。</p></li>
+            <li><span>4</span><p>必要に応じて、お題をコピー、Xの投稿作成画面へ共有、またはPNG画像として保存します。</p></li>
+        </ol>
+
+        <div class="guide-note">
+            <h2>お題の楽しみ方</h2>
+            <p>表示された言葉をそのまま作品名やテーマにしても、反対の意味に置き換えても構いません。複数回引いたお題を組み合わせれば、「場所＋事件」「人物＋秘密」のような発想ゲームとしても使えます。正解はないので、思いついた方向へ自由に広げてみてください。</p>
+        </div>
+
+        <h2>よくある質問</h2>
+        <div class="guide-faq">
+            <details><summary>お題は毎日ひとつだけですか？</summary><p>いいえ。日付にかかわらず「新しいお題を引く」を押すたびに、何度でもランダムなお題を表示できます。</p></details>
+            <details><summary>どのような創作に使えますか？</summary><p>小説、イラスト、漫画、TRPG、キャラクター設定、短文練習など、幅広い創作のきっかけに使えます。表示されたお題をそのまま使わず、自由に解釈したり、複数のお題を組み合わせたりしても楽しめます。</p></details>
+            <details><summary>画像保存に「新しいお題を引く」ボタンも写りますか？</summary><p>写りません。画像生成時にはお題を引くボタンを一時的に隠し、お題カード部分をPNG形式で保存します。</p></details>
+            <details><summary>「予備データで動作中」と表示されます</summary><p>最新のお題一覧を読み込めなかった場合の表示です。通信状態を確認してページを再読み込みしてください。読み込みに失敗しても、予備のお題で基本操作を試せます。</p></details>
+        </div>
+
+        <nav class="guide-links" aria-label="関連ページ">
+            <a class="guide-primary" href="/">ほかの創作ツールを見る →</a>
+            <a href="/wordpress/">制作・改善記事を読む →</a>
+        </nav>
+    </section>
+
+    <script src="js/odaiindex.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+Created At: 2026-06-06T13:02:59Z
+Completed At: 2026-06-06T13:03:00Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2522
+Total Bytes: 96273
+Showing lines 2350 to 2415
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2350:       visible: true,
+2351:       opacity: 1
+2352:     });
+2353:   });
+2354: 
+2355:   updateUI();
+2356: }
+2357: 
+2358: function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+2359:   saveStateToHistory();
+2360:   
+2361:   const gen = themeSvgGenerators.dynamic;
+2362: 
+2363:   frame = null;
+2364:   panels = [];
+2365:   selectedPanelIds = [];
+2366: 
+2367:   if (bgImageUrl) {
+2368:     frame = {
+2369:       url: bgImageUrl,
+2370:       x: 0,
+2371:       y: 0,
+2372:       width: 1280,
+2373:       height: 720,
+2374:       originalRatio: 1280 / 720
+2375:     };
+2376:   } else {
+2377:     const bgSvg = gen.bg(design);
+2378:     frame = {
+2379:       url: createSvgUrl(bgSvg),
+2380:       x: 0,
+2381:       y: 0,
+2382:       width: 1280,
+2383:       height: 720,
+2384:       originalRatio: 1280 / 720
+2385:     };
+2386:   }
+2387: 
+2388:   const windowSvg = gen.window(design);
+2389:   const windowPanelWidth = 720;
+2390:   const windowPanelHeight = 405;
+2391:   let windowX = 50;
+2392:   let windowY = 110;
+2393: 
+2394:   if (layoutType === 'bottom-horizontal') {
+2395:     windowX = 280;
+2396:     windowY = 50;
+2397:   }
+2398: 
+2399:   panels.push({
+2400:     id: 'ai-window-' + Date.now(),
+2401:     url: createSvgUrl(windowSvg),
+2402:     x: windowX,
+2403:     y: windowY,
+2404:     width: windowPanelWidth,
+2405:     height: windowPanelHeight,
+2406:     originalRatio: windowPanelWidth / windowPanelHeight,
+2407:     flipH: false,
+2408:     flipV: false,
+2409:     visible: true,
+2410:     opacity: 1
+2411:   });
+2412: 
+2413:   let plW = 160;
+2414:   let plH = 170;
+2415:   if (layoutType === 'right-vertical') {
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

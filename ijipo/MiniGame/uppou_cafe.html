@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ウッポーの満腹カフェパニック！ 〜注文通りに素早くお届け〜</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;800&family=M+PLUS+Rounded+1c:wght@400;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cafe-wood: #78350f;
+            --cafe-cream: #fef3c7;
+            --cafe-orange: #f97316;
+            --cafe-yellow: #fbbf24;
+            --cafe-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif;
+            background: radial-gradient(circle at 50% 25%, #fed7aa 0%, #fdba74 45%, #c2410c 100%);
+            min-height: 100vh;
+            color: #451a03;
+            overflow-x: hidden;
+            overscroll-behavior-y: none;
+        }
+
+        /* アニメーション */
+        @keyframes floatBounce {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(-1deg); }
+        }
+        .anim-float {
+            animation: floatBounce 2.5s ease-in-out infinite;
+        }
+
+        @keyframes waddleWalk {
+            0%, 100% { transform: translateY(0px) rotate(-4deg); }
+            50% { transform: translateY(-4px) rotate(4deg); }
+        }
+        .anim-waddle {
+            animation: waddleWalk 0.28s infinite alternate ease-in-out;
+        }
+
+        @keyframes cookPan {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-3px) rotate(-5deg); }
+        }
+        .anim-cook {
+            animation: cookPan 1.2s infinite ease-in-out;
+        }
+
+        @keyframes steamRise {
+            0% { transform: translateY(0) scale(0.6); opacity: 0.8; }
+            50% { transform: translateY(-12px) scale(1); opacity: 0.5; }
+            100% { transform: translateY(-24px) scale(1.3); opacity: 0; }
+        }
+        .anim-steam {
+            animation: steamRise 1.6s infinite ease-out;
+        }
+
+        @keyframes popScore {
+            0% { transform: scale(0.5) translateY(0); opacity: 0; }
+            60% { transform: scale(1.2) translateY(-25px); opacity: 1; }
+            100% { transform: scale(1) translateY(-45px); opacity: 0; }
+        }
+        .score-float {
+            position: absolute;
+            animation: popScore 0.85s ease-out forwards;
+            pointer-events: none;
+            font-weight: 900;
+            z-index: 50;
+        }
+
+        @keyframes rainbowGlow {
+            0% { filter: drop-shadow(0 0 10px #f43f5e); }
+            33% { filter: drop-shadow(0 0 12px #fbbf24); }
+            66% { filter: drop-shadow(0 0 12px #38bdf8); }
+            100% { filter: drop-shadow(0 0 10px #a855f7); }
+        }
+        .fever-active {
+            animation: rainbowGlow 1.2s infinite alternate;
+        }
+
+        /* 木目調・カウンター */
+        .wood-board {
+            background: linear-gradient(135deg, #78350f 0%, #92400e 50%, #78350f 100%);
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .counter-table {
+            background: linear-gradient(180deg, #b45309 0%, #92400e 40%, #78350f 100%);
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.2), inset 0 3px 0 rgba(255,255,255,0.3);
+        }
+
+        /* カスタムスクロールバー */
+        .custom-scroll::-webkit-scrollbar {
+            width: 7px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(254, 243, 199, 0.5);
+            border-radius: 9999px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-2 md:p-3 select-none">
+
+    <!-- カフェのオーニング風デコレーション -->
+    <div id="cafeAwning" class="fixed top-0 left-0 w-full h-4 flex z-0 opacity-80 pointer-events-none transition-all">
+        <div class="flex-1 bg-amber-700"></div>
+        <div class="flex-1 bg-amber-100"></div>
+        <div class="flex-1 bg-amber-700"></div>
+        <div class="flex-1 bg-amber-100"></div>
+        <div class="flex-1 bg-amber-700"></div>
+        <div class="flex-1 bg-amber-100"></div>
+        <div class="flex-1 bg-amber-700"></div>
+        <div class="flex-1 bg-amber-100"></div>
+    </div>
+
+    <!-- ヘッダー / HUD -->
+    <header class="w-full max-w-xl z-20 flex flex-col gap-1.5 pt-1.5">
+        <!-- ナビゲーションバー -->
+        <div class="flex items-center justify-between bg-white/85 backdrop-blur-md rounded-2xl px-3 py-1.5 border-2 border-amber-300 shadow-md">
+            <div class="flex items-center gap-1.5">
+                <span class="text-xl">☕</span>
+                <div class="flex flex-col">
+                    <span id="shopTitleName" class="font-black text-amber-950 text-xs md:text-sm tracking-wide leading-none">ウッポーカフェ</span>
+                    <span id="shopLevelBadge" class="text-[9px] font-bold text-amber-700 leading-tight">Lv.1 森の切り株カフェ</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+                <!-- 所持コイン表示 -->
+                <div class="flex items-center gap-1 bg-amber-100/90 px-2 py-1 rounded-xl border border-amber-300 text-amber-950 text-xs font-black shadow-inner">
+                    <span>🪙</span>
+                    <span id="displayCoins" class="font-mono">0</span>
+                </div>
+
+                <!-- 改装メニューボタン -->
+                <button id="btnOpenReno" class="px-2 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-sm transition-transform active:scale-95 flex items-center gap-1">
+                    <span>🔨</span><span>改装</span>
+                </button>
+                <!-- 図鑑/コレクションボタン -->
+                <button id="btnOpenCollection" class="px-2 py-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs shadow-sm transition-transform active:scale-95 flex items-center gap-1">
+                    <span>📖</span><span>図鑑</span>
+                </button>
+                <!-- ランキングボタン -->
+                <button id="btnOpenRanking" class="px-2 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition-transform active:scale-95 flex items-center gap-1">
+                    <span>👑</span><span>順位</span>
+                </button>
+                <!-- サウンド切替ボタン -->
+                <button id="btnSoundToggle" class="p-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 transition-transform active:scale-90 text-sm font-bold">
+                    <span id="soundIcon">🔊</span>
+                </button>
+                <!-- 遊び方ボタン -->
+                <button id="btnOpenHelp" class="p-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-xs shadow-sm transition-transform active:scale-95">
+                    <span>❓</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- プレイ中ステータスバー（スコア・タイマー・コンボ） -->
+        <div id="gameHud" class="grid grid-cols-3 gap-2 bg-amber-950/85 backdrop-blur-md text-white p-2 rounded-2xl border border-amber-400/40 shadow-lg transition-all">
+            <!-- スコア -->
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-amber-300 font-bold">SCORE</span>
+                <span id="displayScore" class="text-xl md:text-2xl font-black text-amber-100 font-mono tracking-tight">0</span>
+            </div>
+            <!-- タイマー / ライフ -->
+            <div class="flex flex-col items-center justify-center">
+                <span id="labelTimerMode" class="text-[9px] text-amber-300 font-bold">TIME</span>
+                <span id="displayTimer" class="text-xl md:text-2xl font-black text-white font-mono">60s</span>
+            </div>
+            <!-- コンボ & フィーバー -->
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-orange-300 font-bold">COMBO</span>
+                <div class="flex items-center gap-1">
+                    <span id="displayCombo" class="text-xl md:text-2xl font-black text-amber-300 font-mono">0</span>
+                    <span id="displayFeverBadge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-gradient-to-r from-red-500 via-yellow-400 to-pink-500 text-white animate-pulse">FEVER!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- お客さんの待ち時間ゲージ -->
+        <div id="patienceBarContainer" class="w-full bg-amber-950/40 rounded-full h-2 p-0.5 border border-amber-300/40 overflow-hidden shadow-inner hidden">
+            <div id="patienceBar" class="bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full rounded-full w-full transition-all duration-75"></div>
+        </div>
+    </header>
+
+    <!-- メインステージ（カフェ店内・ウッポーとお客さん） -->
+    <main class="w-full max-w-xl flex-1 flex flex-col justify-between items-center my-1 relative z-10">
+        
+        <!-- =================== スタート画面 =================== -->
+        <div id="screenTitle" class="w-full bg-white/90 backdrop-blur-md rounded-3xl p-5 md:p-6 border-4 border-amber-300 shadow-2xl flex flex-col items-center text-center my-auto">
+            <div class="relative mb-2">
+                <img src="img/farm_uppou.png" alt="ウッポーシェフ" class="w-28 h-28 md:w-34 md:h-34 object-contain anim-float drop-shadow-lg mx-auto" onerror="this.src='img/01.png'">
+                <div class="absolute -bottom-1 -right-2 bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow">店長</div>
+            </div>
+
+            <h1 class="text-2xl md:text-3xl font-black text-amber-950 tracking-wider mb-0.5">
+                ウッポーの満腹カフェパニック！
+            </h1>
+            <p class="text-xs md:text-sm text-amber-800 font-bold mb-4">
+                素早く料理を届けて売上を貯め、カフェを豪華に改装しよう！
+            </p>
+
+            <p class="text-xs md:text-sm text-amber-900 font-bold bg-amber-100/80 border border-amber-300 rounded-xl px-3 py-2 mb-4" id="titleHowToPlay">注文と同じ料理をタップ、またはキーボードの1〜4キーで配膳！</p>
+
+            <!-- ゲームモード選択 -->
+            <div class="w-full grid grid-cols-2 gap-3 mb-4">
+                <button id="modeSelectTime" class="mode-btn p-3 rounded-2xl border-2 border-orange-400 bg-orange-100 text-amber-950 font-bold text-xs md:text-sm shadow-sm hover:bg-orange-200 transition-all flex flex-col items-center gap-1 active:scale-95 ring-2 ring-orange-500">
+                    <span class="text-lg">⏱️</span>
+                    <span>60秒タイムアタック</span>
+                    <span class="text-[10px] text-amber-700 font-normal">時間内に注文をこなせ！</span>
+                </button>
+                <button id="modeSelectEndless" class="mode-btn p-3 rounded-2xl border-2 border-amber-300 bg-amber-50 text-amber-950 font-bold text-xs md:text-sm shadow-sm hover:bg-amber-100 transition-all flex flex-col items-center gap-1 active:scale-95">
+                    <span class="text-lg">⚡</span>
+                    <span>サドンデス営業</span>
+                    <span class="text-[10px] text-amber-700 font-normal">ミス3回で即閉店！</span>
+                </button>
+            </div>
+
+            <!-- スタートボタン -->
+            <button id="btnStartGame" class="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-lg md:text-xl rounded-2xl shadow-xl transform active:scale-95 transition-all flex items-center justify-center gap-2 border-b-4 border-amber-700">
+                <span>🍳</span><span>オープン！（ゲーム開始）</span>
+            </button>
+
+            <!-- 最高記録と所持コイン表示 -->
+            <div class="mt-3 flex items-center justify-center gap-4 text-xs font-bold text-amber-900 bg-amber-100/70 px-4 py-1.5 rounded-full border border-amber-300">
+                <span>🏆 ベスト: <strong id="titleBestScore" class="text-orange-600">0</strong></span>
+                <span>🪙 売上金: <strong id="titleTotalCoins" class="text-orange-600 font-mono">0</strong> G</span>
+                <span>🍽️ 配膳: <strong id="titleTotalServed" class="text-orange-600">0</strong> 皿</span>
+            </div>
+
+            <!-- セーブデータ初期化（全部忘れて最初から遊ぶ） -->
+            <div class="mt-3 text-center">
+                <button id="btnResetAllData" class="text-[10px] text-amber-800/80 hover:text-red-600 underline transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer">
+                    <span>🔄</span><span>全部忘れて最初から遊ぶ（データ初期化）</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- =================== プレイ画面 =================== -->
+        <div id="screenGame" class="w-full flex-1 flex flex-col justify-between hidden">
+            
+            <!-- カフェ店内ステージ（客席、ウッポーの歩行エリア、キッチン） -->
+            <div id="cafeStage" class="relative w-full h-56 md:h-64 rounded-3xl border-4 border-amber-400/80 shadow-2xl overflow-hidden mb-2 transition-all">
+                
+                <!-- カフェ背景（壁・床）改装レベルで切り替え -->
+                <div id="stageBackground" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-500">
+                    <!-- JSでクラス/スタイル制御 -->
+                </div>
+
+                <!-- 浮遊する装飾光 / ランプ / 湯気 -->
+                <div id="stageDecorLayer" class="absolute inset-0 pointer-events-none z-10">
+                    <!-- レベルごとのランプや装飾 -->
+                </div>
+
+                <!-- ================= 待機列（NEXT順番待ち）表示 ================= -->
+                <div id="waitingQueueArea" class="absolute left-2 top-2 z-20 flex items-center gap-1.5 bg-amber-950/70 backdrop-blur-md px-2 py-1 rounded-2xl border border-amber-300/40 shadow-md">
+                    <div class="flex items-center gap-0.5 text-[9px] font-black text-amber-200">
+                        <span>🐾</span>
+                        <span>NEXT:</span>
+                    </div>
+                    <div id="waitingQueueList" class="flex items-center gap-1">
+                        <!-- JSで待機中のお客さんアイコンが並ぶ -->
+                    </div>
+                </div>
+
+                <!-- ================= 客席エリア (左側) ================= -->
+                <div class="absolute left-2 md:left-4 bottom-2 z-20 flex flex-col items-center w-36 md:w-44">
+                    <!-- 後ろに並んでいる順番待ちのお客さん（ひょっこり待機） -->
+                    <div id="queueBehindContainer" class="absolute -left-2 md:-left-3 bottom-6 z-5 flex items-center opacity-70 transition-all">
+                        <div class="relative flex flex-col items-center">
+                            <span id="queueBehindBubble" class="hidden text-[8px] font-bold bg-white/90 text-amber-950 px-1 py-0.2 rounded-md shadow -mb-1 animate-pulse whitespace-nowrap">まだかな♪</span>
+                            <img id="queueBehindImg" src="" alt="待機中のお客さん" class="w-12 h-12 md:w-14 md:h-14 object-contain brightness-90">
+                        </div>
+                    </div>
+                    <!-- 注文フキダシ -->
+                    <div id="customerBubble" class="relative bg-white/95 border-2 border-amber-500 rounded-2xl p-1.5 px-2.5 shadow-lg mb-1 flex items-center gap-1.5 anim-float z-30">
+                        <img id="bubbleDishImg" src="img/dish_curry.png" alt="注文料理" class="w-8 h-8 md:w-9 md:h-9 object-contain drop-shadow">
+                        <div class="flex flex-col text-left">
+                            <span class="text-[8px] text-amber-600 font-extrabold tracking-tight">ORDER</span>
+                            <span id="bubbleDishName" class="text-[11px] md:text-xs font-black text-amber-950 leading-tight">カレー</span>
+                        </div>
+                        <!-- 吹き出しの三角ヒゲ -->
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-amber-500"></div>
+                        <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white"></div>
+                    </div>
+
+                    <!-- お客さんキャラ & 椅子 & テーブル -->
+                    <div class="relative w-full h-32 md:h-36 flex items-end justify-center">
+                        
+                        <!-- 椅子（丸太 / カフェチェア / ソファ） -->
+                        <div id="visualChair" class="absolute left-1 md:left-3 bottom-0 z-10 transition-all">
+                            <!-- SVGまたは描画 -->
+                        </div>
+
+                        <!-- お客さん本体 -->
+                        <div id="customerAvatarContainer" class="absolute left-2 md:left-4 bottom-2 z-15 flex flex-col items-center transition-all">
+                            <div class="relative">
+                                <img id="customerImg" src="img/farm_kogitsune.png" alt="お客さん" class="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow" onerror="this.src='img/02.png'">
+                                <div id="customerMoodEmoji" class="absolute -top-2 -right-1 text-xl opacity-0 transition-opacity">✨</div>
+                            </div>
+                            <span id="customerName" class="text-[10px] font-black text-amber-950 bg-amber-200/90 px-2 py-0.2 rounded-full shadow-sm mt-0.5">子狐</span>
+                        </div>
+
+                        <!-- テーブル（切り株 / 木製テーブル / グランテーブル） -->
+                        <div id="visualTable" class="absolute right-0 md:right-2 bottom-0 z-20 flex flex-col items-center transition-all">
+                            <!-- テーブル上に配膳された料理 -->
+                            <div id="tableServedDish" class="w-10 h-10 md:w-11 md:h-11 -mb-2 relative z-30 opacity-0 transition-opacity flex items-center justify-center">
+                                <img id="tableServedDishImg" src="" class="w-full h-full object-contain drop-shadow">
+                            </div>
+                            <!-- テーブル本体グラフィック -->
+                            <div id="tableGraphic"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ================= ウッポー配膳アクター (店内をウロウロ移動) ================= -->
+                <div id="uppouActor" class="absolute bottom-2 z-25 flex flex-col items-center pointer-events-none transition-all duration-300" style="right: 38px;">
+                    <!-- 配膳トレイ（ウッポーが手/頭上に掲げる） -->
+                    <div id="uppouTray" class="relative -mb-2 z-30 opacity-0 transition-opacity flex flex-col items-center">
+                        <div class="bg-amber-100 border-2 border-amber-700 rounded-full p-1 shadow-md">
+                            <img id="uppouTrayDishImg" src="img/dish_curry.png" class="w-7 h-7 md:w-8 md:h-8 object-contain">
+                        </div>
+                    </div>
+                    <!-- ウッポー画像 -->
+                    <div class="relative">
+                        <img id="chefUppouImg" src="img/farm_uppou.png" alt="ウッポーシェフ" class="w-20 h-20 md:w-22 md:h-22 object-contain drop-shadow" onerror="this.src='img/01.png'">
+                        <div id="chefStateEmoji" class="absolute -top-2 -right-1 text-base opacity-0 transition-opacity">💦</div>
+                    </div>
+                    <span class="text-[9px] font-black text-white bg-amber-900/90 px-1.5 py-0.2 rounded-full shadow">ウッポー</span>
+                </div>
+
+                <!-- ================= キッチン調理エリア (右側) ================= -->
+                <div id="kitchenArea" class="absolute right-1 bottom-0 z-15 flex flex-col items-center w-24 md:w-28">
+                    <!-- コンロの湯気 -->
+                    <div class="flex gap-2 text-xs text-white/80 font-bold mb-1">
+                        <span class="anim-steam">♨️</span>
+                        <span class="anim-steam" style="animation-delay: 0.6s;">♨️</span>
+                    </div>
+                    <!-- 調理台カウンター -->
+                    <div id="kitchenCounterGraphic" class="w-full rounded-t-xl border-t-2 border-amber-300 shadow-md flex flex-col items-center justify-center p-1.5 bg-gradient-to-b from-amber-700 to-amber-900">
+                        <!-- フライパン & 調理道具 -->
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-lg md:text-xl anim-cook">🍳</span>
+                            <span class="text-sm">🧂</span>
+                        </div>
+                        <span class="text-[9px] font-black text-amber-200 tracking-tighter">KITCHEN</span>
+                    </div>
+                </div>
+
+                <!-- 飛び交うスコア・通知エフェクト配置エリア -->
+                <div id="fxOverlay" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+            </div>
+
+            <!-- 配膳カウンター＆料理選択エリア（4択） -->
+            <div class="w-full counter-table rounded-3xl p-2.5 md:p-3 border-t-4 border-amber-300 shadow-2xl flex flex-col gap-1.5">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-xs font-black text-amber-100 flex items-center gap-1">
+                        <span>🍽️</span> 料理をタップまたはキーで配膳！
+                    </span>
+                    <span class="text-[10px] text-amber-200 font-bold bg-amber-950/50 px-2 py-0.5 rounded-full">
+                        キー: [1] [2] [3] [4]
+                    </span>
+                </div>
+
+                <!-- 4つの料理ボタン（文字が綺麗に収まる高さとフォントサイズ設計） -->
+                <div id="dishOptionsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <!-- JavaScriptで動的生成 -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =================== リザルト画面 =================== -->
+        <div id="screenResult" class="w-full bg-white/95 backdrop-blur-md rounded-3xl p-4 md:p-5 border-4 border-amber-400 shadow-2xl flex flex-col items-center text-center my-auto hidden">
+            <span class="text-3xl mb-0.5">🎉</span>
+            <h2 class="text-2xl font-black text-amber-950 mb-0.5">本日の営業終了！</h2>
+            <p id="resultRankText" class="text-xs font-extrabold text-orange-600 mb-3">見習いシェフ</p>
+
+            <!-- スコアサマリーボード -->
+            <div class="w-full bg-amber-50 rounded-2xl border-2 border-amber-200 p-3 mb-3 grid grid-cols-2 gap-2 text-left">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-amber-700 font-bold">獲得スコア</span>
+                    <span id="resultScore" class="text-xl md:text-2xl font-black text-amber-950 font-mono">0</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-amber-700 font-bold">本日の売上コイン</span>
+                    <span id="resultEarnedCoins" class="text-xl md:text-2xl font-black text-amber-600 font-mono">+0 G</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-amber-700 font-bold">提供した料理</span>
+                    <span id="resultServedCount" class="text-lg font-black text-amber-950 font-mono">0皿</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-amber-700 font-bold">最大コンボ</span>
+                    <span id="resultMaxCombo" class="text-lg font-black text-orange-600 font-mono">0</span>
+                </div>
+            </div>
+
+            <!-- ランキング登録入力 -->
+            <div class="w-full bg-amber-100/60 p-2.5 rounded-2xl border border-amber-300 mb-3 flex flex-col gap-1 text-left">
+                <label for="inputPlayerName" class="text-xs font-bold text-amber-900">シェフのお名前を記録:</label>
+                <div class="flex gap-2">
+                    <input type="text" id="inputPlayerName" maxlength="10" placeholder="なまえ" value="ウッポーファン" class="flex-1 px-3 py-1.5 rounded-xl border border-amber-300 text-xs font-bold text-amber-950 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <button id="btnSaveRanking" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow active:scale-95 transition-all">
+                        記録する
+                    </button>
+                </div>
+            </div>
+
+            <!-- X投稿ボタン -->
+            <button id="btnShareX" class="w-full py-2.5 bg-black hover:bg-zinc-800 text-white font-black text-xs rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 mb-2.5">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                <span>営業結果を X に投稿する</span>
+            </button>
+
+            <!-- アクションボタン -->
+            <div class="w-full flex gap-2">
+                <button id="btnPlayAgain" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm rounded-2xl shadow-lg active:scale-95 transition-all">
+                    もう一度営業する
+                </button>
+                <button id="btnResultToReno" class="px-3.5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-2xl shadow active:scale-95 transition-all flex items-center gap-1">
+                    <span>🔨</span><span>カフェ改装</span>
+                </button>
+                <button id="btnResultToTitle" class="px-3 py-3 bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-xs rounded-2xl shadow active:scale-95 transition-all">
+                    タイトル
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="w-full max-w-xl text-center py-1 text-[10px] font-bold text-amber-900/80 z-10">
+        異次元ポケット工房 © 2026 ウッポーの満腹カフェパニック！
+    </footer>
+
+    <!-- ======================================================== -->
+    <!-- モーダル 1: カフェ改装（店舗リフォーム） -->
+    <!-- ======================================================== -->
+    <div id="modalRenovation" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 hidden">
+        <div class="w-full max-w-md bg-white rounded-3xl border-4 border-amber-400 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <!-- モーダルヘッダー -->
+            <div class="p-3 bg-emerald-100 border-b border-emerald-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🔨</span>
+                    <div>
+                        <h3 class="font-black text-emerald-950 text-sm md:text-base leading-none">カフェ外観＆内装改装</h3>
+                        <span class="text-[10px] text-emerald-700 font-bold">売上コインでカフェを豪華にグレードアップ！</span>
+                    </div>
+                </div>
+                <button id="btnCloseReno" class="w-7 h-7 rounded-full bg-emerald-200 hover:bg-emerald-300 text-emerald-950 font-black text-xs flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <!-- 所持コイン表示 -->
+            <div class="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center justify-between text-xs font-bold text-amber-900">
+                <span>現在の所持コイン:</span>
+                <span class="font-mono text-sm text-orange-600 font-black flex items-center gap-1">
+                    <span>🪙</span><span id="renoCoinDisplay">0</span> G
+                </span>
+            </div>
+
+            <!-- 改装プラン一覧 -->
+            <div id="renoPlansList" class="p-3 overflow-y-auto custom-scroll space-y-2.5 flex-1">
+                <!-- JSで動的生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- モーダル 2: 料理・お客さん図鑑（コレクション） -->
+    <!-- ======================================================== -->
+    <div id="modalCollection" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 hidden">
+        <div class="w-full max-w-md bg-white rounded-3xl border-4 border-amber-400 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <div class="p-3 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📖</span>
+                    <h3 class="font-black text-amber-950 text-sm md:text-base">カフェコレクション図鑑</h3>
+                </div>
+                <button id="btnCloseCollection" class="w-7 h-7 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <div class="flex border-b border-amber-200 bg-amber-50">
+                <button id="tabDishes" class="flex-1 py-2 font-black text-xs text-orange-600 border-b-2 border-orange-500 bg-white">
+                    🍽️ 料理図鑑 (<span id="unlockedDishCount">0</span>/<span id="totalDishCount">44</span>)
+                </button>
+                <button id="tabCustomers" class="flex-1 py-2 font-bold text-xs text-amber-800 hover:bg-white/50">
+                    🐾 お客さん図鑑 (<span id="unlockedCustomerCount">0</span>/<span id="totalCustomerCount">11</span>)
+                </button>
+            </div>
+
+            <!-- 料理カテゴリーフィルター -->
+            <div id="dishCategoryFilter" class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100/70 border-b border-amber-200 overflow-x-auto text-[11px] font-bold">
+                <button data-cat="all" class="cat-filter-btn px-2.5 py-0.5 rounded-full bg-orange-500 text-white shadow-sm transition-all whitespace-nowrap">すべて</button>
+                <button data-cat="メイン" class="cat-filter-btn px-2.5 py-0.5 rounded-full bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all whitespace-nowrap">メイン</button>
+                <button data-cat="軽食" class="cat-filter-btn px-2.5 py-0.5 rounded-full bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all whitespace-nowrap">軽食</button>
+                <button data-cat="デザート" class="cat-filter-btn px-2.5 py-0.5 rounded-full bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all whitespace-nowrap">デザート</button>
+                <button data-cat="ドリンク" class="cat-filter-btn px-2.5 py-0.5 rounded-full bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all whitespace-nowrap">ドリンク</button>
+            </div>
+
+            <div class="p-3 overflow-y-auto custom-scroll flex-1">
+                <div id="collectionDishesView" class="grid grid-cols-2 gap-2"></div>
+                <div id="collectionCustomersView" class="space-y-2 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- モーダル 3: ランキング画面 -->
+    <!-- ======================================================== -->
+    <div id="modalRanking" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 hidden">
+        <div class="w-full max-w-md bg-white rounded-3xl border-4 border-amber-400 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <div class="p-3 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👑</span>
+                    <h3 class="font-black text-amber-950 text-sm md:text-base">シェフランキング</h3>
+                </div>
+                <button id="btnCloseRanking" class="w-7 h-7 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <div class="flex border-b border-amber-200 bg-amber-50">
+                <button id="rankTabTime" class="flex-1 py-2 font-black text-xs text-orange-600 border-b-2 border-orange-500 bg-white">
+                    ⏱️ 60秒タイムアタック
+                </button>
+                <button id="rankTabEndless" class="flex-1 py-2 font-bold text-xs text-amber-800 hover:bg-white/50">
+                    ⚡ サドンデス営業
+                </button>
+            </div>
+
+            <div class="p-3 overflow-y-auto custom-scroll flex-1">
+                <div id="rankingListContainer" class="space-y-1.5"></div>
+            </div>
+
+            <div class="p-2 bg-amber-50 border-t border-amber-200 text-center">
+                <button id="btnClearRankingData" class="text-[10px] text-amber-700 hover:text-red-600 underline">
+                    ランキングデータをリセット
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- モーダル 4: 遊び方ヘルプ -->
+    <!-- ======================================================== -->
+    <div id="modalHelp" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 hidden">
+        <div class="w-full max-w-md bg-white rounded-3xl border-4 border-amber-400 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            <div class="p-3 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">❓</span>
+                    <h3 class="font-black text-amber-950 text-sm md:text-base">あそびかた</h3>
+                </div>
+                <button id="btnCloseHelp" class="w-7 h-7 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-3.5 overflow-y-auto custom-scroll space-y-2.5 text-xs text-amber-900 leading-relaxed">
+                <div class="bg-amber-50 p-2.5 rounded-2xl border border-amber-200">
+                    <h4 class="font-black text-xs text-orange-600 mb-0.5">1. 注文を受けて素早く配膳！</h4>
+                    <p>お客さんのフキダシを見て、下の4つの料理から正しいものをタップ、またはキーボードの [1] [2] [3] [4] で配膳！ウッポーがテーブルまで走って料理を届けます。</p>
+                </div>
+
+                <div class="bg-amber-50 p-2.5 rounded-2xl border border-amber-200">
+                    <h4 class="font-black text-xs text-orange-600 mb-0.5">2. 売上コインでカフェを豪華に改装！</h4>
+                    <p>料理を提供するとコインが貯まります。最初は森の中のおそまつな「切り株テーブル」と「丸太椅子」ですが、コインで「木組みの屋台」「ログカフェ」「異次元グランカフェ」へとどんどん豪華にリフォームできます！</p>
+                </div>
+
+                <div class="bg-amber-50 p-2.5 rounded-2xl border border-amber-200">
+                    <h4 class="font-black text-xs text-orange-600 mb-0.5">3. コンボ＆フィーバーで荒稼ぎ！</h4>
+                    <p>ミスせず連続配膳するとコンボ成立！10コンボでフィーバータイム突入となり、スコアと売上コインが2倍になります。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- ゲームロジック (JavaScript) -->
+    <!-- ======================================================== -->
+    <script>
+        // ----------------------------------------------------
+        // SVGアイコン生成ヘルパー
+        // ----------------------------------------------------
+        function getSvgDataUri(svgRaw) {
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svgRaw.trim());
+        }
+
+        // ----------------------------------------------------
+        // データ定義: 料理一覧 (全44種: 基本14種 + カフェ新メニュー30種)
+        // ----------------------------------------------------
+        const DISHES = [
+            // --- 基本メニュー (14種) ---
+            { id: 'curry', name: '特製カレー', category: 'メイン', img: 'img/dish_curry.png', desc: 'スパイスが効いたウッポー特製のじっくり煮込みカレー。' },
+            { id: 'doria', name: '熱々ドリア', category: 'メイン', img: 'img/dish_doria.png', desc: 'チーズが香ばしくとろける、心まで温まるグラタンドリア。' },
+            { id: 'paella', name: '具だくさんパエリア', category: 'メイン', img: 'img/dish_paella.png', desc: '彩り野菜と魚介ごちそうがたっぷり詰まった特製パエリア。' },
+            { id: 'pasta', name: 'トマトパスタ', category: 'メイン', img: 'img/dish_pasta.png', desc: 'もぎたてトマトの甘みと酸味が引き立つ贅沢パスタ。' },
+            { id: 'pizza', name: 'もっちりピザ', category: 'メイン', img: 'img/dish_pizza.png', desc: '窯焼きの香ばしさとトロ〜リチーズがたまらない一枚。' },
+            { id: 'sandwich', name: '野菜サンド', category: '軽食', img: 'img/dish_sandwich.png', desc: '新鮮なシャキシャキ野菜をふんだんに挟んだサンドイッチ。' },
+            { id: 'salad', name: '朝採れサラダ', category: '軽食', img: 'img/dish_salad.png', desc: '工房の畑で採れたてのみずみずしいヘルシーサラダ。' },
+            { id: 'soup', name: 'ぽかぽかスープ', category: '軽食', img: 'img/dish_soup.png', desc: '一口飲むと優しい旨味が広がる野菜たっぷりスープ。' },
+            { id: 'apple_pie', name: 'アップルパイ', category: 'デザート', img: 'img/dish_apple_pie.png', desc: '甘酸っぱいりんごとシナモンのサクサク特製パイ。' },
+            { id: 'pie', name: 'ミートパイ', category: '軽食', img: 'img/dish_pie.png', desc: 'こんがり黄金色に焼き上げたサクサク食感のパイ。' },
+            { id: 'parfait', name: 'フルーツパフェ', category: 'デザート', img: 'img/dish_parfait.png', desc: '果実とアイスクリームが贅沢に重なった大人気パフェ。' },
+            { id: 'jam', name: '手作りベリージャム', category: 'デザート', img: 'img/dish_jam.png', desc: '完熟ベリーをコトコト煮詰めた甘酸っぱい濃厚ジャム。' },
+            { id: 'apple_juice', name: 'りんごジュース', category: 'ドリンク', img: 'img/dish_apple_juice.png', desc: '果汁100%の爽やかなすっきり甘いりんごジュース。' },
+            { id: 'lemonade', name: '爽快レモネード', category: 'ドリンク', img: 'img/dish_lemonade.png', desc: 'レモンの香りと程よい甘みが疲れた体を癒やす一杯。' },
+
+            // --- 新規追加メニュー：メイン (8種) ---
+            {
+                id: 'omurice',
+                name: 'ふわとろオムライス',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/><ellipse cx="50" cy="60" rx="34" ry="18" fill="#facc15"/><path d="M22,60 Q50,34 78,60 Q50,78 22,60 Z" fill="#fbbf24"/><path d="M30,58 Q40,52 46,60 Q52,68 62,56 Q70,52 74,58" stroke="#ef4444" stroke-width="4.5" fill="none" stroke-linecap="round"/><circle cx="50" cy="50" r="2.5" fill="#22c55e"/></svg>'),
+                desc: '黄金色のふわとろ卵に特製ケチャップをかけたカフェ定番のオムライス。'
+            },
+            {
+                id: 'hamburg_steak',
+                name: 'じゅわっとハンバーグ',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="44" ry="16" fill="#1e293b"/><ellipse cx="50" cy="74" rx="41" ry="14" fill="#334155"/><ellipse cx="48" cy="58" rx="28" ry="18" fill="#78350f"/><ellipse cx="48" cy="56" rx="26" ry="16" fill="#854d0e"/><path d="M32,54 Q48,46 64,54 Q56,66 38,64 Z" fill="#451a03" opacity="0.7"/><circle cx="72" cy="54" r="5" fill="#eab308"/><circle cx="76" cy="62" r="5" fill="#eab308"/><circle cx="68" cy="63" r="5" fill="#eab308"/><path d="M22,64 C20,56 26,52 30,56 C34,54 36,62 32,66 Z" fill="#16a34a"/></svg>'),
+                desc: '肉汁が溢れるふっくらハンバーグに濃厚デミグラスソースがたっぷり。'
+            },
+            {
+                id: 'gratin',
+                name: 'えびマカロニグラタン',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#e2e8f0"/><rect x="18" y="50" width="64" height="22" rx="10" fill="#f97316" stroke="#c2410c" stroke-width="2.5"/><ellipse cx="50" cy="50" rx="32" ry="13" fill="#fef08a"/><ellipse cx="46" cy="49" rx="24" ry="9" fill="#fde047"/><circle cx="40" cy="48" r="4" fill="#ea580c" opacity="0.6"/><circle cx="58" cy="51" r="5" fill="#b45309" opacity="0.5"/><path d="M48,43 C54,40 58,46 54,50 C50,54 44,48 48,43" stroke="#f43f5e" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="36" cy="51" r="2" fill="#16a34a"/></svg>'),
+                desc: 'プリプリの海老ととろけるチーズが香ばしく焼き上がった熱々グラタン。'
+            },
+            {
+                id: 'carbonara',
+                name: '濃厚カルボナーラ',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="17" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/><ellipse cx="50" cy="62" rx="32" ry="15" fill="#fef08a"/><path d="M26,62 Q45,45 68,60 Q50,75 32,68" stroke="#fde047" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="50" cy="58" r="8" fill="#f59e0b"/><rect x="36" y="56" width="6" height="5" fill="#be123c" rx="1"/><rect x="58" y="60" width="7" height="5" fill="#be123c" rx="1"/><circle cx="44" cy="52" r="1.2" fill="#18181b"/><circle cx="54" cy="66" r="1.2" fill="#18181b"/><circle cx="62" cy="54" r="1.2" fill="#18181b"/></svg>'),
+                desc: '新鮮な卵黄とパルメザンチーズを絡めた、黒胡椒香る贅沢パスタ。'
+            },
+            {
+                id: 'french_toast',
+                name: '窯出しフレンチトースト',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/><polygon points="26,64 50,42 74,64 50,78" fill="#d97706" stroke="#92400e" stroke-width="2"/><polygon points="28,62 50,44 72,62 50,74" fill="#fbbf24"/><rect x="44" y="52" width="12" height="10" rx="2" fill="#fef08a" stroke="#f59e0b" stroke-width="1.5"/><path d="M46,62 Q48,72 52,72 Q56,70 54,62" fill="#b45309" opacity="0.7"/><circle cx="62" cy="56" r="1.5" fill="#fff"/><circle cx="40" cy="64" r="1.5" fill="#fff"/></svg>'),
+                desc: '卵液をたっぷり吸わせて焼き上げた、メープルとバターが染み込む逸品。'
+            },
+            {
+                id: 'croque_monsieur',
+                name: 'クロックムッシュ',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="42" ry="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><polygon points="24,68 50,38 76,68" fill="#b45309" stroke="#78350f" stroke-width="2"/><polygon points="26,66 50,41 74,66" fill="#fde047"/><rect x="34" y="58" width="32" height="5" fill="#f472b6" rx="2"/><circle cx="46" cy="52" r="4" fill="#b45309" opacity="0.6"/><circle cx="56" cy="56" r="3" fill="#b45309" opacity="0.5"/><circle cx="50" cy="48" r="2" fill="#16a34a"/></svg>'),
+                desc: 'ハムと濃厚ベシャメルソースを挟んでチーズをこんがり焼いた温かいトースト。'
+            },
+            {
+                id: 'clubhouse_sandwich',
+                name: '贅沢クラブハウスサンド',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/><polygon points="24,70 50,36 76,70" fill="#d97706"/><polygon points="28,68 50,40 72,68" fill="#fef3c7"/><line x1="28" y1="62" x2="72" y2="62" stroke="#22c55e" stroke-width="4"/><line x1="32" y1="56" x2="68" y2="56" stroke="#ef4444" stroke-width="3"/><line x1="36" y1="50" x2="64" y2="50" stroke="#f59e0b" stroke-width="3"/><line x1="50" y1="26" x2="50" y2="46" stroke="#92400e" stroke-width="2.5"/><circle cx="50" cy="24" r="4" fill="#ef4444"/></svg>'),
+                desc: 'トーストパンにローストチキン、トマト、レタスを贅沢に重ねた3段サンド。'
+            },
+            {
+                id: 'clam_chowder',
+                name: '森のクラムチャウダー',
+                category: 'メイン',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="38" ry="12" fill="#cbd5e1" opacity="0.4"/><path d="M22,46 C22,76 34,84 50,84 C66,84 78,76 78,46 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="2.5"/><ellipse cx="50" cy="46" rx="28" ry="11" fill="#f8fafc"/><rect x="42" y="44" width="6" height="5" fill="#fbbf24" rx="1"/><rect x="52" y="42" width="5" height="5" fill="#f97316" rx="1"/><circle cx="48" cy="49" r="1.8" fill="#16a34a"/><line x1="68" y1="36" x2="84" y2="62" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/></svg>'),
+                desc: 'あさりの旨味と角切り野菜が溶け込んだ、クリーミーで心温まるスープ。'
+            },
+
+            // --- 新規追加メニュー：軽食 (7種) ---
+            {
+                id: 'pancake',
+                name: 'ふかふかホットケーキ',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><ellipse cx="50" cy="68" rx="32" ry="10" fill="#d97706"/><ellipse cx="50" cy="65" rx="30" ry="9" fill="#fde047"/><ellipse cx="50" cy="58" rx="30" ry="9" fill="#d97706"/><ellipse cx="50" cy="55" rx="28" ry="8" fill="#fde047"/><ellipse cx="50" cy="48" rx="28" ry="8" fill="#d97706"/><ellipse cx="50" cy="45" rx="26" ry="8" fill="#fde047"/><rect x="44" y="36" width="12" height="10" rx="2" fill="#fef08a" stroke="#f59e0b" stroke-width="1.5"/><path d="M46,45 Q44,58 48,64" stroke="#b45309" stroke-width="3" fill="none" stroke-linecap="round"/></svg>'),
+                desc: '昔ながらのふっくら焼きたてホットケーキ。バターとシロップがとろけます。'
+            },
+            {
+                id: 'bagel_sandwich',
+                name: 'サーモンベーグルサンド',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><ellipse cx="50" cy="64" rx="34" ry="16" fill="#b45309"/><ellipse cx="50" cy="60" rx="34" ry="16" fill="#fde047"/><ellipse cx="50" cy="60" rx="12" ry="6" fill="#f8fafc"/><path d="M22,60 Q50,72 78,60" stroke="#f472b6" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="36" cy="50" r="1" fill="#78350f"/><circle cx="64" cy="52" r="1" fill="#78350f"/><circle cx="50" cy="44" r="1" fill="#78350f"/></svg>'),
+                desc: 'もちもちのプレーンベーグルにスモークサーモンとクリームチーズをサンド。'
+            },
+            {
+                id: 'croissant',
+                name: '焼きたてクロワッサン',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="40" ry="15" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><path d="M20,64 C22,42 42,32 50,32 C58,32 78,42 80,64 C72,66 65,58 50,56 C35,58 28,66 20,64 Z" fill="#d97706" stroke="#92400e" stroke-width="2"/><path d="M38,40 C44,36 56,36 62,40 C58,56 42,56 38,40 Z" fill="#f59e0b"/><path d="M45,34 C48,32 52,32 55,34 C54,54 46,54 45,34 Z" fill="#fde047"/></svg>'),
+                desc: '発酵バターを幾層にも折り込んで焼き上げた、香ばしくサクサクの三日月パン。'
+            },
+            {
+                id: 'corn_soup',
+                name: 'つぶつぶコーンポタージュ',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="36" ry="12" fill="#cbd5e1" opacity="0.4"/><path d="M22,46 C22,76 34,84 50,84 C66,84 78,76 78,46 Z" fill="#f97316" stroke="#c2410c" stroke-width="2.5"/><ellipse cx="50" cy="46" rx="28" ry="11" fill="#facc15"/><circle cx="44" cy="44" r="3.5" fill="#eab308"/><circle cx="54" cy="47" r="3.5" fill="#eab308"/><circle cx="48" cy="49" r="3" fill="#eab308"/><path d="M42,46 Q50,40 58,46" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="50" cy="45" r="1.5" fill="#16a34a"/></svg>'),
+                desc: 'とれたてスイートコーンの甘みと旨味がギュッと詰まった濃厚ポタージュ。'
+            },
+            {
+                id: 'potato_fries',
+                name: 'ハーブポテトフライ',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,52 L36,86 L64,86 L70,52 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="2.5"/><path d="M30,52 Q50,60 70,52" fill="#dc2626"/><rect x="36" y="26" width="6" height="36" rx="2" fill="#facc15" stroke="#eab308" transform="rotate(-15 39 44)"/><rect x="47" y="22" width="6" height="40" rx="2" fill="#fde047" stroke="#eab308"/><rect x="58" y="26" width="6" height="36" rx="2" fill="#facc15" stroke="#eab308" transform="rotate(15 61 44)"/><circle cx="50" cy="70" r="10" fill="#fff"/><circle cx="50" cy="70" r="7" fill="#f59e0b"/><circle cx="44" cy="38" r="1.2" fill="#15803d"/><circle cx="54" cy="30" r="1.2" fill="#15803d"/></svg>'),
+                desc: '外はカリッ、中はホクホク。特製ハーブソルトが食欲をそそる揚げたてポテト。'
+            },
+            {
+                id: 'quiche',
+                name: 'ほうれん草のキッシュ',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/><polygon points="26,68 50,34 76,66" fill="#b45309" stroke="#78350f" stroke-width="2"/><polygon points="28,65 50,38 73,64" fill="#fde047"/><circle cx="44" cy="52" r="4.5" fill="#16a34a"/><circle cx="56" cy="56" r="4" fill="#16a34a"/><rect x="46" y="58" width="8" height="5" rx="1.5" fill="#f43f5e"/><path d="M26,66 Q50,78 76,66" stroke="#92400e" stroke-width="3" fill="none"/></svg>'),
+                desc: 'サクサクのパイ生地にほうれん草とベーコンの旨味を閉じ込めたフランス風卵料理。'
+            },
+            {
+                id: 'avocado_toast',
+                name: 'アボカドトースト',
+                category: '軽食',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="42" ry="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><rect x="25" y="46" width="50" height="26" rx="6" fill="#b45309" stroke="#78350f" stroke-width="2"/><rect x="28" y="48" width="44" height="20" rx="4" fill="#fde047"/><ellipse cx="40" cy="58" rx="8" ry="14" fill="#84cc16" transform="rotate(-30 40 58)"/><ellipse cx="52" cy="56" rx="8" ry="14" fill="#a3e635" transform="rotate(-30 52 56)"/><ellipse cx="64" cy="56" rx="8" ry="14" fill="#4d7c0f" transform="rotate(-30 64 56)"/><circle cx="45" cy="54" r="1.2" fill="#18181b"/><circle cx="58" cy="52" r="1.2" fill="#ef4444"/></svg>'),
+                desc: 'カリッと焼いたカンパーニュにたっぷりアボカドとオリーブオイルをのせて。'
+            },
+
+            // --- 新規追加メニュー：デザート (8種) ---
+            {
+                id: 'pudding',
+                name: 'ほろ苦カラメルプリン',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="40" ry="14" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/><path d="M30,68 L36,44 L64,44 L70,68 Z" fill="#fde047" stroke="#ca8a04" stroke-width="2"/><ellipse cx="50" cy="44" rx="14" ry="5" fill="#78350f"/><path d="M35,46 Q40,54 44,48 Q50,56 56,48 Q60,54 65,46" fill="#78350f"/><ellipse cx="50" cy="38" rx="8" ry="5" fill="#fff"/><circle cx="50" cy="32" r="5" fill="#ef4444"/><path d="M52,30 Q58,20 62,22" stroke="#b91c1c" stroke-width="2" fill="none"/></svg>'),
+                desc: '昔懐かしい固めのカスタードプリン。ほろ苦いカラメルとホイップチェリー付き。'
+            },
+            {
+                id: 'strawberry_shortcake',
+                name: '苺のショートケーキ',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><polygon points="26,68 50,38 74,68" fill="#fff" stroke="#e2e8f0" stroke-width="2"/><polygon points="30,65 50,42 70,65" fill="#fef08a"/><line x1="30" y1="54" x2="70" y2="54" stroke="#fff" stroke-width="4"/><circle cx="42" cy="54" r="2.5" fill="#ef4444"/><circle cx="58" cy="54" r="2.5" fill="#ef4444"/><circle cx="50" cy="36" r="7" fill="#ef4444"/><polygon points="48,27 50,23 52,27" fill="#16a34a"/><circle cx="48" cy="36" r="0.8" fill="#fff"/><circle cx="52" cy="38" r="0.8" fill="#fff"/></svg>'),
+                desc: 'ふわふわスポンジに極上の生クリームと真っ赤な苺を飾った王道ケーキ。'
+            },
+            {
+                id: 'cheesecake',
+                name: 'ベイクドチーズケーキ',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><polygon points="25,70 50,40 75,70" fill="#b45309" stroke="#78350f" stroke-width="2"/><polygon points="27,67 50,43 73,67" fill="#fef08a"/><path d="M34,48 L50,40 L66,48" stroke="#ca8a04" stroke-width="4" fill="none"/><circle cx="65" cy="46" r="3" fill="#16a34a"/><path d="M26,68 Q50,78 74,68" stroke="#78350f" stroke-width="2.5" fill="none"/></svg>'),
+                desc: 'クリームチーズを惜しみなく使った濃厚でしっとりなベイクドチーズケーキ。'
+            },
+            {
+                id: 'chocolate_cake',
+                name: '濃厚ガトーショコラ',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><polygon points="26,68 50,38 74,68" fill="#3b0764" stroke="#1e1b4b" stroke-width="2"/><polygon points="28,66 50,41 72,66" fill="#581c87"/><ellipse cx="50" cy="42" rx="10" ry="5" fill="#fff"/><circle cx="50" cy="36" r="5" fill="#ec4899"/><circle cx="58" cy="40" r="4" fill="#3b82f6"/><line x1="32" y1="56" x2="68" y2="56" stroke="#3b0764" stroke-width="3"/></svg>'),
+                desc: 'ビターチョコレートの深いコクとビロードのような口どけが楽しめる本格ショコラ。'
+            },
+            {
+                id: 'cream_soda',
+                name: 'メロンクリームソーダ',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="85" rx="20" ry="7" fill="#94a3b8" opacity="0.4"/><path d="M35,35 L40,78 L60,78 L65,35 Z" fill="#10b981" stroke="#059669" stroke-width="2.5" fill-opacity="0.8"/><ellipse cx="50" cy="35" rx="15" ry="5" fill="#34d399"/><circle cx="44" cy="55" r="2" fill="#fff" opacity="0.8"/><circle cx="55" cy="65" r="2.5" fill="#fff" opacity="0.8"/><circle cx="48" cy="45" r="1.5" fill="#fff" opacity="0.8"/><circle cx="50" cy="30" r="11" fill="#fff"/><circle cx="56" cy="24" r="5" fill="#ef4444"/><line x1="42" y1="18" x2="60" y2="60" stroke="#f43f5e" stroke-width="3" stroke-linecap="round"/></svg>'),
+                desc: 'エメラルドグリーンに弾けるソーダに丸いバニラアイスとチェリー。'
+            },
+            {
+                id: 'waffle',
+                name: 'チョコバナナワッフル',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="42" ry="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><ellipse cx="50" cy="60" rx="32" ry="18" fill="#d97706" stroke="#92400e" stroke-width="2"/><ellipse cx="50" cy="58" rx="29" ry="16" fill="#fde047"/><line x1="30" y1="52" x2="70" y2="52" stroke="#b45309" stroke-width="2"/><line x1="26" y1="60" x2="74" y2="60" stroke="#b45309" stroke-width="2"/><line x1="40" y1="46" x2="40" y2="70" stroke="#b45309" stroke-width="2"/><line x1="50" y1="44" x2="50" y2="72" stroke="#b45309" stroke-width="2"/><line x1="60" y1="46" x2="60" y2="70" stroke="#b45309" stroke-width="2"/><path d="M32,54 Q50,42 68,54" stroke="#451a03" stroke-width="3" fill="none"/></svg>'),
+                desc: '格子状にカリッと焼いたベルギーワッフルにバナナと甘いチョコソース。'
+            },
+            {
+                id: 'chiffon_cake',
+                name: '紅茶のシフォンケーキ',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><path d="M30,68 L40,38 Q50,32 60,38 L70,68 Q50,76 30,68 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/><circle cx="45" cy="50" r="1.2" fill="#78350f"/><circle cx="55" cy="54" r="1.2" fill="#78350f"/><circle cx="48" cy="62" r="1.2" fill="#78350f"/><circle cx="38" cy="58" r="1.2" fill="#78350f"/><ellipse cx="64" cy="62" rx="10" ry="6" fill="#fff" stroke="#e2e8f0" stroke-width="1.5"/><circle cx="68" cy="58" r="1.5" fill="#16a34a"/></svg>'),
+                desc: 'アールグレイ茶葉を練り込んだ、絹のように軽やかでふわふわなシフォンケーキ。'
+            },
+            {
+                id: 'mont_blanc',
+                name: '和栗の贅沢モンブラン',
+                category: 'デザート',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="76" rx="42" ry="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/><ellipse cx="50" cy="68" rx="26" ry="8" fill="#d97706"/><path d="M30,68 C30,48 42,34 50,34 C58,34 70,48 70,68 Z" fill="#b45309"/><path d="M34,64 Q50,42 66,64 M32,58 Q50,38 68,58 M36,52 Q50,36 64,52" stroke="#d97706" stroke-width="2.5" fill="none"/><ellipse cx="50" cy="34" rx="8" ry="6" fill="#78350f"/><circle cx="52" cy="32" r="2" fill="#f59e0b" opacity="0.6"/></svg>'),
+                desc: '渋皮栗のペーストをふんだんに絞った、秋の香り豊かな特製モンブラン。'
+            },
+
+            // --- 新規追加メニュー：ドリンク (7種) ---
+            {
+                id: 'hot_coffee',
+                name: 'ハンドドリップ珈琲',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="36" ry="12" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/><path d="M26,44 C26,72 36,80 50,80 C64,80 74,72 74,44 Z" fill="#fff" stroke="#94a3b8" stroke-width="2.5"/><ellipse cx="50" cy="44" rx="24" ry="9" fill="#451a03"/><ellipse cx="50" cy="44" rx="21" ry="7" fill="#78350f"/><path d="M74,50 Q86,52 86,60 Q86,68 72,70" stroke="#94a3b8" stroke-width="3" fill="none"/><path d="M42,34 Q46,24 42,16 M50,34 Q54,22 50,14 M58,34 Q62,24 58,16" stroke="#fdba74" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/></svg>'),
+                desc: '厳選した深煎りコーヒー豆を丁寧にドリップした薫り高いブレンド。'
+            },
+            {
+                id: 'cafe_latte',
+                name: 'ふわふわカフェラテ',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="38" ry="12" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/><path d="M24,44 C24,74 35,80 50,80 C65,80 76,74 76,44 Z" fill="#fed7aa" stroke="#f97316" stroke-width="2.5"/><ellipse cx="50" cy="44" rx="26" ry="10" fill="#92400e"/><ellipse cx="50" cy="44" rx="24" ry="8" fill="#b45309"/><path d="M50,47 C46,42 42,42 42,45 C42,48 50,52 50,52 C50,52 58,48 58,45 C58,42 54,42 50,47 Z" fill="#fff"/><path d="M76,52 Q88,54 88,62 Q88,70 74,72" stroke="#f97316" stroke-width="3" fill="none"/></svg>'),
+                desc: 'エスプレッソにきめ細やかなスチームミルクを注ぎ、可愛いラテアートを描きました。'
+            },
+            {
+                id: 'matcha_latte',
+                name: '宇治抹茶ラテ',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="85" rx="20" ry="7" fill="#94a3b8" opacity="0.4"/><path d="M35,32 L38,80 L62,80 L65,32 Z" fill="#fff" stroke="#cbd5e1" stroke-width="2.5"/><path d="M37,56 L38,80 L62,80 L63,56 Z" fill="#fffbeb"/><path d="M35,32 L37,56 L63,56 L65,32 Z" fill="#15803d"/><ellipse cx="50" cy="32" rx="15" ry="5" fill="#16a34a"/><rect x="42" y="42" width="7" height="7" rx="1" fill="#fff" opacity="0.6"/><line x1="45" y1="18" x2="55" y2="70" stroke="#10b981" stroke-width="3" stroke-linecap="round"/></svg>'),
+                desc: '伝統的な宇治抹茶のほろ苦さと北海道産ミルクのまろやかさが溶け合う一杯。'
+            },
+            {
+                id: 'milk_tea',
+                name: 'ロイヤルミルクティー',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="38" ry="12" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/><path d="M25,44 C25,72 35,80 50,80 C65,80 75,72 75,44 Z" fill="#fef2f2" stroke="#fca5a5" stroke-width="2.5"/><ellipse cx="50" cy="44" rx="25" ry="9" fill="#d97706"/><ellipse cx="50" cy="44" rx="23" ry="7" fill="#fde68a"/><circle cx="50" cy="62" r="3" fill="#f43f5e" opacity="0.6"/><path d="M75,50 Q86,52 86,60 Q86,68 73,70" stroke="#fca5a5" stroke-width="3" fill="none"/><path d="M48,34 Q52,22 48,15" stroke="#fcd34d" stroke-width="2" fill="none" stroke-linecap="round"/></svg>'),
+                desc: '濃いめに抽出したアッサム茶葉を濃厚なミルクでコトコト煮出した贅沢ミルクティー。'
+            },
+            {
+                id: 'cappuccino',
+                name: 'シナモンカプチーノ',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="78" rx="38" ry="12" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/><path d="M24,44 C24,74 35,80 50,80 C65,80 76,74 76,44 Z" fill="#78350f" stroke="#451a03" stroke-width="2.5"/><ellipse cx="50" cy="44" rx="26" ry="10" fill="#fff"/><circle cx="44" cy="40" r="10" fill="#fff"/><circle cx="56" cy="40" r="10" fill="#fff"/><circle cx="50" cy="38" r="11" fill="#fff"/><circle cx="46" cy="36" r="1" fill="#b45309"/><circle cx="52" cy="34" r="1" fill="#b45309"/><circle cx="54" cy="40" r="1" fill="#b45309"/><line x1="30" y1="28" x2="48" y2="44" stroke="#78350f" stroke-width="3" stroke-linecap="round"/><path d="M76,52 Q88,54 88,62 Q88,70 74,72" stroke="#78350f" stroke-width="3" fill="none"/></svg>'),
+                desc: 'もこもこに泡立てたフォームミルクの上にシナモンパウダーをひと振り。'
+            },
+            {
+                id: 'berry_smoothie',
+                name: '完熟ベリースムージー',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="85" rx="20" ry="7" fill="#94a3b8" opacity="0.4"/><path d="M34,34 L38,80 L62,80 L66,34 Z" fill="#c026d3" stroke="#a21caf" stroke-width="2.5"/><ellipse cx="50" cy="34" rx="16" ry="6" fill="#e879f9"/><ellipse cx="50" cy="30" rx="12" ry="6" fill="#fff"/><circle cx="45" cy="28" r="4" fill="#3b82f6"/><circle cx="55" cy="28" r="4" fill="#ef4444"/><circle cx="50" cy="24" r="3" fill="#16a34a"/><line x1="42" y1="14" x2="52" y2="60" stroke="#f43f5e" stroke-width="3" stroke-linecap="round"/></svg>'),
+                desc: 'ブルーベリーとラズベリーをたっぷり使った、ビタミン満点のスムージー。'
+            },
+            {
+                id: 'herb_tea',
+                name: 'カモミールハーブティー',
+                category: 'ドリンク',
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="80" rx="34" ry="11" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/><path d="M28,48 C28,74 36,80 50,80 C64,80 72,74 72,48 Z" fill="#fef08a" stroke="#ca8a04" stroke-width="2" fill-opacity="0.7"/><ellipse cx="50" cy="48" rx="22" ry="8" fill="#fde047" fill-opacity="0.8"/><circle cx="50" cy="48" r="3" fill="#f59e0b"/><circle cx="50" cy="44" r="2" fill="#fff"/><circle cx="54" cy="48" r="2" fill="#fff"/><circle cx="50" cy="52" r="2" fill="#fff"/><circle cx="46" cy="48" r="2" fill="#fff"/><path d="M72,54 Q84,56 84,64 Q84,70 70,72" stroke="#cbd5e1" stroke-width="2.5" fill="none"/><path d="M48,38 Q52,28 48,20" stroke="#ca8a04" stroke-width="1.5" fill="none" opacity="0.7"/></svg>'),
+                desc: '甘い香りのカモミール。心と体を優しくリラックスさせるハーブティー。'
+            }
+        ];
+
+        // ----------------------------------------------------
+        // データ定義: お客さんキャラクター (全11種: カフェレベルに応じて来店！)
+        // ----------------------------------------------------
+        const CUSTOMERS = [
+            // --- Lv.1 から来店 (基本の仲間) ---
+            {
+                id: 'kogitsune',
+                name: '子狐',
+                reqLevel: 1,
+                img: 'img/farm_kogitsune.png',
+                favorite: 'parfait',
+                desc: '甘いデザートが大好きで好奇心旺盛な子狐。いつも元気いっぱい！'
+            },
+            {
+                id: 'mendako',
+                name: 'めんだこ',
+                reqLevel: 1,
+                img: 'img/farm_mendako.png',
+                favorite: 'curry',
+                desc: 'ぽよぽよ漂いながらやってくる深海のアイドル。お腹が空くとちょっぴり急ぎ足。'
+            },
+
+            // --- Lv.2 木組みの屋台カフェで来店解禁 ---
+            {
+                id: 'shimaenaga',
+                name: 'シマエナガ',
+                reqLevel: 2,
+                img: 'img/farm_shimaenaga.png',
+                favorite: 'sandwich',
+                desc: 'ふわふわモフモフの雪の妖精。軽やかなものが大好物。'
+            },
+            {
+                id: 'shoebill',
+                name: 'ハシビロコウ',
+                reqLevel: 2,
+                img: 'img/farm_shoebill.png',
+                favorite: 'paella',
+                desc: 'じーっと静かに佇むクールな鳥。辛抱強く料理を待ってくれる。'
+            },
+
+            // --- Lv.3 ログカフェで来店解禁 ---
+            {
+                id: 'emojelly',
+                name: 'エモ・クラゲ',
+                reqLevel: 3,
+                img: 'img/farm_emojelly.png',
+                favorite: 'lemonade',
+                desc: 'ゆらゆら神秘的な光を放つクラゲ。気分次第で色が変わる。'
+            },
+            {
+                id: 'penq',
+                name: 'ペンキュー',
+                reqLevel: 3,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="25" ry="8" fill="#000" opacity="0.15"/><ellipse cx="38" cy="84" rx="10" ry="5" fill="#f59e0b"/><ellipse cx="62" cy="84" rx="10" ry="5" fill="#f59e0b"/><ellipse cx="50" cy="54" rx="28" ry="32" fill="#0284c7"/><ellipse cx="50" cy="58" rx="20" ry="24" fill="#f8fafc"/><ellipse cx="23" cy="54" rx="6" ry="16" fill="#0369a1" transform="rotate(25 23 54)"/><ellipse cx="77" cy="54" rx="6" ry="16" fill="#0369a1" transform="rotate(-25 77 54)"/><circle cx="50" cy="32" r="22" fill="#0284c7"/><circle cx="50" cy="34" r="16" fill="#f8fafc"/><ellipse cx="43" cy="32" rx="3.5" ry="5" fill="#0f172a"/><circle cx="44.5" cy="30" r="1.5" fill="#fff"/><ellipse cx="57" cy="32" rx="3.5" ry="5" fill="#0f172a"/><circle cx="58.5" cy="30" r="1.5" fill="#fff"/><polygon points="45,37 55,37 50,44" fill="#f59e0b"/><circle cx="36" cy="38" r="3" fill="#f472b6" opacity="0.6"/><circle cx="64" cy="38" r="3" fill="#f472b6" opacity="0.6"/><polygon points="46,50 50,47 54,50 50,53" fill="#ef4444"/><polygon points="42,47 46,50 42,53" fill="#ef4444"/><polygon points="58,47 54,50 58,53" fill="#ef4444"/></svg>'),
+                favorite: 'cream_soda',
+                desc: '好奇心旺盛で元気いっぱいなペンギン。カフェの甘い炭酸ドリンクに夢中！'
+            },
+            {
+                id: 'suzu',
+                name: 'スズ',
+                reqLevel: 3,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="24" ry="7" fill="#000" opacity="0.15"/><path d="M68,75 C92,70 95,30 75,25 C65,22 62,38 72,48 C76,52 74,66 65,72 Z" fill="#b45309" stroke="#78350f" stroke-width="1.5"/><ellipse cx="48" cy="62" rx="22" ry="24" fill="#d97706"/><ellipse cx="48" cy="65" rx="15" ry="18" fill="#fef3c7"/><ellipse cx="32" cy="24" rx="7" ry="12" fill="#b45309" transform="rotate(-20 32 24)"/><ellipse cx="32" cy="24" rx="4" ry="8" fill="#fbcfe8" transform="rotate(-20 32 24)"/><ellipse cx="64" cy="24" rx="7" ry="12" fill="#b45309" transform="rotate(20 64 24)"/><ellipse cx="64" cy="24" rx="4" ry="8" fill="#fbcfe8" transform="rotate(20 64 24)"/><circle cx="48" cy="38" r="20" fill="#d97706"/><ellipse cx="48" cy="42" rx="14" ry="12" fill="#fef3c7"/><ellipse cx="41" cy="36" rx="3.5" ry="5" fill="#451a03"/><circle cx="42.5" cy="34" r="1.5" fill="#fff"/><ellipse cx="55" cy="36" rx="3.5" ry="5" fill="#451a03"/><circle cx="56.5" cy="34" r="1.5" fill="#fff"/><circle cx="48" cy="40" r="2.5" fill="#78350f"/><circle cx="36" cy="42" r="4" fill="#fb7185" opacity="0.6"/><circle cx="60" cy="42" r="4" fill="#fb7185" opacity="0.6"/><ellipse cx="38" cy="20" rx="6" ry="3" fill="#22c55e" transform="rotate(-30 38 20)"/></svg>'),
+                favorite: 'pancake',
+                desc: 'ふっくらほっぺがキュートなお客さん。焼きたてホットケーキに目がない。'
+            },
+
+            // --- Lv.4 異次元グランカフェで来店解禁 ---
+            {
+                id: 'dave',
+                name: 'デイブ',
+                reqLevel: 4,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="26" ry="8" fill="#000" opacity="0.15"/><circle cx="28" cy="28" r="10" fill="#78350f"/><circle cx="28" cy="28" r="5" fill="#fed7aa"/><circle cx="72" cy="28" r="10" fill="#78350f"/><circle cx="72" cy="28" r="5" fill="#fed7aa"/><ellipse cx="50" cy="62" rx="26" ry="25" fill="#854d0e"/><ellipse cx="50" cy="64" rx="18" ry="18" fill="#fed7aa"/><circle cx="50" cy="40" r="24" fill="#854d0e"/><ellipse cx="50" cy="46" rx="14" ry="11" fill="#fed7aa"/><circle cx="42" cy="38" r="6" fill="none" stroke="#ca8a04" stroke-width="2"/><circle cx="58" cy="38" r="6" fill="none" stroke="#ca8a04" stroke-width="2"/><line x1="48" y1="38" x2="52" y2="38" stroke="#ca8a04" stroke-width="2"/><circle cx="42" cy="38" r="2.5" fill="#1c1917"/><circle cx="58" cy="38" r="2.5" fill="#1c1917"/><ellipse cx="50" cy="45" rx="4" ry="3" fill="#451a03"/><path d="M47,50 Q50,53 53,50" stroke="#451a03" stroke-width="2" fill="none"/><rect x="36" y="10" width="28" height="18" rx="2" fill="#1e293b"/><rect x="30" y="26" width="40" height="4" rx="2" fill="#0f172a"/><rect x="36" y="22" width="28" height="3" fill="#dc2626"/></svg>'),
+                favorite: 'hamburg_steak',
+                desc: 'シルクハットがトレードマークの英国紳士クマ。ジューシーな肉料理を好む。'
+            },
+            {
+                id: 'fos',
+                name: 'フォス',
+                reqLevel: 4,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="24" ry="7" fill="#000" opacity="0.15"/><ellipse cx="50" cy="56" rx="25" ry="28" fill="#475569"/><ellipse cx="50" cy="60" rx="18" ry="20" fill="#f1f5f9"/><polygon points="28,20 36,32 24,34" fill="#334155"/><polygon points="72,20 64,32 76,34" fill="#334155"/><circle cx="50" cy="36" r="22" fill="#475569"/><ellipse cx="38" cy="36" rx="9" ry="10" fill="#fef08a"/><circle cx="38" cy="36" r="5" fill="#0f172a"/><circle cx="39.5" cy="34" r="2" fill="#fff"/><circle cx="38" cy="36" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.8"/><ellipse cx="62" cy="36" rx="9" ry="10" fill="#fef08a"/><circle cx="62" cy="36" r="5" fill="#0f172a"/><circle cx="63.5" cy="34" r="2" fill="#fff"/><circle cx="62" cy="36" r="10" fill="none" stroke="#cbd5e1" stroke-width="1.8"/><line x1="48" y1="36" x2="52" y2="36" stroke="#cbd5e1" stroke-width="2"/><polygon points="48,42 52,42 50,48" fill="#f59e0b"/><ellipse cx="50" cy="74" rx="12" ry="5" fill="#0284c7"/><ellipse cx="50" cy="74" rx="10" ry="4" fill="#f8fafc"/></svg>'),
+                favorite: 'hot_coffee',
+                desc: '静かに本を開きながら珈琲の薫りを愉しむ、博識で落ち着いたフクロウ。'
+            },
+            {
+                id: 'ururu',
+                name: 'ウルル',
+                reqLevel: 4,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="25" ry="8" fill="#000" opacity="0.15"/><polygon points="26,14 40,32 20,34" fill="#64748b"/><polygon points="28,18 36,30 24,32" fill="#fbcfe8"/><polygon points="74,14 60,32 80,34" fill="#64748b"/><polygon points="72,18 64,30 76,32" fill="#fbcfe8"/><ellipse cx="50" cy="62" rx="26" ry="25" fill="#64748b"/><ellipse cx="50" cy="64" rx="17" ry="18" fill="#e2e8f0"/><circle cx="50" cy="40" r="23" fill="#64748b"/><polygon points="22,46 32,40 30,52" fill="#64748b"/><polygon points="78,46 68,40 70,52" fill="#64748b"/><ellipse cx="50" cy="46" rx="14" ry="11" fill="#f8fafc"/><ellipse cx="41" cy="36" rx="3.5" ry="5" fill="#0f172a"/><circle cx="42.5" cy="34.5" r="1.5" fill="#fff"/><ellipse cx="59" cy="36" rx="3.5" ry="5" fill="#0f172a"/><circle cx="60.5" cy="34.5" r="1.5" fill="#fff"/><polygon points="47,44 53,44 50,48" fill="#1e293b"/><path d="M46,50 Q50,54 54,50" stroke="#1e293b" stroke-width="2" fill="none"/><circle cx="34" cy="44" r="3.5" fill="#f472b6" opacity="0.5"/><circle cx="66" cy="44" r="3.5" fill="#f472b6" opacity="0.5"/></svg>'),
+                favorite: 'omurice',
+                desc: 'いつもお腹を空かせている元気なオオカミ。卵たっぷりのオムライスが大好物。'
+            },
+            {
+                id: 'yumeka',
+                name: 'ゆめか',
+                reqLevel: 4,
+                img: getSvgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="24" ry="7" fill="#000" opacity="0.15"/><ellipse cx="26" cy="38" rx="7" ry="20" fill="#f472b6" transform="rotate(-15 26 38)"/><ellipse cx="26" cy="38" rx="4" ry="15" fill="#fce7f3" transform="rotate(-15 26 38)"/><ellipse cx="74" cy="38" rx="7" ry="20" fill="#f472b6" transform="rotate(15 74 38)"/><ellipse cx="74" cy="38" rx="4" ry="15" fill="#fce7f3" transform="rotate(15 74 38)"/><ellipse cx="50" cy="62" rx="24" ry="24" fill="#fbcfe8"/><ellipse cx="50" cy="65" rx="16" ry="17" fill="#fff"/><circle cx="50" cy="38" r="22" fill="#fbcfe8"/><ellipse cx="42" cy="36" rx="3.5" ry="5" fill="#831843"/><circle cx="43.5" cy="34" r="1.5" fill="#fff"/><circle cx="41" cy="37" r="0.8" fill="#fff"/><ellipse cx="58" cy="36" rx="3.5" ry="5" fill="#831843"/><circle cx="59.5" cy="34" r="1.5" fill="#fff"/><circle cx="57" cy="37" r="0.8" fill="#fff"/><ellipse cx="50" cy="42" rx="2.5" ry="2" fill="#f43f5e"/><path d="M48,46 Q50,49 52,46" stroke="#831843" stroke-width="1.8" fill="none"/><circle cx="36" cy="42" r="4" fill="#fb7185" opacity="0.6"/><circle cx="64" cy="42" r="4" fill="#fb7185" opacity="0.6"/><circle cx="34" cy="22" r="4" fill="#fbbf24"/><circle cx="31" cy="22" r="3" fill="#fff"/><circle cx="37" cy="22" r="3" fill="#fff"/><circle cx="34" cy="19" r="3" fill="#fff"/><circle cx="34" cy="25" r="3" fill="#fff"/></svg>'),
+                favorite: 'strawberry_shortcake',
+                desc: '夢見がちなパステルうさぎ。可愛いショートケーキを前にすると目がキラキラ！'
+            }
+        ];
+
+        // ----------------------------------------------------
+        // データ定義: カフェ改装プラン (4段階)
+        // ----------------------------------------------------
+        const RENO_LEVELS = [
+            {
+                level: 1,
+                name: '森の切り株カフェ',
+                cost: 0,
+                queueSize: 1,
+                patienceBase: 6.0,
+                rushTitle: '穏やかなカフェ時間',
+                desc: '青空の下、粗末な切り株テーブル1個と丸太椅子1個から始まる素朴なカフェ。【来店客: 子狐, めんだこ / 待機列: 1人】',
+                bgStyle: 'background: linear-gradient(180deg, #bbf7d0 0%, #86efac 60%, #4ade80 100%);',
+                awningColor: ['bg-amber-700', 'bg-amber-100'],
+                scoreBonus: 1.0,
+                tableHtml: `
+                    <!-- 切り株テーブル -->
+                    <div class="w-16 h-12 md:w-20 md:h-14 relative flex items-center justify-center">
+                        <svg viewBox="0 0 100 70" class="w-full h-full drop-shadow-md">
+                            <!-- 幹部分 -->
+                            <path d="M15,25 Q10,55 5,68 Q50,72 95,68 Q90,55 85,25 Z" fill="#854d0e"/>
+                            <!-- 樹皮の筋 -->
+                            <path d="M30,35 Q28,55 25,65" stroke="#713f12" stroke-width="3" fill="none"/>
+                            <path d="M70,35 Q72,55 75,65" stroke="#713f12" stroke-width="3" fill="none"/>
+                            <!-- 切り口の年輪 -->
+                            <ellipse cx="50" cy="25" rx="35" ry="14" fill="#d97706"/>
+                            <ellipse cx="50" cy="25" rx="27" ry="10" fill="#b45309" opacity="0.6"/>
+                            <ellipse cx="50" cy="25" rx="18" ry="6" fill="#92400e" opacity="0.5"/>
+                            <circle cx="50" cy="25" r="3" fill="#78350f"/>
+                        </svg>
+                    </div>
+                `,
+                chairHtml: `
+                    <!-- 丸太椅子 -->
+                    <div class="w-10 h-10 md:w-12 md:h-12 relative flex items-center justify-center">
+                        <svg viewBox="0 0 60 60" class="w-full h-full drop-shadow">
+                            <path d="M12,22 Q10,48 8,56 Q30,60 52,56 Q50,48 48,22 Z" fill="#78350f"/>
+                            <ellipse cx="30" cy="22" rx="18" ry="8" fill="#b45309"/>
+                            <ellipse cx="30" cy="22" rx="12" ry="5" fill="#d97706" opacity="0.7"/>
+                        </svg>
+                    </div>
+                `
+            },
+            {
+                level: 2,
+                name: '木組みの屋台カフェ',
+                cost: 8000,
+                queueSize: 2,
+                patienceBase: 5.2,
+                rushTitle: '常連さんで賑わい中！',
+                desc: '木の温もりあるウッドデッキ床とストライプのサンシェード、木のベンチ席！【新来店: シマエナガ, ハシビロコウ / 待機列: 2人】',
+                bgStyle: 'background: linear-gradient(180deg, #bae6fd 0%, #fed7aa 60%, #e2e8f0 100%);',
+                awningColor: ['bg-rose-600', 'bg-white'],
+                scoreBonus: 1.15,
+                tableHtml: `
+                    <!-- 木製カフェテーブル -->
+                    <div class="w-18 h-14 md:w-22 md:h-16 relative flex items-center justify-center">
+                        <svg viewBox="0 0 100 70" class="w-full h-full drop-shadow-md">
+                            <!-- 脚 -->
+                            <rect x="44" y="24" width="12" height="38" rx="2" fill="#78350f"/>
+                            <ellipse cx="50" cy="62" rx="22" ry="6" fill="#581c87" opacity="0.2"/>
+                            <path d="M26,62 L74,62" stroke="#78350f" stroke-width="5" stroke-linecap="round"/>
+                            <!-- 天板 -->
+                            <ellipse cx="50" cy="22" rx="42" ry="13" fill="#b45309"/>
+                            <ellipse cx="50" cy="20" rx="40" ry="12" fill="#d97706"/>
+                            <path d="M15,20 L85,20" stroke="#f59e0b" stroke-width="2" opacity="0.5"/>
+                        </svg>
+                    </div>
+                `,
+                chairHtml: `
+                    <!-- カフェ丸椅子 -->
+                    <div class="w-10 h-11 md:w-12 md:h-13 relative flex items-center justify-center">
+                        <svg viewBox="0 0 60 60" class="w-full h-full drop-shadow">
+                            <rect x="27" y="22" width="6" height="32" fill="#78350f"/>
+                            <path d="M16,54 L44,54" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+                            <ellipse cx="30" cy="20" rx="16" ry="7" fill="#b45309"/>
+                            <ellipse cx="30" cy="18" rx="15" ry="6" fill="#f59e0b"/>
+                        </svg>
+                    </div>
+                `
+            },
+            {
+                level: 3,
+                name: 'カントリー風ログカフェ',
+                cost: 24000,
+                queueSize: 3,
+                patienceBase: 4.5,
+                rushTitle: '大繁盛ランチラッシュ！',
+                desc: 'レンガの壁と赤いチェックのテーブルクロス。ランプが優しく灯るログカフェ。【新来店: エモクラゲ, ペンキュー, スズ / 待機列: 3人】',
+                bgStyle: 'background: radial-gradient(circle at 50% 30%, #ffedd5 0%, #fed7aa 50%, #9a3412 100%);',
+                awningColor: ['bg-emerald-600', 'bg-amber-100'],
+                scoreBonus: 1.3,
+                tableHtml: `
+                    <!-- チェック柄クロス付きテーブル -->
+                    <div class="w-20 h-14 md:w-24 md:h-16 relative flex items-center justify-center">
+                        <svg viewBox="0 0 100 70" class="w-full h-full drop-shadow-lg">
+                            <rect x="45" y="25" width="10" height="38" fill="#451a03"/>
+                            <ellipse cx="50" cy="63" rx="24" ry="5" fill="#451a03"/>
+                            <!-- クロスが垂れた天板 -->
+                            <path d="M8,22 Q50,14 92,22 L86,40 Q50,46 14,40 Z" fill="#e11d48"/>
+                            <ellipse cx="50" cy="20" rx="42" ry="12" fill="#f43f5e"/>
+                            <!-- チェック模様ライン -->
+                            <path d="M20,20 Q50,14 80,20" stroke="#ffe4e6" stroke-width="2" fill="none" opacity="0.7"/>
+                            <path d="M35,14 L32,38 M50,12 L50,42 M65,14 L68,38" stroke="#ffe4e6" stroke-width="2" opacity="0.6"/>
+                        </svg>
+                    </div>
+                `,
+                chairHtml: `
+                    <!-- 背もたれ付き木製チェア -->
+                    <div class="w-11 h-13 md:w-13 md:h-15 relative flex items-center justify-center">
+                        <svg viewBox="0 0 60 70" class="w-full h-full drop-shadow">
+                            <!-- 背もたれ -->
+                            <rect x="12" y="8" width="5" height="42" rx="2" fill="#78350f"/>
+                            <rect x="12" y="10" width="22" height="6" rx="2" fill="#92400e"/>
+                            <rect x="12" y="20" width="22" height="4" rx="2" fill="#92400e"/>
+                            <!-- 脚 -->
+                            <rect x="30" y="36" width="5" height="26" fill="#78350f"/>
+                            <rect x="12" y="36" width="5" height="26" fill="#581c87" opacity="0.5"/>
+                            <!-- 座面 -->
+                            <ellipse cx="24" cy="34" rx="16" ry="7" fill="#b45309"/>
+                            <ellipse cx="24" cy="32" rx="15" ry="6" fill="#f59e0b"/>
+                        </svg>
+                    </div>
+                `
+            },
+            {
+                level: 4,
+                name: '異次元グランカフェ',
+                cost: 60000,
+                queueSize: 4,
+                patienceBase: 3.8,
+                rushTitle: '満員御礼！異次元超パニック営業！',
+                desc: '磨き上げられた高級アンティーク家具、ふかふかベルベットソファ、きらめくシャンデリア！【新来店: デイブ, フォス, ウルル, ゆめか / 待機列: 4人】',
+                bgStyle: 'background: radial-gradient(circle at 50% 20%, #fef3c7 0%, #fde68a 35%, #78350f 100%);',
+                awningColor: ['bg-amber-500', 'bg-indigo-900'],
+                scoreBonus: 1.5,
+                tableHtml: `
+                    <!-- 豪華なアンティークゴールドテーブル -->
+                    <div class="w-22 h-16 md:w-26 md:h-18 relative flex items-center justify-center">
+                        <svg viewBox="0 0 100 75" class="w-full h-full drop-shadow-xl">
+                            <!-- 猫足の脚部 -->
+                            <path d="M47,24 C45,45 30,55 26,68 M53,24 C55,45 70,55 74,68" stroke="#d97706" stroke-width="5" fill="none" stroke-linecap="round"/>
+                            <ellipse cx="50" cy="68" rx="26" ry="5" fill="#78350f" opacity="0.3"/>
+                            <!-- ゴールドの装飾枠 -->
+                            <ellipse cx="50" cy="24" rx="45" ry="14" fill="#b45309"/>
+                            <ellipse cx="50" cy="22" rx="44" ry="13" fill="#fbbf24"/>
+                            <!-- 大理石風の白い天板 -->
+                            <ellipse cx="50" cy="20" rx="40" ry="11" fill="#fffbeb"/>
+                            <ellipse cx="50" cy="20" rx="36" ry="9" fill="#fef3c7" opacity="0.6"/>
+                        </svg>
+                    </div>
+                `,
+                chairHtml: `
+                    <!-- ふかふかロイヤルソファチェア -->
+                    <div class="w-13 h-14 md:w-15 md:h-16 relative flex items-center justify-center">
+                        <svg viewBox="0 0 65 70" class="w-full h-full drop-shadow-lg">
+                            <path d="M12,12 Q8,42 10,60 Q32,64 54,60 Q56,42 52,12 Z" fill="#9f1239"/>
+                            <!-- ふかふか背もたれ -->
+                            <path d="M14,14 Q32,8 50,14 Q48,38 16,38 Z" fill="#e11d48"/>
+                            <circle cx="24" cy="22" r="2" fill="#fbbf24"/>
+                            <circle cx="40" cy="22" r="2" fill="#fbbf24"/>
+                            <!-- クッション座面 -->
+                            <ellipse cx="32" cy="42" rx="20" ry="10" fill="#f43f5e"/>
+                            <!-- ゴールドの脚 -->
+                            <rect x="14" y="52" width="4" height="14" rx="1" fill="#f59e0b"/>
+                            <rect x="46" y="52" width="4" height="14" rx="1" fill="#f59e0b"/>
+                        </svg>
+                    </div>
+                `
+            }
+        ];
+
+        // ----------------------------------------------------
+        // Web Audio API によるシンセ効果音システム
+        // ----------------------------------------------------
+        class SoundEngine {
+            constructor() {
+                this.audioCtx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        this.audioCtx = new AudioContextClass();
+                    }
+                }
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            }
+
+            playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.audioCtx) return;
+
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + duration);
+            }
+
+            // 正解（ピンポン音）
+            playCorrect() {
+                this.playTone(523.25, 'triangle', 0.1, 0.2); // C5
+                setTimeout(() => {
+                    this.playTone(659.25, 'triangle', 0.15, 0.2); // E5
+                }, 70);
+            }
+
+            // 不正解（ブブー音）
+            playWrong() {
+                this.playTone(220, 'sawtooth', 0.15, 0.2);
+                setTimeout(() => {
+                    this.playTone(196, 'sawtooth', 0.2, 0.2);
+                }, 90);
+            }
+
+            // フィーバーファンファーレ
+            playFever() {
+                [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 'sine', 0.22, 0.25);
+                    }, i * 65);
+                });
+            }
+
+            // ボタンクリック
+            playClick() {
+                this.playTone(800, 'sine', 0.04, 0.08);
+            }
+
+            // コイン音
+            playCoin() {
+                this.playTone(987.77, 'sine', 0.08, 0.2); // B5
+                setTimeout(() => {
+                    this.playTone(1318.51, 'sine', 0.15, 0.25); // E6
+                }, 60);
+            }
+
+            // 改装ファンファーレ（大工ハンマー音＋ファンファーレ）
+            playHammerReno() {
+                this.playTone(200, 'sawtooth', 0.08, 0.3);
+                setTimeout(() => this.playTone(250, 'sawtooth', 0.08, 0.3), 100);
+                setTimeout(() => this.playFever(), 220);
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        // ----------------------------------------------------
+        // ゲームステート管理
+        // ----------------------------------------------------
+        const STATE = {
+            screen: 'title', // 'title' | 'game' | 'result'
+            mode: 'time',    // 'time' (60s) | 'endless' (3 strikes)
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            timer: 60,
+            lives: 3,
+            servedCount: 0,
+            earnedCoinsThisGame: 0,
+            isFever: false,
+            feverTimer: 0,
+            customerQueue: [],
+            currentCustomer: null,
+            currentOrder: null,
+            options: [],
+            intervalId: null,
+            customerPatienceTimer: 0,
+            customerMaxPatience: 6.0,
+            newlyUnlockedCount: 0,
+            isServingAnim: false // 配膳ダッシュ中か
+        };
+
+        // ----------------------------------------------------
+        // ローカルストレージ（記録・図鑑・コイン・改装保存）
+        // ----------------------------------------------------
+        const STORAGE_KEY = 'uppou_cafe_data_v2';
+
+        function loadSavedData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {
+                    console.error('Save data parse error:', e);
+                }
+            }
+            return {
+                coins: 0,
+                currentRenoLevel: 1, // 最初は切り株カフェ
+                unlockedDishes: ['curry'], // 最初はカレーのみ解放済み
+                dishServeCounts: { curry: 0 },
+                customerVisitCounts: {},
+                rankingsTime: [
+                    { name: 'ウッポー師匠', score: 2500, date: '2026/10/30' },
+                    { name: 'こはく', score: 1800, date: '2026/10/30' },
+                    { name: 'るり', score: 1200, date: '2026/10/30' }
+                ],
+                rankingsEndless: [
+                    { name: 'ウッポー師匠', score: 3200, date: '2026/10/30' },
+                    { name: 'めんだこ隊長', score: 2100, date: '2026/10/30' }
+                ],
+                bestScore: 0,
+                totalServed: 0,
+                lastPlayerName: 'ウッポーファン'
+            };
+        }
+
+        let appData = loadSavedData();
+
+        function saveAppData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        }
+
+        // ----------------------------------------------------
+        // DOM要素参照
+        // ----------------------------------------------------
+        const el = {
+            // ナビ・ヘッダー
+            shopTitleName: document.getElementById('shopTitleName'),
+            shopLevelBadge: document.getElementById('shopLevelBadge'),
+            displayCoins: document.getElementById('displayCoins'),
+            btnOpenReno: document.getElementById('btnOpenReno'),
+            btnOpenCollection: document.getElementById('btnOpenCollection'),
+            btnOpenRanking: document.getElementById('btnOpenRanking'),
+            btnSoundToggle: document.getElementById('btnSoundToggle'),
+            soundIcon: document.getElementById('soundIcon'),
+            btnOpenHelp: document.getElementById('btnOpenHelp'),
+            cafeAwning: document.getElementById('cafeAwning'),
+
+            // HUD
+            gameHud: document.getElementById('gameHud'),
+            displayScore: document.getElementById('displayScore'),
+            labelTimerMode: document.getElementById('labelTimerMode'),
+            displayTimer: document.getElementById('displayTimer'),
+            displayCombo: document.getElementById('displayCombo'),
+            displayFeverBadge: document.getElementById('displayFeverBadge'),
+            patienceBarContainer: document.getElementById('patienceBarContainer'),
+            patienceBar: document.getElementById('patienceBar'),
+
+            // 画面
+            screenTitle: document.getElementById('screenTitle'),
+            screenGame: document.getElementById('screenGame'),
+            screenResult: document.getElementById('screenResult'),
+
+            // タイトル
+            modeSelectTime: document.getElementById('modeSelectTime'),
+            modeSelectEndless: document.getElementById('modeSelectEndless'),
+            btnStartGame: document.getElementById('btnStartGame'),
+            titleBestScore: document.getElementById('titleBestScore'),
+            titleTotalCoins: document.getElementById('titleTotalCoins'),
+            titleTotalServed: document.getElementById('titleTotalServed'),
+            btnResetAllData: document.getElementById('btnResetAllData'),
+
+            // カフェステージ＆アクター
+            cafeStage: document.getElementById('cafeStage'),
+            stageBackground: document.getElementById('stageBackground'),
+            stageDecorLayer: document.getElementById('stageDecorLayer'),
+            visualChair: document.getElementById('visualChair'),
+            visualTable: document.getElementById('visualTable'),
+            tableGraphic: document.getElementById('tableGraphic'),
+            tableServedDish: document.getElementById('tableServedDish'),
+            tableServedDishImg: document.getElementById('tableServedDishImg'),
+            waitingQueueArea: document.getElementById('waitingQueueArea'),
+            waitingQueueList: document.getElementById('waitingQueueList'),
+            queueBehindContainer: document.getElementById('queueBehindContainer'),
+            queueBehindImg: document.getElementById('queueBehindImg'),
+            queueBehindBubble: document.getElementById('queueBehindBubble'),
+            customerImg: document.getElementById('customerImg'),
+            customerName: document.getElementById('customerName'),
+            customerMoodEmoji: document.getElementById('customerMoodEmoji'),
+            customerBubble: document.getElementById('customerBubble'),
+            bubbleDishImg: document.getElementById('bubbleDishImg'),
+            bubbleDishName: document.getElementById('bubbleDishName'),
+            uppouActor: document.getElementById('uppouActor'),
+            chefUppouImg: document.getElementById('chefUppouImg'),
+            chefStateEmoji: document.getElementById('chefStateEmoji'),
+            uppouTray: document.getElementById('uppouTray'),
+            uppouTrayDishImg: document.getElementById('uppouTrayDishImg'),
+            dishOptionsGrid: document.getElementById('dishOptionsGrid'),
+            fxOverlay: document.getElementById('fxOverlay'),
+
+            // リザルト
+            resultRankText: document.getElementById('resultRankText'),
+            resultScore: document.getElementById('resultScore'),
+            resultEarnedCoins: document.getElementById('resultEarnedCoins'),
+            resultServedCount: document.getElementById('resultServedCount'),
+            resultMaxCombo: document.getElementById('resultMaxCombo'),
+            inputPlayerName: document.getElementById('inputPlayerName'),
+            btnSaveRanking: document.getElementById('btnSaveRanking'),
+            btnShareX: document.getElementById('btnShareX'),
+            btnPlayAgain: document.getElementById('btnPlayAgain'),
+            btnResultToReno: document.getElementById('btnResultToReno'),
+            btnResultToTitle: document.getElementById('btnResultToTitle'),
+
+            // モーダル：改装
+            modalRenovation: document.getElementById('modalRenovation'),
+            btnCloseReno: document.getElementById('btnCloseReno'),
+            renoCoinDisplay: document.getElementById('renoCoinDisplay'),
+            renoPlansList: document.getElementById('renoPlansList'),
+
+            // モーダル：図鑑
+            modalCollection: document.getElementById('modalCollection'),
+            btnCloseCollection: document.getElementById('btnCloseCollection'),
+            tabDishes: document.getElementById('tabDishes'),
+            tabCustomers: document.getElementById('tabCustomers'),
+            collectionDishesView: document.getElementById('collectionDishesView'),
+            collectionCustomersView: document.getElementById('collectionCustomersView'),
+            unlockedDishCount: document.getElementById('unlockedDishCount'),
+            totalDishCount: document.getElementById('totalDishCount'),
+            unlockedCustomerCount: document.getElementById('unlockedCustomerCount'),
+            totalCustomerCount: document.getElementById('totalCustomerCount'),
+            dishCategoryFilter: document.getElementById('dishCategoryFilter'),
+
+            // モーダル：ランキング
+            modalRanking: document.getElementById('modalRanking'),
+            btnCloseRanking: document.getElementById('btnCloseRanking'),
+            rankTabTime: document.getElementById('rankTabTime'),
+            rankTabEndless: document.getElementById('rankTabEndless'),
+            rankingListContainer: document.getElementById('rankingListContainer'),
+            btnClearRankingData: document.getElementById('btnClearRankingData'),
+
+            // モーダル：ヘルプ
+            modalHelp: document.getElementById('modalHelp'),
+            btnCloseHelp: document.getElementById('btnCloseHelp')
+        };
+
+        // ----------------------------------------------------
+        // 初期化処理
+        // ----------------------------------------------------
+        function initApp() {
+            applyCafeRenovation(appData.currentRenoLevel || 1);
+            updateGlobalCoinsDisplay();
+            updateTitleStats();
+            setupEventListeners();
+            updateCollectionUI();
+            updateRankingUI('time');
+            startUppouIdleRoam();
+        }
+
+        function updateGlobalCoinsDisplay() {
+            el.displayCoins.textContent = (appData.coins || 0).toLocaleString();
+            el.renoCoinDisplay.textContent = (appData.coins || 0).toLocaleString();
+            el.titleTotalCoins.textContent = (appData.coins || 0).toLocaleString();
+        }
+
+        function updateTitleStats() {
+            el.titleBestScore.textContent = (appData.bestScore || 0).toLocaleString();
+            el.titleTotalServed.textContent = (appData.totalServed || 0).toLocaleString();
+            el.inputPlayerName.value = appData.lastPlayerName || 'ウッポーファン';
+        }
+
+        // ----------------------------------------------------
+        // カフェ外観・内装改装適用
+        // ----------------------------------------------------
+        function applyCafeRenovation(level) {
+            const plan = RENO_LEVELS.find(r => r.level === level) || RENO_LEVELS[0];
+            appData.currentRenoLevel = plan.level;
+
+            // バッジ更新
+            el.shopLevelBadge.textContent = `Lv.${plan.level} ${plan.name}`;
+            
+            // 背景スタイル適用
+            el.stageBackground.setAttribute('style', plan.bgStyle);
+
+            // テーブル・椅子グラフィック適用
+            el.tableGraphic.innerHTML = plan.tableHtml;
+            el.visualChair.innerHTML = plan.chairHtml;
+
+            // オーニングの配色変更
+            el.cafeAwning.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const div = document.createElement('div');
+                div.className = `flex-1 ${plan.awningColor[i % 2]}`;
+                el.cafeAwning.appendChild(div);
+            }
+
+            saveAppData();
+        }
+
+        // ----------------------------------------------------
+        // ウッポーのキッチン内ウロウロ待機行動
+        // ----------------------------------------------------
+        let roamInterval = null;
+        function startUppouIdleRoam() {
+            if (roamInterval) clearInterval(roamInterval);
+            roamInterval = setInterval(() => {
+                if (STATE.isServingAnim) return;
+
+                // キッチン付近（right: 25px 〜 65px）をランダムにウロウロ歩く
+                const randomRight = 25 + Math.floor(Math.random() * 45);
+                el.uppouActor.style.right = randomRight + 'px';
+                el.uppouActor.style.left = 'auto';
+
+                // 歩行アニメーション
+                el.chefUppouImg.classList.add('anim-waddle');
+                setTimeout(() => {
+                    if (!STATE.isServingAnim) {
+                        el.chefUppouImg.classList.remove('anim-waddle');
+                    }
+                }, 400);
+
+            }, 2200);
+        }
+
+        // ----------------------------------------------------
+        // イベントリスナー設定
+        // ----------------------------------------------------
+        function setupEventListeners() {
+            // サウンド切替
+            el.btnSoundToggle.addEventListener('click', () => {
+                sound.enabled = !sound.enabled;
+                el.soundIcon.textContent = sound.enabled ? '🔊' : '🔇';
+                sound.playClick();
+            });
+
+            // モード選択ボタン
+            el.modeSelectTime.addEventListener('click', () => {
+                STATE.mode = 'time';
+                el.modeSelectTime.classList.add('ring-2', 'ring-orange-500', 'bg-orange-100');
+                el.modeSelectEndless.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-100');
+                el.modeSelectEndless.classList.add('bg-amber-50');
+                sound.playClick();
+            });
+
+            el.modeSelectEndless.addEventListener('click', () => {
+                STATE.mode = 'endless';
+                el.modeSelectEndless.classList.add('ring-2', 'ring-orange-500', 'bg-orange-100');
+                el.modeSelectTime.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-100');
+                el.modeSelectTime.classList.add('bg-amber-50');
+                sound.playClick();
+            });
+
+            // スタートボタン
+            el.btnStartGame.addEventListener('click', () => {
+                sound.init();
+                sound.playClick();
+                startGame();
+            });
+
+            // リザルトボタン
+            el.btnPlayAgain.addEventListener('click', () => {
+                sound.playClick();
+                startGame();
+            });
+
+            el.btnResultToTitle.addEventListener('click', () => {
+                sound.playClick();
+                showScreen('title');
+            });
+
+            el.btnResultToReno.addEventListener('click', () => {
+                sound.playClick();
+                openRenovationModal();
+            });
+
+            // X (Twitter) 投稿ボタン
+            el.btnShareX.addEventListener('click', () => {
+                sound.playClick();
+                const currentPlan = RENO_LEVELS.find(r => r.level === appData.currentRenoLevel) || RENO_LEVELS[0];
+                const modeText = STATE.mode === 'time' ? '60秒タイムアタック' : 'サドンデス営業';
+                const tweetText = `【ウッポーの満腹カフェパニック！】\n` +
+                    `🍳 営業結果（${modeText}）\n` +
+                    `🏆 スコア: ${STATE.score.toLocaleString()} pts (${el.resultRankText.textContent})\n` +
+                    `🍽️ 配膳数: ${STATE.servedCount} 皿 / 最大コンボ: ${STATE.maxCombo}\n` +
+                    `🪙 売上: +${STATE.earnedCoinsThisGame.toLocaleString()} G\n` +
+                    `🏠 カフェ: ${currentPlan.name}\n\n` +
+                    `#ウッポーカフェ #異次元ポケット工房\n`;
+                const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(tweetUrl, '_blank', 'noopener,noreferrer');
+            });
+
+            // 全部忘れて最初から遊ぶ（データ初期化）ボタン
+            el.btnResetAllData.addEventListener('click', () => {
+                const confirmed = confirm('【警告】これまでの売上コイン、店舗の改装、料理やお客さんの図鑑、ランキング記録がすべて消去され、最初の切り株カフェに戻ります。\n\n本当にすべて忘れて最初から遊びますか？');
+                if (confirmed) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    appData = loadSavedData();
+                    saveAppData();
+                    applyCafeRenovation(1);
+                    updateGlobalCoinsDisplay();
+                    updateTitleStats();
+                    updateCollectionUI();
+                    updateRankingUI('time');
+                    sound.playWrong();
+                    alert('記憶をすべてリセットしました！また新たな気持ちでウッポーカフェをはじめましょう！☕');
+                }
+            });
+
+            // ランキング保存ボタン
+            el.btnSaveRanking.addEventListener('click', () => {
+                const name = el.inputPlayerName.value.trim() || '名無しシェフ';
+                appData.lastPlayerName = name;
+                saveRankingRecord(name, STATE.score, STATE.mode);
+                saveAppData();
+                sound.playCoin();
+                el.btnSaveRanking.textContent = '登録完了！';
+                el.btnSaveRanking.disabled = true;
+                el.btnSaveRanking.classList.add('opacity-50');
+            });
+
+            // 改装モーダル開閉
+            el.btnOpenReno.addEventListener('click', () => {
+                sound.playClick();
+                openRenovationModal();
+            });
+            el.btnCloseReno.addEventListener('click', () => {
+                sound.playClick();
+                el.modalRenovation.classList.add('hidden');
+            });
+
+            // 図鑑モーダル開閉
+            el.btnOpenCollection.addEventListener('click', () => {
+                sound.playClick();
+                updateCollectionUI();
+                el.modalCollection.classList.remove('hidden');
+            });
+            el.btnCloseCollection.addEventListener('click', () => {
+                sound.playClick();
+                el.modalCollection.classList.add('hidden');
+            });
+
+            // ランキングモーダル開閉
+            el.btnOpenRanking.addEventListener('click', () => {
+                sound.playClick();
+                updateRankingUI('time');
+                el.modalRanking.classList.remove('hidden');
+            });
+            el.btnCloseRanking.addEventListener('click', () => {
+                sound.playClick();
+                el.modalRanking.classList.add('hidden');
+            });
+
+            // ヘルプモーダル開閉
+            el.btnOpenHelp.addEventListener('click', () => {
+                sound.playClick();
+                el.modalHelp.classList.remove('hidden');
+            });
+            el.btnCloseHelp.addEventListener('click', () => {
+                sound.playClick();
+                el.modalHelp.classList.add('hidden');
+            });
+
+            // 図鑑タブ切替
+            let currentDishCategory = 'all';
+            el.tabDishes.addEventListener('click', () => {
+                el.tabDishes.classList.add('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.tabCustomers.classList.remove('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.collectionDishesView.classList.remove('hidden');
+                if (el.dishCategoryFilter) el.dishCategoryFilter.classList.remove('hidden');
+                el.collectionCustomersView.classList.add('hidden');
+                sound.playClick();
+            });
+
+            el.tabCustomers.addEventListener('click', () => {
+                el.tabCustomers.classList.add('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.tabDishes.classList.remove('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.collectionCustomersView.classList.remove('hidden');
+                if (el.dishCategoryFilter) el.dishCategoryFilter.classList.add('hidden');
+                el.collectionDishesView.classList.add('hidden');
+                sound.playClick();
+            });
+
+            // 料理カテゴリーフィルター切替
+            if (el.dishCategoryFilter) {
+                const catButtons = el.dishCategoryFilter.querySelectorAll('.cat-filter-btn');
+                catButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        currentDishCategory = btn.dataset.cat || 'all';
+                        catButtons.forEach(b => {
+                            if (b === btn) {
+                                b.className = 'cat-filter-btn px-2.5 py-0.5 rounded-full bg-orange-500 text-white shadow-sm transition-all whitespace-nowrap';
+                            } else {
+                                b.className = 'cat-filter-btn px-2.5 py-0.5 rounded-full bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all whitespace-nowrap';
+                            }
+                        });
+                        updateCollectionUI(currentDishCategory);
+                        sound.playClick();
+                    });
+                });
+            }
+
+            // ランキングタブ切替
+            let currentRankingTab = 'time';
+            el.rankTabTime.addEventListener('click', () => {
+                currentRankingTab = 'time';
+                el.rankTabTime.classList.add('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.rankTabEndless.classList.remove('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                updateRankingUI('time');
+                sound.playClick();
+            });
+
+            el.rankTabEndless.addEventListener('click', () => {
+                currentRankingTab = 'endless';
+                el.rankTabEndless.classList.add('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                el.rankTabTime.classList.remove('text-orange-600', 'border-b-2', 'border-orange-500', 'bg-white');
+                updateRankingUI('endless');
+                sound.playClick();
+            });
+
+            el.btnClearRankingData.addEventListener('click', () => {
+                if (confirm('ランキングの記録を初期化しますか？')) {
+                    appData.rankingsTime = [];
+                    appData.rankingsEndless = [];
+                    saveAppData();
+                    updateRankingUI(currentRankingTab);
+                    sound.playClick();
+                }
+            });
+
+            // キーボード操作 [1] [2] [3] [4]
+            window.addEventListener('keydown', (e) => {
+                if (STATE.screen !== 'game') return;
+                const keyMap = { '1': 0, '2': 1, '3': 2, '4': 3, 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3, 'Numpad1': 0, 'Numpad2': 1, 'Numpad3': 2, 'Numpad4': 3 };
+                if (e.key in keyMap) {
+                    const idx = keyMap[e.key];
+                    if (STATE.options && STATE.options[idx]) {
+                        handleDishSelection(STATE.options[idx]);
+                    }
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // 改装モーダル表示と購入処理
+        // ----------------------------------------------------
+        function openRenovationModal() {
+            updateGlobalCoinsDisplay();
+            el.renoPlansList.innerHTML = '';
+
+            RENO_LEVELS.forEach(plan => {
+                const isCurrent = (appData.currentRenoLevel || 1) === plan.level;
+                const canAfford = (appData.coins || 0) >= plan.cost;
+
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border-2 flex flex-col md:flex-row md:items-center justify-between gap-2.5 transition-all ${
+                    isCurrent ? 'bg-emerald-50 border-emerald-400 shadow-md ring-2 ring-emerald-300' : 'bg-white border-amber-200'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-14 h-12 flex items-center justify-center bg-amber-100/60 rounded-xl border border-amber-300 p-1">
+                            ${plan.tableHtml}
+                        </div>
+                        <div class="flex flex-col text-left">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs md:text-sm font-black text-amber-950">${plan.name}</span>
+                                ${isCurrent ? '<span class="text-[9px] bg-emerald-500 text-white font-black px-1.5 py-0.2 rounded-full">現在適用中</span>' : ''}
+                            </div>
+                            <p class="text-[10px] text-amber-800 leading-tight mt-0.5">${plan.desc}</p>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap text-[10px] font-bold">
+                                <span class="text-orange-600">倍率: ×${plan.scoreBonus}</span>
+                                <span class="text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-md">待機列: 最大${plan.queueSize}人</span>
+                                <span class="text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded-md">状況: ${plan.rushTitle}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2">
+                        ${!isCurrent ? `
+                            <button class="btn-buy-reno px-3 py-1.5 rounded-xl font-black text-xs shadow active:scale-95 transition-all ${
+                                canAfford ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            }" data-level="${plan.level}">
+                                ${plan.cost === 0 ? '無料適用' : `🪙 ${plan.cost.toLocaleString()} G で改装`}
+                            </button>
+                        ` : `
+                            <span class="text-xs font-black text-emerald-600 px-3 py-1 bg-emerald-100 rounded-xl">営業中</span>
+                        `}
+                    </div>
+                `;
+
+                el.renoPlansList.appendChild(card);
+            });
+
+            // ボタンクリックイベント
+            el.renoPlansList.querySelectorAll('.btn-buy-reno').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetLevel = parseInt(e.currentTarget.dataset.level, 10);
+                    const plan = RENO_LEVELS.find(r => r.level === targetLevel);
+                    if (!plan) return;
+
+                    if ((appData.coins || 0) >= plan.cost) {
+                        appData.coins -= plan.cost;
+                        applyCafeRenovation(targetLevel);
+                        sound.playHammerReno();
+                        updateGlobalCoinsDisplay();
+                        openRenovationModal(); // リスト再描画
+                        showFloatingText('カフェ改装完了！✨', '#10b981', '1.25rem');
+                    } else {
+                        sound.playWrong();
+                        alert('コインが足りません！営業で料理を配膳してコインを貯めよう！');
+                    }
+                });
+            });
+
+            el.modalRenovation.classList.remove('hidden');
+        }
+
+        // ----------------------------------------------------
+        // 画面遷移
+        // ----------------------------------------------------
+        function showScreen(name) {
+            STATE.screen = name;
+            el.screenTitle.classList.add('hidden');
+            el.screenGame.classList.add('hidden');
+            el.screenResult.classList.add('hidden');
+
+            if (name === 'title') {
+                updateTitleStats();
+                updateGlobalCoinsDisplay();
+                el.screenTitle.classList.remove('hidden');
+                el.patienceBarContainer.classList.add('hidden');
+            } else if (name === 'game') {
+                el.screenGame.classList.remove('hidden');
+            } else if (name === 'result') {
+                el.screenResult.classList.remove('hidden');
+                el.patienceBarContainer.classList.add('hidden');
+            }
+        }
+
+        // ----------------------------------------------------
+        // ゲーム開始処理
+        // ----------------------------------------------------
+        function startGame() {
+            STATE.score = 0;
+            STATE.combo = 0;
+            STATE.maxCombo = 0;
+            STATE.servedCount = 0;
+            STATE.earnedCoinsThisGame = 0;
+            STATE.isFever = false;
+            STATE.feverTimer = 0;
+            STATE.newlyUnlockedCount = 0;
+            STATE.isServingAnim = false;
+            STATE.customerQueue = [];
+            
+            if (STATE.mode === 'time') {
+                STATE.timer = 60;
+                el.labelTimerMode.textContent = 'TIME';
+                el.displayTimer.textContent = '60s';
+                el.patienceBarContainer.classList.remove('hidden');
+            } else {
+                STATE.lives = 3;
+                el.labelTimerMode.textContent = 'LIVES';
+                el.displayTimer.textContent = '♥♥♥';
+                el.patienceBarContainer.classList.remove('hidden');
+            }
+
+            el.displayScore.textContent = '0';
+            el.displayCombo.textContent = '0';
+            el.displayFeverBadge.classList.add('hidden');
+            el.gameHud.classList.remove('fever-active');
+
+            // ウッポーの位置初期化（キッチン側）
+            el.uppouActor.style.right = '38px';
+            el.uppouActor.style.left = 'auto';
+            el.uppouTray.style.opacity = '0';
+            el.tableServedDish.style.opacity = '0';
+
+            showScreen('game');
+
+            // 待機列の初期補充 & 最初の注文生成
+            refillCustomerQueue();
+            nextCustomer();
+
+            // メインタイマー開始
+            clearInterval(STATE.intervalId);
+            let tickCounter = 0;
+            STATE.intervalId = setInterval(() => {
+                tickCounter++;
+
+                if (STATE.mode === 'time' && tickCounter % 10 === 0) {
+                    STATE.timer--;
+                    el.displayTimer.textContent = STATE.timer + 's';
+                    if (STATE.timer <= 10) {
+                        el.displayTimer.classList.add('text-rose-400');
+                    } else {
+                        el.displayTimer.classList.remove('text-rose-400');
+                    }
+
+                    if (STATE.timer <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+
+                if (STATE.isFever) {
+                    STATE.feverTimer -= 0.1;
+                    if (STATE.feverTimer <= 0) {
+                        deactivateFever();
+                    }
+                }
+
+                STATE.customerPatienceTimer -= 0.1;
+                const ratio = Math.max(0, STATE.customerPatienceTimer / STATE.customerMaxPatience);
+                el.patienceBar.style.width = (ratio * 100) + '%';
+
+                if (STATE.customerPatienceTimer <= 0) {
+                    handleTimeout();
+                }
+
+            }, 100);
+        }
+
+        // ----------------------------------------------------
+        // 現在の改装レベルで来店可能なお客さん一覧を取得
+        // ----------------------------------------------------
+        function getAvailableCustomers() {
+            const currentLevel = appData.currentRenoLevel || 1;
+            const available = CUSTOMERS.filter(c => (c.reqLevel || 1) <= currentLevel);
+            return available.length > 0 ? available : CUSTOMERS.slice(0, 2);
+        }
+
+        // ----------------------------------------------------
+        // 待機列（キュー）補充処理
+        // ----------------------------------------------------
+        function refillCustomerQueue() {
+            const plan = RENO_LEVELS.find(p => p.level === appData.currentRenoLevel) || RENO_LEVELS[0];
+            const targetQueueSize = plan.queueSize || 1;
+            const available = getAvailableCustomers();
+
+            while (STATE.customerQueue.length < targetQueueSize) {
+                const nextCust = available[Math.floor(Math.random() * available.length)];
+                STATE.customerQueue.push(nextCust);
+            }
+            updateQueueUI();
+        }
+
+        // ----------------------------------------------------
+        // 待機列UI（画面左上のNEXT＆客席後ろの待機キャラ）更新
+        // ----------------------------------------------------
+        function updateQueueUI() {
+            if (!el.waitingQueueList) return;
+            el.waitingQueueList.innerHTML = '';
+
+            const queue = STATE.customerQueue;
+            if (queue.length === 0) {
+                el.waitingQueueList.innerHTML = '<span class="text-[9px] text-amber-300">なし</span>';
+                if (el.queueBehindContainer) el.queueBehindContainer.classList.add('hidden');
+                return;
+            }
+
+            // 左上ミニアイコン表示
+            queue.forEach((cust, idx) => {
+                const icon = document.createElement('div');
+                icon.className = 'w-5 h-5 md:w-6 md:h-6 rounded-full bg-white/90 p-0.5 border border-amber-300 shadow-sm flex items-center justify-center relative overflow-hidden';
+                icon.title = `${idx + 1}番目: ${cust.name}`;
+                icon.innerHTML = `<img src="${cust.img}" alt="${cust.name}" class="w-full h-full object-contain">`;
+                el.waitingQueueList.appendChild(icon);
+            });
+
+            // 席の後ろで並んで待つキャラ（キューの1人目を表示）
+            if (el.queueBehindContainer && el.queueBehindImg) {
+                const nextCust = queue[0];
+                el.queueBehindImg.src = nextCust.img;
+                el.queueBehindImg.alt = nextCust.name;
+                el.queueBehindContainer.classList.remove('hidden');
+
+                // ランダムに待機つぶやき
+                const murmurs = ['まだかな♪', 'いい匂い！', 'お腹すいた〜', 'わくわく！', '早く食べたい'];
+                if (Math.random() < 0.6) {
+                    el.queueBehindBubble.textContent = murmurs[Math.floor(Math.random() * murmurs.length)];
+                    el.queueBehindBubble.classList.remove('hidden');
+                } else {
+                    el.queueBehindBubble.classList.add('hidden');
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // お客さん＆注文生成ロジック（待機列から先頭キャラをご案内）
+        // ----------------------------------------------------
+        function nextCustomer() {
+            refillCustomerQueue();
+
+            // 待機列の先頭からご案内
+            const customer = STATE.customerQueue.shift() || getAvailableCustomers()[0];
+            STATE.currentCustomer = customer;
+
+            // 待機列を補充してUI更新
+            refillCustomerQueue();
+
+            appData.customerVisitCounts[customer.id] = (appData.customerVisitCounts[customer.id] || 0) + 1;
+
+            el.customerImg.src = customer.img;
+            el.customerName.textContent = customer.name;
+            el.customerMoodEmoji.style.opacity = '0';
+            el.tableServedDish.style.opacity = '0'; // お皿をリセット
+
+            // 注文料理決定（大好物なら35%の確率で注文）
+            let chosenDish;
+            if (Math.random() < 0.35 && customer.favorite) {
+                chosenDish = DISHES.find(d => d.id === customer.favorite) || DISHES[0];
+            } else {
+                chosenDish = DISHES[Math.floor(Math.random() * DISHES.length)];
+            }
+            STATE.currentOrder = chosenDish;
+
+            el.bubbleDishImg.src = chosenDish.img;
+            el.bubbleDishName.textContent = chosenDish.name;
+
+            // 待ち時間設定（レベルが上がるほど繁盛してテンポアップ！）
+            const plan = RENO_LEVELS.find(p => p.level === appData.currentRenoLevel) || RENO_LEVELS[0];
+            let basePatience = plan.patienceBase || 6.0;
+
+            // お客さんの個性補正
+            if (customer.id === 'shoebill' || customer.id === 'fos') basePatience += 1.2; // 辛抱強い
+            if (customer.id === 'mendako' || customer.id === 'penq') basePatience -= 0.6; // せっかち
+            if (STATE.isFever) basePatience += 2.0;
+
+            STATE.customerMaxPatience = Math.max(2.8, basePatience);
+            STATE.customerPatienceTimer = STATE.customerMaxPatience;
+            el.patienceBar.style.width = '100%';
+
+            // 4択ボタン生成
+            generateDishOptions(chosenDish);
+        }
+
+        // ----------------------------------------------------
+        // 4択料理ボタン生成（文字の省略を撤廃し、綺麗に全文字表示）
+        // ----------------------------------------------------
+        function generateDishOptions(correctDish) {
+            const others = DISHES.filter(d => d.id !== correctDish.id);
+            const shuffledOthers = [...others].sort(() => 0.5 - Math.random()).slice(0, 3);
+            const options = [correctDish, ...shuffledOthers].sort(() => 0.5 - Math.random());
+            STATE.options = options;
+
+            el.dishOptionsGrid.innerHTML = '';
+            options.forEach((dish, index) => {
+                const btn = document.createElement('button');
+                // 高さを均一にし、文字の折り返しを許容して全文を表示
+                btn.className = 'dish-btn relative bg-white/95 hover:bg-amber-100 border-2 border-amber-300 hover:border-amber-500 rounded-2xl p-2 flex flex-col items-center justify-between shadow-md transition-all active:scale-95 group min-h-[96px] md:min-h-[105px]';
+                btn.innerHTML = `
+                    <div class="absolute top-1 left-2 bg-amber-800 text-amber-100 text-[10px] font-mono font-black px-1.5 py-0.2 rounded-md opacity-80">
+                        ${index + 1}
+                    </div>
+                    <img src="${dish.img}" alt="${dish.name}" class="w-10 h-10 md:w-13 md:h-13 object-contain drop-shadow transition-transform group-hover:scale-105">
+                    <span class="text-[11px] sm:text-xs font-black text-amber-950 leading-tight text-center mt-1 flex items-center justify-center w-full px-0.5 break-words">
+                        ${dish.name}
+                    </span>
+                `;
+                btn.addEventListener('click', () => handleDishSelection(dish));
+                el.dishOptionsGrid.appendChild(btn);
+            });
+        }
+
+        // ----------------------------------------------------
+        // 料理選択・判定処理
+        // ----------------------------------------------------
+        function handleDishSelection(selectedDish) {
+            if (STATE.screen !== 'game') return;
+
+            if (selectedDish.id === STATE.currentOrder.id) {
+                handleSuccess(selectedDish);
+            } else {
+                handleMistake();
+            }
+        }
+
+        // ----------------------------------------------------
+        // 正解時：ウッポーの配膳ダッシュ演出
+        // ----------------------------------------------------
+        function handleSuccess(dish) {
+            sound.playCorrect();
+
+            // 改装レベルボーナス適用
+            const currentPlan = RENO_LEVELS.find(r => r.level === appData.currentRenoLevel) || RENO_LEVELS[0];
+            let baseScore = Math.round(100 * (currentPlan.scoreBonus || 1.0));
+            if (STATE.isFever) baseScore *= 2;
+            const comboBonus = Math.min(STATE.combo * 15, 300);
+            const totalAdd = baseScore + comboBonus;
+            STATE.score += totalAdd;
+            STATE.servedCount++;
+
+            // コイン獲得（基本15G + コンボボーナス）
+            let coinsAdd = 15 + Math.floor(STATE.combo * 2);
+            if (STATE.isFever) coinsAdd *= 2;
+            STATE.earnedCoinsThisGame += coinsAdd;
+            appData.coins = (appData.coins || 0) + coinsAdd;
+            updateGlobalCoinsDisplay();
+
+            // コンボ更新
+            STATE.combo++;
+            if (STATE.combo > STATE.maxCombo) {
+                STATE.maxCombo = STATE.combo;
+            }
+
+            // HUD更新
+            el.displayScore.textContent = STATE.score.toLocaleString();
+            el.displayCombo.textContent = STATE.combo;
+
+            // ポップアップ表示
+            showFloatingText(`+${totalAdd} pts\n+${coinsAdd}G`, '#fbbf24', '1.15rem');
+
+            // 図鑑の解放チェック
+            if (!appData.unlockedDishes.includes(dish.id)) {
+                appData.unlockedDishes.push(dish.id);
+                STATE.newlyUnlockedCount++;
+                showFloatingText('新料理解放！✨', '#10b981', '0.9rem');
+            }
+            appData.dishServeCounts[dish.id] = (appData.dishServeCounts[dish.id] || 0) + 1;
+
+            // ============================================
+            // ウッポーの配膳ダッシュアニメーション
+            // ============================================
+            STATE.isServingAnim = true;
+            
+            // トレイに料理を乗せる
+            el.uppouTrayDishImg.src = dish.img;
+            el.uppouTray.style.opacity = '1';
+            el.chefUppouImg.classList.add('anim-waddle');
+
+            // テーブル（左側）へ向かってダッシュ！
+            el.uppouActor.style.right = 'auto';
+            el.uppouActor.style.left = '120px';
+
+            // 0.28秒後にテーブル到着・配膳
+            setTimeout(() => {
+                // テーブルにお皿が乗る
+                el.tableServedDishImg.src = dish.img;
+                el.tableServedDish.style.opacity = '1';
+                el.uppouTray.style.opacity = '0';
+
+                // お客さんのリアクション
+                el.customerMoodEmoji.textContent = '❤️';
+                el.customerMoodEmoji.style.opacity = '1';
+
+                // ウッポーがピョンと喜ぶ
+                el.chefUppouImg.classList.remove('anim-waddle');
+                el.chefUppouImg.classList.add('anim-float');
+
+                // 0.2秒後にキッチンへトコトコ帰還
+                setTimeout(() => {
+                    el.chefUppouImg.classList.remove('anim-float');
+                    el.chefUppouImg.classList.add('anim-waddle');
+                    el.uppouActor.style.left = 'auto';
+                    el.uppouActor.style.right = '40px';
+
+                    setTimeout(() => {
+                        el.chefUppouImg.classList.remove('anim-waddle');
+                        STATE.isServingAnim = false;
+                        nextCustomer();
+                    }, 280);
+
+                }, 180);
+
+            }, 260);
+
+            // フィーバー判定
+            if (STATE.combo >= 10 && !STATE.isFever) {
+                activateFever();
+            }
+        }
+
+        // ----------------------------------------------------
+        // 不正解・ミス時
+        // ----------------------------------------------------
+        function handleMistake() {
+            sound.playWrong();
+            STATE.combo = 0;
+            el.displayCombo.textContent = '0';
+            showFloatingText('MISS...', '#f43f5e', '1rem');
+
+            // ウッポーのアタフタ演出
+            el.chefStateEmoji.textContent = '💦';
+            el.chefStateEmoji.style.opacity = '1';
+            setTimeout(() => el.chefStateEmoji.style.opacity = '0', 600);
+
+            // お客さんの汗マーク
+            el.customerMoodEmoji.textContent = '💦';
+            el.customerMoodEmoji.style.opacity = '1';
+
+            if (STATE.mode === 'endless') {
+                STATE.lives--;
+                updateLivesDisplay();
+                if (STATE.lives <= 0) {
+                    endGame();
+                    return;
+                }
+            }
+
+            el.screenGame.classList.add('translate-x-1');
+            setTimeout(() => el.screenGame.classList.remove('translate-x-1'), 150);
+        }
+
+        function handleTimeout() {
+            sound.playWrong();
+            STATE.combo = 0;
+            el.displayCombo.textContent = '0';
+            showFloatingText('TIME OVER!', '#f43f5e', '1rem');
+
+            if (STATE.mode === 'endless') {
+                STATE.lives--;
+                updateLivesDisplay();
+                if (STATE.lives <= 0) {
+                    endGame();
+                    return;
+                }
+            }
+
+            nextCustomer();
+        }
+
+        function updateLivesDisplay() {
+            let hearts = '';
+            for (let i = 0; i < STATE.lives; i++) hearts += '♥';
+            for (let i = STATE.lives; i < 3; i++) hearts += '♡';
+            el.displayTimer.textContent = hearts;
+        }
+
+        // ----------------------------------------------------
+        // フィーバーモード
+        // ----------------------------------------------------
+        function activateFever() {
+            STATE.isFever = true;
+            STATE.feverTimer = 8.0;
+            sound.playFever();
+            el.displayFeverBadge.classList.remove('hidden');
+            el.gameHud.classList.add('fever-active');
+            showFloatingText('FEVER TIME!!', '#f43f5e', '1.4rem');
+        }
+
+        function deactivateFever() {
+            STATE.isFever = false;
+            el.displayFeverBadge.classList.add('hidden');
+            el.gameHud.classList.remove('fever-active');
+        }
+
+        function showFloatingText(text, color = '#fbbf24', size = '1.25rem') {
+            const span = document.createElement('span');
+            span.className = 'score-float';
+            span.style.color = color;
+            span.style.fontSize = size;
+            span.style.left = '42%';
+            span.style.top = '36%';
+            span.style.whiteSpace = 'pre-line';
+            span.textContent = text;
+            el.fxOverlay.appendChild(span);
+            setTimeout(() => span.remove(), 850);
+        }
+
+        // ----------------------------------------------------
+        // ゲーム終了＆リザルト処理
+        // ----------------------------------------------------
+        function endGame() {
+            clearInterval(STATE.intervalId);
+            sound.playFever();
+
+            appData.totalServed += STATE.servedCount;
+            if (STATE.score > (appData.bestScore || 0)) {
+                appData.bestScore = STATE.score;
+            }
+            saveAppData();
+
+            let rank = '見習いシェフ';
+            if (STATE.score >= 4000) rank = '🌟 伝説の三ツ星総料理長！';
+            else if (STATE.score >= 2800) rank = '🍳 一流のカリスマシェフ！';
+            else if (STATE.score >= 1800) rank = '✨ カフェのベテランシェフ';
+            else if (STATE.score >= 900) rank = '☕ 頼れる一人前シェフ';
+
+            el.resultRankText.textContent = rank;
+            el.resultScore.textContent = STATE.score.toLocaleString();
+            el.resultEarnedCoins.textContent = `+${STATE.earnedCoinsThisGame.toLocaleString()} G`;
+            el.resultServedCount.textContent = STATE.servedCount + '皿';
+            el.resultMaxCombo.textContent = STATE.maxCombo + 'コンボ';
+
+            el.btnSaveRanking.textContent = '記録する';
+            el.btnSaveRanking.disabled = false;
+            el.btnSaveRanking.classList.remove('opacity-50');
+
+            updateGlobalCoinsDisplay();
+            showScreen('result');
+        }
+
+        function saveRankingRecord(name, score, mode) {
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+            const record = { name, score, date: dateStr };
+
+            if (mode === 'time') {
+                appData.rankingsTime.push(record);
+                appData.rankingsTime.sort((a, b) => b.score - a.score);
+                appData.rankingsTime = appData.rankingsTime.slice(0, 10);
+            } else {
+                appData.rankingsEndless.push(record);
+                appData.rankingsEndless.sort((a, b) => b.score - a.score);
+                appData.rankingsEndless = appData.rankingsEndless.slice(0, 10);
+            }
+        }
+
+        // ----------------------------------------------------
+        // コレクション（図鑑）UI構築
+        // ----------------------------------------------------
+        function updateCollectionUI(category = 'all') {
+            const unlockedSet = new Set(appData.unlockedDishes || []);
+            el.unlockedDishCount.textContent = unlockedSet.size;
+            if (el.totalDishCount) el.totalDishCount.textContent = DISHES.length;
+            el.unlockedCustomerCount.textContent = Object.keys(appData.customerVisitCounts || {}).length;
+
+            el.collectionDishesView.innerHTML = '';
+            const filteredDishes = (category === 'all')
+                ? DISHES
+                : DISHES.filter(d => d.category === category);
+
+            filteredDishes.forEach(dish => {
+                const isUnlocked = unlockedSet.has(dish.id);
+                const count = appData.dishServeCounts[dish.id] || 0;
+
+                const card = document.createElement('div');
+                card.className = `p-2 rounded-2xl border-2 flex flex-col items-center text-center ${
+                    isUnlocked ? 'bg-amber-50 border-amber-300' : 'bg-gray-100 border-gray-300 opacity-60'
+                }`;
+
+                card.innerHTML = `
+                    <div class="relative w-12 h-12 md:w-14 md:h-14 mb-1">
+                        <img src="${dish.img}" alt="${dish.name}" class="w-full h-full object-contain ${
+                            isUnlocked ? 'drop-shadow' : 'brightness-0 opacity-20'
+                        }">
+                        ${!isUnlocked ? '<span class="absolute inset-0 flex items-center justify-center text-lg font-black text-gray-500">?</span>' : ''}
+                    </div>
+                    <span class="text-xs font-black text-amber-950 truncate max-w-full">
+                        ${isUnlocked ? dish.name : '？？？？'}
+                    </span>
+                    <span class="text-[9px] text-amber-700 font-bold bg-amber-200/60 px-1.5 py-0.2 rounded-full mt-0.5">
+                        ${isUnlocked ? dish.category : '未提供'}
+                    </span>
+                    <p class="text-[10px] text-amber-900 mt-1 line-clamp-2 leading-tight">
+                        ${isUnlocked ? dish.desc : 'まだ提供したことがない料理です。'}
+                    </p>
+                    <span class="text-[9px] text-orange-600 font-bold mt-1">
+                        ${isUnlocked ? `提供数: ${count}回` : '？？'}
+                    </span>
+                `;
+                el.collectionDishesView.appendChild(card);
+            });
+
+            if (el.totalCustomerCount) el.totalCustomerCount.textContent = CUSTOMERS.length;
+            el.collectionCustomersView.innerHTML = '';
+            CUSTOMERS.forEach(cust => {
+                const visits = appData.customerVisitCounts[cust.id] || 0;
+                const isVisited = visits > 0;
+                const reqLevel = cust.reqLevel || 1;
+                const isLevelUnlocked = (appData.currentRenoLevel || 1) >= reqLevel;
+                const favDish = DISHES.find(d => d.id === cust.favorite);
+
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-2xl border-2 flex items-center gap-2.5 ${
+                    isVisited ? 'bg-amber-50 border-amber-300' : 'bg-gray-100 border-gray-300 opacity-70'
+                }`;
+
+                card.innerHTML = `
+                    <div class="relative w-14 h-14 flex-shrink-0">
+                        <img src="${cust.img}" alt="${cust.name}" class="w-full h-full object-contain ${
+                            isVisited ? 'drop-shadow' : 'brightness-0 opacity-20'
+                        }">
+                        ${!isVisited ? '<span class="absolute inset-0 flex items-center justify-center text-lg font-black text-gray-500">?</span>' : ''}
+                    </div>
+                    <div class="flex-1 flex flex-col text-left">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs md:text-sm font-black text-amber-950">${isVisited ? cust.name : (isLevelUnlocked ? '？？？？' : '未解禁のお客さん')}</span>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                                    isLevelUnlocked ? 'bg-amber-200 text-amber-900' : 'bg-rose-200 text-rose-800'
+                                }">
+                                    ${isLevelUnlocked ? `Lv.${reqLevel}常連` : `🔒 Lv.${reqLevel}で来店`}
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-bold text-orange-600">${isVisited ? `来店: ${visits}回` : '未遭遇'}</span>
+                        </div>
+                        <p class="text-[10px] text-amber-800 leading-snug mt-0.5">${
+                            isVisited ? cust.desc : (isLevelUnlocked ? 'まだカフェに来たことがないようです。' : `カフェをLv.${reqLevel}に改装すると来店するようになります！`)
+                        }</p>
+                        ${isVisited && favDish ? `
+                            <div class="flex items-center gap-1 mt-1 text-[9px] text-amber-900 font-bold bg-amber-200/50 px-1.5 py-0.5 rounded-lg w-max">
+                                <span>大好物:</span>
+                                <img src="${favDish.img}" alt="${favDish.name}" class="w-3.5 h-3.5 object-contain">
+                                <span>${favDish.name}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                el.collectionCustomersView.appendChild(card);
+            });
+        }
+
+        // ----------------------------------------------------
+        // ランキングUI構築
+        // ----------------------------------------------------
+        function updateRankingUI(mode) {
+            const list = mode === 'time' ? (appData.rankingsTime || []) : (appData.rankingsEndless || []);
+            el.rankingListContainer.innerHTML = '';
+
+            if (list.length === 0) {
+                el.rankingListContainer.innerHTML = `
+                    <div class="text-center py-6 text-amber-800 text-xs font-bold">
+                        まだ記録がありません。<br>営業を完了してハイスコアを刻もう！
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach((item, index) => {
+                const rankNum = index + 1;
+                let badgeColor = 'bg-amber-200 text-amber-950';
+                let medal = `${rankNum}位`;
+                if (rankNum === 1) {
+                    badgeColor = 'bg-yellow-400 text-amber-950 font-black';
+                    medal = '🥇 1位';
+                } else if (rankNum === 2) {
+                    badgeColor = 'bg-slate-300 text-slate-900 font-black';
+                    medal = '🥈 2位';
+                } else if (rankNum === 3) {
+                    badgeColor = 'bg-amber-600 text-white font-black';
+                    medal = '🥉 3位';
+                }
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between p-2 bg-amber-50 rounded-2xl border border-amber-200';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-bold ${badgeColor}">
+                            ${medal}
+                        </span>
+                        <span class="text-xs font-black text-amber-950 truncate max-w-[120px]">
+                            ${item.name}
+                        </span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs md:text-sm font-black text-orange-600 font-mono">
+                            ${item.score.toLocaleString()} pts
+                        </span>
+                        <span class="text-[9px] text-amber-700">${item.date || ''}</span>
+                    </div>
+                `;
+                el.rankingListContainer.appendChild(row);
+            });
+        }
+
+        // アプリ起動
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

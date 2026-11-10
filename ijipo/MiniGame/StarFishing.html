@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星釣りゲーム｜夜空でゆっくり遊ぶ無料ブラウザゲーム</title>
+    <meta name="description" content="静かな夜空に釣り糸を垂らし、ウキが光ったら星を釣り上げる無料ブラウザゲームです。全40種類の絵柄をランダムに楽しめ、パソコンとスマートフォンのタップ操作で遊べます。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/MiniGame/StarFishing.html">
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --sky-top: #0a0e17;
+            --sky-bottom: #1a1a3a;
+            --water-top: #15152a;
+            --water-bottom: #050510;
+            --star-color: #ffe8b3;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 65%, var(--water-top) 65%, var(--water-bottom) 100%);
+            font-family: sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 背景の星 */
+        .bg-star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle 4s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.2; }
+            100% { opacity: 0.8; }
+        }
+
+        /* 釣り糸 */
+        #fishing-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 0;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(-50%);
+            transition: height 1s ease-in-out;
+        }
+
+        /* ウキ */
+        #bobber {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(-50%);
+            box-shadow: 0 0 5px rgba(255,255,255,0);
+            transition: background-color 2s, box-shadow 2s, transform 3s ease-in-out;
+            opacity: 0;
+        }
+
+        .fishing #bobber {
+            opacity: 1;
+        }
+
+        /* ヒット時のウキ */
+        .bite #bobber {
+            background-color: var(--star-color);
+            box-shadow: 0 0 20px var(--star-color);
+            animation: float 2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, 0); }
+            50% { transform: translate(-50%, -3px); }
+            100% { transform: translate(-50%, 0); }
+        }
+
+        /* 波紋 */
+        .ripple {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: ripple-anim 4s linear forwards;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-anim {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+
+        /* スタンプ画像 */
+        .stamp {
+            position: absolute;
+            width: 150px;
+            height: auto;
+            left: 50%;
+            bottom: 35%;
+            transform: translate(-50%, 0) scale(0.5);
+            opacity: 0;
+            transition: transform 4s ease-out, opacity 4s ease-out, bottom 4s ease-out;
+            pointer-events: none;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        }
+
+        .stamp.show {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+            bottom: 70%;
+        }
+
+        .stamp.fadeout {
+            opacity: 0;
+        }
+
+        /* インストラクション */
+        #instruction {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            letter-spacing: 2px;
+            pointer-events: none;
+            transition: opacity 2s;
+        }
+        
+        #audio-start {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            z-index: 100;
+            cursor: pointer;
+            transition: opacity 1s;
+        }
+
+        /* 釣り上げた数 */
+        #counter-display {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 16px;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* お説教ポップアップ */
+        #scold-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s;
+            z-index: 200;
+        }
+        .show-scold {
+            opacity: 1 !important;
+        }
+
+        /* 遊び方パネル */
+        #guide-button {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 150;
+            padding: 10px 16px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 999px;
+            color: white;
+            background: rgba(10,14,23,0.72);
+            backdrop-filter: blur(12px);
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #guide-button:hover { background: rgba(255,255,255,0.14); }
+        #guide-panel {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 12px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            color: #e8edf7;
+            background: rgba(3,7,18,0.94);
+            backdrop-filter: blur(16px);
+            touch-action: pan-y;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        #guide-panel.open { display: flex; }
+        .guide-card {
+            width: min(900px, 100%);
+            margin: auto;
+            padding: 32px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 28px;
+            background: rgba(20,25,45,0.92);
+            box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+        }
+        .guide-card h1 { margin: 0 0 14px; color: white; font-size: clamp(24px, 5vw, 34px); }
+        .guide-card h2 { margin: 36px 0 14px; color: #ffe8b3; font-size: 22px; }
+        .guide-card h3 { margin: 0 0 8px; color: #fff1c9; font-size: 16px; }
+        .guide-card p, .guide-card li { color: #b9c3d6; font-size: 14px; line-height: 1.9; }
+        .guide-lead { margin-bottom: 26px; }
+        .guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .guide-grid article, .guide-step, .guide-faq details {
+            padding: 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+        }
+        .guide-steps, .guide-faq { display: grid; gap: 10px; }
+        .guide-step { display: flex; align-items: flex-start; gap: 12px; }
+        .guide-step span {
+            display: grid;
+            place-items: center;
+            flex: 0 0 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: #15152a;
+            background: #ffe8b3;
+            font-weight: bold;
+        }
+        .guide-step p { margin: 0; }
+        .guide-tips { padding: 18px 22px; border: 1px solid rgba(255,232,179,0.2); border-radius: 16px; background: rgba(255,232,179,0.06); }
+        .guide-tips ul { margin: 0; padding-left: 20px; }
+        .guide-faq summary { color: white; font-weight: bold; cursor: pointer; }
+        .guide-faq details p { margin: 10px 0 0; }
+        .guide-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+        .guide-links a, .guide-close {
+            display: inline-flex;
+            padding: 11px 18px;
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 999px;
+            color: white;
+            background: transparent;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .guide-close { background: #665d45; border-color: #887c5c; }
+        @media (max-width: 640px) {
+            .guide-card { padding: 24px 16px; }
+            .guide-grid { grid-template-columns: 1fr; }
+            #guide-button { top: 12px; right: 12px; padding: 9px 13px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <button id="guide-button" type="button" onclick="openGuide()" aria-controls="guide-panel">遊び方</button>
+    <div id="audio-start">画面をタップして開始（静かな音が鳴ります）</div>
+    <div id="instruction" style="opacity: 0;">水面をクリックして釣り糸を垂らします</div>
+    
+    <div id="fishing-line">
+        <div id="bobber"></div>
+    </div>
+    
+    <div id="counter-display">釣った星: <span id="catch-count">0</span></div>
+    <div id="scold-popup"></div>
+
+    <section id="guide-panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+        <div class="guide-card">
+            <p style="margin:0 0 6px;color:#d6bd7d;font-size:12px;font-weight:bold;letter-spacing:.18em;">GAME GUIDE</p>
+            <h1 id="guide-title">星釣りゲームの遊び方</h1>
+            <p class="guide-lead">静かな夜空の下で水面に釣り糸を垂らし、ウキが星色に光るのを待つ、時間制限のないブラウザゲームです。釣り上げるたびに、40種類の絵柄からランダムにひとつが夜空へ浮かびます。</p>
+
+            <div class="guide-grid">
+                <article><h3>好きな場所へ糸を垂らす</h3><p>空と水面の好きな場所をクリックまたはタップすると、その横位置へ釣り糸が下ります。</p></article>
+                <article><h3>ウキが光るまで待つ</h3><p>糸を垂らしてから約6〜16秒で星がかかります。音が鳴り、ウキが明るく光って波紋が広がるのが合図です。</p></article>
+                <article><h3>もう一度タップして釣り上げる</h3><p>光っている間に画面をもう一度押すと成功です。釣った絵柄が水面から夜空へゆっくり浮かびます。</p></article>
+                <article><h3>40種類の絵柄を楽しむ</h3><p>釣れる絵柄は毎回ランダムです。右下の「釣った星」で、今回釣り上げた数を確認できます。</p></article>
+            </div>
+
+            <h2>基本操作</h2>
+            <div class="guide-steps">
+                <div class="guide-step"><span>1</span><p>最初の画面を押してゲームを開始します。静かなBGMと効果音が流れます。</p></div>
+                <div class="guide-step"><span>2</span><p>画面の好きな場所を押し、釣り糸を水面へ垂らします。</p></div>
+                <div class="guide-step"><span>3</span><p>ウキが光って音が鳴るまで、画面を押さずに待ちます。</p></div>
+                <div class="guide-step"><span>4</span><p>ヒットの合図が出たら画面を押して星を釣り上げ、絵柄が消えると次の釣りを始められます。</p></div>
+            </div>
+
+            <h2>楽しむコツ</h2>
+            <div class="guide-tips">
+                <ul>
+                    <li>ヒット前に画面を押しても失敗にはなりませんが、ウキが光るまでゆっくり待つのがおすすめです。</li>
+                    <li>音を出せる環境では、光だけでなく澄んだ効果音もヒットの目印になります。</li>
+                    <li>制限時間やゲームオーバーはありません。眠れない夜や休憩時間に、自分のペースで遊べます。</li>
+                    <li>100個釣るごとに特別なメッセージが表示されます。たくさん集めたい人は挑戦してみてください。</li>
+                </ul>
+            </div>
+
+            <h2>よくある質問</h2>
+            <div class="guide-faq">
+                <details><summary>ウキが光るまでどのくらい待ちますか？</summary><p>釣り糸を垂らしてから、およそ6〜16秒でヒットします。待ち時間は毎回ランダムです。</p></details>
+                <details><summary>釣り上げるのに失敗することはありますか？</summary><p>ヒット後の制限時間はありません。ウキが光ったあとに画面を押せば釣り上げられます。</p></details>
+                <details><summary>釣った数は次回も保存されますか？</summary><p>保存されません。ページを再読み込みしたり閉じたりすると0に戻る、今回のプレイ中だけのカウントです。</p></details>
+                <details><summary>音を止めるボタンはありますか？</summary><p>ゲーム内には音量ボタンがありません。音を出したくない場合は、端末やブラウザ側で音量を調整してください。別のタブへ移動すると音は一時停止します。</p></details>
+            </div>
+
+            <nav class="guide-links" aria-label="関連ページ">
+                <button type="button" class="guide-close" onclick="closeGuide()">ゲームへ戻る</button>
+                <a href="/">ほかのツール・ゲームを見る →</a>
+            </nav>
+        </div>
+    </section>
+
+    <script>
+        const bgStarsCount = 50;
+        for (let i = 0; i < bgStarsCount; i++) {
+            let star = document.createElement('div');
+            star.className = 'bg-star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 65 + '%'; // 空の部分だけ
+            star.style.width = star.style.height = (Math.random() * 2 + 1) + 'px';
+            star.style.animationDelay = (Math.random() * 4) + 's';
+            document.body.appendChild(star);
+        }
+
+        // --- Web Audio API ---
+        let audioCtx;
+        let masterGain;
+        let ambientOsc;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.5;
+            masterGain.connect(audioCtx.destination);
+
+            // 環境音（風や波のような、ごく微かな低音ノイズ）
+            ambientOsc = audioCtx.createOscillator();
+            ambientOsc.type = 'sine';
+            ambientOsc.frequency.value = 50;
+            let ambientGain = audioCtx.createGain();
+            ambientGain.gain.value = 0.05;
+            ambientOsc.connect(ambientGain);
+            ambientGain.connect(masterGain);
+            ambientOsc.start();
+            
+            // 環境音をゆっくり揺らす
+            setInterval(() => {
+                if(audioCtx.state === 'running') {
+                    ambientOsc.frequency.setTargetAtTime(50 + Math.random() * 20, audioCtx.currentTime, 5);
+                    ambientGain.gain.setTargetAtTime(0.02 + Math.random() * 0.04, audioCtx.currentTime, 5);
+                }
+            }, 5000);
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+
+            if (type === 'drop') {
+                // ポチャン
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(t);
+                osc.stop(t + 0.6);
+            } else if (type === 'bite') {
+                // ポロン…（ヒット）
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, t); // A5
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.2, t + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 3.0);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(t);
+                osc.stop(t + 3.1);
+            } else if (type === 'catch') {
+                // キラキラ（釣り上げ）
+                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+                freqs.forEach((freq, i) => {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, t + i * 0.2);
+                    gain.gain.setValueAtTime(0, t + i * 0.2);
+                    gain.gain.linearRampToValueAtTime(0.15, t + i * 0.2 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.2 + 2.0);
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(t + i * 0.2);
+                    osc.stop(t + i * 0.2 + 2.1);
+                });
+            }
+        }
+
+        // --- Game Logic ---
+        let state = 'idle'; // idle, fishing, bite, catching
+        let biteTimeout;
+        const line = document.getElementById('fishing-line');
+        const instruction = document.getElementById('instruction');
+        const audioStart = document.getElementById('audio-start');
+        
+        let catchCount = 0;
+        const catchCountEl = document.getElementById('catch-count');
+        const scoldPopup = document.getElementById('scold-popup');
+        const scoldMessages = [
+            "まだ寝てないの？",
+            "ねむれない？",
+            "早く寝たら？",
+            "寝ろっつってんだろ！"
+        ];
+        
+        function checkScold() {
+            if (catchCount > 0 && catchCount % 100 === 0) {
+                let index = (catchCount / 100) - 1;
+                if (index >= scoldMessages.length) {
+                    index = scoldMessages.length - 1;
+                }
+                scoldPopup.innerText = scoldMessages[index];
+                scoldPopup.classList.add('show-scold');
+                
+                setTimeout(() => {
+                    scoldPopup.classList.remove('show-scold');
+                }, 5000);
+            }
+        }
+        
+        let bgmAudio = null;
+
+        audioStart.addEventListener('click', function() {
+            initAudio();
+            
+            // ユーザーが用意したBGMの再生
+            if (!bgmAudio) {
+                bgmAudio = new Audio('SE/Moonlight_Through_the_Window.mp3');
+                bgmAudio.loop = true;
+                bgmAudio.volume = 0.2; // 音量は小さめ
+                bgmAudio.play().catch(e => console.log("BGM再生エラー:", e));
+            }
+
+            this.style.opacity = '0';
+            setTimeout(() => {
+                this.style.display = 'none';
+                instruction.style.opacity = '1';
+            }, 1000);
+        });
+
+        document.body.addEventListener('click', (e) => {
+            if (e.target.id === 'audio-start' || e.target.closest('#guide-panel') || e.target.closest('#guide-button')) return;
+
+            if (state === 'idle') {
+                startFishing(e.clientX);
+            } else if (state === 'bite') {
+                catchStar();
+            }
+        });
+
+        function openGuide() {
+            document.getElementById('guide-panel').classList.add('open');
+        }
+
+        function closeGuide() {
+            document.getElementById('guide-panel').classList.remove('open');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeGuide();
+        });
+
+        function createRipple(x, y) {
+            let ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.style.width = '20px';
+            ripple.style.height = '10px'; // 楕円
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 4000);
+        }
+
+        function startFishing(x) {
+            state = 'fishing';
+            instruction.style.opacity = '0';
+            line.style.left = x + 'px';
+            line.style.height = '65%'; // 水面まで
+            document.body.classList.add('fishing');
+            document.body.classList.remove('bite');
+            
+            setTimeout(() => {
+                createRipple(x, window.innerHeight * 0.65);
+                playSound('drop');
+            }, 1000); // 糸が下りる時間
+
+            // 待機時間（5秒〜15秒）
+            let waitTime = 5000 + Math.random() * 10000;
+            biteTimeout = setTimeout(onBite, waitTime + 1000);
+        }
+
+        function onBite() {
+            if (state !== 'fishing') return;
+            state = 'bite';
+            document.body.classList.add('bite');
+            playSound('bite');
+            
+            // 波紋を定期的に出す
+            let rippleInterval = setInterval(() => {
+                if (state !== 'bite') {
+                    clearInterval(rippleInterval);
+                    return;
+                }
+                createRipple(parseInt(line.style.left), window.innerHeight * 0.65);
+            }, 2000);
+        }
+
+        function catchStar() {
+            state = 'catching';
+            document.body.classList.remove('fishing');
+            document.body.classList.remove('bite');
+            line.style.height = '0';
+            playSound('catch');
+            
+            catchCount++;
+            catchCountEl.innerText = catchCount;
+            checkScold();
+            
+            createRipple(parseInt(line.style.left), window.innerHeight * 0.65);
+
+            // スタンプを生成
+            let stamp = document.createElement('img');
+            // imgフォルダの01.png〜40.pngをランダムに選択
+            let num = Math.floor(Math.random() * 40) + 1;
+            let fileNum = num.toString().padStart(2, '0');
+            stamp.src = 'img/' + fileNum + '.png';
+            stamp.className = 'stamp';
+            stamp.style.left = line.style.left;
+            
+            document.body.appendChild(stamp);
+
+            // アニメーション発火
+            setTimeout(() => {
+                stamp.classList.add('show');
+            }, 100);
+
+            // しばらく空に浮かんだ後、消える
+            setTimeout(() => {
+                stamp.classList.add('fadeout');
+                setTimeout(() => {
+                    stamp.remove();
+                    state = 'idle';
+                    instruction.style.opacity = '1';
+                }, 4000); // fadeout css transition
+            }, 4000);
+        }
+
+        // スマホ等でバックグラウンドに回った時に音を消す処理
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (audioCtx && audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                }
+                if (bgmAudio) {
+                    bgmAudio.pause();
+                }
+            } else {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (bgmAudio) {
+                    bgmAudio.play().catch(e => console.log("BGM再開エラー:", e));
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,677 @@
+import { db, ref, onValue, set, get } from './firebase-config.js';
+
+let currentSessionId = null;
+let currentRoomId = null;
+let isHost = false;
+let isSyncing = false;
+let config = { numPeople: 3, numRounds: 10, names: [], currentRound: 1 };
+let statusEntries = [];
+let currentTheme = 'dark';
+let editingEntryId = null;
+
+const themes = {
+    dark: { class: "bg-slate-900 text-slate-100 border-slate-700", label: "Dark" },
+    light: { class: "bg-slate-50 text-slate-900 border-slate-300", label: "Light" },
+    pop: { class: "bg-pink-50 text-indigo-900 border-pink-200", label: "Pop" },
+    classic: { class: "bg-amber-50 text-orange-950 border-amber-200 font-serif", label: "Classic" },
+    rainbow: { class: "rainbow-theme text-white border-white/20", label: "Rainbow" }
+};
+
+const categories = [
+    { id: 'status', label: '状態', color: 'bg-slate-500' },
+    { id: 'buff', label: 'バフ', color: 'bg-green-600' },
+    { id: 'debuff', label: 'デバフ', color: 'bg-red-600' },
+    { id: 'other', label: 'その他', color: 'bg-amber-600' }
+];
+
+function showMsg(text, type = 'info') {
+    const msg = document.getElementById('message-box');
+    msg.textContent = text;
+    msg.className = `fixed bottom-24 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl z-50 transition-all duration-300 font-bold ${type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`;
+    msg.style.opacity = '1';
+    msg.style.transform = 'translate(-50%, -20px)';
+    setTimeout(() => { 
+        msg.style.opacity = '0'; 
+        msg.style.transform = 'translate(-50%, 0px)';
+    }, 3000);
+}
+
+window.changeTheme = (themeKey) => {
+    currentTheme = themeKey;
+    const theme = themes[themeKey];
+    document.body.className = theme.class + " transition-colors duration-500 min-h-screen p-4 pb-32";
+    document.getElementById('theme-container').className = theme.class + " max-w-7xl mx-auto border p-4 mb-6 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-4";
+    if (typeof window.syncToFirebase === 'function') window.syncToFirebase();
+};
+
+function initThemes() {
+    const container = document.getElementById('theme-buttons');
+    Object.keys(themes).forEach(key => {
+        const btn = document.createElement('button');
+        btn.className = "px-4 py-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 transition-all";
+        btn.textContent = themes[key].label;
+        btn.onclick = () => changeTheme(key);
+        container.appendChild(btn);
+    });
+}
+
+window.generateNameFields = () => {
+    const container = document.getElementById('names-input-container');
+    const count = parseInt(document.getElementById('input-num-people').value) || 1;
+    
+    const currentValues = [];
+    const existingInputs = container.querySelectorAll('input');
+    existingInputs.forEach(input => currentValues.push(input.value));
+
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = `PC/NPC ${i + 1} の名前`;
+        input.id = `name-input-${i}`;
+        input.className = "p-3 rounded-xl bg-white/5 border border-white/10 text-sm outline-none focus:ring-2 focus:ring-blue-500";
+        
+        if (i < currentValues.length) {
+            input.value = currentValues[i];
+        }
+        
+        container.appendChild(input);
+    }
+};
+
+window.deployManager = () => {
+    const numPeople = parseInt(document.getElementById('input-num-people').value) || 1;
+    const numRounds = parseInt(document.getElementById('input-num-rounds').value) || 10;
+    const names = [];
+    const characters = [];
+    for (let i = 0; i < numPeople; i++) {
+        const el = document.getElementById(`name-input-${i}`);
+        const name = el && el.value ? el.value : `PC ${i + 1}`;
+        names.push(name);
+        characters.push({ id: i.toString(), name: name, inactive: false });
+    }
+    config = { numPeople, numRounds, names, characters, currentRound: 1 };
+    statusEntries = [];
+    renderPresets();
+    renderManager();
+    document.getElementById('setup-section').classList.add('hidden');
+    document.getElementById('main-manager').classList.remove('hidden');
+};
+
+function renderManager() {
+    const select = document.getElementById('action-person-select');
+    if (!select) return; 
+    
+    const currentSelectedPersons = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    select.innerHTML = '';
+    const sortedCharacters = config.characters ? [...config.characters].sort((a, b) => (a.inactive === b.inactive ? 0 : a.inactive ? 1 : -1)) : [];
+    sortedCharacters.forEach((char) => {
+        const opt = document.createElement('option');
+        opt.value = char.id;
+        opt.textContent = char.inactive ? `${char.name} (離脱)` : char.name;
+        select.appendChild(opt);
+    });
+    
+    if (currentSelectedPersons.length > 0) {
+        Array.from(select.options).forEach(opt => {
+            if (currentSelectedPersons.includes(opt.value)) opt.selected = true;
+        });
+    } else if (select.options.length > 0) {
+        select.options[0].selected = true;
+    }
+
+    document.getElementById('action-start-round').value = config.currentRound;
+    document.getElementById('action-end-round').value = config.currentRound;
+
+    const header = document.getElementById('round-headers');
+    header.innerHTML = '<th class="p-4 border-r sticky-col bg-inherit w-[220px] min-w-[220px] z-40 font-bold uppercase tracking-widest text-[10px] opacity-60">キャラクター / 項目</th>';
+    for (let r = 1; r <= config.numRounds; r++) {
+        const th = document.createElement('th');
+        const isCurrent = config.currentRound === r;
+        th.className = `p-4 border-r text-center cursor-pointer min-w-[140px] w-[140px] transition-all hover:bg-white/10 ${isCurrent ? 'bg-blue-600 text-white shadow-inner current-round-col' : ''}`;
+        th.innerHTML = `<div class="text-[10px] opacity-70">ROUND</div><div class="text-xl font-black">${r}</div>`;
+        th.onclick = () => { config.currentRound = r; renderManager(); };
+        header.appendChild(th);
+    }
+
+    const body = document.getElementById('status-table-body');
+    body.innerHTML = '';
+    sortedCharacters.forEach((char, loopIdx) => {
+        const pIdx = char.id;
+        const name = char.name;
+        const groupClass = loopIdx % 2 === 0 ? "person-group-even" : "person-group-odd";
+        const inactiveClass = char.inactive ? "opacity-40 grayscale" : "";
+        
+        categories.forEach((cat, cIdx) => {
+            const tr = document.createElement('tr');
+            const borderTopClass = cIdx === 0 ? "border-t-2 border-white/20" : "";
+            tr.className = `border-b border-white/5 hover:bg-white/10 transition-colors ${groupClass} ${borderTopClass} ${inactiveClass}`;
+            
+            const tdLabel = document.createElement('td');
+            tdLabel.className = "p-4 border-r sticky-col bg-inherit z-20 group/label";
+            if (cIdx === 0) {
+                tdLabel.innerHTML = `<div class="flex justify-between items-start"><div class="font-black text-base truncate flex-1">${name}</div><button onclick="toggleCharacterStatus('${pIdx}')" class="opacity-0 group-hover/label:opacity-100 hover:scale-110 transition-all text-xs bg-black/30 px-2 py-0.5 rounded ml-1" title="キャラクターの状態切り替え">${char.inactive ? '復帰' : '離脱'}</button></div><div class="text-[9px] opacity-40 font-bold uppercase tracking-tighter mt-1">${cat.label}</div>`;
+            } else {
+                tdLabel.innerHTML = `<div class="text-[9px] opacity-40 font-bold text-right uppercase tracking-tighter">${cat.label}</div>`;
+            }
+            tr.appendChild(tdLabel);
+
+            const rowEntries = statusEntries.filter(e => e.personIndex == pIdx && e.category == cat.id);
+            const uniqueContents = [...new Set(rowEntries.map(e => e.content))].sort();
+
+            for (let r = 1; r <= config.numRounds; r++) {
+                const td = document.createElement('td');
+                const isCurrent = config.currentRound === r;
+                td.className = `p-2 border-r align-top w-[140px] cursor-pointer hover:bg-white/5 transition-colors ${isCurrent ? 'current-round-col' : ''}`;
+                
+                // ドラッグ＆ドロップとクリックイベントの追加
+                td.ondragover = (e) => { e.preventDefault(); td.classList.add('bg-white/10'); };
+                td.ondragleave = () => td.classList.remove('bg-white/10');
+                td.ondrop = (e) => handleDrop(e, pIdx, cat.id, r);
+                
+                td.onclick = (e) => { 
+                    if (e.target.closest('.status-badge')) return;
+                    config.currentRound = r; 
+                    populateInput(pIdx, cat.id, r);
+                    renderManager(); 
+                };
+                
+                const container = document.createElement('div');
+                container.className = "flex flex-col gap-1";
+
+                uniqueContents.forEach(content => {
+                    const entry = rowEntries.find(e => e.content === content && r >= e.startRound && r <= e.endRound);
+                    if (entry) {
+                        const badge = document.createElement('div');
+                        badge.className = `status-badge ${cat.color} text-white text-[10px] px-3 py-1.5 rounded-lg flex justify-between items-center group shadow-sm animate-in zoom-in-95 duration-200 overflow-hidden`;
+                        badge.draggable = true;
+                        badge.ondragstart = (e) => e.dataTransfer.setData("entryId", entry.id);
+                        badge.onclick = (e) => { e.stopPropagation(); editEntry(entry.id); };
+                        badge.innerHTML = `<span class="flex-1 truncate font-bold mr-1 pointer-events-none">${entry.content}</span><div class="flex gap-2 z-50"><button onclick="event.stopPropagation(); copyEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-xs leading-none" title="コピー">📋</button><button onclick="event.stopPropagation(); removeEntry('${entry.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all text-sm leading-none" title="削除">✕</button></div>`;
+                        container.appendChild(badge);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.className = "empty-lane";
+                        container.appendChild(empty);
+                    }
+                });
+                
+                td.appendChild(container);
+                tr.appendChild(td);
+            }
+            body.appendChild(tr);
+        });
+    });
+    
+    if (typeof window.syncToFirebase === 'function') window.syncToFirebase();
+}
+
+window.applyAction = () => {
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedOptions.length === 0) return showMsg("対象者を選択してください", "error");
+
+    const cat = document.querySelector('input[name="action-cat"]:checked').value;
+    const start = parseInt(document.getElementById('action-start-round').value);
+    const end = parseInt(document.getElementById('action-end-round').value);
+    const content = document.getElementById('action-content').value;
+
+    if (!content) return showMsg("内容を入力してください", "error");
+    if (start > end) return showMsg("開始ラウンドが終了より後になっています", "error");
+
+    if (editingEntryId) {
+        const overwriteCheckbox = document.getElementById('action-overwrite');
+        const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
+
+        if (overwrite) {
+            const entry = statusEntries.find(e => e.id === editingEntryId);
+            if (entry) {
+                entry.personIndex = selectedOptions[0];
+                entry.category = cat;
+                entry.startRound = start;
+                entry.endRound = end;
+                entry.content = content;
+                
+                for (let i = 1; i < selectedOptions.length; i++) {
+                    statusEntries.push({ id: Date.now().toString() + "_" + i, personIndex: selectedOptions[i], category: cat, startRound: start, endRound: end, content });
+                }
+            }
+            cancelEdit();
+            showMsg("更新しました");
+        } else {
+            selectedOptions.forEach((pIdx, idx) => {
+                statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+            });
+            cancelEdit();
+            showMsg("追加しました");
+        }
+    } else {
+        const overwriteCheckbox = document.getElementById('action-overwrite');
+        const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
+        selectedOptions.forEach((pIdx, idx) => {
+            if (overwrite) {
+                statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == cat && e.content === content));
+            }
+            statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: cat, startRound: start, endRound: end, content });
+        });
+        document.getElementById('action-content').value = '';
+        showMsg("適用しました");
+    }
+
+    renderManager();
+};
+
+function handleDrop(e, pIdx, catId, r) {
+    e.preventDefault();
+    const entryId = e.dataTransfer.getData("entryId");
+    const entry = statusEntries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    const duration = entry.endRound - entry.startRound;
+    entry.personIndex = pIdx;
+    entry.category = catId;
+    entry.startRound = r;
+    entry.endRound = r + duration;
+
+    renderManager();
+    showMsg("移動しました");
+}
+
+window.populateInput = (pIdx, catId, round) => {
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    // すでに複数選択されており、かつクリックした対象がその選択肢に含まれている場合は選択を解除しない
+    if (!(selectedOptions.length > 1 && selectedOptions.includes(pIdx))) {
+        select.value = pIdx;
+    }
+    
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${catId}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    document.getElementById('action-start-round').value = round;
+    document.getElementById('action-end-round').value = round;
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
+    contentInput.select();
+};
+
+window.editEntry = (id) => {
+    const entry = statusEntries.find(e => e.id === id);
+    if (!entry) return;
+    
+    editingEntryId = id;
+    document.getElementById('action-person-select').value = entry.personIndex;
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${entry.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    document.getElementById('action-start-round').value = entry.startRound;
+    document.getElementById('action-end-round').value = entry.endRound;
+    document.getElementById('action-content').value = entry.content;
+    
+    document.getElementById('btn-apply-action').textContent = '更新する';
+    document.getElementById('btn-apply-action').className = "flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.remove('hidden');
+    
+    document.getElementById('main-manager').scrollIntoView({ behavior: 'smooth' });
+    showMsg("状態を編集します");
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
+    contentInput.select();
+};
+
+window.cancelEdit = () => {
+    editingEntryId = null;
+    document.getElementById('action-content').value = '';
+    document.getElementById('btn-apply-action').textContent = '適用する';
+    document.getElementById('btn-apply-action').className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95";
+    document.getElementById('btn-cancel-action').classList.add('hidden');
+};
+
+window.copyEntry = (id) => {
+    const entry = statusEntries.find(e => e.id === id);
+    if (!entry) return;
+    
+    cancelEdit();
+    
+    document.getElementById('action-person-select').value = entry.personIndex;
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${entry.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    
+    const duration = entry.endRound - entry.startRound;
+    const newStart = config.currentRound;
+    const newEnd = newStart + duration;
+    
+    document.getElementById('action-start-round').value = newStart;
+    document.getElementById('action-end-round').value = newEnd;
+    document.getElementById('action-content').value = entry.content;
+    
+    document.getElementById('main-manager').scrollIntoView({ behavior: 'smooth' });
+    showMsg("コピーしました。対象等を変更して適用してください。");
+
+    const contentInput = document.getElementById('action-content');
+    contentInput.focus();
+};
+
+window.removeEntry = (id) => {
+    statusEntries = statusEntries.filter(e => e.id !== id);
+    renderManager();
+};
+
+window.clearEntries = () => {
+    if (confirm("名前とラウンド設定は維持したまま、すべての状況（バフ・デバフなど）をクリアして新しい戦闘を開始しますか？")) {
+        statusEntries = [];
+        config.currentRound = 1;
+        renderManager();
+        showMsg("状況をリセットしました");
+    }
+};
+
+const STORAGE_KEY = 'weby_trpg_manager_v1';
+
+window.saveSession = () => {
+    const name = document.getElementById('save-name').value || `Session_${new Date().toLocaleTimeString()}`;
+    const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const sessionData = { id: currentSessionId || Date.now().toString(), sessionName: name, config, statusEntries, currentTheme, timestamp: Date.now() };
+    const idx = sessions.findIndex(s => s.id === sessionData.id);
+    if (idx > -1) sessions[idx] = sessionData; else sessions.push(sessionData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    currentSessionId = sessionData.id;
+    updateSessionList();
+    showMsg("保存しました");
+};
+
+function updateSessionList() {
+    const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const select = document.getElementById('session-select');
+    if (!select) return;
+    select.innerHTML = sessions.length ? '' : '<option value="">-- 保存データなし --</option>';
+    sessions.sort((a, b) => b.timestamp - a.timestamp).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.sessionName} (${new Date(s.timestamp).toLocaleDateString()})`;
+        select.appendChild(opt);
+    });
+}
+
+window.loadSession = () => {
+    const id = document.getElementById('session-select').value;
+    if (!id) return;
+    const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const session = sessions.find(s => s.id === id);
+    if (session) {
+        config = session.config; statusEntries = session.statusEntries || []; currentTheme = session.currentTheme || 'dark'; currentSessionId = session.id;
+        if (!config.characters && config.names) {
+            config.characters = config.names.map((name, i) => ({ id: i.toString(), name: name, inactive: false }));
+        }
+        document.getElementById('save-name').value = session.sessionName;
+        changeTheme(currentTheme); renderPresets(); renderManager();
+        document.getElementById('setup-section').classList.add('hidden');
+        document.getElementById('main-manager').classList.remove('hidden');
+        showMsg("読み込みました");
+    }
+};
+
+window.deleteSession = () => {
+    const id = document.getElementById('session-select').value;
+    if (!id) return showMsg("削除するデータを選択してください", "error");
+    const sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const session = sessions.find(s => s.id === id);
+    if (confirm(`セッション「${session.sessionName}」を完全に削除しますか？`)) {
+        const newSessions = sessions.filter(s => s.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSessions));
+        updateSessionList();
+        showMsg("削除しました");
+    }
+};
+
+window.newSession = () => {
+    if (confirm("新規作成画面に戻りますか？")) {
+        currentSessionId = null;
+        document.getElementById('setup-section').classList.remove('hidden');
+        document.getElementById('main-manager').classList.add('hidden');
+        generateNameFields();
+    }
+};
+
+window.onload = async () => { 
+    initThemes(); updateSessionList(); initDragToScroll(); renderPresets(); 
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    if (roomId) {
+        currentRoomId = roomId;
+        document.getElementById('room-url').value = window.location.href;
+        document.getElementById('btn-create-room').classList.add('hidden');
+        document.getElementById('btn-copy-room').classList.remove('hidden');
+        await window.joinRoom(roomId);
+    } else {
+        generateNameFields(); 
+        changeTheme('dark');
+    }
+};
+
+window.createRoom = async () => {
+    const newRoomId = 'room_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    currentRoomId = newRoomId;
+    isHost = true;
+    
+    await window.syncToFirebase();
+    
+    const newUrl = window.location.origin + window.location.pathname + '?room=' + newRoomId;
+    window.history.pushState({path: newUrl}, '', newUrl);
+    
+    document.getElementById('room-url').value = newUrl;
+    document.getElementById('btn-create-room').classList.add('hidden');
+    document.getElementById('btn-copy-room').classList.remove('hidden');
+    
+    window.setupFirebaseListener();
+    showMsg("共有ルームを作成しました！URLをコピーして招待してください");
+};
+
+window.copyRoomUrl = () => {
+    const urlInput = document.getElementById('room-url');
+    urlInput.select();
+    document.execCommand('copy');
+    showMsg("URLをコピーしました！");
+};
+
+window.joinRoom = async (roomId) => {
+    try {
+        const roomRef = ref(db, 'rooms/' + roomId);
+        const snapshot = await get(roomRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            config = data.config || config;
+            statusEntries = data.statusEntries || [];
+            currentTheme = data.currentTheme || 'dark';
+            
+            if (!config.characters && config.names) {
+                config.characters = config.names.map((name, i) => ({ id: i.toString(), name: name, inactive: false }));
+            }
+            changeTheme(currentTheme);
+            renderManager();
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('main-manager').classList.remove('hidden');
+            showMsg("ルームに参加しました！");
+            
+            window.setupFirebaseListener();
+        } else {
+            showMsg("ルームが見つかりません。新規作成します", "error");
+            generateNameFields();
+            changeTheme('dark');
+        }
+    } catch (e) {
+        console.error(e);
+        showMsg("Firebase接続エラー。設定を確認してください", "error");
+        generateNameFields();
+        changeTheme('dark');
+    }
+};
+
+window.setupFirebaseListener = () => {
+    const roomRef = ref(db, 'rooms/' + currentRoomId);
+    onValue(roomRef, (snapshot) => {
+        if (isSyncing) return;
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            isSyncing = true;
+            config = data.config || config;
+            statusEntries = data.statusEntries || [];
+            if (currentTheme !== data.currentTheme) {
+                changeTheme(data.currentTheme || 'dark');
+            }
+            renderManager();
+            setTimeout(() => { isSyncing = false; }, 200);
+        }
+    });
+};
+
+window.syncToFirebase = async () => {
+    if (!currentRoomId || isSyncing) return; 
+    isSyncing = true;
+    try {
+        const roomRef = ref(db, 'rooms/' + currentRoomId);
+        await set(roomRef, {
+            config: config,
+            statusEntries: statusEntries,
+            currentTheme: currentTheme,
+            updatedAt: Date.now()
+        });
+    } catch(e) {
+        console.error(e);
+    }
+    setTimeout(() => { isSyncing = false; }, 500); 
+};
+
+const PRESET_STORAGE_KEY = 'weby_trpg_presets_v1';
+let presets = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY) || '[]');
+
+window.renderPresets = () => {
+    const container = document.getElementById('presets-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (presets.length === 0) {
+        container.innerHTML = '<span class="text-xs opacity-50">プリセットはまだありません。よく使うバフや状態を登録できます。</span>';
+        return;
+    }
+    
+    presets.forEach(p => {
+        const catInfo = categories.find(c => c.id === p.category) || categories[0];
+        const btn = document.createElement('button');
+        btn.className = `preset-badge flex items-center gap-1 ${catInfo.color} text-white text-[10px] px-3 py-1.5 rounded-lg shadow-sm hover:scale-105 transition-all group`;
+        btn.innerHTML = `<span class="font-bold pointer-events-none">${p.content}</span><span onclick="event.stopPropagation(); removePreset('${p.id}')" class="opacity-0 group-hover:opacity-100 hover:scale-125 transition-all ml-1 cursor-pointer">✕</span>`;
+        btn.onclick = () => applyPreset(p);
+        container.appendChild(btn);
+    });
+};
+
+window.savePreset = () => {
+    const cat = document.querySelector('input[name="action-cat"]:checked').value;
+    const content = document.getElementById('action-content').value;
+    if (!content) return showMsg("内容を入力してください", "error");
+    if (presets.find(p => p.category === cat && p.content === content)) {
+        return showMsg("すでに登録されています", "error");
+    }
+    presets.push({ id: Date.now().toString(), category: cat, content: content });
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
+    renderPresets();
+    showMsg("プリセットに登録しました");
+};
+
+window.removePreset = (id) => {
+    presets = presets.filter(p => p.id !== id);
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
+    renderPresets();
+};
+
+window.applyPreset = (preset) => {
+    const select = document.getElementById('action-person-select');
+    const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+    if (selectedOptions.length === 0) return showMsg("対象者を選択してください", "error");
+    
+    const r = config.currentRound;
+    const overwriteCheckbox = document.getElementById('action-overwrite');
+    const overwrite = overwriteCheckbox ? overwriteCheckbox.checked : true;
+    
+    selectedOptions.forEach((pIdx, idx) => {
+        if (overwrite) {
+            statusEntries = statusEntries.filter(e => !(e.personIndex == pIdx && e.category == preset.category && e.content === preset.content));
+        }
+        statusEntries.push({ id: Date.now().toString() + "_" + idx, personIndex: pIdx, category: preset.category, startRound: r, endRound: r, content: preset.content });
+    });
+    
+    const catRadio = document.querySelector(`input[name="action-cat"][value="${preset.category}"]`);
+    if (catRadio) catRadio.checked = true;
+    document.getElementById('action-content').value = preset.content;
+    
+    renderManager();
+    showMsg(`「${preset.content}」を適用しました`);
+};
+
+window.addCharacter = () => {
+    const name = prompt("追加するキャラクターの名前を入力してください:");
+    if (!name) return;
+    const newId = Date.now().toString();
+    if (!config.characters) config.characters = [];
+    config.characters.push({ id: newId, name: name, inactive: false });
+    config.numPeople++;
+    renderManager();
+    showMsg("キャラクターを追加しました");
+};
+
+window.nextRound = () => {
+    if (config.currentRound < config.numRounds) {
+        config.currentRound++;
+        renderManager();
+        showMsg(`ラウンド ${config.currentRound} に進みました`);
+    } else {
+        showMsg("すでに最終ラウンドです", "error");
+    }
+};
+
+window.toggleCharacterStatus = (id) => {
+    const char = config.characters.find(c => c.id === id);
+    if (char) {
+        char.inactive = !char.inactive;
+        renderManager();
+    }
+};
+
+function initDragToScroll() {
+    const slider = document.getElementById('table-scroll-container');
+    if (!slider) return;
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.status-badge') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
+            return;
+        }
+        isDown = true;
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2;
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}

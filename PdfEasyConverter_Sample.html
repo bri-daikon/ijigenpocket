@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF楽々変換ツール_サンプル</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Noto Sans JP) -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons for beautiful design -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    /* スムーズなトランスミッション用 */
+    .transition-all {
+      transition: all 0.2s ease-in-out;
+    }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 min-h-screen lg:h-screen flex flex-col lg:overflow-hidden">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-lime-500 to-green-600 text-white shadow-md py-3 px-6 flex-shrink-0">
+    <div class="max-w-[1800px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-1.5 rounded-lg">
+          <i data-lucide="file-text" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-wider">PDF楽々変換ツール_サンプル</h1>
+          <p class="text-[11px] text-lime-100">PDFをプレビューで見ながら、改行を整え、クリックで簡単コピー！</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">
+        <i data-lucide="shield-check" class="w-4 h-4 text-teal-300"></i>
+        <span>データはすべてお使いのブラウザ内（Local Storage）に安全に自動保存されます</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ (デスクトップ時は100%画面に収まる個別スクロールレイアウト) -->
+  <main
+    class="flex-grow max-w-[1800px] w-full mx-auto p-4 flex flex-col lg:flex-row gap-5 overflow-y-auto lg:overflow-hidden lg:h-[calc(100vh-68px)]">
+
+    <!-- 左ペイン：設定 ＆ PDFプレビュー画面 -->
+    <div class="w-full lg:w-[480px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1">
+
+      <!-- 1. PDF読み込み (常に固定) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="upload" class="w-4 h-4 text-teal-600"></i>
+          1. PDFファイルを読込
+        </h2>
+
+        <div
+          class="relative border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-lg p-3 text-center cursor-pointer transition-all bg-slate-50 hover:bg-teal-50/20"
+          id="drop-zone">
+          <input type="file" id="pdf-input" accept="application/pdf, .pdf"
+            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+          <div class="flex flex-col items-center gap-1.5">
+            <div class="text-teal-600">
+              <i data-lucide="file-up" class="w-5 h-5"></i>
+            </div>
+            <p class="text-xs font-semibold text-slate-700">ファイルを選択するかドラッグ</p>
+          </div>
+        </div>
+
+        <!-- 読み込みステータス -->
+        <div id="status-container" class="hidden mt-2.5 p-2 rounded-lg text-xs flex items-center gap-2">
+          <div id="status-spinner"
+            class="animate-spin rounded-full h-3.5 w-3.5 border-2 border-teal-500 border-t-transparent hidden"></div>
+          <i id="status-icon" data-lucide="info" class="w-3.5 h-3.5 text-teal-600"></i>
+          <span id="status-text" class="font-medium text-slate-700">準備完了</span>
+        </div>
+      </div>
+
+      <!-- PDFプレビュー表示機 -->
+      <div
+        class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 h-[480px]">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5 mb-2.5 flex-shrink-0">
+          <h2 class="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+            <i data-lucide="eye" class="w-4 h-4 text-teal-600"></i>
+            PDF本紙 プレビュー表示
+          </h2>
+          <!-- プレビュー用ズーム＆コントロール -->
+          <div class="flex items-center gap-1.5" id="preview-controls">
+            <!-- PDFしおりトグルボタン (初期は非表示/無効) -->
+            <button id="btn-toggle-pdf-outline" onclick="togglePdfOutlinePanel()" disabled class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded opacity-50 cursor-not-allowed transition-all" title="PDF目次を表示">
+              <i data-lucide="menu" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="h-3 w-[1px] bg-slate-200 mx-0.5" id="preview-divider"></div>
+            <button onclick="zoomPreview(-0.1)"
+              class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded" title="ズームアウト">
+              <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+            </button>
+            <span id="zoom-percent" class="text-[10px] text-slate-500 font-bold min-w-[28px] text-center">55%</span>
+            <button onclick="zoomPreview(0.1)"
+              class="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded" title="ズームイン">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- PDFプレビューキャンバス（スクロールコンテナ・中身だけがスクロールします） -->
+        <div
+          class="flex-grow bg-slate-100 rounded-lg overflow-auto flex justify-start items-start border border-slate-200 p-2 relative"
+          id="canvas-container">
+          <!-- 初期プレースホルダー -->
+          <div id="preview-placeholder"
+            class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2 p-4 text-center">
+            <i data-lucide="book-open" class="w-8 h-8 text-slate-300"></i>
+            <p class="text-xs">PDFを読み込むとここに元のPDFが表示されます。ページの挿絵や全体のルビ確認に便利！</p>
+          </div>
+          <!-- 実際のPDFがここに描画されます -->
+          <canvas id="preview-canvas" class="shadow-md bg-white hidden"></canvas>
+          <!-- PDF組み込み目次しおりコンテナ -->
+          <div id="preview-outline-container" class="absolute inset-0 bg-white p-4 overflow-y-auto hidden border-t border-slate-150">
+            <h3 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+              <i data-lucide="menu" class="w-3.5 h-3.5 text-teal-600"></i>
+              PDFドキュメント目次
+            </h3>
+            <div id="preview-outline-tree" class="space-y-1.5 text-xs text-slate-700">
+              <!-- 動的生成される目次ツリー -->
+            </div>
+          </div>
+        </div>
+
+        <!-- プレビューのページ送り -->
+        <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100 flex-shrink-0">
+          <button id="btn-prev-page" onclick="changePreviewPage(-1)" disabled
+            class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-400 rounded-md hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1">
+            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> 前へ
+          </button>
+          <!-- ページ番号直接入力 -->
+          <span class="flex items-center gap-1 text-xs font-bold text-slate-600">
+            P.
+            <input type="number" id="preview-page-input" value="0" min="1"
+              class="w-10 text-center text-xs font-bold text-slate-800 border border-slate-200 rounded px-1 py-0.5 focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none"
+              onchange="jumpToPageInput()" onkeydown="if(event.key==='Enter') jumpToPageInput()">
+            / <span id="preview-total-pages">0</span>
+          </span>
+          <button id="btn-next-page" onclick="changePreviewPage(1)" disabled
+            class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-400 rounded-md hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center gap-1">
+            次へ <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      </div>
+
+    <!-- 中央ペイン：テキストカードリスト -->
+    <div
+      class="flex-grow flex flex-col bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-slate-200 lg:h-full overflow-hidden">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <i data-lucide="align-left" class="text-teal-600 w-5 h-5"></i>
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base">抽出されたテキスト一覧</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">0件の項目</span>
+          <button onclick="clearText()"
+            class="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition-all">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            全クリア
+          </button>
+          <div class="w-px h-4 bg-slate-200 mx-1"></div>
+          <button onclick="toggleRightPane()" id="btn-toggle-right"
+            class="text-xs text-indigo-500 hover:text-indigo-700 font-bold flex items-center gap-1 transition-all">
+            <i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>
+            ツールを隠す
+          </button>
+        </div>
+      </div>
+
+      <!-- コピーツールチップ案内 -->
+      <div
+        class="bg-teal-50 text-teal-800 text-xs p-2.5 rounded-lg mb-3 flex items-start gap-1.5 border border-teal-100 flex-shrink-0">
+        <i data-lucide="info" class="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5"></i>
+        <p class="leading-tight">
+          <span class="font-bold">💡 双方向連携 ＆ 編集機能:</span>
+          ページ番号クリックでPDFプレビューを切り替え。✏️ アイコンでカード内テキストを編集・分割・結合できます！
+        </p>
+      </div>
+
+      <!-- テキストカードリスト（▲▼スクロールボタン付き） -->
+      <div class="flex flex-col flex-grow overflow-hidden gap-1">
+        <!-- ▲ 上スクロール（1カード戻る） -->
+        <button onclick="scrollTextList(-1)"
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
+          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+          <span>前のカードへ</span>
+        </button>
+        <!-- カードリスト本体 -->
+        <div id="text-list" class="flex-grow space-y-2.5 overflow-y-auto px-0.5 py-1">
+          <div class="text-center py-20 text-slate-400 flex flex-col items-center justify-center gap-2">
+            <i data-lucide="file-question" class="w-10 h-10 text-slate-300"></i>
+            <p class="text-xs">左側のパネルからPDFファイルを読み込んでください</p>
+          </div>
+        </div>
+        <!-- ▼ 下スクロール（1カード進む） -->
+        <button onclick="scrollTextList(1)"
+          class="flex-shrink-0 w-full flex items-center justify-center gap-1.5 py-1.5 font-bold text-xs text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all border border-slate-200 hover:border-teal-300 bg-slate-50 shadow-sm">
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          <span>次のカードへ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 右ペイン：TRPG {}変換 ＆ しおり・付箋 -->
+    <div id="right-pane" class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-1 transition-all duration-300">
+
+      <!-- 2. テキスト設定 (常に固定) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5">
+          <i data-lucide="sliders" class="w-4 h-4 text-teal-600"></i>
+          2. テキスト表示・整形設定
+        </h2>
+
+        <!-- 表示単位の切り替え -->
+        <div class="mb-3">
+          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg">
+            <button id="btn-mode-paragraph"
+              class="py-1 px-2 rounded text-xs font-semibold transition-all bg-white text-teal-700 shadow-sm"
+              onclick="setSplitMode('paragraph')">
+              段落ごと (推奨)
+            </button>
+            <button id="btn-mode-line"
+              class="py-1 px-2 rounded text-xs font-semibold transition-all text-slate-600 hover:text-slate-800"
+              onclick="setSplitMode('line')">
+              1行ごと
+            </button>
+          </div>
+        </div>
+
+        <!-- フィルター -->
+        <div class="space-y-2 border-t border-slate-100 pt-2.5">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-clean-newlines"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-remove-half-spaces"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">半角スペースを削除</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-exclude-header-footer" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">ヘッダー・フッターを除外</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-exclude-toc" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">目次・リーダー線を除外</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-convert-alphanum" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">全角英数字を半角に変換</span>
+          </label>
+
+          <!-- 動的・リアルタイム連動型話者名除外チェックボックス (静的HTML配置で絶対に消えません) -->
+          <div class="border-t border-slate-100 pt-2 mt-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="chk-speech-only"
+                class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500" onchange="renderList()">
+              <span class="text-xs font-bold text-teal-700">コピー時に話者名を除外（セリフのみ）</span>
+            </label>
+            <p class="text-[10px] text-slate-400 mt-0.5 ml-6">チェックを入れると、コピー時に「山田「こんにちは」」のような単独セリフから「山田」をカットしてコピーします（画面上には話者名が表示されたままになります）。
+            </p>
+          </div>
+          </div>
+      </div>
+
+      <!-- 3. TRPG用語一括カッコ {} 変換 (固定) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="replace" class="w-4 h-4 text-teal-600"></i>
+          3. カッコ {} 一括変換
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">特定のTRPG頻出ワードを自動で `{ワード}` に囲み置換します。</p>
+
+        <div class="mb-2.5">
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">置換する語句（カンマ区切り）</label>
+          <input type="text" id="replace-keywords" value="KPC, PC, HO1, HO2, HO3, HO4, KP, PL, HO"
+            class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="applyKeywordWrapping()"
+            class="flex-grow bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            {} で囲む
+          </button>
+          <button onclick="removeAllBraces()"
+            class="flex-shrink-0 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5" title="全ての {} を消去する">
+            <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+            {} 消去
+          </button>
+        </div>
+      </div>
+
+      <!-- カスタム一括置換 -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+          <i data-lucide="replace-all" class="w-4 h-4 text-teal-600"></i>
+          5. カスタム一括置換
+        </h2>
+        <p class="text-[10px] text-slate-400 mb-2.5">抽出した全てのテキストから、指定した文字を別の文字に一括で置き換えます。</p>
+        
+        <div class="flex items-center gap-2 mb-2.5">
+          <input type="text" id="custom-replace-from" placeholder="・・・ (置換前)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+          <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+          <input type="text" id="custom-replace-to" placeholder="… (置換後)" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 outline-none">
+        </div>
+
+        <button onclick="applyCustomReplace()" class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          一括置換を実行
+        </button>
+      </div>
+
+
+
+    </div>
+  </main>
+
+  <!-- トースト表示コンテナ -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- フッター -->
+  <footer class="bg-slate-800 text-slate-400 py-3 px-6 text-center text-[11px] flex-shrink-0 border-t border-slate-700">
+    <div class="max-w-[1800px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Project by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" class="text-teal-400 hover:underline">https://ijigenpocket.booth.pm/</a></p>
+      <span class="text-slate-500">HTML-Based Client-Side PDF Workspace</span>
+    </div>
+  </footer>
+
+  <!-- JavaScript制御処理 -->
+  <script {file-content}>
+    // PDFJSの設定
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    // 内部ステート
+    let rawTextBlocks = []; // 解析された生テキストデータ [{page: Number, height: Number, items: [{str: String, y: Number, x: Number}]}]
+    let processedItems = []; // 画面表示用の整形データ [{id: Number, original: String, text: String, bookmarked: Boolean, note: String, page: Number}]
+    let splitMode = 'paragraph'; // 'paragraph' または 'line'
+    let currentFileName = ""; // 現在読み込んでいるファイル名
+    let pdfDoc = null; // プレビュー用のPDFドキュメントインスタンス
+    let currentPreviewPage = 1; // 現在プレビュー表示中のページ
+    let previewScale = 0.55; // プレビューの拡大率倍率（初期は横幅が収まる55%）
+    let pdfOutline = []; // PDFのしおりツリー
+    let isOutlineOpen = false; // 目次パネルが開いているかどうか
+    let detectedSpeakers = new Set(); // PDF全体から検出された話者名リスト
+    let globalId = 0; // カードID採番カウンター（splitCardAtCursorで使用）
+                        let isCurrentFileText = false; // 現在読み込んでいるのがテキストファイルかどうか
+
+    // ドロップエリアの設定
+    const dropZone = document.getElementById('drop-zone');
+    const pdfInput = document.getElementById('pdf-input');
+
+    // ドラッグ＆ドロップイベントのハンドリング
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-teal-500', 'bg-teal-50/50');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-teal-500', 'bg-teal-50/50');
+      }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        pdfInput.files = files;
+        handleFileSelect(files[0]);
+      }
+    });
+
+    pdfInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    // ファイル処理の開始
+    function handleFileSelect(file) {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      
+      if (!isPdf) { showToast("エラー", "PDFファイルを選択してください。", "error"); return; }
+      currentFileName = file.name;
+      loadPdf(file);
+    }
+
+    // PDFの読み込み、テキスト抽出 ＆ プレビュー本紙の読み込み
+    async function loadPdf(file) {
+      updateStatus('loading', 'PDFを解析 ＆ 本紙ロード中...');
+      isCurrentFileText = false;
+      rawTextBlocks = [];
+      processedItems = [];
+      pdfDoc = null;
+      currentPreviewPage = 1;
+
+      // プレビューの画面初期化
+      document.getElementById('preview-canvas').classList.add('hidden');
+      const placeholder = document.getElementById('preview-placeholder');
+      placeholder.classList.remove('hidden');
+      placeholder.innerHTML = `<i data-lucide="book-open" class="w-8 h-8 text-slate-300 mb-2"></i><p class="text-xs">PDFを読み込むとここに元のPDFが表示されます。ページの挿絵や全体のルビ確認に便利！</p>`;
+      lucide.createIcons();
+
+      try {
+        const fileReader = new FileReader();
+        fileReader.onload = async function () {
+          const typedarray = new Uint8Array(this.result);
+
+          try {
+            // PDFJSドキュメントロード
+            pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+            const maxPages = pdfDoc.numPages;
+
+            // プレビューコントローラのアクティブ化
+            document.getElementById('preview-total-pages').innerText = maxPages;
+            document.getElementById('preview-page-input').value = 1;
+            document.getElementById('btn-prev-page').disabled = false;
+            document.getElementById('btn-next-page').disabled = false;
+
+            updateStatus('loading', `テキスト抽出中... (0/${maxPages}ページ)`);
+
+            for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+              updateStatus('loading', `テキスト抽出中... (${pageNum}/${maxPages}ページ)`);
+              const page = await pdfDoc.getPage(pageNum);
+              const viewport = page.getViewport({ scale: 1.0 });
+              const pageHeight = viewport.height;
+              const textContent = await page.getTextContent();
+
+              // 座標情報を保持して取得
+              const pageItems = textContent.items.map(item => ({
+                str: item.str,
+                y: item.transform[5],
+                x: item.transform[4]
+              }));
+
+              rawTextBlocks.push({
+                page: pageNum,
+                height: pageHeight,
+                items: pageItems
+              });
+            }
+
+            updateStatus('success', 'ロード完了！');
+
+            // 1. 本紙プレビューの初回描画
+            renderPreviewPage(1);
+
+            // 2. 話者名の自動抽出
+            buildSpeakerSet();
+
+            // 3. 整形テキストのロード
+            processAndDisplay(true);
+
+            // 4. PDFしおりの抽出
+            await extractPdfOutline(pdfDoc);
+          } catch (error) {
+            console.error(error);
+            updateStatus('error', 'PDFの解析に失敗しました。');
+            showToast('エラー', 'PDFデータの読み込み中にエラーが発生しました。', 'error');
+          }
+        };
+        fileReader.readAsArrayBuffer(file);
+      } catch (error) {
+        console.error(error);
+        updateStatus('error', 'ファイルの読み込みに失敗しました。');
+      }
+    }
+
+    // PDF本紙をCanvasに美しく描画する関数
+    async function renderPreviewPage(pageNum) {
+      if (!pdfDoc) return;
+
+      const canvas = document.getElementById('preview-canvas');
+      const container = document.getElementById('canvas-container');
+      const placeholder = document.getElementById('preview-placeholder');
+
+      placeholder.classList.add('hidden');
+      canvas.classList.remove('hidden');
+
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const ctx = canvas.getContext('2d');
+
+        // 拡大率の調整
+        const viewport = page.getViewport({ scale: previewScale * 1.3 }); // 綺麗に見えるよう係数1.3を乗算
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        await page.render(renderContext).promise;
+
+        // 【カイゼン】ページ遷移時に、プレビューのスクロール位置を一番上にリセットします
+        if (container) {
+          container.scrollTop = 0;
+          container.scrollLeft = 0;
+        }
+
+        // ページ番号表示の更新
+        currentPreviewPage = pageNum;
+        const pageInput = document.getElementById('preview-page-input');
+        if (pageInput) pageInput.value = pageNum;
+
+        // ボタン制御
+        document.getElementById('btn-prev-page').disabled = (pageNum <= 1);
+        document.getElementById('btn-next-page').disabled = (pageNum >= pdfDoc.numPages);
+      } catch (e) {
+        console.error("PDFプレビュー描画中にエラーが発生しました", e);
+      }
+    }
+
+    // プレビューのズーム
+    function zoomPreview(factor) {
+      if (!pdfDoc) return;
+      const newScale = previewScale + factor;
+      if (newScale >= 0.5 && newScale <= 2.5) {
+        previewScale = newScale;
+        document.getElementById('zoom-percent').innerText = `${Math.round(previewScale * 100)}%`;
+        renderPreviewPage(currentPreviewPage);
+      }
+    }
+
+    // プレビューページの変更
+    function changePreviewPage(direction) {
+      if (!pdfDoc) return;
+      const targetPage = currentPreviewPage + direction;
+      if (targetPage >= 1 && targetPage <= pdfDoc.numPages) {
+        renderPreviewPage(targetPage);
+      }
+    }
+
+    // ページ番号入力欄から直接ジャンプ
+    function jumpToPageInput() {
+      if (!pdfDoc) return;
+      const input = document.getElementById('preview-page-input');
+      const page = parseInt(input.value, 10);
+      if (!isNaN(page) && page >= 1 && page <= pdfDoc.numPages) {
+        renderPreviewPage(page);
+      } else {
+        // 範囲外の場合は元の値に戻す
+        input.value = currentPreviewPage;
+      }
+    }
+
+    // PDF全体から話者名を自動抽出してリスト化する
+    function buildSpeakerSet() {
+      detectedSpeakers.clear();
+      if (rawTextBlocks.length === 0) return;
+
+      let fullText = '';
+      rawTextBlocks.forEach(block => {
+        block.items.forEach(item => {
+          fullText += item.str;
+        });
+        fullText += '\n';
+      });
+
+      // 行頭（スペースを許容）の1〜8文字で、直後に「や『、またはコロンが続くものを話者名とする
+      const speakerRegex = /^[\s　]*([^「」『』\n\s　：:]{1,8})(?=[「『：:])/gm;
+      let match;
+      while ((match = speakerRegex.exec(fullText)) !== null) {
+        if (match[1] && match[1].trim()) {
+          detectedSpeakers.add(match[1].trim());
+        }
+      }
+      console.log("検出された話者名リスト:", Array.from(detectedSpeakers));
+    }
+
+    // ※ splitIntoParagraphs は下部（701行付近）に新アルゴリズム版として定義されています
+
+    // 指定されたページ番号へジャンプ（連動用）
+    function jumpToPreviewPage(pageNum) {
+      if (!pdfDoc) return;
+      if (pageNum >= 1 && pageNum <= pdfDoc.numPages) {
+        renderPreviewPage(pageNum);
+        showToast(`プレビュー切替`, `本紙プレビューの P. ${pageNum} に移動しました。`, 'info');
+      }
+    }
+
+    // ステータス表示の更新
+    function updateStatus(type, message) {
+      const container = document.getElementById('status-container');
+      const spinner = document.getElementById('status-spinner');
+      const icon = document.getElementById('status-icon');
+      const text = document.getElementById('status-text');
+
+      container.classList.remove('hidden', 'bg-teal-50', 'bg-rose-50', 'bg-amber-50');
+      spinner.classList.add('hidden');
+      icon.classList.remove('hidden');
+
+      if (type === 'loading') {
+        container.classList.add('bg-amber-50');
+        spinner.classList.remove('hidden');
+        icon.classList.add('hidden');
+        text.className = 'font-medium text-amber-700';
+      } else if (type === 'success') {
+        container.classList.add('bg-teal-50');
+        text.className = 'font-medium text-teal-700';
+        icon.setAttribute('data-lucide', 'check-circle');
+        icon.className = 'w-4 h-4 text-teal-600';
+      } else if (type === 'error') {
+        container.classList.add('bg-rose-50');
+        text.className = 'font-medium text-rose-700';
+        icon.setAttribute('data-lucide', 'alert-circle');
+        icon.className = 'w-4 h-4 text-rose-600';
+      }
+      text.innerText = message;
+      lucide.createIcons();
+    }
+
+    // 表示分割モードの変更 ('paragraph' or 'line')
+    function setSplitMode(mode) {
+      splitMode = mode;
+
+      const btnPara = document.getElementById('btn-mode-paragraph');
+      const btnLine = document.getElementById('btn-mode-line');
+
+      if (mode === 'paragraph') {
+        btnPara.className = "py-1 px-2 rounded text-xs font-semibold transition-all bg-white text-teal-700 shadow-sm";
+        btnLine.className = "py-1 px-2 rounded text-xs font-semibold transition-all text-slate-600 hover:text-slate-800";
+      } else {
+        btnLine.className = "py-1 px-2 rounded text-xs font-semibold transition-all bg-white text-teal-700 shadow-sm";
+        btnPara.className = "py-1 px-2 rounded text-xs font-semibold transition-all text-slate-600 hover:text-slate-800";
+      }
+
+      processAndDisplay(false);
+    }
+
+    // スマートに段落を判定してテキストを配列に分割する処理
+    // アルゴリズム：
+    //   1. まず 2個以上の改行（\n\n）で大きく段落に分割する
+    //   2. 各段落ブロック内で、行頭に「名前「」の形式」を検出したらセリフカードとして確定する
+    //   3. セリフでない行は地の文として蓄積し、ブロック内の単一改行（\n）はそのまま保持する
+    function splitIntoParagraphs(text) {
+      const result = [];
+
+      // 「行頭が 名前「 の形でセリフ行として確定できるか」を判定する
+      function isSpeechStart(line) {
+        return /^[^「」『』\n]{0,12}[「『]/.test(line.trim());
+      }
+
+      // 閉じカッコで行が終わっているか
+      function isSpeechEnd(line) {
+        return /[」』][。\s]*$/.test(line.trim());
+      }
+
+      // 2個以上の改行で段落ブロックに分割（ここがカード分割の基本ルール）
+      const rawBlocks = text.split(/\n{2,}/);
+
+      rawBlocks.forEach(block => {
+        const trimmedBlock = block.trim();
+        if (!trimmedBlock) return;
+
+        const lines = trimmedBlock.split('\n');
+        let narrativeBuffer = [];
+
+        // 地の文バッファをカード化してフラッシュする
+        function flushNarrative() {
+          if (narrativeBuffer.length === 0) return;
+          // 単一改行（\n）はそのまま保持して結合する
+          const joined = narrativeBuffer.join('\n').trim();
+          if (joined) result.push(joined);
+          narrativeBuffer = [];
+        }
+
+        let i = 0;
+        while (i < lines.length) {
+          const lineTrimmed = lines[i].trim();
+
+          if (!lineTrimmed) {
+            i++;
+            continue;
+          }
+
+          if (isSpeechStart(lineTrimmed)) {
+            // 地の文バッファを先にフラッシュ
+            flushNarrative();
+
+            // 複数行にまたがるセリフをひとつに結合する
+            let speechLines = [lineTrimmed];
+            let closed = isSpeechEnd(lineTrimmed);
+
+            while (!closed && i + 1 < lines.length) {
+              i++;
+              const nextTrimmed = lines[i].trim();
+
+              // 次の行が新しいセリフ開始なら、ここで打ち切る
+              if (nextTrimmed && isSpeechStart(nextTrimmed)
+                  && !speechLines[speechLines.length - 1].endsWith('「')
+                  && !speechLines[speechLines.length - 1].endsWith('『')) {
+                i--;
+                break;
+              }
+
+              if (nextTrimmed) {
+                speechLines.push(nextTrimmed);
+                closed = isSpeechEnd(nextTrimmed);
+              }
+            }
+
+            // セリフを1枚のカードとして登録
+            const speechText = speechLines.join('').trim();
+            if (speechText) result.push(speechText);
+
+          } else {
+            // 地の文として蓄積（\n は保持）
+            narrativeBuffer.push(lineTrimmed);
+          }
+
+          i++;
+        }
+
+        flushNarrative();
+      });
+
+      return result;
+    }
+
+    // 各行頭の全角・半角スペース、タブを完全に取り除く処理
+    function removeLeadingSpaces(text) {
+      return text.split('\n').map(line => {
+        // 全角スペース(　)、半角スペース(\s)、タブなどを先頭から徹底除去
+        return line.replace(/^[\s　]+/g, '');
+      }).join('\n').trim();
+    }
+
+    // 目次（TOC）行の自動判別ロジック
+    function isTocLine(text) {
+      const trimmed = text.trim();
+      if (/^(目\s*次|目\s*録|CONTENTS|Contents|Index|インデックス)$/i.test(trimmed)) {
+        return true;
+      }
+      if (/([\.・…\-\s_~＝=]{3,})\s*\d+\s*$/.test(trimmed)) {
+        return true;
+      }
+      return false;
+    }
+
+    // ページ番号（ノンブル）の自動判別ロジック
+    function isPageNumberLine(text) {
+      const trimmed = text.trim();
+      // "1", "12", "P.1", "p. 12", "- 1 -", "— 1 —", "page 1", "Page 1", "[1]", "【1】"
+      return /^(page\s*)?\d+$/i.test(trimmed) || 
+             /^p\.\s*\d+$/i.test(trimmed) || 
+             /^[-—－—\s]*\d+[-—－—\s]*$/.test(trimmed) ||
+             /^\[\s*\d+\s*\]$/.test(trimmed) ||
+             /^【\s*\d+\s*】$/.test(trimmed);
+    }
+
+    // 全角英数字を半角英数字に変換する関数
+    function convertZenToHan(str) {
+      return str.replace(/[０-９ａ-ｚＡ-Ｚ]/g, function (s) {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
+    }
+
+    // テキストデータの加工と画面表示への出力
+    function processAndDisplay(isNewFileLoad = false) {
+      if (rawTextBlocks.length === 0) return;
+
+      const cleanNewlines = document.getElementById('chk-clean-newlines').checked;
+      const excludeHeaderFooter = document.getElementById('chk-exclude-header-footer').checked;
+      const excludeToc = document.getElementById('chk-exclude-toc').checked;
+
+      let tempItems = [];
+      globalId = 0; // グローバル変数をリセット（ローカル宣言しないことでID衝突を防ぐ）
+
+      rawTextBlocks.forEach(block => {
+        // 1. 各ページアイテムから文字列を結合
+        let pageText = '';
+        let lastY = null;
+
+        block.items.forEach(item => {
+          if (excludeHeaderFooter && !isCurrentFileText) {
+            if (item.y < block.height * 0.10 || item.y > block.height * 0.90) {
+              return; // 端領域を除外（上下 10% に拡大）
+            }
+          }
+
+          if (lastY !== null) {
+            const yDiff = Math.abs(item.y - lastY);
+            if (yDiff > 25) { // 閾値を25pxに広げて、通常の改行が空行と誤判定されるのを防ぐ
+              pageText += '\n\n';
+            } else if (yDiff > 8) {
+              pageText += '\n';
+            } else if (pageText.length > 0 && !pageText.endsWith('\n') && item.str.trim() !== '') {
+              pageText += '';
+            }
+          }
+          pageText += item.str;
+          lastY = item.y;
+        });
+
+        // 2. 段落 or 行に分割
+        let items = [];
+        if (splitMode === 'paragraph') {
+          items = splitIntoParagraphs(pageText);
+        } else {
+          items = pageText.split('\n');
+        }
+
+        items.forEach(text => {
+          let cleanedText = text.trim();
+          if (!cleanedText) return;
+
+          // 全角英数字を半角に変換
+          if (document.getElementById('chk-convert-alphanum').checked) {
+            cleanedText = convertZenToHan(cleanedText);
+          }
+
+          if (excludeToc && isTocLine(cleanedText)) {
+            return;
+          }
+
+          // ページ番号の除外
+          if (isPageNumberLine(cleanedText)) {
+            return;
+          }
+
+          // 改行をマージする前に行頭スペースを削除
+          cleanedText = removeLeadingSpaces(cleanedText);
+
+          if (cleanNewlines) {
+            cleanedText = cleanJapaneseNewlines(cleanedText);
+            // マージされた結果によって再び生じる可能性のある行頭スペースも再度徹底クリーン
+            cleanedText = removeLeadingSpaces(cleanedText);
+          }
+
+          // 半角スペース削除
+          if (document.getElementById('chk-remove-half-spaces').checked) {
+            cleanedText = cleanedText.replace(/ /g, '');
+          }
+
+          if (!cleanedText.trim()) return;
+
+          let existingItem = processedItems.find(item => item.original === text);
+          
+          let isBookmarked = false;
+          let noteText = "";
+          let savedFurigana = undefined;
+
+          if (existingItem) {
+            isBookmarked = existingItem.bookmarked;
+            noteText = existingItem.note;
+            if (existingItem.text === cleanedText) {
+              savedFurigana = existingItem.furiganaHtml;
+            }
+          }
+
+          tempItems.push({
+            id: globalId++,
+            original: text,
+            text: cleanedText, // 画面表示側で動的に話者名除外をするため、ここには原本を保持
+            bookmarked: isBookmarked,
+            note: noteText,
+            page: block.page,
+            isEditing: false,
+            furiganaHtml: savedFurigana
+          });
+        });
+        // globalIdはグローバルスコープで宣言済み
+      });
+
+      processedItems = tempItems;
+      renderList();
+
+      
+
+      if (isNewFileLoad && savedData.length > 0) {
+        showToast('データを復元しました', `このPDF用に保存されていた しおり: ${savedData.filter(d => d.bookmarked).length}件 / メモ: ${savedData.filter(d => d.note).length}件 を復元しました。`, 'success');
+      }
+    }
+
+    // 日本語の文章内での不自然な改行を排除するロジック（もともとの改行は美しく残す）
+    function cleanJapaneseNewlines(text) {
+      const lines = text.split('\n');
+      let result = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        let currentLine = lines[i].trim();
+        if (!currentLine) {
+          result.push('');
+          continue;
+        }
+
+        if (i === lines.length - 1) {
+          result.push(currentLine);
+          break;
+        }
+
+        let nextLine = lines[i + 1].trim();
+        if (!nextLine) {
+          result.push(currentLine);
+          continue;
+        }
+
+        const lastChar = currentLine.slice(-1);
+        const firstChar = nextLine.charAt(0);
+
+        const isLastCharJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]/.test(lastChar);
+        const isNotSentenceEnd = !/[。！？」』！？?!）\)\>＞\]］｝\}]/.test(lastChar);
+        const isNextCharNormal = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\w]/.test(firstChar);
+        const isNextNotStartBracket = !/[「『（｛【\[＜＜]/.test(firstChar);
+
+        // 強力な改行維持条件
+        let preventJoin = false;
+
+        // 1. 次の行が検出された話者名で始まっている場合
+        let isNextSpeaker = false;
+        for (const speaker of detectedSpeakers) {
+          if (nextLine.startsWith(speaker)) {
+            const rest = nextLine.substring(speaker.length).trim();
+            if (/^[「『：:]/.test(rest)) {
+              isNextSpeaker = true;
+              break;
+            }
+          }
+        }
+        if (isNextSpeaker) {
+          preventJoin = true;
+        }
+
+        // 2. 次の行が特定の記号（――、・、-、*）で始まっている場合
+        if (/^(――|・|\-|\*)/.test(nextLine)) {
+          preventJoin = true;
+        }
+
+        if (isLastCharJapanese && isNotSentenceEnd && isNextCharNormal && isNextNotStartBracket && !preventJoin) {
+          lines[i + 1] = currentLine + nextLine;
+        } else {
+          result.push(currentLine);
+        }
+      }
+
+      return result.filter(line => line !== null).join('\n').trim();
+    }
+
+    // セリフのみを抽出する正規表現フィルター関数 (原本のテキストを破壊せず、一時的に抽出します)
+    // コピー時に「話者名を除外」チェックが入っている場合のみ呼び出される
+    function cleanSpeechTextOnly(text) {
+      return text.split('\n').map(line => {
+        const trimmed = line.trim();
+        // パターンA: 名前（0〜12文字、カギカッコ以外）+ 「...」 の形
+        // ※ 名前0文字 = 行頭が「の場合も許容、セリフが長くても対応できるよう [^] を使用
+        const bracketMatch = trimmed.match(/^([^「」『』]{0,12}?)([「『][\s\S]*?[」』])([。\s]*)$/);
+        if (bracketMatch && bracketMatch[1].trim().length <= 12) {
+          return bracketMatch[2] + (bracketMatch[3] || '');
+        }
+        // パターンB: 名前：「...」 or 名前:「...」 のようなコロン区切り形式
+        const colonMatch = trimmed.match(/^[^：:\n]{1,12}[：:]\s*([「『][\s\S]*[」』])([。\s]*)$/);
+        if (colonMatch) {
+          return colonMatch[1] + (colonMatch[2] || '');
+        }
+        return line;
+      }).join('\n');
+    }
+
+    // リストのHTMLレンダリング
+    function renderList() {
+      const container = document.getElementById('text-list');
+      const countBadge = document.getElementById('items-count');
+
+      if (processedItems.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-20 text-slate-400 flex flex-col items-center justify-center gap-3">
+            <i data-lucide="file-question" class="w-10 h-10 text-slate-300"></i>
+            <p class="text-sm">左側のパネルからPDFファイルを読み込んでください</p>
+          </div>
+        `;
+        countBadge.innerText = '0件の項目';
+        lucide.createIcons();
+        
+        return;
+      }
+
+      countBadge.innerText = `${processedItems.length}件の項目`;
+      container.innerHTML = '';
+
+      processedItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `group relative ${item.isEditing ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 hover:bg-teal-50/20 border-slate-200 hover:border-teal-300'} border rounded-xl p-3.5 transition-all duration-150 flex flex-col justify-between gap-2 shadow-sm`;
+        card.setAttribute('data-id', item.id);
+        card.setAttribute('data-page', item.page);
+
+        // 表示時は常に話者名を残して表示する
+        const displayText = item.text;
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start gap-4">
+            <!-- ページバッジ（クリックで左側のPDFプレビューをジャンプさせる！） -->
+            <button onclick="event.stopPropagation(); jumpToPreviewPage(${item.page})" class="text-[10px] font-bold bg-slate-200 hover:bg-teal-600 hover:text-white text-slate-600 px-2 py-0.5 rounded transition-all flex-shrink-0" title="本紙プレビューをP. ${item.page}に切り替える">
+              P. ${item.page}
+            </button>
+            <!-- アクションボタン群 -->
+            <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+              ${item.isEditing ? `
+                <!-- 編集モード中ボタン -->
+                <button onclick="splitCardAtCursor(${item.id})" class="text-slate-400 hover:text-violet-600 p-0.5 rounded transition-all" title="カーソル位置で分割">
+                  <i data-lucide="split" class="w-4 h-4"></i>
+                </button>
+                <button onclick="mergeCardWithNext(${item.id})" class="text-slate-400 hover:text-blue-600 p-0.5 rounded transition-all" title="次のカードと結合">
+                  <i data-lucide="merge" class="w-4 h-4"></i>
+                </button>
+                <button onclick="saveEditCard(${item.id})" class="text-white bg-teal-600 hover:bg-teal-700 px-2 py-0.5 rounded text-[10px] font-bold transition-all" title="変更を保存">
+                  保存
+                </button>
+                <button onclick="cancelEditCard(${item.id})" class="text-slate-500 hover:text-slate-800 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all" title="キャンセル">
+                  戻す
+                </button>
+              ` : `
+                <!-- 通常モードボタン -->
+                <button onclick="startEditCard(${item.id})" class="text-slate-400 hover:text-amber-600 p-0.5 rounded transition-all" title="テキストを編集">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="deleteCard(${item.id})" class="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-all" title="このカードを削除">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              `}
+            </div>
+          </div>
+
+          <!-- テキスト中身（通常表示: クリックでコピー / 編集モード: textarea） -->
+          ${item.isEditing ? `
+            <textarea id="edit-textarea-${item.id}"
+              class="w-full text-sm text-slate-800 leading-relaxed border border-amber-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-amber-400 outline-none bg-white min-h-[80px]"
+              rows="${Math.max(3, (displayText.match(/\n/g) || []).length + 2)}"
+            >${escapeHtml(displayText)}</textarea>
+          ` : `
+            <div class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed select-text"  >${escapeHtml(displayText)}</div>
+          `}
+
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+      
+    }
+
+    // TRPGキーワード一括カッコ {} 変換ロジック
+    function applyKeywordWrapping() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', 'PDFテキストが読み込まれていません。', 'info');
+        return;
+      }
+
+      const inputKeywords = document.getElementById('replace-keywords').value;
+      if (!inputKeywords.trim()) {
+        showToast('エラー', 'キーワードを入力してください。', 'error');
+        return;
+      }
+
+      const keywords = inputKeywords.split(/[,,、]/).map(k => k.trim()).filter(k => k);
+
+      if (keywords.length === 0) {
+        showToast('エラー', '有効なキーワードが見つかりませんでした。', 'error');
+        return;
+      }
+
+      let replaceCount = 0;
+
+      processedItems.forEach(item => {
+        let currentText = item.text;
+        keywords.forEach(keyword => {
+          const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const regex = new RegExp(`(?<!\\{)${escapedKeyword}(?!\\})`, 'g');
+
+          const newText = currentText.replace(regex, `{${keyword}}`);
+          if (newText !== currentText) {
+            currentText = newText;
+            replaceCount++;
+          }
+        });
+        if (item.text !== currentText) {
+          item.text = currentText;
+          
+        }
+      });
+
+      renderList();
+      
+      
+      showToast('一括変換完了！', `${replaceCount}箇所のワードを {} で囲みました。`, 'success');
+    }
+
+    // {} を全てのカードから消去する
+    function removeAllBraces() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', 'PDFテキストが読み込まれていません。', 'info');
+        return;
+      }
+      let count = 0;
+      processedItems.forEach(item => {
+        const newText = item.text.replace(/\{([^}]+)\}/g, '$1');
+        if (newText !== item.text) {
+          item.text = newText;
+          
+          count++;
+        }
+      });
+      renderList();
+      
+      
+      showToast('{} 消去完了', `${count}カードの {} を取り除きました。`, 'info');
+    }
+
+    // カスタム一括置換
+    function applyCustomReplace() {
+      if (processedItems.length === 0) {
+        showToast('お知らせ', 'PDFテキストが読み込まれていません。', 'info');
+        return;
+      }
+      
+      const fromStr = document.getElementById('custom-replace-from').value;
+      const toStr = document.getElementById('custom-replace-to').value;
+      
+      if (!fromStr) {
+        showToast('エラー', '置換前の文字を入力してください。', 'error');
+        return;
+      }
+      
+      let replaceCount = 0;
+      processedItems.forEach(item => {
+        if (item.text.includes(fromStr)) {
+          item.text = item.text.split(fromStr).join(toStr);
+          item.original = item.original.split(fromStr).join(toStr);
+          
+          replaceCount++;
+        }
+      });
+      
+      if (replaceCount > 0) {
+        renderList();
+        
+        
+        showToast('一括置換完了', `${replaceCount}個のカードで「${fromStr}」を置換しました。`, 'success');
+      } else {
+        showToast('お知らせ', `「${fromStr}」は見つかりませんでした。`, 'info');
+      }
+    }
+
+    // テキストリストを1カードずつスクロールする（▲ = -1 / ▼ = +1）
+    function scrollTextList(direction) {
+      const list = document.getElementById('text-list');
+      if (!list) return;
+
+      const cards = Array.from(list.querySelectorAll('[data-id]'));
+      if (cards.length === 0) return;
+
+      const listRect = list.getBoundingClientRect();
+      let currentIdx = 0;
+      for (let i = 0; i < cards.length; i++) {
+        const cardRect = cards[i].getBoundingClientRect();
+        // コンテナの上端に最も近い（見えている）カードを探す
+        // 少し余裕を持たせて +10 
+        if (cardRect.bottom > listRect.top + 10) {
+          currentIdx = i;
+          break;
+        }
+      }
+
+      // 前後に1カード移動
+      let targetIdx = Math.max(0, Math.min(cards.length - 1, currentIdx + direction));
+
+      const targetCard = cards[targetIdx];
+      if (!targetCard) return;
+
+      // カードをスクロールコンテナの先頭に合わせて表示
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // 一瞬ハイライト
+      targetCard.style.outline = '2px solid #0d9488';
+      setTimeout(() => { targetCard.style.outline = ''; }, 600);
+    }
+
+    // --- カード編集機能 ---
+
+    // 編集モードを開始する
+    function startEditCard(id) {
+      // 他のカードの編集モードを閉じてから開く
+      processedItems.forEach(item => { item.isEditing = false; });
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        item._editOriginal = item.text; // キャンセル用に元テキストを保存
+        item.isEditing = true;
+        renderList();
+        // textareaにフォーカス
+        const ta = document.getElementById(`edit-textarea-${id}`);
+        if (ta) ta.focus();
+      }
+    }
+
+    // 編集内容を保存して編集モードを終了
+    function saveEditCard(id) {
+      const item = processedItems.find(i => i.id === id);
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      if (item && ta) {
+        if (item.text !== ta.value) {
+          item.text = ta.value;
+          
+        }
+        item.isEditing = false;
+        delete item._editOriginal;
+        renderList();
+        
+        
+        showToast('保存完了', 'テキストを更新しました。', 'success');
+      }
+    }
+
+    // 編集をキャンセルして元テキストに戻す。結合した場合は次のカードも復元する
+    function cancelEditCard(id) {
+      const item = processedItems.find(i => i.id === id);
+      if (item) {
+        // テキストを元に戻す
+        if (item._editOriginal !== undefined) {
+          item.text = item._editOriginal;
+        }
+        if (item._editOriginalFurigana !== undefined) {
+          item.furiganaHtml = item._editOriginalFurigana;
+          delete item._editOriginalFurigana;
+        }
+        // 結合の戻し: 削除した次のカードを復元する
+        if (item._mergedNextItem !== undefined) {
+          const idx = processedItems.findIndex(i => i.id === id);
+          const insertAt = item._mergedNextInsertIdx !== undefined ? item._mergedNextInsertIdx : idx + 1;
+          processedItems.splice(insertAt, 0, item._mergedNextItem);
+          delete item._mergedNextItem;
+          delete item._mergedNextInsertIdx;
+        }
+        item.isEditing = false;
+        delete item._editOriginal;
+        renderList();
+        showToast('戻しました', '編集をキャンセルしました。', 'info');
+      }
+    }
+
+    // カーソル位置でカードを分割する
+    function splitCardAtCursor(id) {
+      const item = processedItems.find(i => i.id === id);
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      if (!item || !ta) return;
+
+      const cursorPos = ta.selectionStart;
+      const fullText = ta.value;
+
+      const before = fullText.substring(0, cursorPos).trimEnd();
+      const after = fullText.substring(cursorPos).trimStart();
+
+      if (!before && !after) {
+        showToast('分割不可', 'テキストが空です。', 'error');
+        return;
+      }
+      if (!before || !after) {
+        showToast('分割不可', '分割後に空のカードが生まれます。カーソルをテキストの中間に置いてください。', 'error');
+        return;
+      }
+
+      const idx = processedItems.findIndex(i => i.id === id);
+      const newItem = {
+        id: globalId++,
+        original: after,
+        text: after,
+        bookmarked: false,
+        note: '',
+        page: item.page,
+        isEditing: false
+      };
+
+      item.text = before;
+      
+      item.isEditing = false;
+      delete item._editOriginal;
+
+      processedItems.splice(idx + 1, 0, newItem);
+      renderList();
+      
+      
+      showToast('分割完了', 'カードを分割しました。', 'success');
+    }
+
+    // 次のカードと結合する
+    function mergeCardWithNext(id) {
+      const idx = processedItems.findIndex(i => i.id === id);
+      if (idx < 0 || idx >= processedItems.length - 1) {
+        showToast('結合不可', '次のカードがありません。', 'error');
+        return;
+      }
+      const ta = document.getElementById(`edit-textarea-${id}`);
+      const item = processedItems[idx];
+      const nextItem = processedItems[idx + 1];
+
+      // テキストエリアの現在の内容を使用（未保存の編集内容も反映）
+      const currentText = ta ? ta.value : item.text;
+
+      // キャンセル用に元情報を保存（次のカードも丸ごと保存）
+      if (item._editOriginal === undefined) item._editOriginal = currentText;
+      if (item._editOriginalFurigana === undefined) item._editOriginalFurigana = item.furiganaHtml;
+      item._mergedNextItem = { ...nextItem }; // 削除する次のカードを保存
+      item._mergedNextInsertIdx = idx + 1;    // 復元時の挿入位置
+
+      item.text = currentText + '\n' + nextItem.text;
+      
+      item.isEditing = true;
+
+      processedItems.splice(idx + 1, 1);
+      renderList();
+      const newTa = document.getElementById(`edit-textarea-${id}`);
+      if (newTa) newTa.focus();
+      showToast('結合完了', '次のカードと結合しました。「戻す」で天克復元できます。', 'success');
+    }
+
+    // カードを削除する
+    function deleteCard(id) {
+      const idx = processedItems.findIndex(i => i.id === id);
+      if (idx >= 0) {
+        processedItems.splice(idx, 1);
+        renderList();
+        
+      }
+    }
+
+    // 全クリア
+    function clearText() {
+      rawTextBlocks = [];
+      processedItems = [];
+      pdfDoc = null;
+      pdfOutline = [];
+      isOutlineOpen = false;
+      detectedSpeakers.clear();
+      document.getElementById('pdf-input').value = '';
+      currentFileName = "";
+
+      const statusContainer = document.getElementById('status-container');
+      statusContainer.classList.add('hidden');
+
+      // プレビューのクリーンアップ
+      document.getElementById('preview-canvas').classList.add('hidden');
+      document.getElementById('preview-placeholder').classList.remove('hidden');
+      document.getElementById('preview-total-pages').innerText = "0";
+      document.getElementById('preview-page-input').value = 0;
+
+      // 目次のクリーンアップ
+      const outlineContainer = document.getElementById('preview-outline-container');
+      if (outlineContainer) outlineContainer.classList.add('hidden');
+      const outlineTree = document.getElementById('preview-outline-tree');
+      if (outlineTree) outlineTree.innerHTML = '';
+
+      const btnToggle = document.getElementById('btn-toggle-pdf-outline');
+      if (btnToggle) {
+        btnToggle.disabled = true;
+        btnToggle.classList.add('opacity-50', 'cursor-not-allowed');
+        btnToggle.classList.remove('opacity-100', 'bg-slate-200', 'text-slate-800');
+        btnToggle.classList.add('text-slate-400');
+      }
+
+      renderList();
+      showToast('クリア完了', '読み込んだデータをすべて削除しました。', 'info');
+    }
+
+    // トースト通知（トーストメッセージ表示）
+    function showToast(title, message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      let bg = 'bg-white';
+      let text = 'text-slate-800';
+      let border = 'border-slate-200';
+      let iconColor = 'text-teal-500';
+      let iconName = 'check-circle';
+
+      if (type === 'error') {
+        border = 'border-rose-100';
+        bg = 'bg-rose-50';
+        iconColor = 'text-rose-500';
+        iconName = 'alert-triangle';
+      } else if (type === 'info') {
+        border = 'border-blue-100';
+        bg = 'bg-blue-50';
+        iconColor = 'text-blue-500';
+        iconName = 'info';
+      }
+
+      toast.className = `${bg} ${text} border ${border} rounded-xl shadow-lg p-3 w-72 flex items-start gap-3 pointer-events-auto transition-all duration-300 opacity-0 transform translate-y-2`;
+
+      toast.innerHTML = `
+        <div class="${iconColor} flex-shrink-0 mt-0.5">
+          <i data-lucide="${iconName}" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-grow">
+          <h4 class="text-xs font-bold">${escapeHtml(title)}</h4>
+          ${message ? `<p class="text-[10px] text-slate-500 mt-0.5 leading-tight">${escapeHtml(message)}</p>` : ''}
+        </div>
+        <button class="text-slate-400 hover:text-slate-600 self-start" onclick="this.parentElement.remove()">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 4000);
+    }
+
+    // PDFしおりツリーの抽出
+    async function extractPdfOutline(doc) {
+      const btn = document.getElementById('btn-toggle-pdf-outline');
+      try {
+        const outline = await doc.getOutline();
+        if (!outline || outline.length === 0) {
+          pdfOutline = [];
+          if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.remove('opacity-100');
+          }
+          return;
+        }
+
+        // 非同期で再帰的にしおりノードを解決する
+        async function resolveNode(node) {
+          let pageNum = null;
+          if (node.dest) {
+            try {
+              let destObj = node.dest;
+              if (typeof destObj === 'string') {
+                destObj = await doc.getDestination(destObj);
+              }
+              if (Array.isArray(destObj) && destObj.length > 0) {
+                const pageRef = destObj[0];
+                if (pageRef && typeof pageRef === 'object') {
+                  const pageIndex = await doc.getPageIndex(pageRef);
+                  pageNum = pageIndex + 1;
+                }
+              }
+            } catch (e) {
+              console.error("しおりの宛先解決中にエラー:", e);
+            }
+          }
+
+          const resolvedChildren = [];
+          if (node.items && node.items.length > 0) {
+            for (const child of node.items) {
+              resolvedChildren.push(await resolveNode(child));
+            }
+          }
+
+          return {
+            title: node.title,
+            page: pageNum,
+            items: resolvedChildren
+          };
+        }
+
+        const resolvedOutline = [];
+        for (const item of outline) {
+          resolvedOutline.push(await resolveNode(item));
+        }
+
+        pdfOutline = resolvedOutline;
+
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          btn.classList.add('opacity-100');
+        }
+
+        renderPdfOutline();
+      } catch (e) {
+        console.error("しおり抽出エラー:", e);
+        pdfOutline = [];
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+          btn.classList.remove('opacity-100');
+        }
+      }
+    }
+
+    // PDFしおりのHTML描画
+    function renderPdfOutline() {
+      const container = document.getElementById('preview-outline-tree');
+      if (!container) return;
+
+      if (pdfOutline.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-center py-6">目次（しおり）はありません</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      function buildTreeHtml(nodes, depth = 0) {
+        let html = '';
+        nodes.forEach(node => {
+          const paddingLeft = depth * 12; // pxでの左パディング
+          const pageBadge = node.page ? `<span class="ml-auto bg-slate-100 text-slate-500 text-[10px] px-1 rounded">P.${node.page}</span>` : '';
+          const clickableClass = node.page ? 'cursor-pointer hover:bg-slate-100 text-slate-700 font-medium' : 'text-slate-400 cursor-default';
+          const clickHandler = node.page ? `onclick="jumpToPageFromOutline(${node.page})"` : '';
+
+          html += `
+            <div class="flex items-center py-1 px-1.5 rounded transition-all ${clickableClass}" style="padding-left: ${paddingLeft + 6}px" ${clickHandler}>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 mr-1 text-slate-400 flex-shrink-0 ${node.items.length > 0 ? '' : 'opacity-0'}"></i>
+              <span class="truncate" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</span>
+              ${pageBadge}
+            </div>
+          `;
+
+          if (node.items && node.items.length > 0) {
+            html += buildTreeHtml(node.items, depth + 1);
+          }
+        });
+        return html;
+      }
+
+      container.innerHTML = buildTreeHtml(pdfOutline);
+      lucide.createIcons();
+    }
+
+    // PDF目次パネルの表示切り替え
+    function togglePdfOutlinePanel() {
+      const container = document.getElementById('preview-outline-container');
+      const btn = document.getElementById('btn-toggle-pdf-outline');
+      if (!container || !btn) return;
+
+      isOutlineOpen = !isOutlineOpen;
+
+      if (isOutlineOpen) {
+        container.classList.remove('hidden');
+        btn.classList.add('bg-slate-200', 'text-slate-800');
+        btn.classList.remove('text-slate-400');
+      } else {
+        container.classList.add('hidden');
+        btn.classList.remove('bg-slate-200', 'text-slate-800');
+        btn.classList.add('text-slate-400');
+      }
+    }
+
+    // 目次から指定ページへジャンプ ＆ スクロール連動
+    function jumpToPageFromOutline(pageNum) {
+      if (!pageNum) return;
+
+      // 1. 本紙プレビューのページ切り替え
+      jumpToPreviewPage(pageNum);
+
+      // 2. テキスト一覧の対象ページの最初のカードへスクロール
+      const targetCard = document.querySelector(`#text-list [data-page="${pageNum}"]`);
+      if (targetCard) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 一時的にハイライトする
+        targetCard.classList.add('bg-teal-50', 'border-teal-400');
+        setTimeout(() => {
+          targetCard.classList.remove('bg-teal-50', 'border-teal-400');
+        }, 1500);
+      }
+    }
+
+    // HTMLエスケープ
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 右ペインの開閉
+    function toggleRightPane() {
+      const pane = document.getElementById('right-pane');
+      const btn = document.getElementById('btn-toggle-right');
+      if (pane.classList.contains('hidden')) {
+        pane.classList.remove('hidden');
+        btn.innerHTML = '<i data-lucide="panel-right-close" class="w-3.5 h-3.5"></i>\nツールを隠す';
+      } else {
+        pane.classList.add('hidden');
+        btn.innerHTML = '<i data-lucide="panel-right-open" class="w-3.5 h-3.5"></i>\nツールを表示';
+      }
+      lucide.createIcons();
+    }
+
+    // 初期化
+    window.onload = function () {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+
+</html>

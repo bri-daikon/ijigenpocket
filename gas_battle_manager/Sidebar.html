@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; padding: 15px; font-size: 13px; color: #333; background: #f8fafc; }
+      .group { margin-bottom: 20px; background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+      label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+      select, input[type="text"], input[type="number"] { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
+      select:focus, input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+      
+      .radio-group { display: flex; gap: 5px; }
+      .radio-group label { flex: 1; text-align: center; background: #f1f5f9; padding: 0; border-radius: 6px; cursor: pointer; margin: 0; font-size: 11px; font-weight: bold; transition: 0.2s; }
+      .radio-group input { display: none; }
+      
+      input[value="status"]:checked + span { background: #64748b; color: white; }
+      input[value="buff"]:checked + span { background: #22c55e; color: white; }
+      input[value="debuff"]:checked + span { background: #ef4444; color: white; }
+      input[value="other"]:checked + span { background: #f59e0b; color: white; }
+      
+      .radio-group span { display: block; padding: 10px 0; border-radius: 6px; }
+
+      .grid-2 { display: flex; gap: 10px; }
+      .grid-2 > div { flex: 1; }
+
+      button.main-btn { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(37,99,235,0.2); transition: 0.2s; }
+      button.main-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+      button.main-btn:active { transform: translateY(0); }
+      button.main-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+      
+      #message { margin-top: 15px; font-size: 12px; font-weight: bold; text-align: center; min-height: 15px; }
+      
+      .refresh-btn { background: transparent; color: #3b82f6; padding: 0; font-size: 11px; width: auto; margin: 0; float: right; border: none; cursor: pointer; font-weight: bold; }
+      .refresh-btn:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    
+    <div class="group">
+      <div style="overflow: hidden; margin-bottom: 5px;">
+        <label style="float: left; margin:0;">対象キャラクター</label>
+        <button class="refresh-btn" onclick="loadCharacters()">↻ 更新</button>
+      </div>
+      <select id="charSelect"></select>
+    </div>
+
+    <div class="group">
+      <label>カテゴリー</label>
+      <div class="radio-group">
+        <label><input type="radio" name="category" value="status" checked><span>状態</span></label>
+        <label><input type="radio" name="category" value="buff"><span>バフ</span></label>
+        <label><input type="radio" name="category" value="debuff"><span>デバフ</span></label>
+        <label><input type="radio" name="category" value="other"><span>他</span></label>
+      </div>
+    </div>
+
+    <div class="group grid-2" style="background: transparent; border: none; padding: 0; box-shadow: none;">
+      <div class="group" style="margin-bottom: 0;">
+        <label>開始Rd</label>
+        <input type="number" id="startRound" value="1" min="1">
+      </div>
+      <div class="group" style="margin-bottom: 0;">
+        <label>終了Rd</label>
+        <input type="number" id="endRound" value="3" min="1">
+      </div>
+    </div>
+
+    <div class="group">
+      <label>状況の内容</label>
+      <input type="text" id="content" placeholder="例: 防御、毒など">
+    </div>
+
+    <button id="applyBtn" class="main-btn" onclick="apply()">適用する</button>
+    <div id="message"></div>
+
+    <script>
+      function loadCharacters() {
+        var select = document.getElementById('charSelect');
+        select.innerHTML = '<option>読込中...</option>';
+        google.script.run
+          .withSuccessHandler(function(chars) {
+            select.innerHTML = '';
+            if(chars.length === 0) {
+              select.innerHTML = '<option value="">キャラが見つかりません</option>';
+              return;
+            }
+            chars.forEach(function(c) {
+              var opt = document.createElement('option');
+              opt.value = c.row;
+              opt.innerText = c.name;
+              select.appendChild(opt);
+            });
+          })
+          .getCharacters();
+      }
+
+      function apply() {
+        var btn = document.getElementById('applyBtn');
+        var msg = document.getElementById('message');
+        
+        var charRow = document.getElementById('charSelect').value;
+        if(!charRow) {
+           msg.innerText = "キャラを選択してください";
+           msg.style.color = "#ef4444";
+           return;
+        }
+        
+        var category = document.querySelector('input[name="category"]:checked').value;
+        var startRound = document.getElementById('startRound').value;
+        var endRound = document.getElementById('endRound').value;
+        var content = document.getElementById('content').value;
+
+        if(!content) {
+           msg.innerText = "状況の内容を入力してください";
+           msg.style.color = "#ef4444";
+           return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "処理中...";
+        msg.innerText = "";
+
+        var data = {
+          charRow: charRow,
+          category: category,
+          startRound: startRound,
+          endRound: endRound,
+          content: content
+        };
+
+        google.script.run
+          .withSuccessHandler(function() {
+            btn.disabled = false;
+            btn.innerText = "適用する";
+            msg.innerText = "✓ 適用しました！";
+            msg.style.color = "#22c55e";
+            document.getElementById('content').value = "";
+            setTimeout(function(){ msg.innerText = ""; }, 3000);
+          })
+          .withFailureHandler(function(err) {
+            btn.disabled = false;
+            btn.innerText = "適用する";
+            msg.innerText = "エラー: " + err.message;
+            msg.style.color = "#ef4444";
+          })
+          .applyStatus(data);
+      }
+
+      // Initial load
+      loadCharacters();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,131 @@
+Created At: 2026-06-04T05:38:55Z
+Completed At: 2026-06-04T05:38:56Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker.js`
+Total Lines: 2287
+Total Bytes: 87087
+Showing lines 2000 to 2287
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2000:   const windowPanelWidth = 720;
+2001:   const windowPanelHeight = 405;
+2002:   let windowX = 50;
+2003:   let windowY = 110;
+2004: 
+2005:   if (layoutType === 'bottom-horizontal') {
+2006:     windowX = 280;
+2007:     windowY = 50;
+2008:   }
+2009: 
+2010:   panels.push({
+2011:     id: 'ai-window-' + Date.now(),
+2012:     url: createSvgUrl(windowSvg),
+2013:     x: windowX,
+2014:     y: windowY,
+2015:     width: windowPanelWidth,
+2016:     height: windowPanelHeight,
+2017:     originalRatio: windowPanelWidth / windowPanelHeight,
+2018:     flipH: false,
+2019:     flipV: false,
+2020:     visible: true,
+2021:     opacity: 1
+2022:   });
+2023: 
+2024:   let plW = 160;
+2025:   let plH = 170;
+2026:   if (layoutType === 'right-vertical') {
+2027:     if (numPlayers <= 3) { plW = 180; plH = 200; }
+2028:     else if (numPlayers === 4) { plW = 170; plH = 150; }
+2029:     else { plW = 160; plH = 120; }
+2030:   }
+2031: 
+2032:   for (let i = 0; i < numPlayers; i++) {
+2033:     const plSvg = gen.pl();
+2034:     let plX = 1050;
+2035:     let plY = 40;
+2036:     
+2037:     if (layoutType === 'right-vertical') {
+2038:       plX = 1050;
+2039:       if (numPlayers === 1) {
+2040:         plY = 260;
+2041:       } else {
+2042:         plY = 40 + i * (640 - plH) / (numPlayers - 1);
+2043:       }
+2044:     } else {
+2045:       plY = 510;
+2046:       if (numPlayers === 1) {
+2047:         plX = 660;
+2048:       } else {
+2049:         plX = 280 + i * (720 - plW) / (numPlayers - 1);
+2050:       }
+2051:     }
+2052: 
+2053:     panels.push({
+2054:       id: `ai-pl-${i}-${Date.now()}`,
+2055:       url: createSvgUrl(plSv
+<truncated 4623 bytes>
+sanity", "growth", "other"];
+2223:   const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
+2224:   const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+2225: 
+2226:   menuLabels.forEach((label, i) => {
+2227:     const menuSvg = gen.menu(design, label);
+2228:     let menuX = 50;
+2229:     let menuY = 50;
+2230: 
+2231:     if (layoutType === 'right-vertical') {
+2232:       menuY = 50;
+2233:       menuX = 50 + i * 145;
+2234:     } else {
+2235:       menuX = 50;
+2236:       menuY = 50 + i * 55;
+2237:     }
+2238: 
+2239:     panels.push({
+2240:       id: `ai-menu-${label}-${Date.now()}`,
+2241:       url: createSvgUrl(menuSvg),
+2242:       x: menuX,
+2243:       y: menuY,
+2244:       width: menuW,
+2245:       height: menuH,
+2246:       originalRatio: menuW / menuH,
+2247:       flipH: false,
+2248:       flipV: false,
+2249:       visible: true,
+2250:       opacity: 1
+2251:     });
+2252:   });
+2253: 
+2254:   const actionW = 75;
+2255:   const actionH = 75;
+2256: 
+2257:   actionIconsData.forEach((icon, i) => {
+2258:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2259:     let actionX = 50;
+2260:     let actionY = 550;
+2261: 
+2262:     if (layoutType === 'right-vertical') {
+2263:       actionY = 550;
+2264:       actionX = 50 + i * 125;
+2265:     } else {
+2266:       actionX = 50 + (i % 2) * 90;
+2267:       actionY = 350 + Math.floor(i / 2) * 90;
+2268:     }
+2269: 
+2270:     panels.push({
+2271:       id: `ai-action-${icon.name}-${Date.now()}`,
+2272:       url: createSvgUrl(actionSvg),
+2273:       x: actionX,
+2274:       y: actionY,
+2275:       width: actionW,
+2276:       height: actionH,
+2277:       originalRatio: actionW / actionH,
+2278:       flipH: false,
+2279:       flipV: false,
+2280:       visible: true,
+2281:       opacity: 1
+2282:     });
+2283:   });
+2284: 
+2285:   updateUI();
+2286: }
+2287: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

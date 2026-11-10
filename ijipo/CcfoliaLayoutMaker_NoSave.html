@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ココフォリア・レイアウトメーカー</title>
+  <!-- Tailwind CSS (デザイン用のライブラリ) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons (アイコン用のライブラリ) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/ccfolialayoutmaker.css?v=1.0.1">
+</head>
+<body class="flex h-screen bg-gray-900 text-gray-100 font-sans overflow-hidden no-select">
+
+  <!-- 左側：設定パネル（サイドバー） -->
+  <div class="w-96 bg-gray-800 border-r border-gray-700 p-6 flex flex-col gap-6 overflow-y-auto shadow-xl z-10">
+    <div>
+      <h1 class="text-2xl font-bold mb-2 flex items-center gap-2">
+        <i data-lucide="layers" class="text-blue-400 w-6 h-6"></i>
+        レイアウトメーカー
+      </h1>
+      <p class="text-sm text-gray-400">ココフォリア向け部屋作成ツール(HTML版)</p>
+    </div>
+
+    <!-- キャンバス設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="monitor" class="w-5 h-5"></i> キャンバス設定
+      </h2>
+      <div class="flex flex-col gap-3">
+        <!-- サイズ選択 -->
+        <div>
+          <label for="canvas-size-select" class="text-xs text-gray-400 block mb-1">サイズ</label>
+          <select id="canvas-size-select" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="1280x720">1280 x 720 (16:9)</option>
+            <option value="1920x1080">1920 x 1080 (16:9)</option>
+          </select>
+        </div>
+        <!-- グリッド表示 -->
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-400">グリッドを表示 (固定)</span>
+          <label class="relative inline-flex items-center cursor-not-allowed opacity-60">
+            <input type="checkbox" id="grid-show-toggle" class="sr-only peer" checked disabled>
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <!-- グリッドスナップ -->
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-300">グリッドにスナップ</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="grid-snap-toggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <!-- キャンバス背景色 -->
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-gray-300">キャンバス背景</span>
+          <div class="flex items-center gap-1.5 bg-gray-850 px-2 py-1 rounded border border-gray-650">
+            <button type="button" id="canvas-bg-trans" class="w-4 h-4 rounded border border-gray-500 checkerboard-bg hover:scale-110 transition-transform" title="透過"></button>
+            <button type="button" id="canvas-bg-white" class="w-4 h-4 rounded bg-white border border-gray-400 hover:scale-110 transition-transform" title="白"></button>
+            <button type="button" id="canvas-bg-gray" class="w-4 h-4 rounded bg-gray-500 border border-gray-600 hover:scale-110 transition-transform" title="グレー"></button>
+            <button type="button" id="canvas-bg-black" class="w-4 h-4 rounded bg-black border border-gray-800 hover:scale-110 transition-transform ring-1 ring-blue-500" title="黒（デフォルト）"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作履歴 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="history" class="w-5 h-5"></i> 操作履歴
+      </h2>
+      <button id="undo-action-btn" class="flex items-center justify-center w-full py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:hover:bg-gray-700 disabled:cursor-not-allowed text-gray-300 hover:text-white rounded text-sm font-semibold transition-colors border border-gray-600" disabled>
+        <i data-lucide="undo" class="mr-2 w-4 h-4"></i>
+        一つ戻る (Undo)
+      </button>
+    </div>
+
+
+    <!-- フレーム設定 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="image" class="w-5 h-5"></i> フレーム画像 (透過推奨)
+      </h2>
+      <label for="frame-upload" class="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-500 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-gray-600/30 transition-colors">
+        <div class="flex flex-col items-center pointer-events-none">
+          <i data-lucide="upload" class="text-gray-400 mb-1 w-5 h-5"></i>
+          <span class="text-sm text-gray-400">クリックしてアップロード</span>
+        </div>
+        <input type="file" id="frame-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
+      </label>
+      <div class="flex gap-4 mt-2">
+        <button id="clear-frame-btn" class="text-xs text-red-400 hover:text-red-300" style="display: none;">
+          フレームをクリア
+        </button>
+        <button id="edit-frame-btn" class="text-xs text-blue-400 hover:text-blue-300" style="display: none;">
+          フレーム画像を編集 (部分透明化)
+        </button>
+      </div>
+    </div>
+
+    <!-- パネル追加 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600 flex-grow">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="plus" class="w-5 h-5"></i> パネル画像の追加
+      </h2>
+      <label for="panel-upload" class="flex items-center justify-center w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer transition-colors shadow-lg">
+        <i data-lucide="upload" class="mr-2 w-5 h-5"></i>
+        画像をパネルとして追加
+        <input type="file" id="panel-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" multiple />
+      </label>
+      <input type="file" id="replace-panel-upload" class="absolute opacity-0 w-0 h-0" accept="image/*" />
+
+      <!-- 配置済みパネル一覧 -->
+      <div class="mt-4">
+        <h3 class="text-sm text-gray-400 mb-2">配置済みパネル (<span id="panel-count">0</span>)</h3>
+        <ul id="panel-list" class="space-y-2">
+          <!-- パネルリストがここにJavaScriptで生成されます -->
+          <p class="text-xs text-gray-500">パネルはありません</p>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 整列・配置 -->
+    <div class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="align-center" class="w-5 h-5"></i> 整列・配置
+      </h2>
+      <div class="flex flex-col gap-2">
+        <div class="grid grid-cols-3 gap-2">
+          <button id="align-top-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="上に合わせる">
+            <i data-lucide="align-start-horizontal" class="w-5 h-5 mb-1"></i>
+            上揃え
+          </button>
+          <button id="align-center-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="中央に合わせる">
+            <i data-lucide="align-center-horizontal" class="w-5 h-5 mb-1"></i>
+            中央揃え
+          </button>
+          <button id="align-bottom-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="下に合わせる">
+            <i data-lucide="align-end-horizontal" class="w-5 h-5 mb-1"></i>
+            下揃え
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-1">
+          <button id="align-left-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="左に合わせる">
+            <i data-lucide="align-start-vertical" class="w-5 h-5 mb-1"></i>
+            左揃え
+          </button>
+          <button id="align-center-h-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="左右中央に合わせる">
+            <i data-lucide="align-center-vertical" class="w-5 h-5 mb-1"></i>
+            左右中央
+          </button>
+          <button id="align-right-btn" class="flex flex-col items-center justify-center p-2 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="右に合わせる">
+            <i data-lucide="align-end-vertical" class="w-5 h-5 mb-1"></i>
+            右揃え
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-1">
+          <button id="distribute-h-btn" class="flex items-center justify-center py-2 px-3 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="水平に均等配置">
+            <i data-lucide="distribute-horizontal" class="w-4 h-4 mr-1.5"></i>
+            水平均等
+          </button>
+          <button id="distribute-v-btn" class="flex items-center justify-center py-2 px-3 rounded bg-gray-800 border border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-white disabled:opacity-40 disabled:hover:bg-gray-800 disabled:cursor-not-allowed transition-all text-xs font-semibold" disabled title="垂直に均等配置">
+            <i data-lucide="distribute-vertical" class="w-4 h-4 mr-1.5"></i>
+            垂直均等
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メニューフッター -->
+    <div class="mt-auto pt-4 border-t border-gray-700/50 text-center text-xs text-gray-500">
+      <p class="mb-1">Product By 異次元ポケット</p>
+      <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">https://ijigenpocket.booth.pm/</a>
+    </div>
+  </div>
+
+  <!-- 右側：プレビュー領域（キャンバス） -->
+  <div id="preview-area" class="flex-grow p-8 bg-blue-950 flex flex-col items-center justify-center overflow-hidden transition-colors duration-200">
+    
+    <!-- キャンバスラッパー（中央配置とスケーリング用） -->
+    <div id="canvas-wrapper" class="flex items-center justify-center w-full h-full min-h-0 relative overflow-auto p-8">
+      <!-- キャンバスエリア -->
+      <div 
+        id="canvas-area"
+        class="relative bg-black rounded-lg shadow-2xl overflow-hidden border border-gray-700 origin-center shrink-0"
+        style="width: 1280px; height: 720px;"
+      >
+        <!-- 背景、フレーム、パネルがここにJavaScriptで生成されます -->
+        <div id="canvas-guide" class="absolute inset-0 flex items-center justify-center text-gray-600 pointer-events-none">
+          <p>左のメニューから画像をアップロードしてください</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-4 text-gray-500 text-sm flex items-center gap-6 z-10 bg-gray-900/80 px-5 py-2 rounded-full border border-gray-800 shadow-lg">
+      <span>キャンバスサイズ: <span id="size-display" class="font-semibold text-gray-300">1280 x 720</span></span>
+      <div class="flex items-center gap-2 border-l border-gray-700 pl-6">
+        <span class="text-xs text-gray-400 mr-1">背景色:</span>
+        <div class="flex items-center gap-1.5 mr-4">
+          <button id="bg-color-white" class="w-4 h-4 rounded-full bg-white border border-gray-400 hover:scale-110 transition-transform" title="白"></button>
+          <button id="bg-color-gray" class="w-4 h-4 rounded-full bg-gray-500 border border-gray-600 hover:scale-110 transition-transform" title="グレー"></button>
+          <button id="bg-color-black" class="w-4 h-4 rounded-full bg-black border border-gray-800 hover:scale-110 transition-transform" title="黒"></button>
+          <button id="bg-color-blue" class="w-4 h-4 rounded-full bg-blue-950 border border-blue-900 hover:scale-110 transition-transform ring-1 ring-blue-500" title="青（デフォルト）"></button>
+        </div>
+        <button id="zoom-out-btn" class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="縮小">
+          <i data-lucide="zoom-out" class="w-4 h-4"></i>
+        </button>
+        <span>表示倍率: <span id="scale-display" class="font-semibold text-gray-300">100%</span></span>
+        <button id="zoom-in-btn" class="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="拡大">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+        <button id="zoom-fit-btn" class="ml-2 px-2.5 py-0.5 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors" title="自動フィット">
+          フィット
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- フレーム画像編集モーダル -->
+  <div id="frame-edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- ヘッダー -->
+      <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/80">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="scissors" class="w-5 h-5 text-blue-400"></i>
+          フレーム画像の編集 (部分透明化)
+        </h3>
+        <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+      <!-- メインコンテンツ -->
+      <div class="p-6 flex flex-col md:flex-row gap-6 overflow-y-auto min-h-0">
+        <!-- 左側：キャンバス表示エリア -->
+        <div class="flex-grow flex items-center justify-center bg-gray-950 rounded-lg p-4 relative min-h-[300px] md:min-h-[400px] border border-gray-700 overflow-hidden">
+          <!-- 市松模様背景のラッパー -->
+          <div class="relative checkerboard-bg" style="max-width: 100%; max-height: 400px;">
+            <canvas id="frame-edit-canvas" class="block cursor-crosshair max-w-full max-h-[400px] object-contain"></canvas>
+          </div>
+        </div>
+        <!-- 右側：ツールパネル -->
+        <div class="w-full md:w-64 shrink-0 flex flex-col gap-4">
+          <!-- 選択ツール -->
+          <div>
+            <span class="text-xs text-gray-400 block mb-2 font-semibold">選択ツール</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button id="tool-free" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-blue-600 text-white hover:bg-blue-500 border border-blue-400/30 transition-all font-semibold text-xs">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+                自由描画
+              </button>
+              <button id="tool-rect" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600 transition-all font-semibold text-xs">
+                <i data-lucide="square" class="w-4 h-4"></i>
+                長方形
+              </button>
+              <button id="tool-circle" class="flex flex-col items-center gap-1 py-2 px-3 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600 transition-all font-semibold text-xs">
+                <i data-lucide="circle" class="w-4 h-4"></i>
+                円・楕円
+              </button>
+            </div>
+          </div>
+          <!-- 操作 -->
+          <div class="flex flex-col gap-2 mt-2">
+            <button id="apply-transparent-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-semibold transition-colors">
+              <i data-lucide="eraser" class="w-4 h-4"></i>
+              選択範囲を透明にする
+            </button>
+            <button id="undo-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded text-sm transition-colors" disabled>
+              <i data-lucide="undo" class="w-4 h-4"></i>
+              元に戻す (Undo)
+            </button>
+            <button id="reset-edit-btn" class="flex items-center justify-center gap-2 w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded text-sm transition-colors">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              初期状態に戻す
+            </button>
+          </div>
+          <!-- 操作説明 -->
+          <div class="mt-auto bg-gray-900/50 border border-gray-700 p-3 rounded text-xs text-gray-400 leading-relaxed">
+            <p class="font-bold text-gray-300 mb-1 flex items-center gap-1">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-blue-400"></i> 使い方
+            </p>
+            1. 選択ツールを選びます。<br>
+            2. 画像の上をドラッグして範囲を選択します。<br>
+            3. 「選択範囲を透明にする」ボタンで透明化します。<br>
+            4. 完了したら「編集を適用する」を押します。
+          </div>
+        </div>
+      </div>
+      <!-- フッター -->
+      <div class="px-6 py-4 border-t border-gray-700 bg-gray-800/80 flex justify-end gap-3">
+        <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded font-semibold text-sm transition-colors">
+          キャンセル
+        </button>
+        <button id="save-edit-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-semibold text-sm transition-colors shadow-lg">
+          編集を適用する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/ccfolialayoutmaker_nosave.js?v=1.2.3"></script>
+</body>
+</html>

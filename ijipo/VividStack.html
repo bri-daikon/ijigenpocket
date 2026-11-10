@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VividStack｜複数画像・文字・スタンプを自由に合成する無料ツール</title>
+    <meta name="description" content="複数の画像を自動整列し、背景、文字、絵文字スタンプを重ねて1枚のPNG画像にできる無料の画像合成ツールです。等間隔整列、回転、背景ぼかし、選択範囲への切り抜きにも対応しています。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/VividStack.html">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <!-- Fabric.js for Canvas manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <!-- Google Fonts for more choices -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Sawarabi+Mincho&family=Shippori+Mincho&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/vividstack.css">
+</head>
+<body>
+
+<div class="content-wrapper">
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-black text-blue-700 tracking-tight">VividStack</h1>
+            <p class="text-gray-600">画像を配置して、文字やスタンプを添えましょう</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 space-y-6 tool-panel bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                
+                <!-- 1. Import & View Section -->
+                <section>
+                    <h2 class="font-bold text-lg mb-3 text-blue-600">1. 画像と表示設定</h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ワークエリアのサイズ（画質）</label>
+                        <select id="canvasSizeSelect" onchange="changeCanvasSize()" class="block w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="800x600">低画質 (800 x 600)</option>
+                            <option value="1200x900">標準 (1200 x 900)</option>
+                            <option value="1920x1080">高画質 (1920 x 1080)</option>
+                            <option value="3840x2160">最高画質 (3840 x 2160)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                        <div class="flex items-center justify-between">
+                            <label for="zoomFitToggle" class="text-xs font-bold text-yellow-800 cursor-pointer">全体を表示（画面に収める）</label>
+                            <input type="checkbox" id="zoomFitToggle" onchange="updateCanvasZoom()" class="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500">
+                        </div>
+                    </div>
+
+                    <!-- 背景画像設定 -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">背景画像を設定</label>
+                        <input type="file" id="bgLoader" accept="image/*" onchange="handleBackgroundUpload(event)" class="block w-full text-xs text-gray-500
+                            file:mr-2 file:py-1 file:px-3
+                            file:rounded-full file:border-0
+                            file:text-xs file:font-semibold
+                            file:bg-gray-200 file:text-gray-700
+                            hover:file:bg-gray-300 mb-3">
+                        
+                        <!-- Blur Control -->
+                        <div id="blurControl" class="mb-2 hidden">
+                            <label class="block text-[11px] font-bold text-gray-600 mb-1">背景のぼかし強度</label>
+                            <input type="range" id="bgBlurSlider" min="0" max="1" step="0.1" value="0" oninput="applyBlur()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <button onclick="removeBackground()" class="text-[10px] text-red-500 hover:underline">背景を削除して白に戻す</button>
+                    </div>
+
+                    <label class="block text-sm font-bold text-gray-700 mb-1">合成する画像を追加</label>
+                    <input type="file" id="imageLoader" accept="image/*" multiple class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100 mb-4">
+                    
+                    <div class="space-y-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="filenameToggle" onchange="toggleFilenameVisibility()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                            <label for="filenameToggle" class="text-sm font-medium text-blue-800 cursor-pointer">ファイル名を表示</label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="gridToggle" onchange="toggleGrid()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                            <label for="gridToggle" class="text-sm font-medium text-blue-800 cursor-pointer">グリッドを表示 (吸着あり)</label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Text & Stamps -->
+                <section>
+                    <h2 class="font-bold text-lg mb-3 text-green-600">2. 文字とスタンプ</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">フォント選択</label>
+                            <select id="fontSelect" onchange="changeFont()" class="block w-full p-2 border border-gray-300 rounded-md text-sm">
+                                <option value="Noto Sans JP" style="font-family: 'Noto Sans JP';">標準 (ゴシック)</option>
+                                <option value="Noto Serif JP" style="font-family: 'Noto Serif JP';">明朝体</option>
+                                <option value="M PLUS Rounded 1c" style="font-family: 'M PLUS Rounded 1c';">丸文字</option>
+                                <option value="Sawarabi Mincho" style="font-family: 'Sawarabi Mincho';">さわらび明朝</option>
+                                <option value="Impact" style="font-family: 'Impact';">Impact (太字強調)</option>
+                                <option value="Courier New" style="font-family: 'Courier New';">Typewriter</option>
+                            </select>
+                        </div>
+                        <button onclick="addText()" class="w-full py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">テキスト追加</button>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="addStamp('⭐')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">⭐</button>
+                            <button onclick="addStamp('❤️')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">❤️</button>
+                            <button onclick="addStamp('✅')" class="py-2 bg-gray-100 rounded hover:bg-gray-200">✅</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Alignment Controls -->
+                <section>
+                    <h2 class="font-bold text-lg mb-3 text-purple-600">3. 整列 (複数選択時)</h2>
+                    <div class="space-y-2">
+                        <button onclick="alignHorizontal()" class="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition text-sm">横に等間隔整列</button>
+                        <button onclick="alignVertical()" class="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition text-sm">縦に等間隔整列</button>
+                        <button onclick="cropToSelection()" class="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm font-bold mt-2">選択範囲でキャンバスを切り抜く</button>
+                    </div>
+                </section>
+
+                <!-- 4. Object Control -->
+                <section>
+                    <h2 class="font-bold text-lg mb-3 text-red-600">4. 操作</h2>
+                    <button onclick="selectAll()" class="w-full py-2 bg-gray-800 text-white rounded hover:bg-black transition mb-2">全オブジェクトを選択</button>
+                    
+                    <button onclick="rotateSelected()" class="w-full py-2 border-2 border-gray-800 text-gray-800 rounded hover:bg-gray-100 transition mb-4 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+                        右に90度回転
+                    </button>
+
+                    <button onclick="deleteSelected()" class="w-full py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition">選択消去</button>
+                    <button onclick="clearCanvas()" class="w-full py-2 mt-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition">全クリア</button>
+                </section>
+
+                <!-- 5. Export -->
+                <section class="pt-4 border-t border-gray-100">
+                    <button onclick="downloadImage()" class="w-full py-4 bg-blue-700 text-white font-bold rounded-lg shadow-lg hover:bg-blue-800 transition">
+                        画像を保存する
+                    </button>
+                </section>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="lg:col-span-3 flex flex-col items-center">
+                <div id="canvas-wrapper" class="w-full h-[70vh] bg-gray-200 p-4 rounded-xl overflow-auto border-2 border-dashed border-gray-300">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-500 flex flex-wrap justify-center gap-4 text-center">
+                    <span>💡 <strong>VividStack</strong> へようこそ！</span>
+                    <span>💡 <strong>読み込み</strong>: 自動できれいに整列されます</span>
+                    <span>💡 <strong>背景ぼかし</strong>: 画像設定後にスライダーで調整できます</span>
+                </div>
+            </div>
+        </div>
+
+        <section class="mt-10 bg-white rounded-3xl shadow-xl border border-gray-100 p-6 md:p-10" aria-labelledby="guide-title">
+            <div class="max-w-5xl mx-auto">
+                <p class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-2">Guide</p>
+                <h2 id="guide-title" class="text-3xl font-black tracking-tight mb-4">VividStackでできること</h2>
+                <p class="leading-8 text-gray-600 mb-8">複数の画像をひとつのキャンバスへ読み込み、位置や大きさを調整しながら、背景・文字・スタンプを重ねて1枚の画像にまとめられます。キャラクター比較、紹介画像、コラージュ、SNS用の告知画像などをブラウザ上で作成できます。</p>
+
+                <div class="grid md:grid-cols-2 gap-5 mb-10">
+                    <article class="rounded-2xl bg-blue-50/70 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">複数画像を自動整列</h3><p class="text-sm leading-7 text-gray-600">複数の画像をまとめて読み込むと、キャンバス内へ自動的に並べます。必要に応じてファイル名も画像の下へ表示できます。</p></article>
+                    <article class="rounded-2xl bg-blue-50/70 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">背景画像とぼかし</h3><p class="text-sm leading-7 text-gray-600">好きな画像をキャンバス全体の背景に設定し、ぼかしの強さを調整できます。背景を削除して白へ戻すこともできます。</p></article>
+                    <article class="rounded-2xl bg-blue-50/70 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">文字・スタンプ・配置調整</h3><p class="text-sm leading-7 text-gray-600">編集可能な文字や絵文字スタンプを追加できます。複数選択した素材の等間隔整列、90度回転、グリッド吸着にも対応しています。</p></article>
+                    <article class="rounded-2xl bg-blue-50/70 border border-blue-100 p-5"><h3 class="text-lg font-bold mb-2">切り抜いてPNG保存</h3><p class="text-sm leading-7 text-gray-600">800×600から4Kまでキャンバスサイズを選択できます。選択した素材の範囲に合わせてキャンバスを切り抜き、完成画像をPNG形式で保存できます。</p></article>
+                </div>
+
+                <h2 class="text-2xl font-black mb-4">基本的な使い方</h2>
+                <ol class="list-decimal pl-6 space-y-3 leading-7 text-gray-600 mb-10">
+                    <li>ワークエリアのサイズを選び、必要に応じて背景画像とぼかしを設定します。</li>
+                    <li>「合成する画像を追加」から画像を読み込み、キャンバス上で位置・大きさ・向きを調整します。</li>
+                    <li>文字やスタンプを追加し、複数選択と整列ボタン、グリッド吸着などで配置を整えます。</li>
+                    <li>キャンバス全体または選択範囲への切り抜きを確認し、「画像を保存する」でPNGファイルを保存します。</li>
+                </ol>
+
+                <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-5 mb-10">
+                    <h2 class="text-xl font-black mb-2">読み込んだ画像について</h2>
+                    <p class="text-sm leading-7 text-gray-600">選択した画像は、合成処理のため利用者のブラウザ内で読み込まれます。元の画像ファイルは変更されません。第三者が制作した画像を使用するときは、利用条件や著作権をご確認ください。</p>
+                </div>
+
+                <h2 class="text-2xl font-black mb-4">よくある質問</h2>
+                <div class="space-y-4">
+                    <details class="rounded-2xl border border-gray-200 p-5"><summary class="font-bold cursor-pointer">読み込んだ画像を個別に移動・拡大できますか？</summary><p class="mt-3 text-sm leading-7 text-gray-600">できます。キャンバス上の画像を選択してドラッグすると移動でき、四隅の丸いハンドルで縦横比を保ったまま拡大・縮小できます。</p></details>
+                    <details class="rounded-2xl border border-gray-200 p-5"><summary class="font-bold cursor-pointer">複数の画像をきれいに並べるには？</summary><p class="mt-3 text-sm leading-7 text-gray-600">Shiftキーを使うか「全オブジェクトを選択」で複数選択し、「横に等間隔整列」または「縦に等間隔整列」を押してください。グリッド表示を有効にすると移動時に50ピクセル単位で吸着します。</p></details>
+                    <details class="rounded-2xl border border-gray-200 p-5"><summary class="font-bold cursor-pointer">保存画像にグリッド線は入りますか？</summary><p class="mt-3 text-sm leading-7 text-gray-600">入りません。保存するときはグリッド線を一時的に非表示にし、画像保存後に元の表示状態へ戻します。</p></details>
+                    <details class="rounded-2xl border border-gray-200 p-5"><summary class="font-bold cursor-pointer">大きな画像を作ると動作が重くなりますか？</summary><p class="mt-3 text-sm leading-7 text-gray-600">4Kキャンバスや多数の高解像度画像は、端末のメモリを多く使用します。動作が重い場合は標準サイズへ変更するか、読み込む画像数を減らしてください。</p></details>
+                </div>
+
+                <nav class="mt-10 flex flex-wrap gap-3" aria-label="関連ページ">
+                    <a href="/" class="inline-flex items-center px-5 py-3 rounded-full bg-gray-900 text-white font-bold hover:bg-gray-700">ほかのツールを見る →</a>
+                    <a href="/wordpress/" class="inline-flex items-center px-5 py-3 rounded-full border border-gray-300 font-bold hover:bg-gray-50">制作・改善記事を読む →</a>
+                </nav>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script src="js/vividstack.js"></script>
+</body>
+</html>

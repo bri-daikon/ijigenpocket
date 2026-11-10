@@ -1,0 +1,118 @@
+Created At: 2026-06-07T07:41:02Z
+Completed At: 2026-06-07T07:41:03Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2824
+Total Bytes: 111948
+Showing lines 2300 to 2460
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2300:                 }, 1500);
+2301:               }, 1500);
+2302:             } else {
+2303:               setTimeout(() => {
+2304:                 addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
+2305:                 
+2306:                 generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType);
+2307:                 
+2308:                 aiGenerateBtn.disabled = false;
+2309:                 aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+2310:                 if (typeof lucide !== 'undefined') lucide.createIcons();
+2311:               }, 1500);
+2312:             }
+2313:           }, 1500);
+2314:         }, 1500);
+2315:       }, 500);
+2316:     }
+2317:   });
+2318: }
+2319: 
+2320: function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
+2321:   saveStateToHistory();
+2322:   
+2323:   const gen = themeSvgGenerators[theme];
+2324:   if (!gen) return;
+2325: 
+2326:   frame = null;
+2327:   panels = [];
+2328:   selectedPanelIds = [];
+2329: 
+2330:   if (bgImageUrl) {
+2331:     frame = {
+2332:       url: bgImageUrl,
+2333:       x: 0,
+2334:       y: 0,
+2335:       width: 1280,
+2336:       height: 720,
+2337:       originalRatio: 1280 / 720
+2338:     };
+2339:   } else {
+2340:     const bgSvg = gen.bg();
+2341:     frame = {
+2342:       url: createSvgUrl(bgSvg),
+2343:       x: 0,
+2344:       y: 0,
+2345:       width: 1280,
+2346:       height: 720,
+2347:       originalRatio: 1280 / 720
+2348:
+<truncated 1965 bytes>
+  } else if (layoutType === 'pattern3' || layoutType === 'pattern5') {
+2402:     plW = 140; plH = 260;
+2403:   } else if (layoutType === 'pattern6') {
+2404:     plW = 140; plH = 180;
+2405:   } else if (layoutType === 'pattern7') {
+2406:     plW = 180; plH = 280;
+2407:   }
+2408: 
+2409:   for (let i = 0; i < numPlayers; i++) {
+2410:     let plX = 1050;
+2411:     let plY = 40;
+2412:     
+2413:     if (layoutType === 'right-vertical') {
+2414:       plX = 1050;
+2415:       if (numPlayers === 1) {
+2416:         plY = 260;
+2417:       } else {
+2418:         plY = 40 + i * (640 - plH) / (numPlayers - 1);
+2419:       }
+2420:     } else if (layoutType === 'bottom-horizontal') {
+2421:       plY = 510;
+2422:       if (numPlayers === 1) {
+2423:         plX = 660;
+2424:       } else {
+2425:         plX = 280 + i * (720 - plW) / (numPlayers - 1);
+2426:       }
+2427:     } else if (layoutType === 'pattern1') {
+2428:       plY = 150;
+2429:       if (numPlayers === 1) {
+2430:         plX = 600;
+2431:       } else {
+2432:         plX = 600 + i * 160;
+2433:       }
+2434:     } else if (layoutType === 'pattern2') {
+2435:       plY = 220;
+2436:       if (numPlayers === 1) {
+2437:         plX = 600;
+2438:       } else {
+2439:         plX = 600 + i * 160;
+2440:       }
+2441:     } else if (layoutType === 'pattern3') {
+2442:       plY = 430;
+2443:       if (numPlayers === 1) {
+2444:         plX = 630;
+2445:       } else {
+2446:         plX = 300 + i * 160;
+2447:       }
+2448:     } else if (layoutType === 'pattern4') {
+2449:       plY = 50;
+2450:       if (numPlayers === 1) {
+2451:         plX = 290;
+2452:       } else {
+2453:         plX = 50 + i * 160;
+2454:       }
+2455:     } else if (layoutType === 'pattern5') {
+2456:       plY = 420;
+2457:       if (numPlayers === 1) {
+2458:         plX = 570;
+2459:       } else {
+2460:         plX = 280 + i * 180;
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

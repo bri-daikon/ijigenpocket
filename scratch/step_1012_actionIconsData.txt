@@ -1,0 +1,139 @@
+Created At: 2026-06-06T13:03:42Z
+Completed At: 2026-06-06T13:04:07Z
+The following changes were made by the multi_replace_file_content tool to: y:\ijigenpocket\js\ccfolialayoutmaker_ai.js. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -2385,39 +2385,37 @@
+     };
+   }
+ 
++  // 1. メイン画面の描画
+   const windowSvg = gen.window(design);
+-  const windowPanelWidth = 720;
+-  const windowPanelHeight = 405;
+-  let windowX = 50;
+-  let windowY = 110;
+-
+-  if (layoutType === 'bottom-horizontal') {
+-    windowX = 280;
+-    windowY = 50;
+-  }
+-
+-  panels.push({
+-    id: 'ai-window-' + Date.now(),
+-    url: createSvgUrl(windowSvg),
+-    x: windowX,
+-    y: windowY,
+-    width: windowPanelWidth,
+-    height: windowPanelHeight,
+-    originalRatio: windowPanelWidth / windowPanelHeight,
+-    flipH: false,
+-    flipV: false,
+-    visible: true,
+-    opacity: 1
+-  });
+-
+-  let plW = 160;
+-  let plH = 170;
+-  if (layoutType === 'right-vertical') {
+-    if (numPlayers <= 3) { plW = 180; plH = 200; }
+-    else if (numPlayers === 4) { plW = 170; plH = 150; }
+-    else { plW = 160; plH = 120; }
+-  }
+-
++  const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
++  const windowPanelHeight = design.window_height !== undefined ? design.window_height : 405;
++  let windowX = design.window_x !== undefined ? design.window_x : 50;
++  let windowY = design.window_y !== undefined ? design.window_y : 110;
++
++  if (design.window_x === undefined) {
++    // 従来のフォールバック計算
++    if (layoutType === 'bottom-horizontal') {
++      windowX = 280;
++      windowY = 50;
++    }
++  }
++
++  panels.push({
++    id: 'ai-window-' + Date.now(),
++    url: createSvgUrl(windowSvg),
++    x: windowX,
++    y: windowY,
++    width: windowPanelWidth,
++    height: windowPanelHeight,
++    originalRatio: windowPanelWidth / windowPanelHeight,
++    flipH: false,
++    flipV: false,
++    visible: true,
++    opacity: 1
++  });
++
++  // 2. PLパ
+<truncated 3914 bytes>
+youtType === 'right-vertical') {
++        menuY = 50;
++        menuX = 50 + i * 145;
++      } else {
++        menuX = 50;
++        menuY = 50 + i * 55;
++      }
++    } else {
++      if (menuLayoutType === 'horizontal') {
++        menuX = baseMenuX + i * (menuW + 15);
++      } else {
++        menuY = baseMenuY + i * (menuH + 10);
++      }
++    }
++
++    panels.push({
++      id: `ai-menu-${label}-${Date.now()}`,
++      url: createSvgUrl(menuSvg),
++      x: menuX,
++      y: menuY,
++      width: menuW,
++      height: menuH,
++      originalRatio: menuW / menuH,
++      flipH: false,
++      flipV: false,
++      visible: true,
++      opacity: 1
++    });
++  });
++
++  // 4. アクションアイコンの描画
++  const actionW = 75;
++  const actionH = 75;
++  const baseActionX = design.action_x !== undefined ? design.action_x : 50;
++  const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+ 
+   actionIconsData.forEach((icon, i) => {
+     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+-    let actionX = 50;
+-    let actionY = 550;
+-
+-    if (layoutType === 'right-vertical') {
+-      actionY = 550;
+-      actionX = 50 + i * 125;
+-    } else {
+-      actionX = 50 + (i % 2) * 90;
+-      actionY = 350 + Math.floor(i / 2) * 90;
++    let actionX = baseActionX;
++    let actionY = baseActionY;
++
++    if (design.action_x === undefined) {
++      if (layoutType === 'right-vertical') {
++        actionY = 550;
++        actionX = 50 + i * 125;
++      } else {
++        actionX = 50 + (i % 2) * 90;
++        actionY = 350 + Math.floor(i / 2) * 90;
++      }
++    } else {
++      actionX = baseActionX + i * (actionW + 15);
+     }
+ 
+     panels.push({
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.
+
+We did our best to apply changes despite some inaccuracies. Double check if the edit applied is what you intended.

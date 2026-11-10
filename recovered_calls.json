@@ -1,0 +1,94 @@
+[
+  {
+    "name": "multi_replace_file_content",
+    "args": {
+      "Description": "Add export settings to save and load logic in KakeruKun.js",
+      "Instruction": "kakerukun.jsで、出力設定項目をファイル保存および読み込みの対象に含めるように修正します。",
+      "ReplacementChunks": [
+        {
+          "AllowMultiple": false,
+          "EndLine": 173,
+          "ReplacementContent": "        lineHeight: document.getElementById('line-height-select')?.value || '1.8',\n        exportLayout: document.getElementById('export-layout-select')?.value || '1',\n        exportSettings: {\n            paperSize: document.getElementById('export-paper-size')?.value || 'A4',\n            marginTop: document.getElementById('export-margin-top')?.value || '20',\n            marginBottom: document.getElementById('export-margin-bottom')?.value || '20',\n            marginLeft: document.getElementById('export-margin-left')?.value || '20',\n            marginRight: document.getElementById('export-margin-right')?.value || '20',\n            indentParagraph: document.getElementById('export-indent-paragraph')?.checked || false\n        },\n        snippets: getSnippets()\n    };",
+          "StartLine": 170,
+          "TargetContent": "        lineHeight: document.getElementById('line-height-select')?.value || '1.8',\n        exportLayout: document.getElementById('export-layout-select')?.value || '1',\n        snippets: getSnippets()\n    };"
+        },
+        {
+          "AllowMultiple": false,
+          "EndLine": 239,
+          "ReplacementContent": "                if (data.exportLayout) {\n                    const layoutSelect = document.getElementById('export-layout-select');\n                    if (layoutSelect) layoutSelect.value = data.exportLayout;\n                }\n                if (data.exportSettings) {\n                    if (document.getElementById('export-paper-size')) document.getElementById('export-paper-size').value = data.exportSettings.paperSize || 'A4';\n                    if (document.getElementById('export-margin-top')) document.getElementById('export-margin-top').value = data.exportSettings.marginTop || '20';\n                    if (document.getElementById('export-margin-bottom')) document.getElementById('export-margin-bottom').value = data.exportSettings.marginBottom || '20';\n                    if (document.getElementById('export-margin-left')) document.getElementById('export-margin-left').value = data.exportSettings.marginLeft || '20';\n                    if (document.getElementById('export-margin-right')) document.getElementById('export-margin-right').value = data.exportSettings.marginRight || '20';\n                    if (document.getElementById('export-indent-paragraph')) document.getElementById('export-indent-paragraph').checked = data.exportSettings.indentParagraph || false;\n                }\n                if (data.snippets) {",
+          "StartLine": 234,
+          "TargetContent": "                if (data.exportLayout) {\n                    const layoutSelect = document.getElementById('export-layout-select');\n                    if (layoutSelect) layoutSelect.value = data.exportLayout;\n                }\n                if (data.snippets) {"
+        }
+      ],
+      "TargetFile": "y:\\ijigenpocket\\js\\kakerukun.js",
+      "toolAction": "Modifying kakerukun.js",
+      "toolSummary": "Modify kakerukun.js"
+    }
+  },
+  {
+    "name": "multi_replace_file_content",
+    "args": {
+      "Description": "Apply export settings to exportWord and exportGoogleDocs in kakerukun.js",
+      "Instruction": "exportWord と exportGoogleDocs に出力設定（用紙サイズ、余白、段落）を反映させます。",
+      "ReplacementChunks": [
+        {
+          "AllowMultiple": false,
+          "EndLine": 1052,
+          "ReplacementContent": "    const marginTop = document.getElementById('export-margin-top')?.value || '20';\n    const marginBottom = document.getElementById('export-margin-bottom')?.value || '20';\n    const marginLeft = document.getElementById('export-margin-left')?.value || '20';\n    const marginRight = document.getElementById('export-margin-right')?.value || '20';\n    const paperSize = document.getElementById('export-paper-size')?.value || 'A4';\n    const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;\n    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    const paragraphStyle = isIndent ? 'p { margin-top: 0; margin-bottom: 0; text-indent: 1em; mso-char-indent-count: 1.0; }' : 'p { margin-top: 0; margin-bottom: 0; }';\n\n    const wordContent = `\n        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>\n        <head>\n            <meta charset=\"UTF-8\">\n            <style>\n                @page {\n                    size: ${paperSizeStr};\n                    margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;\n                    mso-page-orientation: portrait;\n                }\n                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; mso-line-height-rule: exactly; }\n                ${paragraphStyle}",
+          "StartLine": 1030,
+          "TargetContent": "    const wordContent = `\n        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>\n        <head>\n            <meta charset=\"UTF-8\">\n            <style>\n                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; mso-line-height-rule: exactly; }\n                p { margin-top: 0; margin-bottom: 0; }"
+        },
+        {
+          "AllowMultiple": false,
+          "EndLine": 1182,
+          "ReplacementContent": "    const marginTop = document.getElementById('export-margin-top')?.value || '20';\n    const marginBottom = document.getElementById('export-margin-bottom')?.value || '20';\n    const marginLeft = document.getElementById('export-margin-left')?.value || '20';\n    const marginRight = document.getElementById('export-margin-right')?.value || '20';\n    const paperSize = document.getElementById('export-paper-size')?.value || 'A4';\n    const isIndent = document.getElementById('export-indent-paragraph')?.checked || false;\n    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    const paragraphStyle = isIndent ? 'p { margin-top: 0; margin-bottom: 0; text-indent: 1em; }' : 'p { margin-top: 0; margin-bottom: 0; }';\n\n    const gdocsContent = `\n        <!DOCTYPE html>\n        <html>\n        <head>\n            <meta charset=\"UTF-8\">\n            <style>\n                @page {\n                    size: ${paperSizeStr};\n                    margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;\n                }\n                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; }\n                ${paragraphStyle}",
+          "StartLine": 1175,
+          "TargetContent": "    const gdocsContent = `\n        <!DOCTYPE html>\n        <html>\n        <head>\n            <meta charset=\"UTF-8\">\n            <style>\n                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; }\n                p { margin-top: 0; margin-bottom: 0; }"
+        }
+      ],
+      "TargetFile": "y:\\ijigenpocket\\js\\kakerukun.js",
+      "toolAction": "Modifying kakerukun.js",
+      "toolSummary": "Modify kakerukun.js"
+    }
+  },
+  {
+    "name": "multi_replace_file_content",
+    "args": {
+      "Description": "Update KakeruKun export word settings to support exact paragraph config",
+      "Instruction": "Word出力時のCSSを修正し、行グリッド・左インデント・行間倍数をダイアログに合わせます。",
+      "ReplacementChunks": [
+        {
+          "AllowMultiple": false,
+          "EndLine": 1054,
+          "ReplacementContent": "    const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;\n    const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';\n    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    const gridStyle = snapToGrid ? 'mso-layout-grid-align: auto;' : 'mso-layout-grid-align: none;';\n    let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm; ${gridStyle}`;\n    if (isIndent) pStyles += ' text-indent: 1em; mso-char-indent-count: 1.0;';\n    const paragraphStyle = `p { ${pStyles} }`;",
+          "StartLine": 1052,
+          "TargetContent": "    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    const paragraphStyle = isIndent ? 'p { margin-top: 0; margin-bottom: 0; text-indent: 1em; mso-char-indent-count: 1.0; }' : 'p { margin-top: 0; margin-bottom: 0; }';"
+        },
+        {
+          "AllowMultiple": false,
+          "EndLine": 1066,
+          "ReplacementContent": "                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight}; }",
+          "StartLine": 1066,
+          "TargetContent": "                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; mso-line-height-rule: exactly; }"
+        },
+        {
+          "AllowMultiple": false,
+          "EndLine": 1193,
+          "ReplacementContent": "    const snapToGrid = document.getElementById('export-snap-to-grid')?.checked || false;\n    const paragraphIndentLeft = document.getElementById('export-paragraph-indent-left')?.value || '8.5';\n    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    let pStyles = `margin-top: 0; margin-bottom: 0; margin-left: ${paragraphIndentLeft}mm;`;\n    if (isIndent) pStyles += ' text-indent: 1em;';\n    const paragraphStyle = `p { ${pStyles} }`;",
+          "StartLine": 1191,
+          "TargetContent": "    \n    const paperSizeStr = paperSize === 'B5' ? '182mm 257mm' : paperSize === 'A5' ? '148mm 210mm' : '210mm 297mm';\n    const paragraphStyle = isIndent ? 'p { margin-top: 0; margin-bottom: 0; text-indent: 1em; }' : 'p { margin-top: 0; margin-bottom: 0; }';"
+        },
+        {
+          "AllowMultiple": false,
+          "EndLine": 1205,
+          "ReplacementContent": "                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight}; }",
+          "StartLine": 1205,
+          "TargetContent": "                body, p, div, td { font-family: ${fontCSS}; line-height: ${lineHeight * 100}%; }"
+        }
+      ],
+      "TargetFile": "y:\\ijigenpocket\\js\\kakerukun.js",
+      "toolAction": "Modifying kakerukun.js",
+      "toolSummary": "Modify kakerukun.js"
+    }
+  }
+]

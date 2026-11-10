@@ -1,0 +1,217 @@
+:root {
+    --bg-color: #030712;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent: #8b5cf6;
+    --accent-glow: rgba(139, 92, 246, 0.5);
+    --card-bg: rgba(15, 23, 42, 0.6);
+    --card-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column; /* Changed for common nav */
+    margin: 0;
+    overflow-x: hidden;
+}
+
+.background-effects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+}
+
+.glow-1 { width: 50vw; height: 50vw; background: var(--accent); top: -10vw; right: -10vw; }
+.glow-2 { width: 40vw; height: 40vw; background: #3b82f6; bottom: -10vw; left: -10vw; }
+
+/* Main content wrapper to preserve original centering */
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 2rem 0;
+}
+
+.container {
+    max-width: 700px;
+    width: 100%;
+    padding: 2rem;
+    z-index: 10;
+}
+
+/* 撮影用ラッパー: 実要素で枠を作る */
+.capture-frame {
+    padding: 4px; /* ここが枠の太さになる */
+    border-radius: 36px;
+    background: linear-gradient(135deg, var(--accent), #3b82f6, #06b6d4, var(--accent));
+    background-size: 300% 300%;
+    animation: gradientMove 8s ease infinite;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.2);
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.capture-wrapper {
+    padding: 4rem 2.5rem;
+    border-radius: 32px;
+    background: radial-gradient(circle at top right, #1e1b4b, #030712);
+    position: relative;
+    overflow: hidden;
+}
+
+.capture-header { text-align: center; margin-bottom: 3rem; }
+.capture-header h1 { 
+    font-size: 2.5rem; 
+    letter-spacing: 0.3em; 
+    margin: 0.5rem 0; 
+    font-weight: 700;
+    background: linear-gradient(to bottom, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle { font-size: 0.9rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5em; opacity: 0.8; }
+
+.card.glass {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+.theme-text {
+    min-height: 120px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.theme-text span {
+    font-weight: 700;
+    line-height: 1.5;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    display: inline-block;
+}
+
+.generate-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    background: var(--accent-hover);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
+}
+
+.capture-footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+}
+
+/* アニメーション */
+.spinning .icon { animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-out { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(10px); }
+.fade-in { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+.placeholder { color: var(--text-secondary); font-size: 1.2rem; font-weight: 400; }
+
+/* ポストボタンなどの装飾 */
+.action-btn {
+    transition: all 0.3s;
+}
+.action-btn:hover {
+    transform: translateY(-3px);
+}
+
+/* ツール説明 */
+.odai-guide {
+    width: calc(100% - 2rem);
+    max-width: 900px;
+    margin: 1rem auto 3rem;
+    padding: 2.5rem;
+    color: var(--text-primary);
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
+    backdrop-filter: blur(20px);
+    z-index: 10;
+}
+.odai-guide h2 { margin: 0 0 1rem; font-size: 1.65rem; font-weight: 700; line-height: 1.5; }
+.odai-guide > h2:not(:first-of-type) { margin-top: 2.5rem; }
+.odai-guide .guide-label { margin: 0 0 0.35rem; color: #a78bfa; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.18em; }
+.odai-guide .guide-lead { margin: 0 0 2rem; color: var(--text-secondary); line-height: 1.95; }
+.odai-guide .guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.odai-guide article { padding: 1.25rem; background: rgba(255, 255, 255, 0.035); border: 1px solid var(--card-border); border-radius: 16px; }
+.odai-guide article h3 { margin: 0 0 0.55rem; font-size: 1rem; font-weight: 700; }
+.odai-guide article p, .odai-guide .guide-steps p, .odai-guide .guide-note p, .odai-guide .guide-faq p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.85; }
+.odai-guide .guide-steps { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.odai-guide .guide-steps li { display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem 1.1rem; background: rgba(255, 255, 255, 0.035); border-radius: 12px; }
+.odai-guide .guide-steps span { display: grid; place-items: center; flex: 0 0 30px; height: 30px; color: white; background: var(--accent); border-radius: 50%; font-family: sans-serif; font-weight: 700; }
+.odai-guide .guide-note { margin-top: 2.5rem; padding: 1.4rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; }
+.odai-guide .guide-note h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
+.odai-guide .guide-faq { display: grid; gap: 0.75rem; }
+.odai-guide .guide-faq details { padding: 1rem 1.1rem; border: 1px solid var(--card-border); border-radius: 12px; }
+.odai-guide .guide-faq summary { font-weight: 700; cursor: pointer; }
+.odai-guide .guide-faq details p { margin-top: 0.75rem; }
+.odai-guide .guide-links { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 2.25rem; }
+.odai-guide .guide-links a { display: inline-flex; padding: 0.7rem 1.1rem; color: var(--text-primary); border: 1px solid var(--card-border); border-radius: 999px; font-family: sans-serif; font-weight: 700; text-decoration: none; }
+.odai-guide .guide-links a:hover { background: rgba(255, 255, 255, 0.08); }
+.odai-guide .guide-links .guide-primary { color: white; background: var(--accent); border-color: var(--accent); }
+
+@media (max-width: 680px) {
+    .container { padding: 1rem; }
+    .capture-wrapper { padding: 3rem 1rem; }
+    .odai-guide { width: calc(100% - 1rem); padding: 1.5rem 1rem; }
+    .odai-guide .guide-grid { grid-template-columns: 1fr; }
+}

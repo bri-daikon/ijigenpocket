@@ -1,0 +1,67 @@
+Created At: 2026-06-07T07:41:12Z
+Completed At: 2026-06-07T07:41:12Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2824
+Total Bytes: 111948
+Showing lines 2200 to 2325
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2200:         const responseText = await callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt);
+2201:         let cleanedJson = responseText.replace(/```json|```/g, '').trim();
+2202:         const responseData = JSON.parse(cleanedJson);
+2203:         
+2204:         // 議論ログを順次表示
+2205:         const steps = responseData.discussion || [];
+2206:         for (let idx = 0; idx < steps.length; idx++) {
+2207:           await new Promise(resolve => setTimeout(resolve, 1500));
+2208:           const msg = steps[idx];
+2209:           const speakerObj = msg.speaker === 'aoi' ? employees.aoi : employees.takumi;
+2210:           addChatMessage(speakerObj, msg.text);
+2211:         }
+2212:         
+2213:         let bgImageUrl = null;
+2214:         if (genBg) {
+2215:           await new Promise(resolve => setTimeout(resolve, 1000));
+2216:           addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+2217:           
+2218:           try {
+2219:             const styleDesc = responseData.design.style_description || "beautiful illustration";
+2220:             const basePrompt = customPrompt || theme;
+2221:             const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art
+<truncated 4432 bytes>
+om/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1280&q=80"; // ジェネリックなグラデーション
+2291:                   if (customPrompt.includes("彼岸花")) {
+2292:                     mockBgUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1280&q=80"; // ダーク赤黒
+2293:                   }
+2294:                   
+2295:                   generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType, mockBgUrl);
+2296:                   
+2297:                   aiGenerateBtn.disabled = false;
+2298:                   aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+2299:                   if (typeof lucide !== 'undefined') lucide.createIcons();
+2300:                 }, 1500);
+2301:               }, 1500);
+2302:             } else {
+2303:               setTimeout(() => {
+2304:                 addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
+2305:                 
+2306:                 generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType);
+2307:                 
+2308:                 aiGenerateBtn.disabled = false;
+2309:                 aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+2310:                 if (typeof lucide !== 'undefined') lucide.createIcons();
+2311:               }, 1500);
+2312:             }
+2313:           }, 1500);
+2314:         }, 1500);
+2315:       }, 500);
+2316:     }
+2317:   });
+2318: }
+2319: 
+2320: function generateAndLoadLayout(theme, numPlayers, layoutType, bgImageUrl) {
+2321:   saveStateToHistory();
+2322:   
+2323:   const gen = themeSvgGenerators[theme];
+2324:   if (!gen) return;
+2325: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

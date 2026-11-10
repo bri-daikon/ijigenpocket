@@ -1,0 +1,122 @@
+Created At: 2026-06-04T03:01:37Z
+Completed At: 2026-06-04T03:01:40Z
+The following changes were made by the replace_file_content tool to: y:\ijigenpocket\js\ccfolialayoutmaker.js. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -1616,4 +1616,550 @@
+ canvasBgColor = 'black';
+ setPreviewBg('blue');
+ updateUI();
++
++// ==========================================
++// AI Room Generator (AI社員に依頼) 機能
++// ==========================================
++
++const aiGenerateBtn = document.getElementById('ai-generate-btn');
++const aiThemeSelect = document.getElementById('ai-theme-select');
++const aiPlayersSelect = document.getElementById('ai-players-select');
++const aiLayoutSelect = document.getElementById('ai-layout-select');
++const aiChatBox = document.getElementById('ai-chat-box');
++
++const actionIconsData = [
++  {
++    name: "spot",
++    label: "目星",
++    sub: "SPOT",
++    path: `<path d="M15,40 Q40,15 65,40 Q40,65 15,40 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="8" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#ff007f"/>`
++  },
++  {
++    name: "listen",
++    label: "聞き耳",
++    sub: "LISTEN",
++    path: `<path d="M30,30 C30,20 45,15 50,25 C55,35 40,45 45,55 C48,60 40,65 35,60 C30,55 35,45 32,40 C30,38 30,32 30,30 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><path d="M40,35 C42,40 40,45 37,45" fill="none" stroke="#ff007f" stroke-width="1.5"/>`
++  },
++  {
++    name: "library",
++    label: "図書館",
++    sub: "LIBRARY",
++    path: `<path d="M18,25 L38,20 L38,60 L18,65 Z M62,25 L42,20 L42,60 L62,65 Z" fill="none" stroke="#00f0ff" stroke-width="2" stroke-linejoin="round"/><path d="M38,20 L42,20 M38,60 L42,60" stroke="#ff007f" stroke-width="2"/>`
++  },
++  {
++    name: "idea",
++    label: "アイデア",
++    sub: "IDEA",
++    path: `<path d="M40,20 C28,20 28,38 34,45 L34,55 L46,55 L46,45 C52,38 52,20 40,20 Z" fill="none" stroke="#00f0ff" stroke-width="2
+<truncated 24758 bytes>
+lipV: false,
++      visible: true,
++      opacity: 1
++    });
++  }
++
++  // 4. メニューアイコン (5個) の追加
++  const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
++  const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
++  const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
++
++  menuLabels.forEach((label, i) => {
++    const menuSvg = gen.menu(label);
++    let menuX = 50;
++    let menuY = 50;
++
++    if (layoutType === 'right-vertical') {
++      menuY = 50;
++      menuX = 50 + i * 145;
++    } else {
++      menuX = 50;
++      menuY = 50 + i * 55;
++    }
++
++    panels.push({
++      id: `ai-menu-${label}-${Date.now()}`,
++      url: createSvgUrl(menuSvg),
++      x: menuX,
++      y: menuY,
++      width: menuW,
++      height: menuH,
++      originalRatio: menuW / menuH,
++      flipH: false,
++      flipV: false,
++      visible: true,
++      opacity: 1
++    });
++  });
++
++  // 5. アクションアイコン (6個) の追加
++  const actionW = 75;
++  const actionH = 75;
++
++  actionIconsData.forEach((icon, i) => {
++    const actionSvg = gen.action(icon.label, icon.sub, icon.path);
++    let actionX = 50;
++    let actionY = 550;
++
++    if (layoutType === 'right-vertical') {
++      actionY = 550;
++      actionX = 50 + i * 125;
++    } else {
++      // 2列×3行で左側メニューの下に並べる
++      actionX = 50 + (i % 2) * 90;
++      actionY = 350 + Math.floor(i / 2) * 90;
++    }
++
++    panels.push({
++      id: `ai-action-${icon.name}-${Date.now()}`,
++      url: createSvgUrl(actionSvg),
++      x: actionX,
++      y: actionY,
++      width: actionW,
++      height: actionH,
++      originalRatio: actionW / actionH,
++      flipH: false,
++      flipV: false,
++      visible: true,
++      opacity: 1
++    });
++  });
++
++  updateUI();
++}
+ 
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

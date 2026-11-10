@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRPG Scenario Input Creator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090d16, #111827, #1e1b4b);
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+            --error: #f43f5e;
+            --input-bg: rgba(31, 41, 55, 0.5);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-focus: #818cf8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #6366f1, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #c7d2fe;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label span {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 400;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 14px 16px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--input-focus);
+            background: rgba(31, 41, 55, 0.8);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        textarea.large {
+            min-height: 140px;
+        }
+
+        .btn-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+            background: linear-gradient(135deg, #818cf8, #4f46e5);
+        }
+
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+
+        .btn-submit:disabled {
+            background: #4b5563;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .output-card {
+            display: none;
+            margin-top: 40px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .output-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge.running {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .badge.error {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        .console-log {
+            background: #090d16;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #a7f3d0;
+            overflow-x: auto;
+            max-height: 400px;
+            white-space: pre-wrap;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1e1b4b;
+            border-left: 4px solid var(--primary);
+            color: var(--text-main);
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TRPG Scenario Input Creator</h1>
+            <p>シナリオ構成担当部門のAI社員たちと議論を開始します</p>
+        </header>
+
+        <div class="card">
+            <form id="generatorForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">【シナリオタイトル】 <span>（必須）</span></label>
+                        <input type="text" id="title" required placeholder="例: 霧雨の降る洋館からの脱出">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme">【シナリオのテーマ・雰囲気】</label>
+                        <textarea id="theme" placeholder="例: クローズドシナリオ。植物と同化していく静かな恐怖と哀愁。ゴシックホラー風。"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="setting">【舞台設定】</label>
+                        <textarea id="setting" placeholder="例: 現代日本、山奥にひっそりと佇む古い洋館。梅雨の時期で常に雨が降っている。館の主は高名な植物学者。"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="synopsis">【あらすじ】</label>
+                        <textarea id="synopsis" class="large" placeholder="例: 探索者たちは雨宿りのために洋館を訪れるが、そこは異常な成長を遂げた植物たちに支配されていた。出口は閉ざされ、館の中に閉じ込められた探索者たちは、植物の餌食になる前に脱出を試みる。"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="npc">【登場人物（NPC）のアイデア】</label>
+                        <textarea id="npc" placeholder="例: 館の主の娘（体が半ば植物化している少女）、執事（すでに完全に精神を植物に侵されている男）"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="elements">【使いたい要素や神話生物】</label>
+                        <textarea id="elements" placeholder="例: 謎解き（植物の特性を利用したパズル）、神話生物（シュブ＝ニグラスに関連する植物型の怪異や苗木）"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="handout">【プレイヤーへの初期情報（ハンドアウトなど）】</label>
+                        <textarea id="handout" placeholder="例: 探索者たちは共通の知人の紹介で、この地域を訪れていた。または、車が故障して近くの館に助けを求めた。"></textarea>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="spinner" id="btnSpinner"></span>
+                        <span id="btnText">議論とシナリオ生成を開始</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="output-card" id="outputCard">
+            <div class="output-header">
+                <div class="output-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    実行コンソール出力
+                </div>
+                <span class="badge" id="statusBadge">RUNNING</span>
+            </div>
+            <div class="console-log" id="consoleLog">サーバーからの応答を待っています...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toastIcon"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span id="toastMessage">メッセージ</span>
+    </div>
+
+    <script>
+        const form = document.getElementById('generatorForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const outputCard = document.getElementById('outputCard');
+        const consoleLog = document.getElementById('consoleLog');
+        const statusBadge = document.getElementById('statusBadge');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        function showToast(message, isError = false) {
+            toastMessage.textContent = message;
+            toast.style.borderLeftColor = isError ? 'var(--error)' : 'var(--accent)';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            btnSpinner.style.display = 'block';
+            btnText.textContent = '生成中（数分かかる場合があります）...';
+            
+            outputCard.style.display = 'block';
+            statusBadge.textContent = 'RUNNING';
+            statusBadge.className = 'badge running';
+            consoleLog.textContent = 'AI社員の議論とシナリオ執筆を開始しました。\nGemini API および Imagen による生成を行っているため、しばらくお待ちください...\n';
+
+            const requestData = {
+                title: document.getElementById('title').value,
+                theme: document.getElementById('theme').value,
+                setting: document.getElementById('setting').value,
+                synopsis: document.getElementById('synopsis').value,
+                npc: document.getElementById('npc').value,
+                elements: document.getElementById('elements').value,
+                handout: document.getElementById('handout').value
+            };
+
+            const baseUrl = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+
+            try {
+                const response = await fetch(`${baseUrl}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                consoleLog.textContent = result.output;
+                
+                if (result.success) {
+                    statusBadge.textContent = 'SUCCESS';
+                    statusBadge.className = 'badge success';
+                    showToast('シナリオが正常に生成されました！Notionとローカルファイル、バックアップを確認してください。');
+                } else {
+                    statusBadge.textContent = 'FAILED';
+                    statusBadge.className = 'badge error';
+                    showToast('シナリオ生成中にエラーが発生しました。詳細はログを確認してください。', true);
+                }
+
+            } catch (error) {
+                let errorMsg = `\n\n[エラー] サーバー通信に失敗しました:\n${error.message}`;
+                if (window.location.protocol === 'file:') {
+                    errorMsg += '\n\n【ヒント】\n現在、HTMLファイルをブラウザで直接開いています。\nサーバーが起動していない可能性があります。ターミナルで `python server.py` を実行してサーバーを起動した後、再度「議論とシナリオ生成を開始」を押すか、ブラウザで http://localhost:8000/ を開いて実行してください。';
+                }
+                consoleLog.textContent += errorMsg;
+                statusBadge.textContent = 'ERROR';
+                statusBadge.className = 'badge error';
+                showToast('サーバー通信エラーが発生しました。', true);
+            } finally {
+                submitBtn.disabled = false;
+                btnSpinner.style.display = 'none';
+                btnText.textContent = '議論とシナリオ生成を開始';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+Created At: 2026-06-07T06:33:00Z
+Completed At: 2026-06-07T06:33:00Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2656
+Total Bytes: 105350
+Showing lines 2396 to 2656
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2396:       id: `ai-menu-${label}-${Date.now()}`,
+2397:       url: createSvgUrl(menuSvg),
+2398:       x: menuX,
+2399:       y: menuY,
+2400:       width: menuW,
+2401:       height: menuH,
+2402:       originalRatio: menuW / menuH,
+2403:       flipH: false,
+2404:       flipV: false,
+2405:       visible: true,
+2406:       opacity: 1
+2407:     });
+2408:   });
+2409: 
+2410:   const actionW = 75;
+2411:   const actionH = 75;
+2412: 
+2413:   actionIconsData.forEach((icon, i) => {
+2414:     const actionSvg = gen.action(icon.label, icon.sub, icon.path);
+2415:     let actionX = 50;
+2416:     let actionY = 550;
+2417: 
+2418:     if (layoutType === 'right-vertical') {
+2419:       actionY = 550;
+2420:       actionX = 50 + i * 125;
+2421:     } else {
+2422:       actionX = 50 + (i % 2) * 90;
+2423:       actionY = 350 + Math.floor(i / 2) * 90;
+2424:     }
+2425: 
+2426:     panels.push({
+2427:       id: `ai-action-${icon.name}-${Date.now()}`,
+2428:       url: createSvgUrl(actionSvg),
+2429:       x: actionX,
+2430:       y: actionY,
+2431:       width: actionW,
+2432:       height: actionH,
+2433:       originalRatio: actionW / actionH,
+2434:       flipH: false,
+2435:       flipV: false,
+2436:       visible: true,
+2437:       opacity: 1
+2438:     });
+2439:   });
+2440: 
+2441:   updateUI();
+2442: }
+2443: 
+2444: function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+2445:   saveStateToHistory();
+2446:   
+2447:   const gen = themeSvgGenerators.dynamic;
+2448: 
+2449:   frame = null;
+2450:   panels = [];
+2451:   selectedPanelIds = [];
+2452: 
+2453:   if (design && design.no_background) {
+
+<truncated 4770 bytes>
+        menuX = baseMenuX + i * (menuW + 15);
+2596:       } else {
+2597:         menuY = baseMenuY + i * (menuH + 10);
+2598:       }
+2599:     }
+2600: 
+2601:     panels.push({
+2602:       id: `ai-menu-${label}-${Date.now()}`,
+2603:       url: createSvgUrl(menuSvg),
+2604:       x: menuX,
+2605:       y: menuY,
+2606:       width: menuW,
+2607:       height: menuH,
+2608:       originalRatio: menuW / menuH,
+2609:       flipH: false,
+2610:       flipV: false,
+2611:       visible: true,
+2612:       opacity: 1
+2613:     });
+2614:   });
+2615: 
+2616:   // 4. アクションアイコンの描画
+2617:   const actionW = 75;
+2618:   const actionH = 75;
+2619:   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+2620:   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+2621: 
+2622:   actionIconsData.forEach((icon, i) => {
+2623:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2624:     let actionX = baseActionX;
+2625:     let actionY = baseActionY;
+2626: 
+2627:     if (design.action_x === undefined) {
+2628:       if (layoutType === 'right-vertical') {
+2629:         actionY = 550;
+2630:         actionX = 50 + i * 125;
+2631:       } else {
+2632:         actionX = 50 + (i % 2) * 90;
+2633:         actionY = 350 + Math.floor(i / 2) * 90;
+2634:       }
+2635:     } else {
+2636:       actionX = baseActionX + i * (actionW + 15);
+2637:     }
+2638: 
+2639:     panels.push({
+2640:       id: `ai-action-${icon.name}-${Date.now()}`,
+2641:       url: createSvgUrl(actionSvg),
+2642:       x: actionX,
+2643:       y: actionY,
+2644:       width: actionW,
+2645:       height: actionH,
+2646:       originalRatio: actionW / actionH,
+2647:       flipH: false,
+2648:       flipV: false,
+2649:       visible: true,
+2650:       opacity: 1
+2651:     });
+2652:   });
+2653: 
+2654:   updateUI();
+2655: }
+2656: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,110 @@
+Created At: 2026-06-07T08:00:38Z
+Completed At: 2026-06-07T08:00:38Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2939
+Total Bytes: 115851
+Showing lines 2611 to 2939
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2611:     const icon = actionIconsData[i];
+2612:     const actionSvg = gen.action(icon.label, icon.sub, icon.path);
+2613:     let actionX = 50;
+2614:     let actionY = 550;
+2615: 
+2616:     if (layoutType === 'right-vertical') {
+2617:       actionY = 550;
+2618:       actionX = 50 + i * 125;
+2619:     } else if (layoutType === 'bottom-horizontal') {
+2620:       actionX = 50 + (i % 2) * 90;
+2621:       actionY = 350 + Math.floor(i / 2) * 90;
+2622:     } else if (layoutType === 'pattern1') {
+2623:       actionX = 600 + i * 90;
+2624:       actionY = 530;
+2625:     } else if (layoutType === 'pattern2') {
+2626:       actionX = 600 + i * 90;
+2627:       actionY = 110;
+2628:     } else if (layoutType === 'pattern3') {
+2629:       actionX = 950;
+2630:       actionY = 430 + i * 45;
+2631:     } else if (layoutType === 'pattern4') {
+2632:       actionX = 300 + i * 90;
+2633:       actionY = 500;
+2634:     } else if (layoutType === 'pattern5') {
+2635:       actionX = 360 + i * 90;
+2636:       actionY = 600;
+2637:     } else if (layoutType === 'pattern6') {
+2638:       actionX = 150 + i * 90;
+2639:       actionY = 430;
+2640:     } else if (layoutType === 'pattern7') {
+2641:       actionX = 150 + i * 90;
+2642:       actionY = 380;
+2643:     }
+2644: 
+2645:     let actionUrl = createSvgUrl(actionSvg);
+2646:     if (partsImg) {
+2647:       actionUrl = await combineImageAndSvg(
+2648:         partsImg,
+2649:         partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
+2650:         partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+2651:         actionSvg, actionW, actionH
+2652:      
+<truncated 7522 bytes>
+   flipH: false,
+2882:       flipV: false,
+2883:       visible: true,
+2884:       opacity: 1
+2885:     });
+2886:   }
+2887: 
+2888:   // 4. アクションアイコンの描画
+2889:   const actionW = 75;
+2890:   const actionH = 75;
+2891:   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+2892:   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+2893: 
+2894:   for (let i = 0; i < actionIconsData.length; i++) {
+2895:     const icon = actionIconsData[i];
+2896:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2897:     let actionX = baseActionX;
+2898:     let actionY = baseActionY;
+2899: 
+2900:     if (design.action_x === undefined) {
+2901:       if (layoutType === 'right-vertical') {
+2902:         actionY = 550;
+2903:         actionX = 50 + i * 125;
+2904:       } else {
+2905:         actionX = 50 + (i % 2) * 90;
+2906:         actionY = 350 + Math.floor(i / 2) * 90;
+2907:       }
+2908:     } else {
+2909:       actionX = baseActionX + i * (actionW + 15);
+2910:     }
+2911: 
+2912:     let actionUrl = createSvgUrl(actionSvg);
+2913:     if (partsImg) {
+2914:       actionUrl = await combineImageAndSvg(
+2915:         partsImg,
+2916:         partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
+2917:         partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+2918:         actionSvg, actionW, actionH
+2919:       );
+2920:     }
+2921: 
+2922:     panels.push({
+2923:       id: `ai-action-${icon.name}-${Date.now()}`,
+2924:       url: actionUrl,
+2925:       x: actionX,
+2926:       y: actionY,
+2927:       width: actionW,
+2928:       height: actionH,
+2929:       originalRatio: actionW / actionH,
+2930:       flipH: false,
+2931:       flipV: false,
+2932:       visible: true,
+2933:       opacity: 1
+2934:     });
+2935:   }
+2936: 
+2937:   updateUI();
+2938: }
+2939: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

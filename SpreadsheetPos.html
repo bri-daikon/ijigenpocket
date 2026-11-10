@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>異次元ポケット POS & 在庫マネージャー</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- QR / Barcode Scanner (html5-qrcode) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Barcode & QR Code Generators -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="css/pos_style.css">
+</head>
+<body class="h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- ヘッダーバー -->
+    <header class="glass-panel border-b px-4 py-2.5 flex items-center justify-between gap-4 z-20 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-xl shadow-lg shadow-blue-500/20">
+                📦
+            </div>
+            <div>
+                <h1 id="header-store-name" class="text-base font-black tracking-tight flex items-center gap-2">
+                    異次元ポケット POS
+                </h1>
+                <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                    <span id="sync-status-indicator" class="flex items-center font-medium">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>オンライン連動中
+                    </span>
+                    <span id="offline-badge" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.2 rounded-full font-bold cursor-pointer" onclick="syncOfflineQueue()"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ナビゲーション切り替え -->
+        <div class="flex items-center bg-black/20 p-1 rounded-2xl border border-white/5">
+            <button id="tab-btn-pos" onclick="switchView('pos')" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-lg shadow-blue-500/30 transition-all">
+                🛒 レジ打ち
+            </button>
+            <button id="tab-btn-inv" onclick="switchView('inventory')" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-all">
+                📊 在庫・入出庫
+            </button>
+        </div>
+
+        <!-- ツールボタン -->
+        <div class="flex items-center gap-2">
+            <!-- カード表示スタイル切り替え（画像大/コンパクト） -->
+            <button id="btn-toggle-viewmode" onclick="toggleCardViewMode()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5" title="商品画像の表示サイズ切り替え">
+                🖼️ <span class="hidden md:inline" id="viewmode-label">写真大</span>
+            </button>
+            <button onclick="openLabelPrintModal()" class="p-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5" title="商品の名刺タグ・バーコード・QR印刷">
+                🏷️ <span class="hidden md:inline">コード・タグ印刷</span>
+            </button>
+            <button onclick="fetchProductsFromGas()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5" title="スプレッドシートから最新在庫を再読込">
+                🔄 <span class="hidden md:inline">最新取得</span>
+            </button>
+            <button onclick="toggleBarcodeScanner()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5" title="バーコード・QRカメラ起動">
+                📷 <span class="hidden md:inline">スキャナ</span>
+            </button>
+            <button onclick="toggleTheme()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white transition-all text-xs" title="ダーク/ライトモード切替">
+                🌓
+            </button>
+            <button onclick="openSettingsModal()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5" title="設定">
+                ⚙️ <span class="hidden md:inline">設定</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="flex-1 flex overflow-hidden relative">
+
+        <!-- ==================== 1. レジ打ちビュー (POS) ==================== -->
+        <section id="pos-view" class="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+            
+            <!-- 左側: 商品グリッド & 検索/カテゴリ -->
+            <div class="flex-1 flex flex-col h-full border-r border-white/5 overflow-hidden">
+                
+                <!-- 検索バー & カテゴリタブ -->
+                <div class="p-3 border-b border-white/5 space-y-2 flex-shrink-0">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+                            <input type="text" id="search-input" placeholder="商品名またはコードで検索..." 
+                                class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div class="flex gap-1">
+                            <input type="text" id="manual-code-input" placeholder="コード手入力" onkeydown="if(event.key==='Enter') addByManualCode()"
+                                class="w-28 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button onclick="addByManualCode()" class="px-3 py-2 bg-blue-600/80 hover:bg-blue-600 rounded-xl text-xs font-bold text-white transition-all">追加</button>
+                        </div>
+                    </div>
+
+                    <!-- カテゴリタブ -->
+                    <div id="category-tabs" class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                        <!-- 動的生成 -->
+                    </div>
+                </div>
+
+                <!-- 商品グリッド -->
+                <div class="flex-1 p-3 overflow-y-auto">
+                    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+                        <!-- 商品カード動的生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側: カート & 会計パネル -->
+            <div class="w-full md:w-96 flex flex-col h-full glass-panel flex-shrink-0 border-t md:border-t-0">
+                
+                <!-- カートヘッダー -->
+                <div class="p-3.5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-sm">🛒 選択中アイテム</span>
+                        <span id="cart-total-count" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0 点</span>
+                    </div>
+                    <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">
+                        クリア
+                    </button>
+                </div>
+
+                <!-- カート明細一覧 -->
+                <div id="cart-items" class="flex-1 p-3 overflow-y-auto space-y-2">
+                    <!-- カート明細動的生成 -->
+                </div>
+
+                <!-- 合計計算 & 会計ボタン -->
+                <div class="p-4 border-t border-white/10 bg-black/20 space-y-3 flex-shrink-0">
+                    <div class="space-y-1.5 text-xs text-slate-400">
+                        <div class="flex justify-between">
+                            <span>小計</span>
+                            <span id="cart-subtotal" class="font-mono text-slate-200">¥0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>内消費税</span>
+                            <span id="cart-tax" class="font-mono text-slate-200">¥0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-baseline justify-between pt-2 border-t border-white/10">
+                        <span class="text-sm font-bold text-slate-200">お会計合計</span>
+                        <span id="cart-total-amount" class="text-3xl font-black font-mono text-blue-400">¥0</span>
+                    </div>
+
+                    <button id="btn-checkout" onclick="openCheckoutModal()" disabled
+                        class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-700 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-base shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <span>⚡</span> 会計へ進む
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. 在庫マネージャービュー (Inventory) ==================== -->
+        <section id="inventory-view" class="hidden flex-1 flex flex-col h-full p-4 overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        📊 在庫・入出庫マネージャー
+                    </h2>
+                    <p class="text-xs text-slate-400">スプレッドシートの商品マスターと在庫を直接管理・調整できます</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openLabelPrintModal()" class="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 hover:text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-1.5">
+                        🏷️ バーコード/QR一括印刷
+                    </button>
+                    <button onclick="openAddProductModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 flex items-center gap-1.5">
+                        ➕ 新規商品登録
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 glass-panel rounded-2xl border border-white/5 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-white/5 border-b border-white/5 text-slate-400 uppercase font-mono sticky top-0 backdrop-blur-md">
+                            <tr>
+                                <th class="p-3">写真/アイコン</th>
+                                <th class="p-3">コード</th>
+                                <th class="p-3">商品名 / カテゴリ</th>
+                                <th class="p-3 text-right">売価 (税込)</th>
+                                <th class="p-3 text-right">原価</th>
+                                <th class="p-3 text-right">現在庫数</th>
+                                <th class="p-3 text-center">入出庫・棚卸・編集</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-white/5">
+                            <!-- 在庫テーブル動的生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== 3. テンキー付き会計モーダル ==================== -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    💳 お会計処理
+                </h3>
+                <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <!-- 支払方法選択 -->
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment-method" value="現金" checked class="hidden peer">
+                        <div class="p-2.5 rounded-xl bg-white/5 peer-checked:bg-blue-600 border border-white/10 peer-checked:border-blue-400 text-center text-xs font-bold transition-all peer-checked:shadow-lg peer-checked:shadow-blue-500/30">
+                            💵 現金
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment-method" value="クレジットカード" class="hidden peer">
+                        <div class="p-2.5 rounded-xl bg-white/5 peer-checked:bg-blue-600 border border-white/10 peer-checked:border-blue-400 text-center text-xs font-bold transition-all peer-checked:shadow-lg peer-checked:shadow-blue-500/30">
+                            💳 クレジット
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="payment-method" value="QR決済" class="hidden peer">
+                        <div class="p-2.5 rounded-xl bg-white/5 peer-checked:bg-blue-600 border border-white/10 peer-checked:border-blue-400 text-center text-xs font-bold transition-all peer-checked:shadow-lg peer-checked:shadow-blue-500/30">
+                            📱 QR決済
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 金額表示ディスプレイ -->
+                <div class="bg-black/40 border border-white/10 rounded-2xl p-4 space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span>請求金額</span>
+                        <span id="checkout-modal-total" class="text-xl font-bold font-mono text-slate-100">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                        <span class="text-xs text-slate-400">お預かり金額</span>
+                        <span id="checkout-paid-amount" class="text-2xl font-black font-mono text-blue-400">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                        <span class="text-xs text-slate-400">お釣り</span>
+                        <span id="checkout-change-amount" class="text-2xl font-bold font-mono text-emerald-400">¥0</span>
+                    </div>
+                </div>
+
+                <!-- クイック金額ボタン -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setExactPay()" class="p-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 font-bold text-xs border border-blue-500/30">ぴったり</button>
+                    <button onclick="addQuickAmount(1000)" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs border border-white/10">+1,000円</button>
+                    <button onclick="addQuickAmount(5000)" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs border border-white/10">+5,000円</button>
+                    <button onclick="addQuickAmount(10000)" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs border border-white/10">+10,000円</button>
+                </div>
+
+                <!-- テンキーパッド -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="appendNum('7')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">7</button>
+                    <button onclick="appendNum('8')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">8</button>
+                    <button onclick="appendNum('9')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">9</button>
+                    
+                    <button onclick="appendNum('4')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">4</button>
+                    <button onclick="appendNum('5')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">5</button>
+                    <button onclick="appendNum('6')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">6</button>
+                    
+                    <button onclick="appendNum('1')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">1</button>
+                    <button onclick="appendNum('2')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">2</button>
+                    <button onclick="appendNum('3')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">3</button>
+                    
+                    <button onclick="clearNum()" class="num-key p-3.5 rounded-2xl bg-red-600/20 hover:bg-red-600/40 text-red-300 font-bold text-sm">C</button>
+                    <button onclick="appendNum('0')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-xl font-bold font-mono">0</button>
+                    <button onclick="appendNum('00')" class="num-key p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-lg font-bold font-mono">00</button>
+                </div>
+
+                <button id="btn-confirm-payment" onclick="processCheckout()"
+                    class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-base shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center gap-2">
+                    <span>✅</span> 会計を確定する（在庫連動）
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 4. バーコードスキャナモーダル ==================== -->
+    <div id="scanner-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    📷 バーコード / QRコードリーダー
+                </h3>
+                <button onclick="toggleBarcodeScanner()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+            </div>
+            <div class="p-4 flex flex-col items-center">
+                <div id="barcode-reader" class="w-full h-64 bg-black/50 rounded-2xl overflow-hidden border border-white/10"></div>
+                <p class="text-[11px] text-slate-400 mt-3 text-center">商品のバーコードまたはQRコードを枠内にかざしてください</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 5. レシート印刷プレビューモーダル ==================== -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-white/10 flex items-center justify-between no-print">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    🧾 レシート発行
+                </h3>
+                <button onclick="closeReceiptModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+            </div>
+
+            <!-- レシート用紙スタイル -->
+            <div class="p-4 overflow-y-auto flex-1 flex justify-center bg-slate-950">
+                <div id="receipt-print-area" class="w-full bg-white text-black p-5 rounded shadow-lg font-mono">
+                    <!-- レシート内容動的生成 -->
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-white/10 flex gap-2 no-print bg-slate-900">
+                <button onclick="printReceipt()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/20">
+                    🖨️ 印刷 / PDF保存
+                </button>
+                <button onclick="closeReceiptModal()" class="px-4 py-3 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 6. 在庫調整モーダル ==================== -->
+    <div id="stock-adjust-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-5 space-y-4">
+            <h3 id="adjust-modal-title" class="font-bold text-base">在庫調整</h3>
+            <p id="adjust-prod-name" class="text-xs text-slate-400"></p>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-medium text-slate-300">数量 (個数)</label>
+                <input type="number" id="adjust-qty-input" min="0" class="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-medium text-slate-300">メモ・理由 (任意)</label>
+                <input type="text" id="adjust-memo-input" placeholder="例: イベント搬入分、棚卸差異など" class="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="saveStockAdjust()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+                    反映する
+                </button>
+                <button onclick="closeStockAdjustModal()" class="px-4 py-3 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 7. 新規商品登録モーダル ==================== -->
+    <div id="add-product-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-bold text-base">➕ 商品の新規追加 / 編集</h3>
+                <button onclick="closeAddProductModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">商品コード (必須)</label>
+                    <input type="text" id="prod-form-code" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">カテゴリ</label>
+                    <input type="text" id="prod-form-category" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-[11px] text-slate-400">商品名 (必須)</label>
+                <input type="text" id="prod-form-name" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">販売価格 (税込)</label>
+                    <input type="number" id="prod-form-price" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">原価</label>
+                    <input type="number" id="prod-form-cost" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">初期在庫数</label>
+                    <input type="number" id="prod-form-stock" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400">アラート閾値</label>
+                    <input type="number" id="prod-form-minstock" class="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                </div>
+            </div>
+
+            <div class="space-y-2 border border-white/10 p-3 rounded-2xl bg-black/20">
+                <label class="block text-[11px] font-bold text-slate-300">商品画像 / 写真 / イラスト</label>
+                
+                <div class="flex items-center gap-3">
+                    <!-- プレビュー枠 -->
+                    <div id="prod-form-image-preview" class="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 shadow-inner">
+                        📦
+                    </div>
+                    
+                    <div class="flex-1 space-y-2">
+                        <div class="flex gap-2">
+                            <input type="text" id="prod-form-image" placeholder="画像URL または 絵文字 (🎁, 👕...)" 
+                                oninput="updateImagePreview(this.value)"
+                                class="flex-1 p-2 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100">
+                            
+                            <!-- ローカル写真・画像ファイル選択 -->
+                            <label class="px-3 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/30 text-blue-300 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1">
+                                📁 写真選択
+                                <input type="file" id="prod-form-file-input" accept="image/*" class="hidden" onchange="handleImageFileUpload(event)">
+                            </label>
+                        </div>
+
+                        <!-- クイック選択プリセット絵文字 -->
+                        <div class="flex flex-wrap gap-1 items-center">
+                            <span class="text-[10px] text-slate-400 mr-1">簡単セット:</span>
+                            <button type="button" onclick="selectPresetEmoji('👕')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">👕</button>
+                            <button type="button" onclick="selectPresetEmoji('✨')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">✨</button>
+                            <button type="button" onclick="selectPresetEmoji('📛')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">📛</button>
+                            <button type="button" onclick="selectPresetEmoji('🏷️')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">🏷️</button>
+                            <button type="button" onclick="selectPresetEmoji('📖')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">📖</button>
+                            <button type="button" onclick="selectPresetEmoji('👜')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">👜</button>
+                            <button type="button" onclick="selectPresetEmoji('📁')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">📁</button>
+                            <button type="button" onclick="selectPresetEmoji('🎨')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">🎨</button>
+                            <button type="button" onclick="selectPresetEmoji('🦊')" class="px-1.5 py-0.5 bg-white/5 hover:bg-white/15 rounded text-sm">🦊</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-3">
+                <button onclick="saveNewProduct()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+                    保存する
+                </button>
+                <button onclick="closeAddProductModal()" class="px-4 py-3 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 8. システム設定モーダル ==================== -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    ⚙️ システム設定・スプレッドシート連携
+                </h3>
+                <button onclick="closeSettingsModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-200">Google Apps Script (GAS) ウェブアプリURL</label>
+                    <input type="url" id="setting-gas-url" placeholder="https://script.google.com/macros/s/.../exec"
+                        class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-[10px] text-slate-400">※ GASをウェブアプリとしてデプロイし、アクセス権限を「全員 (Anyone)」に設定したURLを入力します。</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-200">店舗・屋号名</label>
+                        <input type="text" id="setting-store-name" placeholder="異次元ポケットショップ"
+                            class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-slate-100">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-200">消費税率 (%)</label>
+                        <input type="number" id="setting-tax-rate" value="10" min="0" max="100"
+                            class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-mono text-slate-100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-950/40 border border-blue-500/20 rounded-2xl p-3 text-[11px] text-blue-200 space-y-1">
+                <p class="font-bold">📘 スプレッドシート連携ガイド:</p>
+                <p>1. スプレッドシートの Apps Script に <code class="font-mono bg-blue-900/50 px-1 py-0.5 rounded">gas_pos_backend/Code.gs</code> を貼り付けます。</p>
+                <p>2. 初回のみ <code class="font-mono bg-blue-900/50 px-1 py-0.5 rounded">initSpreadsheet</code> 関数を実行すると、シートが自動構築されます。</p>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="saveSettingsAndTest()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20">
+                    接続テスト & 設定保存
+                </button>
+                <button onclick="closeSettingsModal()" class="px-4 py-3 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 9. バーコード & QRコード ラベル・名刺タグ印刷モーダル ==================== -->
+    <div id="label-print-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-3 md:p-6">
+        <div class="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-5xl h-[92vh] overflow-hidden shadow-2xl flex flex-col">
+            <!-- モーダルヘッダー -->
+            <div class="p-4 border-b border-white/10 flex items-center justify-between no-print bg-slate-900/90 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-lg">🏷️</div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                            商品バーコード & QRコード印刷（名刺サイズ / 値札POP）
+                        </h3>
+                        <p class="text-[11px] text-slate-400">名刺用紙（91×55mm）やお品書きPOP、値札シールとしてきれいに印刷できます</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="executeLabelPrint()" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/25">
+                        🖨️ 印刷する (Print)
+                    </button>
+                    <button onclick="closeLabelPrintModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">✕</button>
+                </div>
+            </div>
+
+            <!-- モーダルメイン（設定パネル + 印刷プレビュー領域） -->
+            <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+                <!-- 左サイド: 設定・商品選択 -->
+                <div class="w-full md:w-80 border-r border-white/10 p-4 overflow-y-auto space-y-4 no-print bg-slate-900/50 flex-shrink-0">
+                    
+                    <!-- コード種別 & 用紙レイアウト設定 -->
+                    <div class="space-y-3 bg-white/5 p-3.5 rounded-2xl border border-white/5">
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-300">コードの種類</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="label-code-type" value="barcode" checked onchange="updateLabelPreview()" class="hidden peer">
+                                    <div class="p-2 rounded-xl bg-white/5 peer-checked:bg-blue-600 border border-white/10 peer-checked:border-blue-400 text-center text-xs font-bold transition-all text-slate-300 peer-checked:text-white">
+                                        ||| バーコード
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="label-code-type" value="qrcode" onchange="updateLabelPreview()" class="hidden peer">
+                                    <div class="p-2 rounded-xl bg-white/5 peer-checked:bg-blue-600 border border-white/10 peer-checked:border-blue-400 text-center text-xs font-bold transition-all text-slate-300 peer-checked:text-white">
+                                        📱 QRコード
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-300">カードデザイン / サイズ</label>
+                            <select id="label-layout-type" onchange="updateLabelPreview()" class="w-full p-2 bg-white/10 border border-white/10 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="business_card">名刺サイズ (91 × 55mm / 横型)</option>
+                                <option value="business_card_vert">名刺サイズ (55 × 91mm / 縦型POP)</option>
+                                <option value="tag_compact">コンパクト値札タグ (名刺ハーフ / 65×38mm)</option>
+                            </select>
+                        </div>
+
+                        <!-- 表示項目スイッチ -->
+                        <div class="space-y-1.5 pt-1">
+                            <label class="block text-[11px] font-bold text-slate-300">印刷表示項目</label>
+                            <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-300">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="chk-show-image" checked onchange="updateLabelPreview()" class="rounded border-white/20 bg-white/10 text-blue-600"> 写真/アイコン
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="chk-show-price" checked onchange="updateLabelPreview()" class="rounded border-white/20 bg-white/10 text-blue-600"> 税込価格
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="chk-show-category" checked onchange="updateLabelPreview()" class="rounded border-white/20 bg-white/10 text-blue-600"> カテゴリ
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="chk-show-store" checked onchange="updateLabelPreview()" class="rounded border-white/20 bg-white/10 text-blue-600"> 店舗名
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 印刷対象商品の選択 & 枚数 -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] font-bold text-slate-300">対象商品・印刷枚数</label>
+                            <div class="flex gap-1 text-[10px]">
+                                <button type="button" onclick="setAllLabelCopies(1)" class="text-blue-400 hover:underline">各1枚</button>
+                                <span class="text-slate-600">|</span>
+                                <button type="button" onclick="setLabelCopiesByStock()" class="text-blue-400 hover:underline">在庫数分</button>
+                                <span class="text-slate-600">|</span>
+                                <button type="button" onclick="setAllLabelCopies(0)" class="text-slate-400 hover:underline">クリア</button>
+                            </div>
+                        </div>
+
+                        <!-- 商品ごとの枚数リスト -->
+                        <div id="label-product-select-list" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                            <!-- JS動的生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右サイド: リアルタイム印刷プレビュー（A4 / 名刺グリッド） -->
+                <div class="flex-1 bg-slate-950 p-4 md:p-6 overflow-y-auto flex flex-col items-center">
+                    <div class="w-full max-w-3xl flex items-center justify-between mb-3 text-xs text-slate-400 no-print">
+                        <span id="label-summary-info">印刷合計: 0枚</span>
+                        <span class="text-[11px] text-slate-500">※ 用紙設定: A4（余白「なし」または「最小」推奨）</span>
+                    </div>
+
+                    <!-- 印刷対象エリア（この中が @media print で出力される） -->
+                    <div id="label-print-sheet" class="label-sheet bg-white text-black p-4 rounded-xl shadow-2xl flex flex-wrap gap-2.5 justify-start">
+                        <!-- ラベル動的レンダリング -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="hidden"></div>
+
+    <!-- アプリスクリプト -->
+    <script src="js/pos_app.js"></script>
+</body>
+</html>

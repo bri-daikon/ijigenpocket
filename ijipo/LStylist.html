@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>LogStylist Pro｜ココフォリアのセッションログ整形ツール</title>
+    <meta name="description" content="LogStylist Proは、ココフォリアから保存したHTMLログを読み込み、発言者名や色、タブの表示を整え、クリティカル・ファンブルを集計できる無料のログ整形ツールです。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/LStylist.html">
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/lstylist.css">
+</head>
+<body class="flex flex-col h-screen">
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="sidebar p-6 flex flex-col gap-6 text-sm">
+            <header>
+                <h1 class="text-2xl font-black text-indigo-500">LogStylist <span class="text-xs font-normal opacity-50">Pro</span></h1>
+            </header>
+
+            <section class="space-y-4">
+                <h2 class="font-bold border-b pb-1 opacity-60">1. ファイル読込</h2>
+                <input type="file" id="fileInput" accept=".html" class="w-full text-xs cursor-pointer">
+                <div>
+                    <label class="block text-xs mb-1">セッション名</label>
+                    <input type="text" id="logTitle" placeholder="セッションログ" class="w-full p-2 border rounded bg-transparent dark:border-gray-600 outline-none">
+                </div>
+            </section>
+
+            <section class="space-y-4 flex-1 overflow-y-auto pr-2">
+                <h2 class="font-bold border-b pb-1 opacity-60">2. カスタマイズ</h2>
+                
+                <div class="space-y-2 bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <span>ダークモード</span>
+                        <input type="checkbox" id="darkModeToggle" class="accent-indigo-500">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>名前の色を本文に適用</span>
+                        <input type="checkbox" id="syncColorToggle" class="accent-indigo-500">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-xs font-bold mt-4 text-indigo-500">タブ設定 (インデント/サイズ)</p>
+                    <div id="tabControls" class="space-y-2"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center mt-4">
+                        <p class="text-xs font-bold text-indigo-500">発言者設定</p>
+                    </div>
+                    
+                    <!-- 一括編集パネル -->
+                    <div id="bulkPanel" class="hidden bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 space-y-2">
+                        <p class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">選択中の一括編集</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="bulkNameInput" placeholder="新しい表示名" class="flex-1 p-1 text-xs border rounded bg-white dark:bg-gray-800">
+                            <button id="applyBulkName" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] hover:bg-indigo-700">適用</button>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px]">一括カラー:</span>
+                            <input type="color" id="bulkColorInput" class="w-8 h-5 border-0 bg-transparent cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div id="userControls" class="space-y-1"></div>
+                </div>
+            </section>
+
+            <section class="pt-4 border-t space-y-4">
+                <button id="downloadBtn" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg">
+                    HTMLを書き出し
+                </button>
+                <footer class="text-[10px] opacity-40 text-center space-y-1">
+                    <p>Product by 異次元ポケット</p>
+                    <p><a href="https://ijigenpocket.booth.pm/" target="_blank" class="hover:underline">https://ijigenpocket.booth.pm/</a></p>
+                </footer>
+            </section>
+        </aside>
+
+        <main class="flex-1 p-8 lg:p-12 overflow-y-auto h-screen">
+            <div class="max-w-4xl mx-auto">
+                <div id="statsArea" class="mb-10 hidden">
+                    <div class="bg-white/40 dark:bg-black/20 p-6 rounded-2xl border border-white/50 dark:border-white/5 shadow-sm">
+                        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📊 クリティカル・ファンブル集計</h2>
+                        <div id="statsContent" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <div id="logDisplay" class="bg-white/30 dark:bg-black/10 rounded-3xl shadow-2xl min-h-[600px] border border-white/20 overflow-hidden transition-all duration-300 relative">
+                    <div id="dropZone" class="p-20 text-center opacity-30 h-full flex flex-col items-center justify-center pointer-events-none absolute inset-0 z-0">
+                        <p class="text-5xl mb-4">📥</p>
+                        <p class="font-bold">ログをドロップ</p>
+                    </div>
+                    <div id="logContentArea" class="relative z-10"></div>
+                </div>
+
+                <section class="mt-12 mb-10 bg-white/90 dark:bg-slate-900/90 rounded-3xl border border-white/30 dark:border-white/10 shadow-xl p-6 md:p-10" aria-labelledby="guide-title">
+                    <p class="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-2">Guide</p>
+                    <h2 id="guide-title" class="text-3xl font-black mb-4">LogStylist Proでできること</h2>
+                    <p class="leading-8 opacity-75 mb-8">ココフォリアから保存したHTML形式のセッションログを読み込み、発言者やタブごとに見やすく整理するツールです。長いログの振り返り、共有用ログの作成、リプレイ制作の下準備に利用できます。</p>
+
+                    <div class="grid md:grid-cols-2 gap-5 mb-10">
+                        <article class="rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/30 p-5"><h3 class="font-bold text-lg mb-2">発言者を整理</h3><p class="text-sm leading-7 opacity-70">発言者ごとに表示・非表示を切り替え、表示名や文字色を個別またはまとめて調整できます。</p></article>
+                        <article class="rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/30 p-5"><h3 class="font-bold text-lg mb-2">タブごとに調整</h3><p class="text-sm leading-7 opacity-70">メイン、情報、雑談などのタブを選別し、背景色やインデント、文字サイズの優先度を変更できます。</p></article>
+                        <article class="rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/30 p-5"><h3 class="font-bold text-lg mb-2">判定結果を集計</h3><p class="text-sm leading-7 opacity-70">ログ内の「決定的成功」「致命的失敗」「スペシャル」を発言者別に数え、該当する発言を確認できます。</p></article>
+                        <article class="rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/30 p-5"><h3 class="font-bold text-lg mb-2">HTMLで書き出し</h3><p class="text-sm leading-7 opacity-70">整えたログを単独で閲覧できるHTMLファイルとして保存できます。書き出した後もタブや発言者で表示を絞れます。</p></article>
+                    </div>
+
+                    <h2 class="text-2xl font-black mb-4">基本的な使い方</h2>
+                    <ol class="list-decimal pl-6 space-y-3 leading-7 opacity-75 mb-10">
+                        <li>ココフォリアのログ出力機能から、セッションログをHTML形式で保存します。</li>
+                        <li>左側の「ファイル読込」でHTMLファイルを選ぶか、中央へドラッグ＆ドロップします。</li>
+                        <li>タブや発言者の表示、名前、色、ダークモードなどを調整します。</li>
+                        <li>内容を確認し、「HTMLを書き出し」を押して保存します。</li>
+                    </ol>
+
+                    <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 dark:bg-emerald-950/30 dark:border-emerald-900 p-5 mb-10">
+                        <h2 class="text-xl font-black mb-2">読み込んだログについて</h2>
+                        <p class="text-sm leading-7 opacity-75">選択したログは、整形処理のため利用者のブラウザ内で読み込まれます。公開予定のログは、書き出し後に個人情報や公開範囲をあらためて確認してください。</p>
+                    </div>
+
+                    <h2 class="text-2xl font-black mb-4">よくある質問</h2>
+                    <div class="space-y-4">
+                        <details class="rounded-2xl border border-black/10 dark:border-white/10 p-5"><summary class="font-bold cursor-pointer">どのファイルを読み込めますか？</summary><p class="mt-3 text-sm leading-7 opacity-70">ココフォリアから保存したHTML形式のログを対象にしています。テキストファイルや別サービス独自の形式には対応していません。</p></details>
+                        <details class="rounded-2xl border border-black/10 dark:border-white/10 p-5"><summary class="font-bold cursor-pointer">元のログファイルは変更されますか？</summary><p class="mt-3 text-sm leading-7 opacity-70">変更されません。設定した内容は新しいHTMLファイルとして書き出されます。</p></details>
+                        <details class="rounded-2xl border border-black/10 dark:border-white/10 p-5"><summary class="font-bold cursor-pointer">読み込んでも何も表示されない場合は？</summary><p class="mt-3 text-sm leading-7 opacity-70">HTML形式で保存したログか確認してください。古い形式やページ構造が異なるログは、正しく解析できない場合があります。</p></details>
+                    </div>
+
+                    <nav class="mt-10 flex flex-wrap gap-3" aria-label="関連ページ">
+                        <a href="/" class="px-5 py-3 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700">ほかのツールを見る →</a>
+                        <a href="/wordpress/" class="px-5 py-3 rounded-full border border-black/15 dark:border-white/20 font-bold hover:bg-black/5 dark:hover:bg-white/5">制作・改善記事を読む →</a>
+                    </nav>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/lstylist.js"></script>
+</body>
+</html>

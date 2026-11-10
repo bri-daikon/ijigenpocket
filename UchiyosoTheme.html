@@ -5,26 +5,484 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>魔導書：自陣お題・比較の儀 - Weby</title>
+    
+       <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Config -->
+    <script>
+        function changeTheme(themeName) {
+            document.body.setAttribute('data-theme', themeName);
+            localStorage.setItem('weby_theme_preference', themeName);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('weby_theme_preference');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                const selector = document.getElementById('themeSelector');
+                if (selector) selector.value = savedTheme;
+            }
+        });
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tm: {
+                            header: 'rgb(var(--tm-bg-header) / <alpha-value>)',
+                            card: 'rgb(var(--tm-bg-card) / <alpha-value>)',
+                            sub: 'rgb(var(--tm-bg-sub) / <alpha-value>)',
+                            toast: 'rgb(var(--tm-bg-toast) / <alpha-value>)',
+                            input: 'rgb(var(--tm-bg-input) / <alpha-value>)',
+                            dark: 'rgb(var(--tm-bg-dark) / <alpha-value>)',
+                            
+                            accent: {
+                                100: 'rgb(var(--tm-accent-100) / <alpha-value>)',
+                                200: 'rgb(var(--tm-accent-200) / <alpha-value>)',
+                                400: 'rgb(var(--tm-accent-400) / <alpha-value>)',
+                                500: 'rgb(var(--tm-accent-500) / <alpha-value>)',
+                                600: 'rgb(var(--tm-accent-600) / <alpha-value>)',
+                                700: 'rgb(var(--tm-accent-700) / <alpha-value>)',
+                                800: 'rgb(var(--tm-accent-800) / <alpha-value>)',
+                                900: 'rgb(var(--tm-accent-900) / <alpha-value>)',
+                                950: 'rgb(var(--tm-accent-950) / <alpha-value>)'
+                            },
+                            text: {
+                                100: 'rgb(var(--tm-text-100) / <alpha-value>)',
+                                200: 'rgb(var(--tm-text-200) / <alpha-value>)',
+                                300: 'rgb(var(--tm-text-300) / <alpha-value>)',
+                                400: 'rgb(var(--tm-text-400) / <alpha-value>)',
+                                500: 'rgb(var(--tm-text-500) / <alpha-value>)',
+                                600: 'rgb(var(--tm-text-600) / <alpha-value>)'
+                            },
+                            border: {
+                                800: 'rgb(var(--tm-border-800) / <alpha-value>)'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
 
+        
+        :root {
+            /* 1. ダークアンバー (Default) */
+            --tm-bg-base: 9 7 5;
+            --tm-bg-header: 18 14 10;
+            --tm-bg-card: 20 16 12;
+            --tm-bg-sub: 26 21 17;
+            --tm-bg-toast: 28 21 16;
+            --tm-bg-input: 10 8 6;
+            --tm-bg-dark: 33 25 19;
+            
+            --tm-accent-100: 254 243 199;
+            --tm-accent-200: 253 230 138;
+            --tm-accent-400: 251 191 36;
+            --tm-accent-500: 245 158 11;
+            --tm-accent-600: 217 119 6;
+            --tm-accent-700: 180 83 9;
+            --tm-accent-800: 146 64 14;
+            --tm-accent-900: 120 53 15;
+            --tm-accent-950: 69 26 3;
+            
+            --tm-text-100: 245 245 244;
+            --tm-text-200: 231 229 228;
+            --tm-text-300: 214 211 209;
+            --tm-text-400: 168 162 158;
+            --tm-text-500: 120 113 108;
+            --tm-text-600: 87 83 78;
+            --tm-border-800: 41 37 36;
+
+            --tm-border-input: rgba(120, 53, 15, 0.6);
+            --tm-text-input: 253 230 138;
+            --tm-border-input-focus: 217 119 6;
+            --tm-tab-active-border: 245 158 11;
+            --tm-tab-active-text: 252 211 77;
+            --tm-tab-active-bg: rgba(120, 53, 15, 0.2);
+            --tm-magic-border: rgba(217, 119, 6, 0.15);
+            --tm-scroll-track: 20 16 12;
+            --tm-scroll-thumb: 74 55 40;
+            --tm-scroll-thumb-hover: 110 80 57;
+        }
+
+        body[data-theme="purelight"] {
+            --tm-bg-base: 248 250 252;
+            --tm-bg-header: 255 255 255;
+            --tm-bg-card: 255 255 255;
+            --tm-bg-sub: 241 245 249;
+            --tm-bg-toast: 255 255 255;
+            --tm-bg-input: 255 255 255;
+            --tm-bg-dark: 226 232 240;
+            
+            --tm-accent-100: 224 242 254;
+            --tm-accent-200: 186 230 253;
+            --tm-accent-400: 56 189 248;
+            --tm-accent-500: 14 165 233;
+            --tm-accent-600: 2 132 199;
+            --tm-accent-700: 3 105 161;
+            --tm-accent-800: 7 89 133;
+            --tm-accent-900: 12 74 110;
+            --tm-accent-950: 8 47 73;
+            
+            --tm-text-100: 15 23 42;
+            --tm-text-200: 30 41 59;
+            --tm-text-300: 51 65 85;
+            --tm-text-400: 71 85 105;
+            --tm-text-500: 100 116 139;
+            --tm-text-600: 148 163 184;
+            --tm-border-800: 203 213 225;
+
+            --tm-border-input: rgba(14, 165, 233, 0.3);
+            --tm-text-input: 15 23 42;
+            --tm-border-input-focus: 14 165 233;
+            --tm-tab-active-border: 14 165 233;
+            --tm-tab-active-text: 2 132 199;
+            --tm-tab-active-bg: rgba(14, 165, 233, 0.1);
+            --tm-magic-border: rgba(14, 165, 233, 0.15);
+            --tm-scroll-track: 241 245 249;
+            --tm-scroll-thumb: 203 213 225;
+            --tm-scroll-thumb-hover: 148 163 184;
+        }
+
+        body[data-theme="neoncyber"] {
+            --tm-bg-base: 0 0 0;
+            --tm-bg-header: 5 5 5;
+            --tm-bg-card: 10 10 10;
+            --tm-bg-sub: 17 17 17;
+            --tm-bg-toast: 21 21 21;
+            --tm-bg-input: 0 0 0;
+            --tm-bg-dark: 24 24 24;
+            
+            --tm-accent-100: 207 250 254;
+            --tm-accent-200: 103 232 249;
+            --tm-accent-400: 34 211 238;
+            --tm-accent-500: 6 182 212;
+            --tm-accent-600: 8 145 178;
+            --tm-accent-700: 14 116 144;
+            --tm-accent-800: 21 94 117;
+            --tm-accent-900: 22 78 99;
+            --tm-accent-950: 8 51 68;
+            
+            --tm-text-100: 255 255 255;
+            --tm-text-200: 226 232 240;
+            --tm-text-300: 203 213 225;
+            --tm-text-400: 148 163 184;
+            --tm-text-500: 100 116 139;
+            --tm-text-600: 71 85 105;
+            --tm-border-800: 51 65 85;
+
+            --tm-border-input: rgba(6, 182, 212, 0.6);
+            --tm-text-input: 34 211 238;
+            --tm-border-input-focus: 6 182 212;
+            --tm-tab-active-border: 34 211 238;
+            --tm-tab-active-text: 103 232 249;
+            --tm-tab-active-bg: rgba(6, 182, 212, 0.2);
+            --tm-magic-border: rgba(34, 211, 238, 0.4);
+            --tm-scroll-track: 5 5 5;
+            --tm-scroll-thumb: 14 116 144;
+            --tm-scroll-thumb-hover: 6 182 212;
+        }
+
+        body[data-theme="sakura"] {
+            --tm-bg-base: 255 241 242;
+            --tm-bg-header: 255 255 255;
+            --tm-bg-card: 255 255 255;
+            --tm-bg-sub: 255 228 230;
+            --tm-bg-toast: 255 255 255;
+            --tm-bg-input: 255 255 255;
+            --tm-bg-dark: 254 205 211;
+            
+            --tm-accent-100: 255 228 230;
+            --tm-accent-200: 254 205 211;
+            --tm-accent-400: 251 113 133;
+            --tm-accent-500: 244 63 94;
+            --tm-accent-600: 225 29 72;
+            --tm-accent-700: 190 18 60;
+            --tm-accent-800: 159 18 57;
+            --tm-accent-900: 136 19 55;
+            --tm-accent-950: 76 5 25;
+            
+            --tm-text-100: 76 5 25;
+            --tm-text-200: 136 19 55;
+            --tm-text-300: 159 18 57;
+            --tm-text-400: 190 18 60;
+            --tm-text-500: 225 29 72;
+            --tm-text-600: 251 113 133;
+            --tm-border-800: 254 205 211;
+
+            --tm-border-input: rgba(244, 63, 94, 0.3);
+            --tm-text-input: 136 19 55;
+            --tm-border-input-focus: 244 63 94;
+            --tm-tab-active-border: 244 63 94;
+            --tm-tab-active-text: 225 29 72;
+            --tm-tab-active-bg: rgba(244, 63, 94, 0.1);
+            --tm-magic-border: rgba(244, 63, 94, 0.15);
+            --tm-scroll-track: 255 228 230;
+            --tm-scroll-thumb: 253 164 175;
+            --tm-scroll-thumb-hover: 251 113 133;
+        }
+
+        body[data-theme="deepsea"] {
+            --tm-bg-base: 2 6 23;
+            --tm-bg-header: 15 23 42;
+            --tm-bg-card: 30 41 59;
+            --tm-bg-sub: 51 65 85;
+            --tm-bg-toast: 30 41 59;
+            --tm-bg-input: 15 23 42;
+            --tm-bg-dark: 71 85 105;
+            
+            --tm-accent-100: 224 231 255;
+            --tm-accent-200: 199 210 254;
+            --tm-accent-400: 129 140 248;
+            --tm-accent-500: 99 102 241;
+            --tm-accent-600: 79 70 229;
+            --tm-accent-700: 67 56 202;
+            --tm-accent-800: 55 48 163;
+            --tm-accent-900: 49 46 129;
+            --tm-accent-950: 30 27 75;
+            
+            --tm-text-100: 248 250 252;
+            --tm-text-200: 241 245 249;
+            --tm-text-300: 226 232 240;
+            --tm-text-400: 203 213 225;
+            --tm-text-500: 148 163 184;
+            --tm-text-600: 100 116 139;
+            --tm-border-800: 71 85 105;
+
+            --tm-border-input: rgba(99, 102, 241, 0.6);
+            --tm-text-input: 199 210 254;
+            --tm-border-input-focus: 99 102 241;
+            --tm-tab-active-border: 99 102 241;
+            --tm-tab-active-text: 129 140 248;
+            --tm-tab-active-bg: rgba(99, 102, 241, 0.2);
+            --tm-magic-border: rgba(99, 102, 241, 0.15);
+            --tm-scroll-track: 15 23 42;
+            --tm-scroll-thumb: 49 46 129;
+            --tm-scroll-thumb-hover: 67 56 202;
+        }
+
+        body[data-theme="matcha"] {
+            --tm-bg-base: 5 46 22;
+            --tm-bg-header: 20 83 45;
+            --tm-bg-card: 22 101 52;
+            --tm-bg-sub: 21 128 61;
+            --tm-bg-toast: 22 101 52;
+            --tm-bg-input: 20 83 45;
+            --tm-bg-dark: 22 163 74;
+            
+            --tm-accent-100: 220 252 231;
+            --tm-accent-200: 187 247 208;
+            --tm-accent-400: 74 222 128;
+            --tm-accent-500: 34 197 94;
+            --tm-accent-600: 22 163 74;
+            --tm-accent-700: 21 128 61;
+            --tm-accent-800: 22 101 52;
+            --tm-accent-900: 20 83 45;
+            --tm-accent-950: 5 46 22;
+            
+            --tm-text-100: 240 253 244;
+            --tm-text-200: 220 252 231;
+            --tm-text-300: 187 247 208;
+            --tm-text-400: 134 239 172;
+            --tm-text-500: 74 222 128;
+            --tm-text-600: 34 197 94;
+            --tm-border-800: 22 101 52;
+
+            --tm-border-input: rgba(34, 197, 94, 0.6);
+            --tm-text-input: 187 247 208;
+            --tm-border-input-focus: 74 222 128;
+            --tm-tab-active-border: 74 222 128;
+            --tm-tab-active-text: 187 247 208;
+            --tm-tab-active-bg: rgba(34, 197, 94, 0.2);
+            --tm-magic-border: rgba(74, 222, 128, 0.15);
+            --tm-scroll-track: 5 46 22;
+            --tm-scroll-thumb: 21 128 61;
+            --tm-scroll-thumb-hover: 22 163 74;
+        }
+
+        body[data-theme="sunset"] {
+            --tm-bg-base: 74 4 78;
+            --tm-bg-header: 112 26 117;
+            --tm-bg-card: 131 24 67;
+            --tm-bg-sub: 159 18 57;
+            --tm-bg-toast: 131 24 67;
+            --tm-bg-input: 112 26 117;
+            --tm-bg-dark: 190 18 60;
+            
+            --tm-accent-100: 255 237 213;
+            --tm-accent-200: 254 215 170;
+            --tm-accent-400: 251 146 60;
+            --tm-accent-500: 249 115 22;
+            --tm-accent-600: 234 88 12;
+            --tm-accent-700: 194 65 12;
+            --tm-accent-800: 154 52 18;
+            --tm-accent-900: 124 45 18;
+            --tm-accent-950: 67 20 7;
+            
+            --tm-text-100: 255 247 237;
+            --tm-text-200: 255 237 213;
+            --tm-text-300: 254 215 170;
+            --tm-text-400: 253 186 116;
+            --tm-text-500: 251 146 60;
+            --tm-text-600: 249 115 22;
+            --tm-border-800: 112 26 117;
+
+            --tm-border-input: rgba(249, 115, 22, 0.6);
+            --tm-text-input: 254 215 170;
+            --tm-border-input-focus: 251 146 60;
+            --tm-tab-active-border: 251 146 60;
+            --tm-tab-active-text: 254 215 170;
+            --tm-tab-active-bg: rgba(249, 115, 22, 0.2);
+            --tm-magic-border: rgba(251, 146, 60, 0.15);
+            --tm-scroll-track: 74 4 78;
+            --tm-scroll-thumb: 159 18 57;
+            --tm-scroll-thumb-hover: 190 18 60;
+        }
+
+        body[data-theme="aurora"] {
+            --tm-bg-base: 23 37 84;
+            --tm-bg-header: 30 58 138;
+            --tm-bg-card: 15 118 110;
+            --tm-bg-sub: 17 94 89;
+            --tm-bg-toast: 15 118 110;
+            --tm-bg-input: 30 58 138;
+            --tm-bg-dark: 15 118 110;
+            
+            --tm-accent-100: 204 251 241;
+            --tm-accent-200: 153 246 228;
+            --tm-accent-400: 45 212 191;
+            --tm-accent-500: 20 184 166;
+            --tm-accent-600: 13 148 136;
+            --tm-accent-700: 15 118 110;
+            --tm-accent-800: 17 94 89;
+            --tm-accent-900: 19 78 74;
+            --tm-accent-950: 4 47 46;
+            
+            --tm-text-100: 240 253 250;
+            --tm-text-200: 204 251 241;
+            --tm-text-300: 153 246 228;
+            --tm-text-400: 94 234 212;
+            --tm-text-500: 45 212 191;
+            --tm-text-600: 20 184 166;
+            --tm-border-800: 30 58 138;
+
+            --tm-border-input: rgba(20, 184, 166, 0.6);
+            --tm-text-input: 153 246 228;
+            --tm-border-input-focus: 45 212 191;
+            --tm-tab-active-border: 45 212 191;
+            --tm-tab-active-text: 153 246 228;
+            --tm-tab-active-bg: rgba(20, 184, 166, 0.2);
+            --tm-magic-border: rgba(45, 212, 191, 0.15);
+            --tm-scroll-track: 23 37 84;
+            --tm-scroll-thumb: 17 94 89;
+            --tm-scroll-thumb-hover: 15 118 110;
+        }
+
+        body[data-theme="monochrome"] {
+            --tm-bg-base: 0 0 0;
+            --tm-bg-header: 23 23 23;
+            --tm-bg-card: 38 38 38;
+            --tm-bg-sub: 64 64 64;
+            --tm-bg-toast: 38 38 38;
+            --tm-bg-input: 23 23 23;
+            --tm-bg-dark: 82 82 82;
+            
+            --tm-accent-100: 245 245 245;
+            --tm-accent-200: 229 229 229;
+            --tm-accent-400: 163 163 163;
+            --tm-accent-500: 115 115 115;
+            --tm-accent-600: 82 82 82;
+            --tm-accent-700: 64 64 64;
+            --tm-accent-800: 38 38 38;
+            --tm-accent-900: 23 23 23;
+            --tm-accent-950: 10 10 10;
+            
+            --tm-text-100: 255 255 255;
+            --tm-text-200: 245 245 245;
+            --tm-text-300: 229 229 229;
+            --tm-text-400: 212 212 212;
+            --tm-text-500: 163 163 163;
+            --tm-text-600: 115 115 115;
+            --tm-border-800: 64 64 64;
+
+            --tm-border-input: rgba(115, 115, 115, 0.6);
+            --tm-text-input: 229 229 229;
+            --tm-border-input-focus: 163 163 163;
+            --tm-tab-active-border: 163 163 163;
+            --tm-tab-active-text: 229 229 229;
+            --tm-tab-active-bg: rgba(115, 115, 115, 0.2);
+            --tm-magic-border: rgba(163, 163, 163, 0.15);
+            --tm-scroll-track: 0 0 0;
+            --tm-scroll-thumb: 64 64 64;
+            --tm-scroll-thumb-hover: 82 82 82;
+        }
+
+        body[data-theme="bloodred"] {
+            --tm-bg-base: 28 5 5;
+            --tm-bg-header: 48 5 5;
+            --tm-bg-card: 69 10 10;
+            --tm-bg-sub: 92 15 15;
+            --tm-bg-toast: 69 10 10;
+            --tm-bg-input: 48 5 5;
+            --tm-bg-dark: 127 29 29;
+            
+            --tm-accent-100: 254 226 226;
+            --tm-accent-200: 254 202 202;
+            --tm-accent-400: 248 113 113;
+            --tm-accent-500: 239 68 68;
+            --tm-accent-600: 220 38 38;
+            --tm-accent-700: 185 28 28;
+            --tm-accent-800: 153 27 27;
+            --tm-accent-900: 127 29 29;
+            --tm-accent-950: 69 10 10;
+            
+            --tm-text-100: 254 242 242;
+            --tm-text-200: 254 226 226;
+            --tm-text-300: 254 202 202;
+            --tm-text-400: 252 165 165;
+            --tm-text-500: 248 113 113;
+            --tm-text-600: 239 68 68;
+            --tm-border-800: 69 10 10;
+
+            --tm-border-input: rgba(239, 68, 68, 0.6);
+            --tm-text-input: 254 202 202;
+            --tm-border-input-focus: 239 68 68;
+            --tm-tab-active-border: 239 68 68;
+            --tm-tab-active-text: 254 202 202;
+            --tm-tab-active-bg: rgba(239, 68, 68, 0.2);
+            --tm-magic-border: rgba(248, 113, 113, 0.15);
+            --tm-scroll-track: 28 5 5;
+            --tm-scroll-thumb: 92 15 15;
+            --tm-scroll-thumb-hover: 127 29 29;
+        }
+
         body {
             font-family: 'M PLUS Rounded 1c', sans-serif;
-            background-color: #090705;
+            background-color: rgb(var(--tm-bg-base));
         }
 
         .font-header {
             font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
         }
 
+        /* Dropdown options styles */
+        select option {
+            background-color: rgb(var(--tm-bg-header));
+            color: rgb(var(--tm-text-200));
+        }
+        select {
+            background-color: rgb(var(--tm-bg-header));
+            color: rgb(var(--tm-text-200));
+        }
+        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #14100c; }
-        ::-webkit-scrollbar-thumb { background: #4a3728; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6e5039; }
+        ::-webkit-scrollbar-track { background: rgb(var(--tm-scroll-track)); }
+        ::-webkit-scrollbar-thumb { background: rgb(var(--tm-scroll-thumb)); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgb(var(--tm-scroll-thumb-hover)); }
 
         .magic-border {
             position: relative;
@@ -33,34 +491,34 @@
             content: '';
             position: absolute;
             top: 4px; left: 4px; right: 4px; bottom: 4px;
-            border: 1px solid rgba(217, 119, 6, 0.15);
+            border: 1px solid var(--tm-magic-border);
             pointer-events: none;
             border-radius: 12px;
         }
 
         .form-input {
             width: 100%;
-            background-color: #0a0806;
-            border: 1px solid rgba(120, 53, 15, 0.6);
+            background-color: rgb(var(--tm-bg-input));
+            border: 1px solid var(--tm-border-input);
             border-radius: 0.5rem;
             padding: 0.5rem 0.75rem;
-            color: #fde68a;
+            color: rgb(var(--tm-text-input));
             font-size: 0.875rem;
             transition: all 0.2s;
         }
         .form-input:focus {
             outline: none;
-            border-color: #d97706;
-            box-shadow: 0 0 0 1px #d97706;
+            border-color: rgb(var(--tm-border-input-focus));
+            box-shadow: 0 0 0 1px rgb(var(--tm-border-input-focus));
         }
 
         .tab-btn {
             border-bottom: 2px solid transparent;
         }
         .tab-btn.active {
-            border-bottom: 2px solid #f59e0b; /* amber-500 */
-            color: #fcd34d; /* amber-300 */
-            background-color: rgba(120, 53, 15, 0.2);
+            border-bottom: 2px solid rgb(var(--tm-tab-active-border)); /* amber-500 */
+            color: rgb(var(--tm-tab-active-text)); /* amber-300 */
+            background-color: var(--tm-tab-active-bg);
         }
 
         /* Modal Background */
@@ -71,36 +529,49 @@
     </style>
 </head>
 
-<body class="text-stone-200 min-h-screen flex flex-col">
+<body class="text-tm-text-200 min-h-screen flex flex-col">
 
     <!-- ヘッダー -->
-    <header class="border-b border-amber-900/40 bg-[#120e0a]/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+    <header class="border-b border-tm-accent-900/40 bg-tm-header/90 backdrop-blur sticky top-0 z-50 px-4 py-4 sm:px-6 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
         <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-gradient-to-br from-amber-700 to-amber-900 rounded-xl text-amber-100 shadow-[0_0_15px_rgba(217,119,6,0.3)]">
-                    <i data-lucide="swords" class="w-6 h-6"></i>
+                <div class="p-3 bg-gradient-to-br from-tm-accent-700 to-tm-accent-900 rounded-xl text-tm-accent-100 shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+                    <i data-lucide="swords" class="w-10 h-10"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-widest font-header text-amber-500 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
+                    <h1 class="text-2xl font-bold tracking-widest font-header text-tm-accent-500 bg-gradient-to-r from-tm-accent-400 via-tm-accent-200 to-tm-accent-500 bg-clip-text text-transparent">
                         自陣お題・比較の儀</h1>
-                    <p class="text-[11px] text-amber-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF PARTY THEMES & COMPARISON</p>
+                    <p class="text-[11px] text-tm-accent-700/80 tracking-widest font-header mt-0.5">GRIMOIRE OF PARTY THEMES & COMPARISON</p>
                 </div>
             </div>
             <div class="flex gap-2">
-                <div id="room-controls" class="flex gap-2 items-center bg-[#1a1511] p-1.5 rounded-lg border border-amber-900/50 hidden">
-                    <input type="text" id="room-url" readonly class="p-1.5 rounded bg-black/40 border border-amber-900/50 text-[10px] focus:outline-none text-stone-300 w-32 hidden" placeholder="ローカル専用">
-                    <button onclick="window.createSharedRoom()" id="btn-create-room" class="flex items-center justify-center px-3 py-1.5 bg-indigo-900 hover:bg-indigo-800 text-indigo-100 text-xs font-bold rounded transition-all shadow-lg border border-indigo-700/50 font-header whitespace-nowrap">
+                <select id="themeSelector" onchange="changeTheme(this.value)" class="ml-2 bg-tm-bg-header border border-tm-accent-900/50 text-tm-accent-400 text-xs font-bold rounded p-1 outline-none">
+                    <option  value="default">テーマ: ダークアンバー</option>
+                    <option  value="purelight">テーマ: ピュアライト</option>
+                    <option  value="neoncyber">テーマ: ネオンサイバー</option>
+                    <option  value="sakura">テーマ: サクラピンク</option>
+                    <option  value="deepsea">テーマ: 深海ブルー</option>
+                    <option  value="matcha">テーマ: 抹茶グリーン</option>
+                    <option  value="sunset">テーマ: サンセット</option>
+                    <option  value="aurora">テーマ: オーロラ</option>
+                    <option  value="monochrome">テーマ: モノクローム</option>
+                    <option  value="bloodred">テーマ: ブラッドレッド</option>
+                </select>
+
+                <div id="room-controls" class="flex gap-2 items-center bg-tm-sub p-1.5 rounded-lg border border-tm-accent-900/50 hidden">
+                    <input type="text" id="room-url" readonly class="p-1.5 rounded bg-black/40 border border-tm-accent-900/50 text-[10px] focus:outline-none text-tm-text-300 w-32 hidden" placeholder="ローカル専用">
+                    <button onclick="window.createSharedRoom()" id="btn-create-room" class="flex items-center justify-center px-3 py-1.5 bg-tm-accent-900 hover:bg-tm-accent-800 text-tm-accent-100 text-xs font-bold rounded transition-all shadow-lg border border-tm-accent-700/50 font-header whitespace-nowrap">
                         <i data-lucide="users" class="w-4 h-4 mr-1"></i> 共有ルーム作成
                     </button>
-                    <button onclick="window.copyRoomUrl()" id="btn-copy-room" class="hidden flex items-center justify-center px-3 py-1.5 bg-emerald-900 hover:bg-emerald-800 text-emerald-100 text-xs font-bold rounded transition-all shadow-lg border border-emerald-700/50 font-header whitespace-nowrap">
+                    <button onclick="window.copyRoomUrl()" id="btn-copy-room" class="hidden flex items-center justify-center px-3 py-1.5 bg-tm-accent-900 hover:bg-tm-accent-800 text-tm-accent-100 text-xs font-bold rounded transition-all shadow-lg border border-tm-accent-700/50 font-header whitespace-nowrap">
                         <i data-lucide="copy" class="w-4 h-4 mr-1"></i> URLコピー
                     </button>
                 </div>
-                <button onclick="openModal('ioModal')" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-indigo-950/40 hover:bg-indigo-900/60 text-indigo-300 text-sm font-bold rounded-lg border border-indigo-900/50 transition-all font-header shadow-lg">
+                <button onclick="openModal('ioModal')" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-tm-accent-950/40 hover:bg-tm-accent-900/60 text-tm-accent-300 text-sm font-bold rounded-lg border border-tm-accent-900/50 transition-all font-header shadow-lg">
                     <i data-lucide="folder-sync" class="w-4 h-4 sm:mr-1"></i>
                     <span class="hidden sm:inline">データ入出力</span>
                 </button>
-                <a href="CharaProfile.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 text-sm font-bold rounded-lg border border-amber-900/50 transition-all font-header shadow-lg">
+                <a href="CharaProfile.html" class="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-tm-sub hover:bg-tm-accent-950/40 text-tm-accent-400 text-sm font-bold rounded-lg border border-tm-accent-900/50 transition-all font-header shadow-lg">
                     <i data-lucide="user-square-2" class="w-4 h-4 sm:mr-1"></i>
                     <span class="hidden sm:inline">調書の儀へ戻る</span>
                 </a>
@@ -111,7 +582,7 @@
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
         
         <div id="toast" class="hidden fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300">
-            <div class="flex items-center gap-3 bg-[#1c1510] border border-amber-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+            <div class="flex items-center gap-3 bg-tm-toast border border-tm-accent-800/60 text-tm-text-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                 <div id="toast-icon-wrapper" class="p-1 rounded-full"></div>
                 <p id="toast-message" class="text-sm font-semibold"></p>
             </div>
@@ -120,18 +591,18 @@
         <div id="contentGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-140px)]">
             
             <!-- 左カラム：キャラクターリスト (3/12) -->
-            <section class="lg:col-span-3 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
-                <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
-                    <h2 class="text-sm font-bold font-header text-amber-400 flex items-center gap-2">
+            <section class="lg:col-span-3 bg-tm-card border border-tm-accent-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-tm-accent-950/60 bg-tm-sub flex items-center justify-between">
+                    <h2 class="text-sm font-bold font-header text-tm-accent-400 flex items-center gap-2">
                         <i data-lucide="users" class="w-4 h-4"></i> 参加キャラクター
                     </h2>
-                    <button onclick="openModal('newCharModal')" class="p-1.5 bg-[#120e0a] hover:bg-amber-950/60 text-amber-500 rounded border border-amber-900/40 transition-colors" title="新規キャラクター登録">
+                    <button onclick="openModal('newCharModal')" class="p-1.5 bg-tm-header hover:bg-tm-accent-950/60 text-tm-accent-500 rounded border border-tm-accent-900/40 transition-colors" title="新規キャラクター登録">
                         <i data-lucide="user-plus" class="w-4 h-4"></i>
                     </button>
                 </div>
                 
-                <div id="noDataMessage" class="hidden flex-col items-center justify-center p-6 text-stone-500 text-center h-full">
-                    <i data-lucide="ghost" class="w-8 h-8 mb-2 opacity-50"></i>
+                <div id="noDataMessage" class="hidden flex-col items-center justify-center p-6 text-tm-text-500 text-center h-full">
+                    <i data-lucide="ghost" class="w-12 h-12 mb-2 opacity-50"></i>
                     <p class="text-xs">データがありません。<br>元の画面で選択するか新規登録してください。</p>
                 </div>
 
@@ -141,17 +612,17 @@
             </section>
 
             <!-- 右カラム：メインコンテンツ (9/12) -->
-            <section class="lg:col-span-9 bg-[#14100c] border border-amber-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden relative">
+            <section class="lg:col-span-9 bg-tm-card border border-tm-accent-950/60 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.6)] magic-border flex flex-col overflow-hidden relative">
                 
                 <!-- タブナビゲーション -->
-                <div class="flex border-b border-amber-950/60 bg-[#1a1511]">
-                    <button onclick="switchTab('comparison')" id="tab-comparison" class="tab-btn active flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                <div class="flex border-b border-tm-accent-950/60 bg-tm-sub">
+                    <button onclick="switchTab('comparison')" id="tab-comparison" class="tab-btn active flex items-center gap-2 px-6 py-4 text-sm font-bold text-tm-text-400 hover:text-tm-accent-400 transition-colors">
                         <i data-lucide="bar-chart-2" class="w-4 h-4"></i> ステータス・身長比較
                     </button>
-                    <button onclick="switchTab('answers')" id="tab-answers" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                    <button onclick="switchTab('answers')" id="tab-answers" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-tm-text-400 hover:text-tm-accent-400 transition-colors">
                         <i data-lucide="message-circle" class="w-4 h-4"></i> 個人のお題回答
                     </button>
-                    <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-stone-400 hover:text-amber-400 transition-colors">
+                    <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn flex items-center gap-2 px-6 py-4 text-sm font-bold text-tm-text-400 hover:text-tm-accent-400 transition-colors">
                         <i data-lucide="gallery-horizontal-end" class="w-4 h-4"></i> お題結果一覧
                     </button>
                 </div>
@@ -162,22 +633,22 @@
                     <!-- ステータス・身長比較タブ -->
                     <div id="content-comparison" class="p-6 space-y-8">
                         <div>
-                            <h3 class="text-lg font-bold font-header text-amber-400 border-b border-amber-900/40 pb-2 mb-4">ステータス比較</h3>
+                            <h3 class="text-lg font-bold font-header text-tm-accent-400 border-b border-tm-accent-900/40 pb-2 mb-4">ステータス比較</h3>
                             <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-left text-stone-300 border-collapse border border-amber-950/50">
-                                    <thead class="text-xs text-amber-500 bg-[#1a1511]">
+                                <table class="w-full text-sm text-left text-tm-text-300 border-collapse border border-tm-accent-950/50">
+                                    <thead class="text-xs text-tm-accent-500 bg-tm-sub">
                                         <tr>
-                                            <th class="p-3 border border-amber-950/50">キャラクター</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">STR</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">CON</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">POW</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">DEX</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">APP</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">SIZ</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">INT</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">EDU</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">HP</th>
-                                            <th class="p-3 border border-amber-950/50 text-center">MP</th>
+                                            <th class="p-3 border border-tm-accent-950/50">キャラクター</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">STR</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">CON</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">POW</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">DEX</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">APP</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">SIZ</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">INT</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">EDU</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">HP</th>
+                                            <th class="p-3 border border-tm-accent-950/50 text-center">MP</th>
                                         </tr>
                                     </thead>
                                     <tbody id="statusComparisonTable">
@@ -188,8 +659,8 @@
                         </div>
 
                         <div>
-                            <h3 class="text-lg font-bold font-header text-amber-400 border-b border-amber-900/40 pb-2 mb-4">身長比較</h3>
-                            <div id="heightComparisonChart" class="flex items-end gap-4 pb-4 border-b border-stone-800 overflow-x-auto h-64 px-4 pt-8">
+                            <h3 class="text-lg font-bold font-header text-tm-accent-400 border-b border-tm-accent-900/40 pb-2 mb-4">身長比較</h3>
+                            <div id="heightComparisonChart" class="flex items-end gap-4 pb-4 border-b border-tm-border-800 overflow-x-auto h-80 px-4 pt-8">
                                 <!-- JS -->
                             </div>
                         </div>
@@ -197,24 +668,24 @@
 
                     <!-- 個人のお題回答タブ -->
                     <div id="content-answers" class="hidden h-full flex flex-col">
-                        <div id="emptyAnswersState" class="absolute inset-0 flex flex-col items-center justify-center text-stone-600 bg-[#14100c] z-10">
+                        <div id="emptyAnswersState" class="absolute inset-0 flex flex-col items-center justify-center text-tm-text-600 bg-tm-card z-10">
                             <i data-lucide="feather" class="w-12 h-12 mb-3 opacity-30"></i>
                             <p class="text-sm font-header">左のリストから回答するキャラクターを選択してください。</p>
                         </div>
                         
                         <div id="answersForm" class="hidden flex-col h-full">
-                            <div class="p-4 border-b border-amber-950/60 bg-gradient-to-b from-[#1a1511] to-[#14100c] flex items-center gap-4">
-                                <img id="answerIcon" src="" class="w-16 h-16 rounded-full border border-amber-800/50 object-cover object-top shadow-lg">
+                            <div class="p-4 border-b border-tm-accent-950/60 bg-tm-header flex items-center gap-4">
+                                <img id="answerIcon" src="" class="w-20 h-20 rounded-full border border-tm-accent-800/50 object-cover object-top shadow-lg">
                                 <div>
-                                    <h2 id="answerName" class="text-lg font-bold font-header text-amber-400">キャラクター名</h2>
-                                    <p class="text-xs text-stone-400 mt-0.5">のお題回答を編集</p>
+                                    <h2 id="answerName" class="text-lg font-bold font-header text-tm-accent-400">キャラクター名</h2>
+                                    <p class="text-xs text-tm-text-400 mt-0.5">のお題回答を編集</p>
                                 </div>
                             </div>
                             <div class="flex-grow overflow-y-auto p-6 space-y-6" id="questionsContainer">
                                 <!-- JSで質問を生成 -->
                             </div>
-                            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end">
-                                <button onclick="saveAnswers()" class="flex items-center gap-2 px-6 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-stone-100 font-bold rounded-lg shadow-lg border border-emerald-600 transition-all">
+                            <div class="p-4 border-t border-tm-accent-950/60 bg-tm-header flex justify-end">
+                                <button onclick="saveAnswers()" class="flex items-center gap-2 px-6 py-2.5 bg-tm-accent-800 hover:bg-tm-accent-700 text-tm-text-100 font-bold rounded-lg shadow-lg border border-tm-accent-600 transition-all">
                                     <i data-lucide="save" class="w-4 h-4"></i> 回答を保存する
                                 </button>
                             </div>
@@ -223,9 +694,9 @@
 
                     <!-- お題結果一覧タブ -->
                     <div id="content-summary" class="hidden p-6 space-y-8">
-                        <div class="flex items-center justify-between border-b border-amber-900/40 pb-2 mb-4">
-                            <h3 class="text-lg font-bold font-header text-amber-400">みんなの回答一覧</h3>
-                            <button onclick="openModal('editThemesModal')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#1a1511] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50">
+                        <div class="flex items-center justify-between border-b border-tm-accent-900/40 pb-2 mb-4">
+                            <h3 class="text-lg font-bold font-header text-tm-accent-400">みんなの回答一覧</h3>
+                            <button onclick="openModal('editThemesModal')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-tm-sub hover:bg-tm-accent-950/40 text-tm-accent-400 rounded-lg transition-all border border-tm-accent-900/50">
                                 <i data-lucide="settings" class="w-3.5 h-3.5"></i> お題を編集・追加する
                             </button>
                         </div>
@@ -245,42 +716,42 @@
     <!-- 1. 新規キャラクター登録モーダル -->
     <div id="newCharModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 modal-overlay" onclick="closeModal('newCharModal')"></div>
-        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-lg overflow-hidden flex flex-col max-h-full">
-            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
-                <h3 class="font-bold text-amber-400 font-header">新規キャラクターの手動登録</h3>
-                <button onclick="closeModal('newCharModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="relative bg-tm-card border border-tm-accent-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-lg overflow-hidden flex flex-col max-h-full">
+            <div class="p-4 border-b border-tm-accent-950/60 bg-tm-sub flex items-center justify-between">
+                <h3 class="font-bold text-tm-accent-400 font-header">新規キャラクターの手動登録</h3>
+                <button onclick="closeModal('newCharModal')" class="text-tm-text-500 hover:text-tm-text-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6 overflow-y-auto space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">キャラクター名</label>
+                    <label class="block text-xs font-semibold text-tm-accent-600/80 mb-1.5">キャラクター名</label>
                     <input type="text" id="newCharName" class="form-input" placeholder="例: 探索者 太郎">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">アイコン画像 URL</label>
+                    <label class="block text-xs font-semibold text-tm-accent-600/80 mb-1.5">アイコン画像 URL</label>
                     <input type="text" id="newCharIcon" class="form-input" placeholder="画像のURL（http...）">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-amber-600/80 mb-1.5">身長 (cm)</label>
+                    <label class="block text-xs font-semibold text-tm-accent-600/80 mb-1.5">身長 (cm)</label>
                     <input type="number" id="newCharHeight" class="form-input" placeholder="例: 175">
                 </div>
-                <div class="border-t border-amber-950/40 pt-4 mt-2">
-                    <label class="block text-xs font-semibold text-amber-600/80 mb-2">主要ステータス</label>
+                <div class="border-t border-tm-accent-950/40 pt-4 mt-2">
+                    <label class="block text-xs font-semibold text-tm-accent-600/80 mb-2">主要ステータス</label>
                     <div class="grid grid-cols-3 gap-3">
-                        <div><label class="text-[10px] text-stone-400">STR</label><input type="number" id="newCharSTR" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">CON</label><input type="number" id="newCharCON" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">POW</label><input type="number" id="newCharPOW" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">DEX</label><input type="number" id="newCharDEX" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">APP</label><input type="number" id="newCharAPP" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">SIZ</label><input type="number" id="newCharSIZ" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">INT</label><input type="number" id="newCharINT" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">EDU</label><input type="number" id="newCharEDU" class="form-input px-2 py-1"></div>
-                        <div><label class="text-[10px] text-stone-400">HP</label><input type="number" id="newCharHP" class="form-input px-2 py-1 border-emerald-900/50"></div>
+                        <div><label class="text-[10px] text-tm-text-400">STR</label><input type="number" id="newCharSTR" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">CON</label><input type="number" id="newCharCON" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">POW</label><input type="number" id="newCharPOW" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">DEX</label><input type="number" id="newCharDEX" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">APP</label><input type="number" id="newCharAPP" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">SIZ</label><input type="number" id="newCharSIZ" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">INT</label><input type="number" id="newCharINT" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">EDU</label><input type="number" id="newCharEDU" class="form-input px-2 py-1"></div>
+                        <div><label class="text-[10px] text-tm-text-400">HP</label><input type="number" id="newCharHP" class="form-input px-2 py-1 border-tm-accent-900/50"></div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end gap-3">
-                <button onclick="closeModal('newCharModal')" class="px-4 py-2 text-sm text-stone-400 hover:text-stone-200">キャンセル</button>
-                <button onclick="registerNewCharacter()" class="px-4 py-2 text-sm font-bold bg-amber-700 hover:bg-amber-600 text-stone-100 rounded shadow">登録する</button>
+            <div class="p-4 border-t border-tm-accent-950/60 bg-tm-header flex justify-end gap-3">
+                <button onclick="closeModal('newCharModal')" class="px-4 py-2 text-sm text-tm-text-400 hover:text-tm-text-200">キャンセル</button>
+                <button onclick="registerNewCharacter()" class="px-4 py-2 text-sm font-bold bg-tm-accent-700 hover:bg-tm-accent-600 text-tm-text-100 rounded shadow">登録する</button>
             </div>
         </div>
     </div>
@@ -288,23 +759,23 @@
     <!-- 2. データ入出力モーダル -->
     <div id="ioModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 modal-overlay" onclick="closeModal('ioModal')"></div>
-        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-md overflow-hidden">
-            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
-                <h3 class="font-bold text-amber-400 font-header">データ入出力 (共有用)</h3>
-                <button onclick="closeModal('ioModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="relative bg-tm-card border border-tm-accent-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-tm-accent-950/60 bg-tm-sub flex items-center justify-between">
+                <h3 class="font-bold text-tm-accent-400 font-header">データ入出力 (共有用)</h3>
+                <button onclick="closeModal('ioModal')" class="text-tm-text-500 hover:text-tm-text-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6 space-y-6">
-                <div class="bg-[#1a1511] border border-amber-900/50 p-4 rounded-lg">
-                    <h4 class="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> エクスポート（出力）</h4>
-                    <p class="text-xs text-stone-400 mb-3">現在の参加キャラクター情報とお題リストをJSONファイルとしてダウンロードします。友人との共有用です。</p>
-                    <button onclick="exportData()" class="w-full py-2 bg-indigo-900 hover:bg-indigo-800 text-indigo-100 font-bold rounded shadow transition-colors text-sm">
+                <div class="bg-tm-sub border border-tm-accent-900/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-bold text-tm-accent-500 mb-2 flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> エクスポート（出力）</h4>
+                    <p class="text-xs text-tm-text-400 mb-3">現在の参加キャラクター情報とお題リストをJSONファイルとしてダウンロードします。友人との共有用です。</p>
+                    <button onclick="exportData()" class="w-full py-2 bg-tm-accent-900 hover:bg-tm-accent-800 text-tm-accent-100 font-bold rounded shadow transition-colors text-sm">
                         データをダウンロード (uchiyoso_party.json)
                     </button>
                 </div>
-                <div class="bg-[#1a1511] border border-amber-900/50 p-4 rounded-lg">
-                    <h4 class="text-sm font-bold text-amber-500 mb-2 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> インポート（読込）</h4>
-                    <p class="text-xs text-stone-400 mb-3">共有されたJSONファイルを読み込みます。<br><span class="text-rose-400">※現在のリストは上書きされます。</span></p>
-                    <input type="file" id="importFile" accept=".json" class="block w-full text-xs text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-950 file:text-amber-400 hover:file:bg-amber-900 mb-3">
+                <div class="bg-tm-sub border border-tm-accent-900/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-bold text-tm-accent-500 mb-2 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> インポート（読込）</h4>
+                    <p class="text-xs text-tm-text-400 mb-3">共有されたJSONファイルを読み込みます。<br><span class="text-rose-400">※現在のリストは上書きされます。</span></p>
+                    <input type="file" id="importFile" accept=".json" class="block w-full text-xs text-tm-text-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-tm-accent-950 file:text-tm-accent-400 hover:file:bg-tm-accent-900 mb-3">
                     <button onclick="importData()" class="w-full py-2 bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold rounded shadow transition-colors text-sm border border-rose-900/50">
                         データを上書きインポート
                     </button>
@@ -316,29 +787,29 @@
     <!-- 3. お題の編集・追加モーダル -->
     <div id="editThemesModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 modal-overlay" onclick="closeModal('editThemesModal')"></div>
-        <div class="relative bg-[#14100c] border border-amber-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-2xl overflow-hidden flex flex-col max-h-full">
-            <div class="p-4 border-b border-amber-950/60 bg-[#1a1511] flex items-center justify-between">
-                <h3 class="font-bold text-amber-400 font-header">お題リストの編集</h3>
-                <button onclick="closeModal('editThemesModal')" class="text-stone-500 hover:text-stone-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="relative bg-tm-card border border-tm-accent-950/60 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] w-full max-w-2xl overflow-hidden flex flex-col max-h-full">
+            <div class="p-4 border-b border-tm-accent-950/60 bg-tm-sub flex items-center justify-between">
+                <h3 class="font-bold text-tm-accent-400 font-header">お題リストの編集</h3>
+                <button onclick="closeModal('editThemesModal')" class="text-tm-text-500 hover:text-tm-text-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <!-- Preset Selector -->
-            <div class="p-4 bg-[#120e0a] border-b border-amber-950/60 flex flex-col sm:flex-row sm:items-center gap-3">
-                <label class="text-xs font-bold text-amber-500 whitespace-nowrap"><i data-lucide="book-open" class="w-4 h-4 inline mr-1"></i>プリセットから選ぶ:</label>
+            <div class="p-4 bg-tm-header border-b border-tm-accent-950/60 flex flex-col sm:flex-row sm:items-center gap-3">
+                <label class="text-xs font-bold text-tm-accent-500 whitespace-nowrap"><i data-lucide="book-open" class="w-4 h-4 inline mr-1"></i>プリセットから選ぶ:</label>
                 <select id="presetThemeSelect" class="form-input text-xs py-2 w-full" onchange="loadPresetTheme(this.value)">
-                    <option value="">-- 選択してください（エディタに展開されます） --</option>
+                    <option  value="">-- 選択してください（エディタに展開されます） --</option>
                 </select>
             </div>
-            <div class="p-6 overflow-y-auto space-y-4 flex-grow bg-[#0a0806]" id="themeEditorList">
+            <div class="p-6 overflow-y-auto space-y-4 flex-grow bg-tm-input" id="themeEditorList">
                 <!-- JSでエディタ行を生成 -->
             </div>
-            <div class="p-4 bg-[#1a1511] border-t border-b border-amber-950/60 flex justify-center">
-                <button onclick="addNewThemeField()" class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[#120e0a] hover:bg-amber-950/40 text-amber-400 rounded-lg transition-all border border-amber-900/50 shadow">
+            <div class="p-4 bg-tm-sub border-t border-b border-tm-accent-950/60 flex justify-center">
+                <button onclick="addNewThemeField()" class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-tm-header hover:bg-tm-accent-950/40 text-tm-accent-400 rounded-lg transition-all border border-tm-accent-900/50 shadow">
                     <i data-lucide="plus" class="w-4 h-4"></i> 新しいお題を追加
                 </button>
             </div>
-            <div class="p-4 border-t border-amber-950/60 bg-[#120e0a] flex justify-end gap-3">
-                <button onclick="closeModal('editThemesModal')" class="px-4 py-2 text-sm text-stone-400 hover:text-stone-200">キャンセル</button>
-                <button onclick="saveThemes()" class="px-4 py-2 text-sm font-bold bg-amber-700 hover:bg-amber-600 text-stone-100 rounded shadow">お題リストを保存する</button>
+            <div class="p-4 border-t border-tm-accent-950/60 bg-tm-header flex justify-end gap-3">
+                <button onclick="closeModal('editThemesModal')" class="px-4 py-2 text-sm text-tm-text-400 hover:text-tm-text-200">キャンセル</button>
+                <button onclick="saveThemes()" class="px-4 py-2 text-sm font-bold bg-tm-accent-700 hover:bg-tm-accent-600 text-tm-text-100 rounded shadow">お題リストを保存する</button>
             </div>
         </div>
     </div>
@@ -1749,16 +2220,16 @@ function loadThemes() {
 
             targets.forEach(char => {
                 const item = document.createElement('div');
-                item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-amber-950/40 border-amber-700/60' : 'bg-transparent border-transparent hover:bg-[#1a1511]'}`;
+                item.className = `flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${currentEditingId === char.id ? 'bg-tm-accent-950/40 border-tm-accent-700/60' : 'bg-transparent border-transparent hover:bg-tm-sub'}`;
                 item.onclick = () => selectCharacter(char.id);
 
                 const imgUrl = char.iconUrl || defaultSvg;
-                const lockIcon = (window.uchiyosoRoomId && char.ownerId !== window.uchiyosoUserId) ? '<i data-lucide="lock" class="w-3 h-3 text-stone-500 ml-1 inline"></i>' : '';
+                const lockIcon = (window.uchiyosoRoomId && char.ownerId !== window.uchiyosoUserId) ? '<i data-lucide="lock" class="w-3 h-3 text-tm-text-500 ml-1 inline"></i>' : '';
 
                 item.innerHTML = `
-                    <img src="${imgUrl}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover object-top shrink-0">
+                    <img src="${imgUrl}" onerror="this.src='${defaultSvg}'" class="w-14 h-14 rounded-full border border-tm-border-800 object-cover object-top shrink-0">
                     <div class="overflow-hidden">
-                        <div class="text-sm font-bold text-stone-200 truncate font-header">${char.name}${lockIcon}</div>
+                        <div class="text-sm font-bold text-tm-text-200 truncate font-header">${char.name}${lockIcon}</div>
                     </div>
                 `;
                 listEl.appendChild(item);
@@ -1798,27 +2269,36 @@ function loadThemes() {
             chartArea.innerHTML = '';
             
             const heightSortedTargets = [...targets].sort((a,b) => getHeight(a) - getHeight(b));
-            let maxHeight = Math.max(...heightSortedTargets.map(t => getHeight(t)));
-            if (maxHeight < 180) maxHeight = 200; 
+            const validHeights = heightSortedTargets.map(t => getHeight(t)).filter(h => h > 0);
+            let minH = validHeights.length > 0 ? Math.min(...validHeights) : 0;
+            let maxH = validHeights.length > 0 ? Math.max(...validHeights) : 0;
+            
+            if (maxH < 180) maxH = 180;
+            
+            let baseLine = 0;
+            if (minH > 60) {
+                baseLine = minH - 40; // Exaggerate difference
+            }
+            let maxHeightForScale = maxH - baseLine; 
             
             targets.forEach(char => {
                 const tr = document.createElement('tr');
-                tr.className = "bg-[#14100c] hover:bg-[#1a1511] transition-colors";
+                tr.className = "bg-tm-card hover:bg-tm-sub transition-colors";
                 tr.innerHTML = `
-                    <td class="p-3 border-r border-amber-950/50 font-bold text-stone-200 flex items-center gap-2">
-                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-6 h-6 rounded-full object-cover">
+                    <td class="p-3 border-r border-tm-accent-950/50 font-bold text-tm-text-200 flex items-center gap-2">
+                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full object-cover">
                         <span class="truncate max-w-[100px]">${char.name}</span>
                     </td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'STR') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'CON') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'POW') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'DEX') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'APP') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'SIZ') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'INT') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-amber-400">${getParamValue(char, 'EDU') || '-'}</td>
-                    <td class="p-3 border-r border-amber-950/50 text-center font-mono text-emerald-400">${getStatusValue(char, 'HP') || '-'}</td>
-                    <td class="p-3 text-center font-mono text-blue-400">${getStatusValue(char, 'MP') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'STR') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'CON') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'POW') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'DEX') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'APP') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'SIZ') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'INT') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getParamValue(char, 'EDU') || '-'}</td>
+                    <td class="p-3 border-r border-tm-accent-950/50 text-center font-mono text-tm-accent-400">${getStatusValue(char, 'HP') || '-'}</td>
+                    <td class="p-3 text-center font-mono text-tm-accent-400">${getStatusValue(char, 'MP') || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1826,18 +2306,18 @@ function loadThemes() {
             heightSortedTargets.forEach(char => {
                 const h = getHeight(char);
                 if (h > 0) {
-                    const heightPercent = (h / (maxHeight + 20)) * 100;
+                    const heightPercent = ((h - baseLine) / (maxHeightForScale + 20)) * 100;
                     const barContainer = document.createElement('div');
                     barContainer.className = "flex flex-col items-center justify-end h-full gap-2 shrink-0 group relative";
                     barContainer.style.width = "80px";
                     
                     barContainer.innerHTML = `
-                        <div class="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-amber-900 text-amber-100 text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-10">${char.name} : ${h}cm</div>
-                        <div class="text-xs font-mono text-stone-400">${h}cm</div>
-                        <div class="w-12 bg-gradient-to-t from-stone-800 to-amber-900/80 rounded-t-sm border-t border-l border-r border-amber-700/50 shadow-[0_0_10px_rgba(217,119,6,0.1)] relative" style="height: ${heightPercent}%">
-                            <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="absolute -top-6 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full border border-amber-600/50 object-cover z-0 shadow-lg">
+                        <div class="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-tm-accent-900 text-tm-accent-100 text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-10">${char.name} : ${h}cm</div>
+                        <div class="text-xs font-mono text-tm-text-400">${h}cm</div>
+                        <div class="w-12 bg-gradient-to-t from-stone-800 to-tm-accent-900/80 rounded-t-sm border-t border-l border-r border-tm-accent-700/50 shadow-[0_0_10px_rgba(217,119,6,0.1)] relative" style="height: ${heightPercent}%">
+                            <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full border border-tm-accent-600/50 object-cover z-0 shadow-lg">
                         </div>
-                        <div class="text-[10px] font-bold text-stone-300 truncate w-full text-center mt-1 font-header">${char.name}</div>
+                        <div class="text-[10px] font-bold text-tm-text-300 truncate w-full text-center mt-1 font-header">${char.name}</div>
                     `;
                     chartArea.appendChild(barContainer);
                 }
@@ -1850,19 +2330,19 @@ function loadThemes() {
 
             questions.forEach(q => {
                 const div = document.createElement('div');
-                div.className = "bg-[#1a1511] p-4 rounded-lg border border-amber-950/60";
+                div.className = "bg-tm-sub p-4 rounded-lg border border-tm-accent-950/60";
                 
                 const label = document.createElement('label');
-                label.className = "block text-sm font-bold text-amber-500 font-header mb-2";
+                label.className = "block text-sm font-bold text-tm-accent-500 font-header mb-2";
                 label.textContent = q.question;
                 div.appendChild(label);
 
                 if (q.type === 'select') {
                     const select = document.createElement('select');
                     select.id = `input-${q.id}`;
-                    select.className = "form-input appearance-none bg-[#0a0806] cursor-pointer";
-                    select.innerHTML = `<option value="">-- 選択してください --</option>` + 
-                        (q.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                    select.className = "form-input appearance-none bg-tm-input cursor-pointer";
+                    select.innerHTML = `<option  value="">-- 選択してください --</option>` + 
+                        (q.options || []).map(opt => `<option  value="${opt}">${opt}</option>`).join('');
                     div.appendChild(select);
                     
                     const otherInput = document.createElement('input');
@@ -1997,26 +2477,26 @@ function loadThemes() {
 
             questions.forEach(q => {
                 const qDiv = document.createElement('div');
-                qDiv.className = "bg-[#14100c] rounded-xl border border-amber-950/60 overflow-hidden shadow-lg";
+                qDiv.className = "bg-tm-card rounded-xl border border-tm-accent-950/60 overflow-hidden shadow-lg";
 
                 const qHeader = document.createElement('div');
-                qHeader.className = "bg-gradient-to-r from-[#211913] to-[#1a1511] p-4 border-b border-amber-900/40";
-                qHeader.innerHTML = `<h4 class="text-base font-bold text-amber-500 font-header">${q.question}</h4>`;
+                qHeader.className = "bg-tm-header p-4 border-b border-tm-accent-900/40";
+                qHeader.innerHTML = `<h4 class="text-base font-bold text-tm-accent-500 font-header">${q.question}</h4>`;
                 qDiv.appendChild(qHeader);
 
                 const answersGrid = document.createElement('div');
-                answersGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-amber-950/30";
+                answersGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-tm-accent-950/30";
 
                 targets.forEach(char => {
-                    const answerText = (char.themeAnswers && char.themeAnswers[q.id]) ? char.themeAnswers[q.id] : '<span class="text-stone-600 italic">未回答</span>';
+                    const answerText = (char.themeAnswers && char.themeAnswers[q.id]) ? char.themeAnswers[q.id] : '<span class="text-tm-text-600 italic">未回答</span>';
                     
                     const aCell = document.createElement('div');
-                    aCell.className = "bg-[#1a1511] p-4 flex gap-4";
+                    aCell.className = "bg-tm-sub p-4 flex gap-4";
                     aCell.innerHTML = `
-                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-10 h-10 rounded-full border border-stone-800 object-cover shrink-0">
+                        <img src="${char.iconUrl || defaultSvg}" onerror="this.src='${defaultSvg}'" class="w-14 h-14 rounded-full border border-tm-border-800 object-cover shrink-0">
                         <div class="overflow-hidden w-full">
-                            <div class="text-[11px] font-bold text-stone-500 font-header mb-1">${char.name}</div>
-                            <div class="text-sm text-stone-200 whitespace-pre-wrap leading-relaxed">${answerText}</div>
+                            <div class="text-[11px] font-bold text-tm-text-500 font-header mb-1">${char.name}</div>
+                            <div class="text-sm text-tm-text-200 whitespace-pre-wrap leading-relaxed">${answerText}</div>
                         </div>
                     `;
                     answersGrid.appendChild(aCell);
@@ -2024,7 +2504,7 @@ function loadThemes() {
 
                 if (targets.length === 0) {
                     const empty = document.createElement('div');
-                    empty.className = "bg-[#1a1511] p-4 text-stone-500 text-xs italic text-center";
+                    empty.className = "bg-tm-sub p-4 text-tm-text-500 text-xs italic text-center";
                     empty.textContent = "参加キャラクターがいません";
                     answersGrid.appendChild(empty);
                 }
@@ -2177,27 +2657,27 @@ function loadThemes() {
             
             editingQuestions.forEach((q, index) => {
                 const div = document.createElement('div');
-                div.className = "bg-[#1a1511] p-4 rounded-lg border border-amber-900/40 relative";
+                div.className = "bg-tm-sub p-4 rounded-lg border border-tm-accent-900/40 relative";
                 
                 div.innerHTML = `
-                    <button onclick="removeThemeField(${index})" class="absolute top-2 right-2 p-1 text-stone-500 hover:text-rose-500 transition-colors" title="削除">
+                    <button onclick="removeThemeField(${index})" class="absolute top-2 right-2 p-1 text-tm-text-500 hover:text-rose-500 transition-colors" title="削除">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                     
                     <div class="mb-3">
-                        <label class="block text-xs font-semibold text-amber-600/80 mb-1">質問文</label>
-                        <input type="text" value="${q.question}" onchange="updateThemeQuestion(${index}, this.value)" class="form-input text-sm font-bold text-amber-100" placeholder="質問を入力">
+                        <label class="block text-xs font-semibold text-tm-accent-600/80 mb-1">質問文</label>
+                        <input type="text" value="${q.question}" onchange="updateThemeQuestion(${index}, this.value)" class="form-input text-sm font-bold text-tm-accent-100" placeholder="質問を入力">
                     </div>
                     <div class="flex items-center gap-4">
-                        <label class="block text-xs font-semibold text-amber-600/80">回答形式:</label>
+                        <label class="block text-xs font-semibold text-tm-accent-600/80">回答形式:</label>
                         <select onchange="updateThemeType(${index}, this.value)" class="form-input w-auto text-xs py-1 cursor-pointer">
-                            <option value="text" ${q.type === 'text' ? 'selected' : ''}>自由記述 (テキストエリア)</option>
-                            <option value="select" ${q.type === 'select' ? 'selected' : ''}>選択肢 (ドロップダウン)</option>
+                            <option  value="text" ${q.type === 'text' ? 'selected' : ''}>自由記述 (テキストエリア)</option>
+                            <option  value="select" ${q.type === 'select' ? 'selected' : ''}>選択肢 (ドロップダウン)</option>
                         </select>
                     </div>
                     ${q.type === 'select' ? `
                         <div class="mt-3">
-                            <label class="block text-xs font-semibold text-amber-600/80 mb-1">選択肢 (カンマ区切りで入力)</label>
+                            <label class="block text-xs font-semibold text-tm-accent-600/80 mb-1">選択肢 (カンマ区切りで入力)</label>
                             <input type="text" value="${(q.options || []).join(',')}" onchange="updateThemeOptions(${index}, this.value)" class="form-input text-xs" placeholder="選択肢1,選択肢2,選択肢3...">
                         </div>
                     ` : ''}
@@ -2256,13 +2736,13 @@ function loadThemes() {
             msgEl.textContent = message;
             
             if (type === "success") {
-                iconWrapper.className = "p-1 rounded-full bg-emerald-950 text-emerald-500";
+                iconWrapper.className = "p-1 rounded-full bg-tm-accent-950 text-tm-accent-500";
                 iconWrapper.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i>';
-                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-emerald-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+                toast.firstElementChild.className = "flex items-center gap-3 bg-tm-toast border border-tm-accent-800/60 text-tm-text-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
             } else if (type === "error") {
                 iconWrapper.className = "p-1 rounded-full bg-rose-950 text-rose-500";
                 iconWrapper.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
-                toast.firstElementChild.className = "flex items-center gap-3 bg-[#1c1510] border border-rose-800/60 text-stone-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
+                toast.firstElementChild.className = "flex items-center gap-3 bg-tm-toast border border-rose-800/60 text-tm-text-200 px-5 py-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)]";
             }
             
             lucide.createIcons();

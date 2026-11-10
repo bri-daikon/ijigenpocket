@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>子狐4つ子＆仲間たち キャラクター図鑑</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: linear-gradient(135deg, #fef6e4 0%, #f3d2c1 100%);
+      min-height: 100vh;
+    }
+    .character-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="p-3 md:p-8 text-slate-700">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- ヘッダー -->
+    <header class="text-center mb-6 md:mb-8">
+      <h1 class="text-2xl md:text-4xl font-black text-rose-500 drop-shadow-sm flex items-center justify-center gap-2">
+        <i class="fa-solid font-bold fa-paw text-amber-400"></i>
+        <span>子狐4つ子＆仲間たち</span>
+        <i class="fa-solid font-bold fa-sparkles text-amber-400"></i>
+      </h1>
+      <p class="text-xs md:text-sm text-slate-500 mt-1 font-bold">公式キャラクタープロフィール設定資料集</p>
+    </header>
+
+    <!-- 絞り込みカテゴリーフィルター -->
+    <div class="flex flex-wrap justify-center gap-2 mb-6" id="category-filters">
+      <button onclick="filterCategory('all')" class="filter-btn active bg-rose-500 text-white px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow hover:opacity-90 transition">すべて (14)</button>
+      <button onclick="filterCategory('fox')" class="filter-btn bg-white text-slate-600 hover:bg-rose-100 px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow transition">🦊 子狐4つ子</button>
+      <button onclick="filterCategory('mascot')" class="filter-btn bg-white text-slate-600 hover:bg-rose-100 px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow transition">🌱 お世話・マスコット</button>
+      <button onclick="filterCategory('sea')" class="filter-btn bg-white text-slate-600 hover:bg-rose-100 px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow transition">🌊 海の仲間</button>
+      <button onclick="filterCategory('bird')" class="filter-btn bg-white text-slate-600 hover:bg-rose-100 px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow transition">🐦 鳥・その他</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- 左側/上部：キャラクター選択一覧ナビゲーション -->
+      <div class="lg:col-span-4 bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/60">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">
+          <span>キャラクター一覧</span>
+          <span id="char-count" class="text-rose-500 font-bold">14匹</span>
+        </h2>
+        
+        <div id="character-list" class="grid grid-cols-2 lg:grid-cols-1 gap-2 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+          <!-- JavaScriptで動的生成 -->
+        </div>
+      </div>
+
+      <!-- 右側：メインプロフィールカード -->
+      <div class="lg:col-span-8">
+        <div id="main-profile-card" class="character-card bg-white rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-white relative overflow-hidden">
+          <!-- 動的にレンダリングされるエリア -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // 全キャラクターの公式データ DB
+    const characters = [
+      {
+        id: "FOX001",
+        category: "fox",
+        name: "ほたる",
+        role: "長男 / 勉強・家事・まとめ役",
+        species: "子狐",
+        age: "人間換算 約10歳",
+        bgGradient: "from-slate-800 to-sky-900",
+        accentColor: "#1e3a8a",
+        badgeBg: "bg-blue-100 text-blue-800",
+        avatarBg: "bg-indigo-50 border-indigo-200",
+        icon: "🦊",
+        personality: "しっかり者・責任感が強い・頼れるお兄ちゃん。せっかちですぐ答えを求めようとするところも。",
+        firstPerson: "ぼく",
+        bestFriend: "みのり",
+        likes: "読書、油揚げ",
+        dislikes: "寒いこと、虫",
+        treasure: "ガラスのビー玉（覗くと空がまぁるくなる）",
+        dream: "ママたちを楽にできる立派な狐になること",
+        quote: "「勿論、まかせて！」",
+        stamp: "STK-001 (自信・頼もしさ)",
+        colors: "ネイビー × 月光ブルー",
+        visual: "白ベース＋淡いブルーの差し色。青い瞳。額に金色の三日月マーク。大きくふわふわの尻尾。星空柄のネイビーマント着用。",
+        prompt: "A cute white chibi fox, blue eyes, golden crescent moon mark on forehead, navy mantle with starry pattern, high quality character sheet, white background"
+      },
+      {
+        id: "FOX002",
+        category: "fox",
+        name: "みのり",
+        role: "次男 / 食べること・のんびり担当",
+        species: "子狐",
+        age: "人間換算 約10歳",
+        bgGradient: "from-lime-700 to-emerald-900",
+        accentColor: "#556b2f",
+        badgeBg: "bg-lime-100 text-lime-800",
+        avatarBg: "bg-lime-50 border-lime-200",
+        icon: "🦊",
+        personality: "のんびり屋・大食らい。4匹の中で一番ぽっちゃりで丸い。食べ物がないとやる気ゼロに。",
+        firstPerson: "みのり",
+        bestFriend: "ほたる / ポリー",
+        likes: "油揚げ、さつまいも、ごはん！",
+        dislikes: "空腹、運動",
+        treasure: "ママに貰った油揚げ",
+        dream: "まだ見ぬ美味しいごはんを食べること",
+        quote: "「おなかすいたぁ～」",
+        stamp: "STK-002 (空腹・おねだり)",
+        colors: "オリーブグリーン × クリーム",
+        visual: "白ベース＋薄い黄緑～オリーブ系の渦模様。黄～黄土色の瞳。まるい渦模様尻尾。オリーブグリーンの風呂敷スカーフとおにぎり巾着。",
+        prompt: "A cute chubby white chibi fox, yellow eyes, olive green swirl patterns, holding a rice ball pouch, soft warm art style, white background"
+      },
+      {
+        id: "FOX003",
+        category: "fox",
+        name: "雪もち",
+        role: "三男 / 推し活・情報収集担当",
+        species: "子狐",
+        age: "人間換算 約10歳",
+        bgGradient: "from-rose-600 to-sky-700",
+        accentColor: "#e11d48",
+        badgeBg: "bg-rose-100 text-rose-800",
+        avatarBg: "bg-rose-50 border-rose-200",
+        icon: "🦊",
+        personality: "オタク気質・好きになったら一直線。諦めない熱い心を持つが、運が悪くチケット落選しがち。",
+        firstPerson: "わたし",
+        bestFriend: "花あかり",
+        likes: "推し活！ライブ！",
+        dislikes: "推しに会えないこと",
+        treasure: "推しのマスコット人形（ママに買ってもらった）",
+        dream: "推しに会うこと",
+        quote: "「まただめだったぁ」",
+        stamp: "STK-003 (落望・チケ落ち)",
+        colors: "ピンクレッド × 水色",
+        visual: "白ベース＋赤い模様（額・体・尻尾）。青い瞳。小柄でふわふわ。赤いリボン＋鈴＋タッセルの首飾り。",
+        prompt: "A cute fluffy white chibi fox, blue eyes, red markings on forehead and tail, wearing red ribbon with small bell, idol fan theme, white background"
+      },
+      {
+        id: "FOX004",
+        category: "fox",
+        name: "花あかり",
+        role: "末っ子 / おしゃれ・かわいさ担当",
+        species: "子狐",
+        age: "人間換算 約10歳",
+        bgGradient: "from-pink-500 to-rose-400",
+        accentColor: "#ec4899",
+        badgeBg: "bg-pink-100 text-pink-800",
+        avatarBg: "bg-pink-50 border-pink-200",
+        icon: "🦊",
+        personality: "わがままで甘えっ子。一番下なので甘やかされている。自分と可愛いものが大好き。",
+        firstPerson: "あたし",
+        bestFriend: "雪もち",
+        likes: "自分、お花",
+        dislikes: "汚いもの、虫",
+        treasure: "ママに貰ったかわいいお花",
+        dream: "アイドルになること",
+        quote: "「ねぇ、それとって！」",
+        stamp: "STK-004 (甘え・お願い)",
+        colors: "桜ピンク × ライトグリーン",
+        visual: "白ベース＋ピンクの花模様。赤～ピンク系の瞳。頭に花飾り。ピンクの大きなリボン。ピンクグラデーションの尻尾。",
+        prompt: "A cute adorable white chibi fox, pink eyes, pink flower patterns, big pink bow, floral head ornament, pastel kawaii style, white background"
+      },
+      {
+        id: "VEG001",
+        category: "mascot",
+        name: "大根ちゃん",
+        role: "お世話係 / オカン・マスコット",
+        species: "だいこんの妖精",
+        age: "見た目小柄 / 中身超オカン",
+        bgGradient: "from-emerald-600 to-teal-800",
+        accentColor: "#10b981",
+        badgeBg: "bg-emerald-100 text-emerald-800",
+        avatarBg: "bg-emerald-50 border-emerald-200",
+        icon: "🌱",
+        personality: "超おかん体質・世話焼き・情に厚い。子狐たちの乱れや体調変化を即察知。説教が始まると長い。",
+        firstPerson: "わたし / ウチ / 大根ちゃん",
+        bestFriend: "4つ子全員 / ヒロシ / ウルル",
+        likes: "4匹のお世話、畑の土、日向ぼっこ",
+        dislikes: "乾燥、おでん鍋、散らかった部屋",
+        treasure: "毎朝磨く頭のつやつや葉っぱ",
+        dream: "4匹を立派に育て上げること",
+        quote: "「シャキッとしなさい！」",
+        stamp: "STK-005 (喝・応援)",
+        colors: "ホワイト × リーフグリーン × ほっぺピンク",
+        visual: "ぽてっと丸い白い大根ボディ。頭頂部に瑞々しい緑の葉っぱ3〜4枚。ピンクのチークと愛らしい顔立ち。",
+        prompt: "A cute chibi daikon radish character, smooth white round body, short arms and legs, fresh green leafy sprout on top, blushing cheeks, 3D soft clay style"
+      },
+      {
+        id: "RAB001",
+        category: "mascot",
+        name: "ポリー",
+        role: "異世界転移料理人 / グルメ探求",
+        species: "うさぎ（転移者）",
+        age: "約10〜11歳",
+        bgGradient: "from-amber-500 to-orange-600",
+        accentColor: "#f59e0b",
+        badgeBg: "bg-amber-100 text-amber-800",
+        avatarBg: "bg-amber-50 border-amber-200",
+        icon: "🐰",
+        personality: "マイペース・食いしん坊・好奇心旺盛。異世界の食材で美味しい創作料理を作る天才だが、つまみ食いが止まらない。",
+        firstPerson: "ポリー / ぼく",
+        bestFriend: "みのり / ウッポー / ヒロシ",
+        likes: "美味しいもの全般、人参、料理と爆食い",
+        dislikes: "空腹、不味い料理",
+        treasure: "転移時からの相棒の人参",
+        dream: "未知の食材で最高のごちそうを作り食べ尽くすこと",
+        quote: "「もぐもぐ…おかわり！」",
+        stamp: "STK-007 (食欲・大満足)",
+        colors: "クリームベージュ × キャロットオレンジ",
+        visual: "ぽってり丸みのあるクリーム色の立ち耳ウサギ。大きな人参を抱えている。ふっくらほっぺ。",
+        prompt: "A cute chubby beige bunny character, standing upright, holding a big orange carrot with crumbs around mouth, 2D storybook style, white background"
+      },
+      {
+        id: "CAT001",
+        category: "mascot",
+        name: "スズ",
+        role: "脱力マスコット / 癒やし枠",
+        species: "液体（？）黒猫",
+        age: "不明（マイペース枠）",
+        bgGradient: "from-slate-900 to-gray-800",
+        accentColor: "#334155",
+        badgeBg: "bg-slate-200 text-slate-800",
+        avatarBg: "bg-slate-100 border-slate-300",
+        icon: "🐱",
+        personality: "超マイペース・脱力系。体が縦に伸びたり液体のように溶けたりする。箱やボウルを見るとすっぽり入る。",
+        firstPerson: "スズ / ぼく（にゃ）",
+        bestFriend: "大根ちゃん / ポリー / ヒロシ",
+        likes: "ちょうどいい箱や器、日向、大根ちゃんの葉陰",
+        dislikes: "急かされること、骨骨しい硬い場所",
+        treasure: "お気に入りの箱やカゴ",
+        dream: "ずっと伸びたり溶けたりして心地よく過ごすこと",
+        quote: "「のび〜〜」",
+        stamp: "STK-009 (脱力・リラックス)",
+        colors: "ジェットブラック × キャットアイイエロー",
+        visual: "縦にびよ〜んと細長く伸びる真っ黒な猫ボディ。まんまるな黄色い瞳とピンクのほっぺ。",
+        prompt: "A cute long stretchy black cat character, completely black elongated slender body, big yellow round eyes, pink blush, minimalist cartoon style"
+      },
+      {
+        id: "JEL001",
+        category: "sea",
+        name: "ロロ",
+        role: "エモーショナル / 癒やし枠",
+        species: "エモ・クラゲ",
+        age: "不明（ぷにぷに枠）",
+        bgGradient: "from-purple-500 to-indigo-600",
+        accentColor: "#a855f7",
+        badgeBg: "bg-purple-100 text-purple-800",
+        avatarBg: "bg-purple-50 border-purple-200",
+        icon: "🪼",
+        personality: "超感受性豊か・素直・ちょっぴり寂しがり。感情によって体色がピンク、緑、青、虹色などに変化する。",
+        firstPerson: "ロロ / ぼく（ぷか）",
+        bestFriend: "ラムネ / 子狐4つ子（ボール扱い）",
+        likes: "海の散歩、浜辺での日向ぼっこ、音楽、雨",
+        dislikes: "からからの砂浜（乾燥）、怒鳴り声",
+        treasure: "浜辺で見つけたきれいな貝殻",
+        dream: "きれいな海でみんなとずっとぷかぷか仲良く暮らす",
+        quote: "「ハッピー！（ピンク色に発光）」",
+        stamp: "STK-012 (喜び・感情直結)",
+        colors: "感情可変（基本：パステルパープル）",
+        visual: "足が短くて丸っこいフォルムの半透明ぷにぷにクラゲボディ。感情によって全身の色がコロコロ変わる。",
+        prompt: "A cute chibi round jellyfish character, translucent soft colorful body changing colors based on emotion, tiny black eyes, pastel artwork, white background"
+      },
+      {
+        id: "BRD001",
+        category: "bird",
+        name: "ヒロシ",
+        role: "おごり・BBQ・おじさん枠",
+        species: "ハシビロコウ（ゆるキャラ化）",
+        age: "30歳（人間換算）",
+        bgGradient: "from-sky-600 to-indigo-800",
+        accentColor: "#0284c7",
+        badgeBg: "bg-sky-100 text-sky-800",
+        avatarBg: "bg-sky-50 border-sky-200",
+        icon: "🐦",
+        personality: "穏やか・お人好し・包容力抜群。威圧感ゼロ。子狐たちに甘く、たかられるとすぐ財布を開いてしまう。",
+        firstPerson: "ヒロシ / おじさん / ワシ",
+        bestFriend: "子狐4つ子 / ウッポー / 大人組",
+        likes: "BBQ、ビール・お酒、みんなでワイワイ食事、プール",
+        dislikes: "財布が軽くなること、怖い顔を作ること",
+        treasure: "愛用の水中ゴーグル、お気に入りのBBQグリル",
+        dream: "みんなが笑顔で美味しいものを食べてくれること",
+        quote: "「プール開き！ / おごっちゃう！」",
+        stamp: "STK-018 (気前良し・甘やかし)",
+        colors: "スカイブルー / アッシュグレー × ビークイエロー",
+        visual: "まるっこくデフォルメされたハシビロコウ。つぶらな黒目とピンクのチーク。大きなくちばしと水中ゴーグル。",
+        prompt: "A cute chubby rounded shoebill bird character, friendly cute face with blushing cheeks, large beige beak, light blue feathers, wearing swimming goggles, white background"
+      },
+      {
+        id: "OWL001",
+        category: "bird",
+        name: "ウッポー",
+        role: "サブカル・コスプレ・自由人",
+        species: "ウサフクロウ",
+        age: "性別不明・年齢不詳",
+        bgGradient: "from-violet-600 to-fuchsia-800",
+        accentColor: "#7c3aed",
+        badgeBg: "bg-violet-100 text-violet-800",
+        avatarBg: "bg-violet-50 border-violet-200",
+        icon: "🦉",
+        personality: "好奇心旺盛・サブカル好き・ミステリアス。自作コスプレが得意で子狐たちの憧れの的。興奮すると耳が動く。",
+        firstPerson: "ウッポー / ボク",
+        bestFriend: "子狐4つ子 / ヒロシ / ポリー",
+        likes: "コスプレ、アニメ・サブカル、お肉、甘いスイーツ",
+        dislikes: "堅苦しいルール、退屈な時間",
+        treasure: "自作のコスプレ衣装、サブカルグッズ",
+        dream: "最高のオリジナル衣装で超大型フェスを開くこと",
+        quote: "「変身〜っ！」",
+        stamp: "STK-023 (コスプレ・ワクワク)",
+        colors: "スノーホワイト × フェザーグレー × イヤーピンク",
+        visual: "まるっこく白いフクロウボディ。頭頂部からピコピコ動くウサギの立ち耳。黄色いまんまるな目。",
+        prompt: "A cute fluffy round owl character with long upright bunny ears, white and grey soft feathers, big round yellow eyes, cute mascot illustration, white background"
+      },
+      {
+        id: "AXL001",
+        category: "sea",
+        name: "ウルル",
+        role: "ネット廃人・引きこもり・隣人",
+        species: "ウーパールーパー",
+        age: "年齢不詳（引きこもり枠）",
+        bgGradient: "from-teal-600 to-cyan-900",
+        accentColor: "#0d9488",
+        badgeBg: "bg-teal-100 text-teal-800",
+        avatarBg: "bg-teal-50 border-teal-200",
+        icon: "🦎",
+        personality: "超コミュ障・陰キャ・ネット弁慶。対面では挙動不審だがネット上では超饒舌。情報検索速度は神速。",
+        firstPerson: "拙者 / ぼく",
+        bestFriend: "子狐4つ子 / 雪もち / 大根ちゃん",
+        likes: "高速インターネット、夜更かし、SNS、エゴサ",
+        dislikes: "対面コミュニケーション、直射日光、急な来客",
+        treasure: "最速回線のWi-Fiルーター、マルチモニターPC",
+        dream: "部屋から一歩も出ずに一生ネットして暮らすこと",
+        quote: "「それなですぞ / 神速リサーチ！」",
+        stamp: "STK-025 (ネット共感・キーボード爆走)",
+        colors: "パステルオーロラ × 和柄・花柄",
+        visual: "スラリと細長い手足を持つウーパールーパー。フサフサのピンクの外鰓。パステルカラーの和風流水紋。",
+        prompt: "A cute slender axolotl character, long thin legs, pastel rainbow gradient body with subtle japanese wave pattern, fluffy pink external gills, white background"
+      },
+      {
+        id: "BRD002",
+        category: "bird",
+        name: "ピチタ",
+        role: "頭乗りマスコット / 最年少",
+        species: "シマエナガ（雪の妖精）",
+        age: "人間換算 約3〜4歳",
+        bgGradient: "from-slate-400 to-zinc-600",
+        accentColor: "#52525b",
+        badgeBg: "bg-zinc-100 text-zinc-800",
+        avatarBg: "bg-zinc-50 border-zinc-200",
+        icon: "🐥",
+        personality: "おっとり・無邪気・甘えん坊。基本喋らず「ピチチ」と鳴く。子狐たちの頭の上にちょこんと乗る。",
+        firstPerson: "なし（鳴き声のみ）",
+        bestFriend: "子狐4つ子 / 大根ちゃん / ゆめか",
+        likes: "みんなの頭の上、木の実、パンくず、ふわふわな場所",
+        dislikes: "強い風、ひとりぼっちにされること",
+        treasure: "子狐たちからもらった小さなどんぐり",
+        dream: "みんなの頭の上を順番に制覇して旅すること",
+        quote: "「ピチチ〜♡（にっこり）」",
+        stamp: "STK-029 (癒やし・微笑み)",
+        colors: "スノーホワイト × チャコールブラック",
+        visual: "まんまるでもっちりとした真っ白い綿毛のようなボディ。つぶらな糸目。小さな黒いくちばしと羽。",
+        prompt: "A tiny cute fluffy round long-tailed tit bird character, pure white spherical soft body, smiling thread eyes, tiny black beak, minimalist chibi mascot, white background"
+      },
+      {
+        id: "OCT001",
+        category: "sea",
+        name: "ラムネ",
+        role: "好奇心・深海探検・逃走担当",
+        species: "メンダコ",
+        age: "年齢不詳（ぷにぷに枠）",
+        bgGradient: "from-pink-400 to-cyan-500",
+        accentColor: "#06b6d4",
+        badgeBg: "bg-cyan-100 text-cyan-800",
+        avatarBg: "bg-cyan-50 border-cyan-200",
+        icon: "🐙",
+        personality: "好奇心旺盛・ちょっぴりビビり・逃げ足最速。ピンチになると平たくペチャンコになって気配を消す。",
+        firstPerson: "ラムネ / ぼく",
+        bestFriend: "ロロ（ご近所親友・唯一の話し相手）",
+        likes: "新しいもの、探検、ロロとのおしゃべり、貝殻",
+        dislikes: "陸の強い日差し、捕まること、驚かされること",
+        treasure: "海底で見つけたラムネ色のガラス玉",
+        dream: "海の果てまで探検して面白いものを全部見つける",
+        quote: "「にげろ〜〜っ！」",
+        stamp: "STK-032 (耳パタパタ爆速逃走)",
+        colors: "パステルピンク × ラムネブルーグラデーション",
+        visual: "傘のように丸く平たいメンダコボディ。頭上の小さなヒレ耳。上がピンク、下がソーダブルーのグラデーション。",
+        prompt: "A cute chibi flapjack octopus character, umbrella-shaped soft body with tiny ear flaps, pastel pink to soda blue gradient, big anime eyes, white background"
+      },
+      {
+        id: "PON001",
+        category: "mascot",
+        name: "ゆめか",
+        role: "家庭教師 / 憧れのお姉さん枠",
+        species: "ゆめかわポニー",
+        age: "人間換算 約16〜18歳",
+        bgGradient: "from-purple-400 via-pink-400 to-sky-300",
+        accentColor: "#c084fc",
+        badgeBg: "bg-fuchsia-100 text-fuchsia-800",
+        avatarBg: "bg-fuchsia-50 border-fuchsia-200",
+        icon: "🦄",
+        personality: "のほほん・おっとり・やさしい・包容力抜群。子狐たちにお勉強を教えてくれる。ほたるの憧れの相手。",
+        firstPerson: "わたし / ゆめか",
+        bestFriend: "子狐4つ子 / ほたる（憧れの視線）",
+        likes: "お昼寝、お星さま、ふわふわの雲、わたあめ",
+        dislikes: "争いごと、悲しい悪夢、急かされること",
+        treasure: "右お尻のカットマーク（雲とお星さま）",
+        dream: "みんなの夢を集めて優しい気持ちと笑顔を世界に届ける",
+        quote: "「えらいねぇ〜♡」",
+        stamp: "STK-036 (包容・褒めなで)",
+        colors: "パステルレインボー × スノーホワイト",
+        visual: "まっ白で丸みのあるポニーボディ。パステルレインボーグラデーションのふわふわなたてがみ＆尾。星の髪飾り。",
+        prompt: "A cute chibi yumekawa pastel pony character, pure white body, fluffy mane with pastel rainbow gradient, star accessory, cloud cutie mark, kawaii storybook illustration"
+      }
+    ];
+
+    let currentFilter = 'all';
+    let currentSelectedId = 'FOX001';
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      renderList();
+      renderMainCard(currentSelectedId);
+    });
+
+    // フィルター処理
+    function filterCategory(cat) {
+      currentFilter = cat;
+      document.querySelectorAll('#category-filters button').forEach(btn => {
+        btn.classList.remove('bg-rose-500', 'text-white');
+        btn.classList.add('bg-white', 'text-slate-600');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600');
+      event.currentTarget.classList.add('bg-rose-500', 'text-white');
+
+      renderList();
+    }
+
+    // リストレンダリング
+    function renderList() {
+      const container = document.getElementById('character-list');
+      container.innerHTML = '';
+
+      const filtered = characters.filter(c => currentFilter === 'all' || c.category === currentFilter);
+      document.getElementById('char-count').innerText = `${filtered.length}匹`;
+
+      filtered.forEach(char => {
+        const isSelected = char.id === currentSelectedId;
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl cursor-pointer border transition flex items-center gap-3 ${
+          isSelected 
+            ? 'bg-rose-50 border-rose-300 shadow-sm ring-2 ring-rose-400' 
+            : 'bg-white hover:bg-slate-50 border-slate-100'
+        }`;
+        card.onclick = () => selectCharacter(char.id);
+
+        card.innerHTML = `
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${char.avatarBg}">
+            ${char.icon}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm text-slate-800 truncate">${char.name}</h3>
+              <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded ${char.badgeBg}">${char.species}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 truncate">${char.role}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // キャラ選択
+    function selectCharacter(id) {
+      currentSelectedId = id;
+      renderList();
+      renderMainCard(id);
+    }
+
+    // メインカード描画
+    function renderMainCard(id) {
+      const char = characters.find(c => c.id === id);
+      if (!char) return;
+
+      const container = document.getElementById('main-profile-card');
+      
+      container.innerHTML = `
+        <!-- ヘッダーバンパー -->
+        <div class="absolute top-0 left-0 right-0 h-28 bg-gradient-to-r ${char.bgGradient} p-6 flex justify-between items-start text-white">
+          <div>
+            <span class="text-xs font-mono font-bold opacity-80">${char.id}</span>
+            <span class="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm">${char.species}</span>
+          </div>
+          <span class="text-3xl">${char.icon}</span>
+        </div>
+
+        <!-- キャラクター基本ヘッダー -->
+        <div class="relative pt-12 mb-6 flex flex-col md:flex-row items-center md:items-end gap-4 border-b border-slate-100 pb-6">
+          <div class="w-24 h-24 md:w-28 md:h-28 rounded-3xl ${char.avatarBg} border-4 border-white shadow-xl flex items-center justify-center text-5xl md:text-6xl shrink-0 z-10 bg-white">
+            ${char.icon}
+          </div>
+          <div class="text-center md:text-left flex-1">
+            <h2 class="text-2xl md:text-3xl font-black text-slate-800 flex items-center justify-center md:justify-start gap-2">
+              <span>${char.name}</span>
+            </h2>
+            <p class="text-sm font-bold text-rose-500 mt-0.5">${char.role}</p>
+            <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-clock mr-1"></i>${char.age}</p>
+          </div>
+          <div class="text-right">
+            <div class="bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 text-center">
+              <span class="text-[10px] font-bold text-slate-400 block">代表口調・台詞</span>
+              <span class="text-xs font-black text-slate-700">${char.quote}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 詳細情報グリッド -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm">
+          
+          <div class="space-y-3">
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <span class="font-bold text-slate-500 text-xs block mb-1"><i class="fa-solid fa-heart text-rose-400 mr-1.5"></i>性格・特徴</span>
+              <p class="text-slate-700 leading-relaxed font-bold">${char.personality}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-400 text-[10px] block">一人称</span>
+                <span class="font-extrabold text-slate-700">${char.firstPerson}</span>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-400 text-[10px] block">一番仲良し</span>
+                <span class="font-extrabold text-slate-700">${char.bestFriend}</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+              <div>
+                <span class="font-bold text-emerald-600 text-xs block"><i class="fa-solid fa-thumbs-up mr-1"></i>一番好きなもの</span>
+                <span class="text-slate-700 font-bold">${char.likes}</span>
+              </div>
+              <div>
+                <span class="font-bold text-rose-500 text-xs block"><i class="fa-solid fa-thumbs-down mr-1"></i>苦手・嫌いなもの</span>
+                <span class="text-slate-700 font-bold">${char.dislikes}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+              <div>
+                <span class="font-bold text-amber-500 text-xs block"><i class="fa-solid fa-gem mr-1"></i>宝物</span>
+                <span class="text-slate-700 font-bold">${char.treasure}</span>
+              </div>
+              <div>
+                <span class="font-bold text-indigo-500 text-xs block"><i class="fa-solid fa-star mr-1"></i>将来の夢</span>
+                <span class="text-slate-700 font-bold">${char.dream}</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <span class="font-bold text-slate-500 text-xs block mb-1"><i class="fa-solid fa-palette text-purple-400 mr-1.5"></i>担当カラー ＆ ビジュアル設定</span>
+              <p class="text-xs text-purple-600 font-extrabold mb-1">${char.colors}</p>
+              <p class="text-slate-600 text-xs leading-relaxed">${char.visual}</p>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-400 text-[10px] block">LINEスタンプ代表作</span>
+                <span class="font-bold text-slate-700 text-xs">${char.stamp}</span>
+              </div>
+              <button onclick="copyPrompt('${char.prompt.replace(/'/g, "\\'")}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i>
+                <span>AIプロンプトコピー</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    // AIプロンプトコピー関数
+    function copyPrompt(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('AI生成用プロンプトをクリップボードにコピーしました！\n\n' + text);
+      });
+    }
+  </script>
+</body>
+</html>

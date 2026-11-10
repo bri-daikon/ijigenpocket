@@ -1,0 +1,59 @@
+Created At: 2026-06-04T05:59:42Z
+Completed At: 2026-06-04T05:59:43Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker.js`
+Total Lines: 2344
+Total Bytes: 89018
+Showing lines 2000 to 2050
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2000:       setTimeout(() => {
+2001:         addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutType === 'right-vertical' ? '右側縦並び' : '下部横並び'}】ですね。さっそく企画立案しました。`);
+2002:         
+2003:         setTimeout(() => {
+2004:           addChatMessage(employees.aoi, `任せて！【${themeName}】の雰囲気を最大限に引き出すカラーパレットで背景とパネル装飾を今からモデリングするね。パーツ生成スタート！`);
+2005:           
+2006:           setTimeout(() => {
+2007:             addChatMessage(employees.takumi, `前景くり抜き窓は中央左、PLパネルは指定配置に。メニュー用とクリックアクション用（目星、聞き耳、図書館、アイデア、SAN、塩）のボタンを綺麗に自動整列させます！`);
+2008:             
+2009:             setTimeout(() => {
+2010:               addChatMessage(employees.aoi, `各パーツの組み立て完了したよ！キャンバスに自動レイアウトを出力したから確認してみて！CEO！`);
+2011:               
+2012:               generateAndLoadLayout(selectedThemeVal, numPlayers, layoutType);
+2013:               
+2014:               aiGenerateBtn.disabled = false;
+2015:               aiGenerateBtn.innerHTML = '<i data-lucide="play" class="mr-1.5 w-4 h-4"></i>AI社員に作成を依頼する';
+2016:               if (typeof lucide !== 'undefined') lucide.createIcons();
+2017:             }, 1500);
+2018:           }, 1500);
+2019:         }, 1500);
+2020:       }, 500);
+2021:     }
+2022:   });
+2023: }
+2024: 
+2025: function generateAndLoadLayout(theme, numPlayers, layoutType) {
+2026:   saveStateToHistory();
+2027:   
+2028:   const gen = themeSvgGenerators[theme];
+2029:   if (!gen) return;
+2030: 
+2031:   frame = null;
+2032:   panels = [];
+2033:   selectedPanelIds = [];
+2034: 
+2035:   const bgSvg = gen.bg();
+2036:   frame = {
+2037:     url: createSvgUrl(bgSvg),
+2038:     x: 0,
+2039:     y: 0,
+2040:     width: 1280,
+2041:     height: 720,
+2042:     originalRatio: 1280 / 720
+2043:   };
+2044: 
+2045:   const windowSvg = gen.window();
+2046:   const windowPanelWidth = 720;
+2047:   const windowPanelHeight = 405;
+2048:   let windowX = 50;
+2049:   let windowY = 110;
+2050: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

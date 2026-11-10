@@ -1,0 +1,1774 @@
+// --- Navigation Logic ---
+function switchMainTab(tab) {
+    document.querySelectorAll('.main-view').forEach(v => v.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active', 'bg-white', 'text-blue-600', 'shadow-sm', 'bg-white');
+        b.classList.add('text-slate-500');
+    });
+
+    document.getElementById(`view-${tab}`).classList.remove('hidden');
+    const activeBtn = document.getElementById(`main-tab-${tab}`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.classList.remove('text-slate-500');
+    }
+
+    if (tab === 'editor' && cropper) {
+        cropper.resize();
+    } else if (tab === 'cropper1280' && cropper1280) {
+        cropper1280.resize();
+    }
+}
+
+// Global scope expose for onclick handlers
+window.switchMainTab = switchMainTab;
+
+// --- Core Variables ---
+const fileInput = document.getElementById('fileInput');
+const imageToCrop = document.getElementById('imageToCrop');
+const cropButton = document.getElementById('cropButton');
+const cropButtonBottom = document.getElementById('cropButtonBottom');
+const downloadButton = document.getElementById('downloadButton');
+const resultWrapper = document.getElementById('resultWrapper');
+const dropZone = document.getElementById('dropZone');
+const initialGuide = document.getElementById('initialGuide');
+const canvas = document.getElementById('editorCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+
+let cropper = null;
+let originalCroppedImage = null; 
+let currentTool = 'mosaic';
+let isDrawing = false;
+let selectedEmoji = '❤️';
+let startX, startY, snapshot = null;
+
+// --- Editor Logic ---
+function loadFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (cropper) cropper.destroy();
+        imageToCrop.src = e.target.result;
+        imageToCrop.classList.remove('hidden');
+        initialGuide.classList.add('hidden');
+        cropButton.classList.remove('hidden');
+        if (cropButtonBottom) cropButtonBottom.classList.remove('hidden');
+        resultWrapper.classList.add('hidden');
+        cropper = new Cropper(imageToCrop, { viewMode: 1, aspectRatio: NaN });
+    };
+    reader.readAsDataURL(file);
+}
+
+// Global Paste Event logic
+document.addEventListener('paste', (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    if (!activeTabBtn) return;
+    const activeTab = activeTabBtn.id;
+    
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            const blob = item.getAsFile();
+            if (activeTab === 'main-tab-editor') {
+                loadFile(blob);
+            } else if (activeTab === 'main-tab-resizer') {
+                addFileToBatch(blob);
+            } else if (activeTab === 'main-tab-cropper1280') {
+                loadCropper1280File(blob);
+            } else if (activeTab === 'main-tab-iconmaker') {
+                loadIconMakerFile(blob);
+            } else if (activeTab === 'main-tab-texteditor') {
+                loadTextEditorFile(blob);
+            } else if (activeTab === 'main-tab-compressor') {
+                loadCompressorFile(blob);
+            } else if (activeTab === 'main-tab-splitter') {
+                loadSplitterFile(blob);
+            }
+        }
+    }
+});
+
+if (fileInput) fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drop-active'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drop-active'); loadFile(e.dataTransfer.files[0]); });
+}
+
+const handleCrop = () => {
+    if (!cropper) return;
+    const cropped = cropper.getCroppedCanvas();
+    canvas.width = cropped.width;
+    canvas.height = cropped.height;
+    ctx.drawImage(cropped, 0, 0);
+    originalCroppedImage = cropped;
+    resultWrapper.classList.remove('hidden');
+    setTimeout(() => resultWrapper.scrollIntoView({ behavior: 'smooth' }), 100);
+};
+
+if (cropButton) {
+    cropButton.addEventListener('click', handleCrop);
+}
+if (cropButtonBottom) {
+    cropButtonBottom.addEventListener('click', handleCrop);
+}
+
+const getPos = (e) => {
+    if (!canvas) return {x:0, y:0};
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
+};
+
+const drawMosaic = (x, y) => {
+    const sz = parseInt(document.getElementById('brushSize').value);
+    const px = 10;
+    const sx = Math.max(0, x - sz/2), sy = Math.max(0, y - sz/2);
+    const tmp = document.createElement('canvas');
+    tmp.width = tmp.height = sz/px;
+    tmp.getContext('2d').drawImage(canvas, sx, sy, sz, sz, 0, 0, tmp.width, tmp.height);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, sx, sy, sz, sz);
+    ctx.imageSmoothingEnabled = true;
+};
+
+const drawStamp = (x, y) => {
+    const sz = parseInt(document.getElementById('brushSize').value) * 1.5;
+    ctx.font = `${sz}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(selectedEmoji, x, y);
+};
+
+const drawRect = (x1, y1, x2, y2, pre) => {
+    if (pre && snapshot) ctx.putImageData(snapshot, 0, 0);
+    ctx.beginPath(); ctx.strokeStyle = document.getElementById('mainColor').value;
+    ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushSize').value)/4);
+    ctx.rect(x1, y1, x2 - x1, y2 - y1); ctx.stroke();
+};
+
+const drawText = (x, y) => {
+    const txt = document.getElementById('textToInsert').value;
+    if (!txt) return;
+    const sz = parseInt(document.getElementById('brushSize').value, 10);
+    const lineHeight = sz * 1.25;
+    const lines = txt.split('\n');
+
+    ctx.font = `bold ${sz}px Inter, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = sz * 0.15;
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.fillStyle = document.getElementById('mainColor').value;
+
+    lines.forEach((line, index) => {
+        const lineY = y + index * lineHeight;
+        if (line.length > 0) {
+            ctx.strokeText(line, x, lineY);
+            ctx.fillText(line, x, lineY);
+        }
+    });
+};
+
+if (canvas) {
+    canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true; const p = getPos(e); startX = p.x; startY = p.y;
+        if(currentTool === 'rect') snapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
+        else if(currentTool === 'mosaic') drawMosaic(p.x, p.y);
+        else if(currentTool === 'stamp') drawStamp(p.x, p.y);
+        else if(currentTool === 'text') drawText(p.x, p.y);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+        if(!isDrawing) return; e.preventDefault(); const p = getPos(e);
+        if(currentTool === 'mosaic') drawMosaic(p.x, p.y);
+        else if(currentTool === 'rect') drawRect(startX, startY, p.x, p.y, true);
+    });
+    window.addEventListener('mouseup', (e) => {
+        if(!isDrawing) return;
+        if(currentTool === 'rect') drawRect(startX, startY, getPos(e).x, getPos(e).y, false);
+        isDrawing = false;
+    });
+}
+
+// --- Batch Resizer Logic ---
+let batchFiles = [];
+let resizeMode = 'px';
+const batchInput = document.getElementById('batch-file-input');
+const batchPreview = document.getElementById('batch-preview-container');
+const batchBtn = document.getElementById('batch-exec-btn');
+
+function toggleResizeAxis() {
+    const selectedRadio = document.querySelector('input[name="resize-axis"]:checked');
+    const axis = selectedRadio ? selectedRadio.value : 'width';
+    const widthInput = document.getElementById('batch-width-value');
+    const heightInput = document.getElementById('batch-height-value');
+    
+    if (widthInput && heightInput) {
+        if (axis === 'width') {
+            widthInput.disabled = false;
+            heightInput.disabled = true;
+        } else {
+            widthInput.disabled = true;
+            heightInput.disabled = false;
+        }
+    }
+}
+window.toggleResizeAxis = toggleResizeAxis;
+
+function setResizeMode(mode) {
+    resizeMode = mode;
+    document.getElementById('mode-px').className = mode === 'px' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all';
+    document.getElementById('mode-percent').className = mode === 'percent' ? 'flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all' : 'flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all';
+    
+    const pxGroup = document.getElementById('px-settings-group');
+    const pctGroup = document.getElementById('percent-settings-group');
+    if (pxGroup && pctGroup) {
+        if (mode === 'px') {
+            pxGroup.classList.remove('hidden');
+            pctGroup.classList.add('hidden');
+            toggleResizeAxis();
+        } else {
+            pxGroup.classList.add('hidden');
+            pctGroup.classList.remove('hidden');
+        }
+    }
+}
+window.setResizeMode = setResizeMode;
+
+function addFileToBatch(file) {
+    batchFiles.push(file);
+    if (batchBtn) batchBtn.disabled = false;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const d = document.createElement('div');
+        d.className = 'aspect-square bg-slate-100 rounded-lg bg-cover bg-center border border-slate-200';
+        d.style.backgroundImage = `url(${ev.target.result})`;
+        if (batchPreview) batchPreview.appendChild(d);
+    };
+    reader.readAsDataURL(file);
+}
+
+if (batchInput) {
+    batchInput.addEventListener('change', (e) => {
+        batchFiles = Array.from(e.target.files);
+        if (batchPreview) batchPreview.innerHTML = '';
+        if (batchBtn) batchBtn.disabled = batchFiles.length === 0;
+        batchFiles.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const d = document.createElement('div');
+                d.className = 'aspect-square bg-slate-100 rounded-lg bg-cover bg-center border border-slate-200';
+                d.style.backgroundImage = `url(${ev.target.result})`;
+                if (batchPreview) batchPreview.appendChild(d);
+            };
+            reader.readAsDataURL(f);
+        });
+    });
+}
+
+if (batchBtn) {
+    batchBtn.addEventListener('click', async () => {
+        let val;
+        let axis = 'width'; // 'width' | 'height' | 'percent'
+        
+        if (resizeMode === 'px') {
+            const selectedRadio = document.querySelector('input[name="resize-axis"]:checked');
+            axis = selectedRadio ? selectedRadio.value : 'width';
+            if (axis === 'width') {
+                val = parseFloat(document.getElementById('batch-width-value').value);
+            } else {
+                val = parseFloat(document.getElementById('batch-height-value').value);
+            }
+        } else {
+            axis = 'percent';
+            val = parseFloat(document.getElementById('batch-resize-value').value);
+        }
+
+        if(!val || val <= 0) return;
+        batchBtn.disabled = true;
+        document.getElementById('batch-status').innerText = '1枚ずつダウンロード中...';
+        document.getElementById('batch-status').classList.remove('hidden');
+
+        for(const file of batchFiles) {
+            const img = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = URL.createObjectURL(file); });
+            const cv = document.createElement('canvas');
+            
+            let tw, th;
+            if (axis === 'width') {
+                tw = val;
+                th = img.height * (val / img.width);
+            } else if (axis === 'height') {
+                th = val;
+                tw = img.width * (val / img.height);
+            } else { // percent
+                tw = img.width * (val / 100);
+                th = img.height * (val / 100);
+            }
+            
+            cv.width = tw; cv.height = th;
+            cv.getContext('2d').drawImage(img, 0, 0, tw, th);
+            
+            const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${file.name.split('.')[0]}_res.png`;
+            a.click();
+            await new Promise(r => setTimeout(r, 300));
+        }
+        batchBtn.disabled = false;
+        document.getElementById('batch-status').innerText = '完了しました！';
+    });
+}
+
+// --- Color Utility Logic ---
+const utilColor = document.getElementById('utility-color-input');
+const utilHexInput = document.getElementById('utility-hex-input');
+const utilRgbInput = document.getElementById('utility-rgb-input');
+const utilRInput = document.getElementById('utility-r-input');
+const utilGInput = document.getElementById('utility-g-input');
+const utilBInput = document.getElementById('utility-b-input');
+const utilHexSpan = document.getElementById('utility-hex');
+const utilRgbSpan = document.getElementById('utility-rgb');
+
+function parseHexColor(str) {
+    if (!str) return null;
+    let clean = str.trim().replace(/^#/, '');
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join('');
+    }
+    if (clean.length === 6 && /^[0-9a-fA-F]{6}$/.test(clean)) {
+        const r = parseInt(clean.slice(0, 2), 16);
+        const g = parseInt(clean.slice(2, 4), 16);
+        const b = parseInt(clean.slice(4, 6), 16);
+        return { r, g, b, hex: '#' + clean.toUpperCase() };
+    }
+    return null;
+}
+
+function parseRgbColor(str) {
+    if (!str) return null;
+    const match = str.match(/(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/);
+    if (match) {
+        const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
+        const g = Math.min(255, Math.max(0, parseInt(match[2], 10)));
+        const b = Math.min(255, Math.max(0, parseInt(match[3], 10)));
+        const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+        return { r, g, b, hex };
+    }
+    return null;
+}
+
+function syncColorValues(colorObj, source) {
+    const { r, g, b, hex } = colorObj;
+    const rgbStr = `rgb(${r}, ${g}, ${b})`;
+
+    if (source !== 'picker' && utilColor) utilColor.value = hex;
+    if (source !== 'hex' && utilHexInput) utilHexInput.value = hex;
+    if (source !== 'rgb' && utilRgbInput) utilRgbInput.value = rgbStr;
+    if (source !== 'rgbNums') {
+        if (utilRInput) utilRInput.value = r;
+        if (utilGInput) utilGInput.value = g;
+        if (utilBInput) utilBInput.value = b;
+    }
+    if (utilHexSpan) utilHexSpan.innerText = hex;
+    if (utilRgbSpan) utilRgbSpan.innerText = rgbStr;
+}
+
+if (utilColor) {
+    utilColor.addEventListener('input', (e) => {
+        const hex = e.target.value.toUpperCase();
+        const parsed = parseHexColor(hex);
+        if (parsed) syncColorValues(parsed, 'picker');
+    });
+}
+
+if (utilHexInput) {
+    utilHexInput.addEventListener('input', (e) => {
+        const parsed = parseHexColor(e.target.value);
+        if (parsed) syncColorValues(parsed, 'hex');
+    });
+    utilHexInput.addEventListener('blur', () => {
+        const parsed = parseHexColor(utilHexInput.value);
+        if (parsed) {
+            syncColorValues(parsed, 'hex');
+        } else if (utilColor) {
+            const fallback = parseHexColor(utilColor.value);
+            if (fallback) syncColorValues(fallback, 'external');
+        }
+    });
+}
+
+if (utilRgbInput) {
+    utilRgbInput.addEventListener('input', (e) => {
+        const parsed = parseRgbColor(e.target.value);
+        if (parsed) syncColorValues(parsed, 'rgb');
+    });
+    utilRgbInput.addEventListener('blur', () => {
+        const parsed = parseRgbColor(utilRgbInput.value);
+        if (parsed) {
+            syncColorValues(parsed, 'rgb');
+        } else if (utilColor) {
+            const fallback = parseHexColor(utilColor.value);
+            if (fallback) syncColorValues(fallback, 'external');
+        }
+    });
+}
+
+function handleRgbNumChange() {
+    const r = Math.min(255, Math.max(0, parseInt(utilRInput?.value || 0, 10)));
+    const g = Math.min(255, Math.max(0, parseInt(utilGInput?.value || 0, 10)));
+    const b = Math.min(255, Math.max(0, parseInt(utilBInput?.value || 0, 10)));
+    const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    syncColorValues({ r, g, b, hex }, 'rgbNums');
+}
+
+if (utilRInput) utilRInput.addEventListener('input', handleRgbNumChange);
+if (utilGInput) utilGInput.addEventListener('input', handleRgbNumChange);
+if (utilBInput) utilBInput.addEventListener('input', handleRgbNumChange);
+
+function copyColorValue(type) {
+    let txt = '';
+    if (type === 'hex' && utilHexInput) txt = utilHexInput.value;
+    else if (type === 'rgb' && utilRgbInput) txt = utilRgbInput.value;
+    else return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt);
+    } else {
+        const t = document.createElement('textarea');
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+    }
+    const n = document.getElementById('utility-notif');
+    if (n) {
+        n.style.opacity = '1';
+        setTimeout(() => n.style.opacity = '0', 2000);
+    }
+}
+window.copyColorValue = copyColorValue;
+
+function copyToClipboard(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const txt = el.value !== undefined ? el.value : el.innerText;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt);
+    } else {
+        const t = document.createElement('textarea');
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+    }
+    const n = document.getElementById('utility-notif');
+    if (n) {
+        n.style.opacity = '1';
+        setTimeout(() => n.style.opacity = '0', 2000);
+    }
+}
+window.copyToClipboard = copyToClipboard;
+
+// --- Tool Switching (Editor) ---
+function switchTool(tool) {
+    currentTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    const toolBtn = document.getElementById(`tool${tool.charAt(0).toUpperCase() + tool.slice(1)}`);
+    if (toolBtn) toolBtn.classList.add('active');
+    
+    const stampList = document.getElementById('stampList');
+    if (stampList) stampList.classList.toggle('hidden', tool !== 'stamp');
+    
+    const colorPanel = document.getElementById('colorPanel');
+    if (colorPanel) colorPanel.classList.toggle('hidden', !['rect', 'text'].includes(tool));
+    
+    const textInputWrapper = document.getElementById('textInputWrapper');
+    if (textInputWrapper) textInputWrapper.classList.toggle('hidden', tool !== 'text');
+    
+    const brushSize = document.getElementById('brushSize');
+    if (brushSize) brushSize.min = tool === 'rect' ? "2" : "10";
+}
+window.switchTool = switchTool;
+
+['toolMosaic','toolStamp','toolRect','toolText'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => switchTool(id.replace('tool','').toLowerCase()));
+});
+
+document.querySelectorAll('.stamp-option').forEach(b => {
+    b.addEventListener('click', () => {
+        selectedEmoji = b.dataset.emoji;
+        document.querySelectorAll('.stamp-option').forEach(x => x.classList.remove('ring-2','ring-blue-500','rounded-lg'));
+        b.classList.add('ring-2','ring-blue-500','rounded-lg');
+    });
+});
+
+const resetEdit = document.getElementById('resetEdit');
+if (resetEdit) resetEdit.addEventListener('click', () => { if(originalCroppedImage) ctx.drawImage(originalCroppedImage,0,0); });
+
+if (downloadButton) {
+    downloadButton.addEventListener('click', () => {
+        const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `scrap-kiritan-${Date.now()}.png`; a.click();
+    });
+}
+
+// --- 1280x670 Cropper Logic ---
+const crop1280FileInput = document.getElementById('crop1280-file-input');
+const crop1280Image = document.getElementById('crop1280-image');
+const crop1280ExecBtn = document.getElementById('crop1280-exec-btn');
+const crop1280DropZone = document.getElementById('crop1280-drop-zone');
+const crop1280InitialGuide = document.getElementById('crop1280-initial-guide');
+
+let cropper1280 = null;
+let currentCrop1280FileName = 'cropped_image';
+
+function loadCropper1280File(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    currentCrop1280FileName = file.name ? file.name.split('.')[0] : 'cropped_image';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (cropper1280) cropper1280.destroy();
+        crop1280Image.src = e.target.result;
+        crop1280Image.classList.remove('hidden');
+        crop1280InitialGuide.classList.add('hidden');
+        crop1280ExecBtn.classList.remove('hidden');
+        
+        cropper1280 = new Cropper(crop1280Image, {
+            viewMode: 1,
+            aspectRatio: 1280 / 670,
+            autoCropArea: 0.9,
+            responsive: true,
+            restore: false,
+            checkCrossOrigin: false,
+            modal: true,
+            guides: true,
+            highlight: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+if (crop1280FileInput) crop1280FileInput.addEventListener('change', (e) => loadCropper1280File(e.target.files[0]));
+
+if (crop1280DropZone) {
+    crop1280DropZone.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        crop1280DropZone.classList.add('drop-active'); 
+    });
+    crop1280DropZone.addEventListener('dragleave', () => {
+        crop1280DropZone.classList.remove('drop-active');
+    });
+    crop1280DropZone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        crop1280DropZone.classList.remove('drop-active'); 
+        loadCropper1280File(e.dataTransfer.files[0]); 
+    });
+}
+
+if (crop1280ExecBtn) {
+    crop1280ExecBtn.addEventListener('click', () => {
+        if (!cropper1280) return;
+        const croppedCanvas = cropper1280.getCroppedCanvas({
+            width: 1280,
+            height: 670,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        
+        croppedCanvas.toBlob((blob) => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${currentCrop1280FileName}_1280x670.png`;
+            a.click();
+        }, 'image/png');
+    });
+}
+
+// --- Icon Maker Logic ---
+const iconImageInput = document.getElementById('icon-imageInput');
+const iconColorTop = document.getElementById('icon-colorTop');
+const iconColorBottom = document.getElementById('icon-colorBottom');
+const iconTextInput = document.getElementById('icon-textInput');
+const iconCanvas = document.getElementById('icon-previewCanvas');
+const iconCtx = iconCanvas ? iconCanvas.getContext('2d') : null;
+const iconDownloadBtn = document.getElementById('icon-downloadBtn');
+const iconPlaceholderText = document.getElementById('icon-placeholderText');
+const iconScaleSlider = document.getElementById('icon-scale-slider');
+const iconScaleVal = document.getElementById('icon-scale-val');
+const iconScaleResetBtn = document.getElementById('icon-scale-reset-btn');
+
+let iconUploadedImage = new Image();
+let iconScale = 1.0;
+let iconOffsetX = 0;
+let iconOffsetY = 0;
+let isIconDragging = false;
+let iconDragStartX = 0;
+let iconDragStartY = 0;
+
+function resetIconTransform() {
+    iconScale = 1.0;
+    iconOffsetX = 0;
+    iconOffsetY = 0;
+    if (iconScaleSlider) iconScaleSlider.value = 100;
+    if (iconScaleVal) iconScaleVal.textContent = '100%';
+}
+
+function loadIconMakerFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        resetIconTransform();
+        iconUploadedImage.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (iconUploadedImage) {
+    iconUploadedImage.onload = () => {
+        if (iconPlaceholderText) iconPlaceholderText.classList.add('hidden');
+        if (iconCanvas) iconCanvas.classList.remove('hidden');
+        if (iconDownloadBtn) iconDownloadBtn.disabled = false;
+        drawIconMaker();
+    };
+}
+
+if (iconImageInput) {
+    iconImageInput.addEventListener('change', (e) => {
+        loadIconMakerFile(e.target.files[0]);
+    });
+}
+
+if (iconScaleSlider) {
+    iconScaleSlider.addEventListener('input', (e) => {
+        iconScale = parseInt(e.target.value, 10) / 100;
+        if (iconScaleVal) iconScaleVal.textContent = `${e.target.value}%`;
+        drawIconMaker();
+    });
+}
+
+if (iconScaleResetBtn) {
+    iconScaleResetBtn.addEventListener('click', () => {
+        resetIconTransform();
+        drawIconMaker();
+    });
+}
+
+// キャンバス上でのドラッグ移動 (マウス & タッチ)
+if (iconCanvas) {
+    const startDrag = (clientX, clientY) => {
+        if (!iconUploadedImage.src) return;
+        isIconDragging = true;
+        iconDragStartX = clientX;
+        iconDragStartY = clientY;
+    };
+
+    const moveDrag = (clientX, clientY) => {
+        if (!isIconDragging || !iconCanvas) return;
+        const rect = iconCanvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        const scaleFactor = iconCanvas.width / rect.width;
+        const dx = (clientX - iconDragStartX) * scaleFactor;
+        const dy = (clientY - iconDragStartY) * scaleFactor;
+        iconOffsetX += dx;
+        iconOffsetY += dy;
+        iconDragStartX = clientX;
+        iconDragStartY = clientY;
+        drawIconMaker();
+    };
+
+    const endDrag = () => {
+        isIconDragging = false;
+    };
+
+    iconCanvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => {
+        if (isIconDragging) {
+            e.preventDefault();
+            moveDrag(e.clientX, e.clientY);
+        }
+    });
+    window.addEventListener('mouseup', endDrag);
+
+    iconCanvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isIconDragging && e.touches.length === 1) {
+            e.preventDefault();
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', endDrag);
+
+    // マウスホイールによる拡大縮小
+    iconCanvas.addEventListener('wheel', (e) => {
+        if (!iconUploadedImage.src) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -10 : 10;
+        let currentPct = Math.round(iconScale * 100) + delta;
+        currentPct = Math.max(10, Math.min(300, currentPct));
+        iconScale = currentPct / 100;
+        if (iconScaleSlider) iconScaleSlider.value = currentPct;
+        if (iconScaleVal) iconScaleVal.textContent = `${currentPct}%`;
+        drawIconMaker();
+    }, { passive: false });
+}
+
+const updateIconOnColorOrTextChange = () => {
+    if (iconUploadedImage.src) {
+        drawIconMaker();
+    }
+};
+
+if (iconColorTop) iconColorTop.addEventListener('input', updateIconOnColorOrTextChange);
+if (iconColorBottom) iconColorBottom.addEventListener('input', updateIconOnColorOrTextChange);
+if (iconTextInput) iconTextInput.addEventListener('input', updateIconOnColorOrTextChange);
+
+function drawIconMaker() {
+    if (!iconCanvas || !iconCtx || !iconUploadedImage.src) return;
+
+    const size = Math.min(iconUploadedImage.width, iconUploadedImage.height);
+    iconCanvas.width = size;
+    iconCanvas.height = size;
+
+    iconCtx.clearRect(0, 0, iconCanvas.width, iconCanvas.height);
+
+    // 円形にクリップ
+    iconCtx.save();
+    iconCtx.beginPath();
+    iconCtx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    iconCtx.closePath();
+    iconCtx.clip();
+
+    // グラデーション背景
+    const gradient = iconCtx.createLinearGradient(0, 0, 0, iconCanvas.height);
+    gradient.addColorStop(0, iconColorTop.value);
+    gradient.addColorStop(1, iconColorBottom.value);
+    iconCtx.fillStyle = gradient;
+    iconCtx.fillRect(0, 0, iconCanvas.width, iconCanvas.height);
+
+    // 画像描画 (拡大縮小・オフセット対応)
+    const drawWidth = iconUploadedImage.width * iconScale;
+    const drawHeight = iconUploadedImage.height * iconScale;
+    const x = (size - drawWidth) / 2 + iconOffsetX;
+    const y = (size - drawHeight) / 2 + iconOffsetY;
+    iconCtx.drawImage(iconUploadedImage, x, y, drawWidth, drawHeight);
+
+    // テキスト描画
+    const text = iconTextInput.value;
+    if (text) {
+        const fontSize = size * 0.06;
+        iconCtx.font = `bold ${fontSize}px sans-serif`;
+        iconCtx.textAlign = 'center';
+        iconCtx.textBaseline = 'bottom';
+
+        iconCtx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        iconCtx.shadowBlur = 8;
+        iconCtx.shadowOffsetX = 0;
+        iconCtx.shadowOffsetY = 2;
+
+        iconCtx.fillStyle = '#ffffff';
+        iconCtx.fillText(text, size / 2, size - (size * 0.08));
+
+        // 影設定をリセット
+        iconCtx.shadowBlur = 0;
+    }
+    iconCtx.restore();
+}
+
+if (iconDownloadBtn) {
+    iconDownloadBtn.addEventListener('click', () => {
+        if (!iconCanvas) return;
+        const link = document.createElement('a');
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        link.download = `icon_${timestamp}.png`;
+        link.href = iconCanvas.toDataURL('image/png');
+        link.click();
+    });
+}
+
+// --- Text Editor & Image Adjuster Logic ---
+const texteditorFileInput = document.getElementById('texteditor-file-input');
+const texteditorDropzone = document.getElementById('texteditor-dropzone');
+const texteditorAddBtn = document.getElementById('texteditor-add-btn');
+const texteditorCanvas = document.getElementById('texteditor-canvas');
+const texteditorCtx = texteditorCanvas ? texteditorCanvas.getContext('2d') : null;
+const texteditorDownloadBtn = document.getElementById('texteditor-download-btn');
+const texteditorPlaceholder = document.getElementById('texteditor-placeholder');
+const texteditorCanvasContainer = document.getElementById('texteditor-canvas-container');
+
+const texteditorTextInput = document.getElementById('texteditor-text-input');
+const texteditorFontSelect = document.getElementById('texteditor-font-select');
+const texteditorWritingModeSelect = document.getElementById('texteditor-writing-mode');
+const texteditorBoldCb = document.getElementById('texteditor-bold-cb');
+const texteditorItalicCb = document.getElementById('texteditor-italic-cb');
+const texteditorFillColor = document.getElementById('texteditor-fill-color');
+const texteditorStrokeColor = document.getElementById('texteditor-stroke-color');
+const texteditorSizeSlider = document.getElementById('texteditor-size-slider');
+const texteditorStrokeSlider = document.getElementById('texteditor-stroke-slider');
+const texteditorBrightSlider = document.getElementById('texteditor-bright-slider');
+const texteditorContrastSlider = document.getElementById('texteditor-contrast-slider');
+const texteditorLayerList = document.getElementById('texteditor-layer-list');
+
+// 消しゴム＆ツール用変数
+const texteditorEraserSettings = document.getElementById('texteditor-eraser-settings');
+const texteditorEraserSizeSlider = document.getElementById('texteditor-eraser-size');
+const texteditorEraserSizeVal = document.getElementById('texteditor-eraser-size-val');
+
+let texteditorTexts = []; // { id, text, x, y, font, size, bold, italic, color, strokeColor, strokeWidth, writingMode }
+let selectedTextIndex = -1;
+let isTextDragging = false;
+let isEraserDrawing = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let texteditorBgImage = new Image();
+
+// 編集用の一時背景キャンバス
+let texteditorBgCanvas = document.createElement('canvas');
+let texteditorBgCtx = texteditorBgCanvas.getContext('2d');
+
+// ツールと設定値
+let texteditorActiveTool = 'select'; // 'select' | 'eraser'
+let texteditorEraserSize = 30;
+let texteditorBrightness = 100;
+let texteditorContrast = 100;
+
+function switchTextEditorTool(tool) {
+    texteditorActiveTool = tool;
+    
+    // UIボタンのアクティブ状態を切り替え
+    const selectBtn = document.getElementById('texteditor-tool-select');
+    const eraserBtn = document.getElementById('texteditor-tool-eraser');
+    
+    if (tool === 'select') {
+        selectBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        eraserBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        if (texteditorEraserSettings) texteditorEraserSettings.classList.add('hidden');
+        if (texteditorCanvas) texteditorCanvas.style.cursor = 'move';
+    } else {
+        selectBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        eraserBtn.className = "flex-grow py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5";
+        if (texteditorEraserSettings) texteditorEraserSettings.classList.remove('hidden');
+        if (texteditorCanvas) texteditorCanvas.style.cursor = 'crosshair';
+        
+        // 消しゴムツール選択時はテキスト選択を解除して再描画
+        selectedTextIndex = -1;
+        updateTextEditorLayerList();
+        drawTextEditor();
+    }
+}
+window.switchTextEditorTool = switchTextEditorTool;
+
+if (texteditorEraserSizeSlider) {
+    texteditorEraserSizeSlider.addEventListener('input', (e) => {
+        texteditorEraserSize = parseInt(e.target.value);
+        if (texteditorEraserSizeVal) texteditorEraserSizeVal.innerText = `${texteditorEraserSize}px`;
+    });
+}
+
+function loadTextEditorFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        texteditorBgImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (texteditorBgImage) {
+    texteditorBgImage.onload = () => {
+        if (texteditorPlaceholder) texteditorPlaceholder.classList.add('hidden');
+        if (texteditorCanvasContainer) texteditorCanvasContainer.classList.remove('hidden');
+        if (texteditorDownloadBtn) texteditorDownloadBtn.disabled = false;
+
+        // キャンバスサイズを元画像サイズに設定
+        texteditorCanvas.width = texteditorBgImage.width;
+        texteditorCanvas.height = texteditorBgImage.height;
+
+        // 一時背景キャンバスも初期化して背景画像を描画
+        texteditorBgCanvas.width = texteditorBgImage.width;
+        texteditorBgCanvas.height = texteditorBgImage.height;
+        texteditorBgCtx.clearRect(0, 0, texteditorBgCanvas.width, texteditorBgCanvas.height);
+        texteditorBgCtx.drawImage(texteditorBgImage, 0, 0);
+
+        // 初期状態で再リセット
+        texteditorTexts = [];
+        selectedTextIndex = -1;
+        switchTextEditorTool('select');
+        setTextEditorCanvasBg('transparent');
+        
+        drawTextEditor();
+        updateTextEditorLayerList();
+    };
+}
+
+if (texteditorFileInput) {
+    texteditorFileInput.addEventListener('change', (e) => {
+        loadTextEditorFile(e.target.files[0]);
+    });
+}
+
+if (texteditorDropzone) {
+    texteditorDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        texteditorDropzone.classList.add('drop-active');
+    });
+    texteditorDropzone.addEventListener('dragleave', () => {
+        texteditorDropzone.classList.remove('drop-active');
+    });
+    texteditorDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        texteditorDropzone.classList.remove('drop-active');
+        loadTextEditorFile(e.dataTransfer.files[0]);
+    });
+}
+
+// フィルター調整
+if (texteditorBrightSlider) {
+    texteditorBrightSlider.addEventListener('input', (e) => {
+        texteditorBrightness = e.target.value;
+        document.getElementById('texteditor-bright-val').innerText = `${texteditorBrightness}%`;
+        drawTextEditor();
+    });
+}
+if (texteditorContrastSlider) {
+    texteditorContrastSlider.addEventListener('input', (e) => {
+        texteditorContrast = e.target.value;
+        document.getElementById('texteditor-contrast-val').innerText = `${texteditorContrast}%`;
+        drawTextEditor();
+    });
+}
+
+// スタイル変更時の即時反映（選択中テキストがある場合）
+const syncStyleToSelectedText = () => {
+    if (selectedTextIndex === -1 || !texteditorTexts[selectedTextIndex]) return;
+    const txt = texteditorTexts[selectedTextIndex];
+    txt.font = texteditorFontSelect.value;
+    txt.writingMode = texteditorWritingModeSelect.value;
+    txt.bold = texteditorBoldCb.checked;
+    txt.italic = texteditorItalicCb.checked;
+    txt.color = texteditorFillColor.value;
+    txt.strokeColor = texteditorStrokeColor.value;
+    txt.size = parseInt(texteditorSizeSlider.value);
+    txt.strokeWidth = parseInt(texteditorStrokeSlider.value);
+    drawTextEditor();
+};
+
+if (texteditorFontSelect) texteditorFontSelect.addEventListener('change', syncStyleToSelectedText);
+if (texteditorWritingModeSelect) texteditorWritingModeSelect.addEventListener('change', syncStyleToSelectedText);
+if (texteditorBoldCb) texteditorBoldCb.addEventListener('change', syncStyleToSelectedText);
+if (texteditorItalicCb) texteditorItalicCb.addEventListener('change', syncStyleToSelectedText);
+if (texteditorFillColor) texteditorFillColor.addEventListener('input', syncStyleToSelectedText);
+if (texteditorStrokeColor) texteditorStrokeColor.addEventListener('input', syncStyleToSelectedText);
+
+if (texteditorSizeSlider) {
+    texteditorSizeSlider.addEventListener('input', (e) => {
+        document.getElementById('texteditor-size-val').innerText = `${e.target.value}px`;
+        syncStyleToSelectedText();
+    });
+}
+if (texteditorStrokeSlider) {
+    texteditorStrokeSlider.addEventListener('input', (e) => {
+        document.getElementById('texteditor-stroke-val').innerText = `${e.target.value}px`;
+        syncStyleToSelectedText();
+    });
+}
+
+// 文字の追加
+if (texteditorAddBtn) {
+    texteditorAddBtn.addEventListener('click', () => {
+        const textStr = texteditorTextInput.value.trim();
+        if (!textStr || !texteditorBgImage.src) return;
+
+        // キャンバスの中央付近に配置
+        const newText = {
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            text: textStr,
+            x: texteditorCanvas.width / 2,
+            y: texteditorCanvas.height / 2,
+            font: texteditorFontSelect.value,
+            writingMode: texteditorWritingModeSelect.value,
+            size: parseInt(texteditorSizeSlider.value),
+            bold: texteditorBoldCb.checked,
+            italic: texteditorItalicCb.checked,
+            color: texteditorFillColor.value,
+            strokeColor: texteditorStrokeColor.value,
+            strokeWidth: parseInt(texteditorStrokeSlider.value)
+        };
+
+        texteditorTexts.push(newText);
+        selectedTextIndex = texteditorTexts.length - 1;
+        texteditorTextInput.value = ''; // 入力欄をクリア
+        
+        drawTextEditor();
+        updateTextEditorLayerList();
+    });
+}
+
+// レイヤーリストの更新
+function updateTextEditorLayerList() {
+    if (!texteditorLayerList) return;
+    if (texteditorTexts.length === 0) {
+        texteditorLayerList.innerHTML = '<p class="text-slate-400 text-center py-4">文字がまだ追加されていません</p>';
+        return;
+    }
+
+    texteditorLayerList.innerHTML = '';
+    // 上のレイヤー（配列の末尾）がリストでも上にくるように逆順ループ
+    for (let i = texteditorTexts.length - 1; i >= 0; i--) {
+        const txt = texteditorTexts[i];
+        const item = document.createElement('div');
+        const isActive = (i === selectedTextIndex);
+        item.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+            isActive ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+        }`;
+
+        item.innerHTML = `
+            <span class="truncate max-w-[150px] cursor-pointer flex-grow" onclick="selectTextLayer(${i})">${txt.text.replace(/\n/g, ' ')}</span>
+            <div class="flex items-center gap-1">
+                <button onclick="moveLayerUp(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="前面へ">▲</button>
+                <button onclick="moveLayerDown(${i})" class="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700" title="背面へ">▼</button>
+                <button onclick="deleteLayer(${i})" class="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-600" title="削除">❌</button>
+            </div>
+        `;
+        texteditorLayerList.appendChild(item);
+    }
+}
+window.updateTextEditorLayerList = updateTextEditorLayerList;
+
+// --- Image Compressor Logic ---
+let compressorImage = new Image();
+let compressorOriginalFile = null;
+let compressorFormat = 'image/jpeg';
+let compressorQuality = 0.8;
+let compressorResultBlob = null;
+
+const compFileInput = document.getElementById('compressor-file-input');
+const compDropzone = document.getElementById('compressor-dropzone');
+const compQualitySlider = document.getElementById('compressor-quality-slider');
+const compQualityVal = document.getElementById('compressor-quality-val');
+const compResizeSelect = document.getElementById('compressor-resize-select');
+const compDownloadBtn = document.getElementById('compressor-download-btn');
+const compPlaceholder = document.getElementById('compressor-placeholder');
+const compPreviewContainer = document.getElementById('compressor-preview-container');
+const compOriginalSize = document.getElementById('compressor-original-size');
+const compNewSize = document.getElementById('compressor-new-size');
+const compRatio = document.getElementById('compressor-ratio');
+const compPreviewImg = document.getElementById('compressor-preview-img');
+const compCanvas = document.getElementById('compressor-canvas');
+const compCtx = compCanvas ? compCanvas.getContext('2d') : null;
+
+window.setCompressorFormat = function(format) {
+    compressorFormat = format;
+    // UI update
+    const btns = {
+        'image/jpeg': document.getElementById('compressor-fmt-jpeg'),
+        'image/webp': document.getElementById('compressor-fmt-webp'),
+        'image/png': document.getElementById('compressor-fmt-png')
+    };
+    
+    for (const [key, btn] of Object.entries(btns)) {
+        if (!btn) continue;
+        if (key === format) {
+            btn.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+        } else {
+            btn.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+        }
+    }
+    
+    const qWrapper = document.getElementById('compressor-quality-wrapper');
+    if (qWrapper) {
+        if (format === 'image/png') {
+            qWrapper.classList.add('opacity-50');
+            if(compQualitySlider) compQualitySlider.disabled = true;
+        } else {
+            qWrapper.classList.remove('opacity-50');
+            if(compQualitySlider) compQualitySlider.disabled = false;
+        }
+    }
+    
+    updateCompressorPreview();
+};
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 KB';
+    const k = 1024;
+    return (bytes / k).toFixed(2) + ' KB';
+}
+
+function loadCompressorFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    compressorOriginalFile = file;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        compressorImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+window.loadCompressorFile = loadCompressorFile;
+
+if (compressorImage) {
+    compressorImage.onload = () => {
+        if (compPlaceholder) compPlaceholder.classList.add('hidden');
+        if (compPreviewContainer) compPreviewContainer.classList.remove('hidden');
+        if (compDownloadBtn) compDownloadBtn.disabled = false;
+        
+        compOriginalSize.innerText = formatBytes(compressorOriginalFile.size);
+        updateCompressorPreview();
+    };
+}
+
+function updateCompressorPreview() {
+    if (!compressorImage.src || !compCanvas || !compCtx) return;
+    
+    let targetWidth = compressorImage.width;
+    let targetHeight = compressorImage.height;
+    
+    const resizeVal = compResizeSelect ? compResizeSelect.value : 'original';
+    if (resizeVal !== 'original') {
+        const maxW = parseInt(resizeVal);
+        if (compressorImage.width > maxW) {
+            targetWidth = maxW;
+            targetHeight = compressorImage.height * (maxW / compressorImage.width);
+        }
+    }
+    
+    compCanvas.width = targetWidth;
+    compCanvas.height = targetHeight;
+    compCtx.clearRect(0, 0, targetWidth, targetHeight);
+    compCtx.drawImage(compressorImage, 0, 0, targetWidth, targetHeight);
+    
+    compCanvas.toBlob((blob) => {
+        if (!blob) return;
+        compressorResultBlob = blob;
+        
+        const url = URL.createObjectURL(blob);
+        if (compPreviewImg) {
+            // Revoke old URL if exists to avoid memory leak
+            if (compPreviewImg.src && compPreviewImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL(compPreviewImg.src);
+            }
+            compPreviewImg.src = url;
+        }
+        
+        compNewSize.innerText = formatBytes(blob.size);
+        
+        const ratio = ((blob.size / compressorOriginalFile.size) * 100).toFixed(1);
+        if (blob.size < compressorOriginalFile.size) {
+            compRatio.innerText = `(-${(100 - ratio).toFixed(1)}%)`;
+            compRatio.className = "text-[10px] font-bold text-emerald-500 block";
+        } else {
+            compRatio.innerText = `(+${(ratio - 100).toFixed(1)}%)`;
+            compRatio.className = "text-[10px] font-bold text-red-500 block";
+        }
+        
+    }, compressorFormat, compressorQuality);
+}
+
+if (compFileInput) {
+    compFileInput.addEventListener('change', (e) => loadCompressorFile(e.target.files[0]));
+}
+
+if (compDropzone) {
+    compDropzone.addEventListener('dragover', (e) => { e.preventDefault(); compDropzone.classList.add('drop-active'); });
+    compDropzone.addEventListener('dragleave', () => compDropzone.classList.remove('drop-active'));
+    compDropzone.addEventListener('drop', (e) => { e.preventDefault(); compDropzone.classList.remove('drop-active'); loadCompressorFile(e.dataTransfer.files[0]); });
+}
+
+if (compQualitySlider) {
+    compQualitySlider.addEventListener('input', (e) => {
+        compressorQuality = parseInt(e.target.value) / 100;
+        if (compQualityVal) compQualityVal.innerText = `${e.target.value}%`;
+    });
+    // Use change for heavier update to avoid lag while dragging
+    compQualitySlider.addEventListener('change', () => {
+        updateCompressorPreview();
+    });
+}
+
+if (compResizeSelect) {
+    compResizeSelect.addEventListener('change', updateCompressorPreview);
+}
+
+if (compDownloadBtn) {
+    compDownloadBtn.addEventListener('click', () => {
+        if (!compressorResultBlob) return;
+        const a = document.createElement('a');
+        const ext = compressorFormat === 'image/jpeg' ? 'jpg' : (compressorFormat === 'image/webp' ? 'webp' : 'png');
+        const originalName = compressorOriginalFile.name.split('.')[0];
+        
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const timestamp = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        
+        a.download = `${originalName}_min_${timestamp}.${ext}`;
+        a.href = URL.createObjectURL(compressorResultBlob);
+        a.click();
+    });
+}
+
+function selectTextLayer(index) {
+    selectedTextIndex = index;
+    const txt = texteditorTexts[index];
+    if (txt) {
+        // UIフォームの値を同期
+        texteditorTextInput.value = txt.text;
+        texteditorFontSelect.value = txt.font;
+        texteditorWritingModeSelect.value = txt.writingMode || 'horizontal';
+        texteditorBoldCb.checked = txt.bold;
+        texteditorItalicCb.checked = txt.italic;
+        texteditorFillColor.value = txt.color;
+        texteditorStrokeColor.value = txt.strokeColor;
+        texteditorSizeSlider.value = txt.size;
+        document.getElementById('texteditor-size-val').innerText = `${txt.size}px`;
+        texteditorStrokeSlider.value = txt.strokeWidth;
+        document.getElementById('texteditor-stroke-val').innerText = `${txt.strokeWidth}px`;
+        
+        // ツールを選択モードへ自動切り替え
+        switchTextEditorTool('select');
+    }
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.selectTextLayer = selectTextLayer;
+
+function deleteLayer(index) {
+    texteditorTexts.splice(index, 1);
+    if (selectedTextIndex === index) {
+        selectedTextIndex = -1;
+    } else if (selectedTextIndex > index) {
+        selectedTextIndex--;
+    }
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.deleteLayer = deleteLayer;
+
+function moveLayerUp(index) {
+    if (index >= texteditorTexts.length - 1) return;
+    const temp = texteditorTexts[index];
+    texteditorTexts[index] = texteditorTexts[index + 1];
+    texteditorTexts[index + 1] = temp;
+    
+    if (selectedTextIndex === index) selectedTextIndex = index + 1;
+    else if (selectedTextIndex === index + 1) selectedTextIndex = index;
+
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.moveLayerUp = moveLayerUp;
+
+function moveLayerDown(index) {
+    if (index <= 0) return;
+    const temp = texteditorTexts[index];
+    texteditorTexts[index] = texteditorTexts[index - 1];
+    texteditorTexts[index - 1] = temp;
+
+    if (selectedTextIndex === index) selectedTextIndex = index - 1;
+    else if (selectedTextIndex === index - 1) selectedTextIndex = index;
+
+    updateTextEditorLayerList();
+    drawTextEditor();
+}
+window.moveLayerDown = moveLayerDown;
+
+// テキストサイズとバウンディングボックスの計測用ヘルパー
+function measureMultilineText(txt) {
+    const lines = txt.text.split('\n');
+    texteditorCtx.save();
+    let fontStyle = '';
+    if (txt.italic) fontStyle += 'italic ';
+    if (txt.bold) fontStyle += 'bold ';
+    texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+    
+    let w = 0;
+    let h = 0;
+    
+    if (txt.writingMode === 'vertical') {
+        // 縦書き：幅は行数、高さは最大文字数
+        const lineCount = lines.length;
+        let maxChars = 0;
+        lines.forEach(l => { if (l.length > maxChars) maxChars = l.length; });
+        
+        h = maxChars * txt.size;
+        w = lineCount * txt.size * 1.2;
+    } else {
+        // 横書き：高さは行数、幅は計測した最大幅
+        const lineCount = lines.length;
+        lines.forEach(l => {
+            const metrics = texteditorCtx.measureText(l);
+            if (metrics.width > w) w = metrics.width;
+        });
+        h = lineCount * txt.size * 1.2;
+    }
+    
+    texteditorCtx.restore();
+    return { width: w, height: h };
+}
+
+// キャンバス描画
+function drawTextEditor(hideSelection = false) {
+    if (!texteditorCanvas || !texteditorCtx || !texteditorBgImage.src) return;
+
+    // 画面クリア
+    texteditorCtx.clearRect(0, 0, texteditorCanvas.width, texteditorCanvas.height);
+
+    // フィルターの適用と画像描画（消しゴムで削られたBgCanvasを使用）
+    texteditorCtx.save();
+    texteditorCtx.filter = `brightness(${texteditorBrightness}%) contrast(${texteditorContrast}%)`;
+    texteditorCtx.drawImage(texteditorBgCanvas, 0, 0);
+    texteditorCtx.restore();
+
+    // テキストの描画
+    texteditorTexts.forEach((txt, index) => {
+        texteditorCtx.save();
+        
+        let fontStyle = '';
+        if (txt.italic) fontStyle += 'italic ';
+        if (txt.bold) fontStyle += 'bold ';
+        texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+        
+        texteditorCtx.textAlign = 'center';
+        texteditorCtx.textBaseline = 'middle';
+
+        const lines = txt.text.split('\n');
+        const box = measureMultilineText(txt);
+
+        // 計測後にフォントやアライメントの設定がクリアされるのを防ぐため、再適用します
+        texteditorCtx.font = `${fontStyle}${txt.size}px ${txt.font}`;
+        texteditorCtx.textAlign = 'center';
+        texteditorCtx.textBaseline = 'middle';
+
+        // 共通の描画処理
+        const renderText = (str, x, y) => {
+            if (txt.strokeWidth > 0) {
+                texteditorCtx.strokeStyle = txt.strokeColor;
+                texteditorCtx.lineWidth = txt.strokeWidth;
+                texteditorCtx.lineJoin = 'round';
+                texteditorCtx.strokeText(str, x, y);
+            }
+            texteditorCtx.fillStyle = txt.color;
+            texteditorCtx.fillText(str, x, y);
+        };
+
+        if (txt.writingMode === 'vertical') {
+            // 縦書き描画（右の行から左へと描画）
+            lines.forEach((line, lineIdx) => {
+                // 行のX座標（中心基準なので、行全体幅の半分からずらす）
+                const offsetX = (lines.length - 1) * txt.size * 0.6;
+                const lineX = txt.x + offsetX - (lineIdx * txt.size * 1.2);
+                
+                // 1行の中の文字ループ
+                for (let cIdx = 0; cIdx < line.length; cIdx++) {
+                    let char = line[cIdx];
+                    
+                    // 縦書き時の記号調整
+                    let rotateChar = false;
+                    if (char === 'ー' || char === '―' || char === '─' || char === '-') {
+                        char = '丨';
+                    } else if (char === '…' || char === '‥') {
+                        rotateChar = true;
+                    }
+                    
+                    // 文字のY座標
+                    const offsetY = (line.length - 1) * txt.size * 0.5;
+                    const charY = txt.y - offsetY + (cIdx * txt.size);
+                    
+                    if (rotateChar) {
+                        texteditorCtx.save();
+                        texteditorCtx.translate(lineX, charY);
+                        texteditorCtx.rotate(Math.PI / 2);
+                        renderText(char, 0, 0);
+                        texteditorCtx.restore();
+                    } else {
+                        renderText(char, lineX, charY);
+                    }
+                }
+            });
+        } else {
+            // 横書き描画（上から下へ）
+            lines.forEach((line, lineIdx) => {
+                const offsetY = (lines.length - 1) * txt.size * 0.6;
+                const lineY = txt.y - offsetY + (lineIdx * txt.size * 1.2);
+                renderText(line, txt.x, lineY);
+            });
+        }
+
+        // 選択枠の描画 (hideSelectionがfalseのときのみ)
+        if (!hideSelection && index === selectedTextIndex) {
+            const w = box.width + 16;
+            const h = box.height + 16;
+            
+            texteditorCtx.strokeStyle = '#3b82f6';
+            texteditorCtx.lineWidth = 2;
+            texteditorCtx.setLineDash([6, 4]);
+            texteditorCtx.strokeRect(txt.x - w / 2, txt.y - h / 2, w, h);
+            
+            // 角にマーカーを描画
+            texteditorCtx.fillStyle = '#3b82f6';
+            texteditorCtx.fillRect(txt.x - w / 2 - 4, txt.y - h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x + w / 2 - 4, txt.y - h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x - w / 2 - 4, txt.y + h / 2 - 4, 8, 8);
+            texteditorCtx.fillRect(txt.x + w / 2 - 4, txt.y + h / 2 - 4, 8, 8);
+        }
+
+        texteditorCtx.restore();
+    });
+}
+
+// キャンバス座標変換
+const getTextEditorPos = (e) => {
+    if (!texteditorCanvas) return { x: 0, y: 0 };
+    const rect = texteditorCanvas.getBoundingClientRect();
+    const sx = texteditorCanvas.width / rect.width;
+    const sy = texteditorCanvas.height / rect.height;
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
+};
+
+// マウスイベントによるドラッグ＆ドロップと選択、消しゴム操作
+if (texteditorCanvas) {
+    const handleStart = (e) => {
+        if (!texteditorBgImage.src) return;
+        const p = getTextEditorPos(e);
+        
+        if (texteditorActiveTool === 'eraser') {
+            // 消しゴムツール処理
+            isEraserDrawing = true;
+            texteditorBgCtx.save();
+            texteditorBgCtx.globalCompositeOperation = 'destination-out';
+            texteditorBgCtx.beginPath();
+            texteditorBgCtx.moveTo(p.x, p.y);
+            e.preventDefault();
+            return;
+        }
+        
+        // 選択/移動モード処理
+        // 当たり判定：上にあるレイヤー（配列末尾）から順にチェック
+        let clickedIndex = -1;
+        
+        for (let i = texteditorTexts.length - 1; i >= 0; i--) {
+            const txt = texteditorTexts[i];
+            const box = measureMultilineText(txt);
+            
+            const w = box.width + 16;
+            const h = box.height + 16;
+            
+            if (p.x >= txt.x - w / 2 && p.x <= txt.x + w / 2 &&
+                p.y >= txt.y - h / 2 && p.y <= txt.y + h / 2) {
+                clickedIndex = i;
+                break;
+            }
+        }
+
+        if (clickedIndex !== -1) {
+            isTextDragging = true;
+            selectTextLayer(clickedIndex);
+            dragStartX = p.x - texteditorTexts[clickedIndex].x;
+            dragStartY = p.y - texteditorTexts[clickedIndex].y;
+            e.preventDefault();
+        } else {
+            // 背景クリック時は選択解除
+            selectedTextIndex = -1;
+            updateTextEditorLayerList();
+            drawTextEditor();
+        }
+    };
+
+    const handleMove = (e) => {
+        const p = getTextEditorPos(e);
+        
+        if (texteditorActiveTool === 'eraser') {
+            if (!isEraserDrawing) return;
+            e.preventDefault();
+            texteditorBgCtx.lineTo(p.x, p.y);
+            texteditorBgCtx.strokeStyle = 'rgba(0,0,0,1)';
+            texteditorBgCtx.lineWidth = texteditorEraserSize;
+            texteditorBgCtx.lineCap = 'round';
+            texteditorBgCtx.lineJoin = 'round';
+            texteditorBgCtx.stroke();
+            drawTextEditor();
+            return;
+        }
+
+        if (!isTextDragging || selectedTextIndex === -1) return;
+        e.preventDefault();
+        const txt = texteditorTexts[selectedTextIndex];
+        txt.x = p.x - dragStartX;
+        txt.y = p.y - dragStartY;
+        drawTextEditor();
+    };
+
+    const handleEnd = () => {
+        if (texteditorActiveTool === 'eraser') {
+            if (isEraserDrawing) {
+                texteditorBgCtx.restore();
+                isEraserDrawing = false;
+            }
+            return;
+        }
+        isTextDragging = false;
+    };
+
+    texteditorCanvas.addEventListener('mousedown', handleStart);
+    texteditorCanvas.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+
+    // タッチ対応
+    texteditorCanvas.addEventListener('touchstart', handleStart, { passive: false });
+    texteditorCanvas.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+}
+
+// ダウンロード
+if (texteditorDownloadBtn) {
+    texteditorDownloadBtn.addEventListener('click', () => {
+        if (!texteditorCanvas) return;
+        
+        // 選択枠を非表示にして描画
+        drawTextEditor(true);
+        
+        const link = document.createElement('a');
+        link.download = `scrap-texteditor-${Date.now()}.png`;
+        link.href = texteditorCanvas.toDataURL('image/png');
+        link.click();
+        
+        // 選択枠を再表示
+        drawTextEditor(false);
+    });
+}
+
+function setTextEditorCanvasBg(bg) {
+    if (!texteditorCanvas) return;
+    
+    // 背景色のクラスを一度すべてクリア
+    texteditorCanvas.classList.remove('bg-white');
+    texteditorCanvas.classList.remove('bg-black');
+    texteditorCanvas.classList.remove('checkerboard-bg');
+    
+    // ボタンのスタイル切り替え用
+    const btnTransparent = document.getElementById('canvas-bg-btn-transparent');
+    const btnWhite = document.getElementById('canvas-bg-btn-white');
+    const btnBlack = document.getElementById('canvas-bg-btn-black');
+    
+    const activeClassTransparent = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 checkerboard-bg";
+    const activeClassWhite = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 bg-white";
+    const activeClassBlack = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 bg-slate-900";
+    
+    const inactiveClassTransparent = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 checkerboard-bg";
+    const inactiveClassWhite = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-white text-slate-700";
+    const inactiveClassBlack = "flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-slate-900 text-white";
+    
+    if (bg === 'transparent') {
+        texteditorCanvas.classList.add('checkerboard-bg');
+        if (btnTransparent) btnTransparent.className = activeClassTransparent;
+        if (btnWhite) btnWhite.className = inactiveClassWhite;
+        if (btnBlack) btnBlack.className = inactiveClassBlack;
+    } else if (bg === 'white') {
+        texteditorCanvas.classList.add('bg-white');
+        if (btnTransparent) btnTransparent.className = inactiveClassTransparent;
+        if (btnWhite) btnWhite.className = activeClassWhite;
+        if (btnBlack) btnBlack.className = inactiveClassBlack;
+    } else if (bg === 'black') {
+        texteditorCanvas.classList.add('bg-black');
+        if (btnTransparent) btnTransparent.className = inactiveClassTransparent;
+        if (btnWhite) btnWhite.className = inactiveClassWhite;
+        if (btnBlack) btnBlack.className = activeClassBlack;
+    }
+}
+window.setTextEditorCanvasBg = setTextEditorCanvasBg;
+
+
+// --- SECTION: IMAGE SPLITTER ---
+let splitterOriginalImage = null;
+let splitterDirection = 'horizontal'; // horizontal or vertical
+
+const splitterFileInput = document.getElementById('splitter-file-input');
+const splitterDropzone = document.getElementById('splitter-dropzone');
+const splitterDownloadBtn = document.getElementById('splitter-download-btn');
+const splitterPreviewContainer = document.getElementById('splitter-preview-container');
+const splitterPiecesContainer = document.getElementById('splitter-pieces');
+const splitterPlaceholder = document.getElementById('splitter-placeholder');
+const splitterOriginalImgEl = document.getElementById('splitter-original-img');
+const splitterCountSelect = document.getElementById('splitter-count-select');
+
+function setSplitterDirection(dir) {
+    splitterDirection = dir;
+    
+    const btnHoriz = document.getElementById('splitter-dir-horizontal');
+    const btnVert = document.getElementById('splitter-dir-vertical');
+    
+    if (dir === 'horizontal') {
+        if(btnHoriz) btnHoriz.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+        if(btnVert) btnVert.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+    } else {
+        if(btnHoriz) btnHoriz.className = "flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all";
+        if(btnVert) btnVert.className = "flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all";
+    }
+    
+    // Auto-update preview if image is loaded
+    if (splitterOriginalImage) {
+        updateSplitterPreview();
+    }
+}
+window.setSplitterDirection = setSplitterDirection;
+
+if (splitterCountSelect) {
+    splitterCountSelect.addEventListener('change', () => {
+        if (splitterOriginalImage) {
+            updateSplitterPreview();
+        }
+    });
+}
+
+const splitterGapInput = document.getElementById('splitter-gap-input');
+const splitterGapVal = document.getElementById('splitter-gap-val');
+
+if (splitterGapInput) {
+    splitterGapInput.addEventListener('input', (e) => {
+        if (splitterGapVal) splitterGapVal.textContent = e.target.value + 'px';
+        if (splitterOriginalImage) updateSplitterPreview();
+    });
+}
+
+function loadSplitterFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        splitterOriginalImage = new Image();
+        splitterOriginalImage.onload = () => {
+            if(splitterOriginalImgEl) splitterOriginalImgEl.src = splitterOriginalImage.src;
+            
+            if(splitterPlaceholder) splitterPlaceholder.classList.add('hidden');
+            
+            // Auto-generate preview
+            updateSplitterPreview();
+        };
+        splitterOriginalImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (splitterFileInput) {
+    splitterFileInput.addEventListener('change', (e) => loadSplitterFile(e.target.files[0]));
+}
+if (splitterDropzone) {
+    splitterDropzone.addEventListener('dragover', (e) => { e.preventDefault(); splitterDropzone.classList.add('bg-slate-50'); });
+    splitterDropzone.addEventListener('dragleave', () => splitterDropzone.classList.remove('bg-slate-50'));
+    splitterDropzone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        splitterDropzone.classList.remove('bg-slate-50'); 
+        loadSplitterFile(e.dataTransfer.files[0]); 
+    });
+}
+
+function updateSplitterPreview() {
+    if (!splitterOriginalImage) return;
+    
+    const count = parseInt(splitterCountSelect.value) || 4;
+    const width = splitterOriginalImage.naturalWidth;
+    const height = splitterOriginalImage.naturalHeight;
+    
+    splitterPiecesContainer.innerHTML = '';
+    
+    const gap = splitterGapInput ? (parseInt(splitterGapInput.value) || 0) : 0;
+
+    if (splitterDirection === 'horizontal') {
+        // 横方向に分割 = 縦線でスライス = 幅を分割
+        splitterPiecesContainer.classList.remove('flex-col', 'items-center');
+        splitterPiecesContainer.classList.add('flex-row');
+        
+        const totalEffectiveWidth = width - (count - 1) * gap;
+        const chunkWidth = Math.floor(totalEffectiveWidth / count);
+        
+        for (let i = 0; i < count; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = chunkWidth;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            const sx = i * chunkWidth + i * gap;
+            ctx.drawImage(splitterOriginalImage, sx, 0, chunkWidth, height, 0, 0, chunkWidth, height);
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = "max-h-[300px] object-contain border border-slate-200 rounded shadow-sm";
+            splitterPiecesContainer.appendChild(img);
+        }
+    } else {
+        // 縦方向に分割 = 横線でスライス = 高さを分割
+        splitterPiecesContainer.classList.remove('flex-row');
+        splitterPiecesContainer.classList.add('flex-col', 'items-center');
+        
+        const totalEffectiveHeight = height - (count - 1) * gap;
+        const chunkHeight = Math.floor(totalEffectiveHeight / count);
+        
+        for (let i = 0; i < count; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = chunkHeight;
+            const ctx = canvas.getContext('2d');
+            const sy = i * chunkHeight + i * gap;
+            ctx.drawImage(splitterOriginalImage, 0, sy, width, chunkHeight, 0, 0, width, chunkHeight);
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = "max-w-[400px] object-contain border border-slate-200 rounded shadow-sm";
+            splitterPiecesContainer.appendChild(img);
+        }
+    }
+    
+    const info = document.getElementById('splitter-info');
+    if (info) info.textContent = `元サイズ: ${width}x${height}px → ${count}分割 (隙間: ${gap}px考慮)`;
+    
+    splitterPreviewContainer.classList.remove('hidden');
+    if (splitterDownloadBtn) {
+        splitterDownloadBtn.classList.remove('hidden', 'opacity-20', 'cursor-not-allowed');
+        splitterDownloadBtn.disabled = false;
+    }
+}
+
+if (splitterDownloadBtn) {
+    splitterDownloadBtn.addEventListener('click', () => {
+        const images = splitterPiecesContainer.querySelectorAll('img');
+        if (images.length === 0) return;
+        
+        let i = 0;
+        const downloadNext = () => {
+            if (i >= images.length) return;
+            const link = document.createElement('a');
+            link.download = `split_${Date.now()}_${i+1}.png`;
+            link.href = images[i].src;
+            link.click();
+            i++;
+            setTimeout(downloadNext, 300); // 連続ダウンロードブロック対策
+        };
+        downloadNext();
+    });
+}

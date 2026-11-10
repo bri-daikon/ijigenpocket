@@ -1,0 +1,3467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINEスタンプ＆絵文字 ショート動画メーカー (Reels / TikTok / Shorts)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JSZip for extracting stamp zip files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- mp4-muxer for 100% Windows Media Player & iOS compatible standard H.264 MP4 export -->
+    <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.4/build/mp4-muxer.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: #151c2d;
+            --bg-elevated: #1f293d;
+            --bg-input: #111726;
+            --border-color: #2b384e;
+            --border-hover: #435472;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-sub: #64748b;
+            --accent-brand: #06c755; /* LINE Green */
+            --accent-brand-hover: #05b34c;
+            --accent-gradient: linear-gradient(135deg, #06c755 0%, #00b900 40%, #00d26a 100%);
+            --accent-pink: #ec4899;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --radius-full: 9999px;
+            --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+            --shadow-glow: 0 0 20px rgba(6, 199, 85, 0.35);
+            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Inter', 'M PLUS Rounded 1c', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+
+        /* App Header */
+        header {
+            background: rgba(17, 23, 38, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 20px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-reel {
+            background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Layout Main */
+        .workspace {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            gap: 18px;
+            padding: 18px;
+            max-width: 1920px;
+            margin: 0 auto;
+            width: 100%;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        @media (max-width: 1400px) {
+            .workspace {
+                grid-template-columns: 340px 1fr 340px;
+                padding: 12px;
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 1080px) {
+            .workspace {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(31, 41, 61, 0.4);
+        }
+
+        .panel-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        .panel-title i {
+            color: var(--accent-brand);
+        }
+
+        .panel-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* Center Preview Column */
+        .preview-panel {
+            background: radial-gradient(circle at center, #182236 0%, #0d1320 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .preview-canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Phone Mockup Frame */
+        .phone-frame {
+            position: relative;
+            border-radius: 40px;
+            padding: 12px;
+            background: #1e2430;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8),
+                        0 0 0 1px rgba(255, 255, 255, 0.1),
+                        inset 0 0 0 2px #0a0d14;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            max-height: 100%;
+        }
+
+        .phone-screen {
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px;
+            background: #000000;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Canvas Element */
+        #videoCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 30px;
+        }
+
+        /* Phone Camera Notch */
+        .phone-notch {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85px;
+            height: 20px;
+            background: #0a0d14;
+            border-radius: 20px;
+            z-index: 30;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+        }
+
+        .phone-lens {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #192338;
+            border: 1px solid #2d3e60;
+        }
+
+        /* Preview Player Controls Bar */
+        .player-bar {
+            width: 100%;
+            background: rgba(17, 23, 38, 0.95);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .timeline-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #232e42;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-brand);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(6, 199, 85, 0.6);
+            transition: transform 0.1s;
+        }
+
+        .timeline-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .time-display {
+            font-size: 0.78rem;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+            min-width: 85px;
+            text-align: right;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .playback-btns {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover {
+            background: var(--border-color);
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-icon.play-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-brand);
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(6, 199, 85, 0.4);
+        }
+
+        .btn-icon.play-btn:hover {
+            background: var(--accent-brand-hover);
+            transform: scale(1.05);
+        }
+
+        .aspect-switcher {
+            display: flex;
+            background: var(--bg-base);
+            padding: 3px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .aspect-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .aspect-btn.active {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Form Controls & Dropzones */
+        .section-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            background: rgba(17, 23, 38, 0.5);
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-brand);
+            background: rgba(6, 199, 85, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .dropzone-icon {
+            font-size: 26px;
+            color: var(--accent-brand);
+        }
+
+        .dropzone-text {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .dropzone-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .file-input-hidden {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Stamp List Grid */
+        .stamp-grid-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stamp-counter {
+            font-size: 0.75rem;
+            color: var(--accent-brand);
+            font-weight: 700;
+        }
+
+        .stamp-list-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            background: var(--bg-input);
+            padding: 8px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .stamp-card {
+            aspect-ratio: 1;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stamp-card:hover {
+            border-color: var(--accent-brand);
+        }
+
+        .stamp-card.disabled {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+
+        .stamp-card img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        .stamp-card .badge-num {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            font-size: 0.6rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+
+        /* Promo Image Preview Box */
+        .promo-preview-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-input);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .promo-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            background: #232d42;
+            border: 1px solid var(--border-color);
+        }
+
+        .promo-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .promo-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .promo-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Inputs & Controls */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .text-input, .select-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .text-input:focus, .select-input:focus {
+            border-color: var(--accent-brand);
+            box-shadow: 0 0 0 2px rgba(6, 199, 85, 0.2);
+        }
+
+        .range-slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-input);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-brand);
+            cursor: pointer;
+        }
+
+        .range-value {
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            min-width: 45px;
+            text-align: right;
+            color: var(--accent-brand);
+        }
+
+        /* Template Selector Cards */
+        .template-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-height: 290px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .template-card {
+            border: 2px solid var(--border-color);
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .template-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .template-card.active {
+            border-color: var(--accent-brand);
+            background: rgba(6, 199, 85, 0.08);
+            box-shadow: 0 0 15px rgba(6, 199, 85, 0.2);
+        }
+
+        .template-title {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .template-card.active .template-title {
+            color: var(--accent-brand);
+        }
+
+        .template-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Color Preset Pickers */
+        .color-presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .color-dot:hover, .color-dot.active {
+            transform: scale(1.15);
+            border-color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(6, 199, 85, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(6, 199, 85, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-large {
+            padding: 14px 24px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        /* Checkbox Switch */
+        .switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .switch-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .switch-input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 40px;
+            height: 22px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .switch-input:checked {
+            background: var(--accent-brand);
+            border-color: var(--accent-brand);
+        }
+
+        .switch-input::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            transition: var(--transition);
+        }
+
+        .switch-input:checked::before {
+            transform: translateX(18px);
+        }
+
+        /* Modal for Export Progress */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .export-progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--bg-input);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .export-progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-gradient);
+            transition: width 0.1s linear;
+        }
+
+        /* Helper Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            color: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1100;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-box">
+            <div class="brand-icon">
+                <i class="fa-solid fa-play"></i>
+            </div>
+            <div>
+                <div class="brand-title">LINE Stamp Reel Studio</div>
+                <div class="brand-subtitle">
+                    <span>スタンプ＆絵文字 ショート動画自動生成</span>
+                    <span class="badge-reel">Reels / TikTok / Shorts</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" id="btnLoadDemo" title="サンプルのスタンプで試す">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> デモデータ読込
+            </button>
+            <select class="select-input" id="exportFormatSelect" style="width:auto; padding:8px 12px; font-weight:700;">
+                <option value="mp4" selected>MP4 (Windows・SNS推奨)</option>
+                <option value="webm">WebM (軽量)</option>
+            </select>
+            <button class="btn btn-primary" id="btnExportVideo">
+                <i class="fa-solid fa-video"></i> 動画を書き出す (Export)
+            </button>
+        </div>
+    </header>
+
+    <!-- Workspace Grid -->
+    <div class="workspace">
+
+        <!-- Left Column: Source Media & Stamps -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-box-archive"></i> 素材アップロード (Input)
+                </div>
+            </div>
+            <div class="panel-body">
+
+                <!-- Stamp ZIP Dropzone -->
+                <div>
+                    <div class="section-label">
+                        <span>1. スタンプZIP または 画像ファイル</span>
+                    </div>
+                    <div class="dropzone" id="zipDropzone">
+                        <i class="fa-solid fa-file-zipper dropzone-icon"></i>
+                        <div class="dropzone-text">スタンプZIP または 画像をドロップ</div>
+                        <div class="dropzone-hint">LINEスタンプ審査用ZIP、またはPNGを複数選択</div>
+                        <input type="file" id="zipInput" class="file-input-hidden" accept=".zip,image/png,image/jpeg,image/webp" multiple>
+                    </div>
+                </div>
+
+                <!-- Stamp Grid & Management -->
+                <div>
+                    <div class="stamp-grid-header">
+                        <div class="section-label" style="margin-bottom:0;">
+                            <span>読み込み済みスタンプ</span>
+                        </div>
+                        <div class="stamp-counter" id="stampCountLabel">0 枚</div>
+                    </div>
+                    <div class="stamp-list-container" id="stampListContainer">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 30px 10px; color: var(--text-sub); font-size: 0.78rem;">
+                            ZIPまたは画像をドロップすると<br>ここにスタンプ一覧が表示されます
+                        </div>
+                    </div>
+                    <div style="font-size:0.7rem; color:var(--text-sub); margin-top:5px; text-align:right;">
+                        ※クリックで動画に含める／除外を切り替え可能
+                    </div>
+                </div>
+
+                <!-- Promo Image Dropzone -->
+                <div>
+                    <div class="section-label">
+                        <span>2. 宣伝画像 (メインビジュアル / カバー)</span>
+                    </div>
+                    <div class="dropzone" id="promoDropzone">
+                        <i class="fa-solid fa-image dropzone-icon" style="color:var(--accent-pink);"></i>
+                        <div class="dropzone-text">告知用イラスト / バナー画像</div>
+                        <div class="dropzone-hint">タイトル画像、main.png、告知スクショなど</div>
+                        <input type="file" id="promoInput" class="file-input-hidden" accept="image/*">
+                    </div>
+                    <div class="promo-preview-box" id="promoPreviewBox" style="display:none; margin-top:10px;">
+                        <img src="" class="promo-thumb" id="promoThumbImg" alt="Promo">
+                        <div class="promo-info">
+                            <div class="promo-name" id="promoFileName">promo_image.png</div>
+                            <div class="promo-meta" id="promoFileMeta">1080 x 1080 • オープニング＆終了時に使用</div>
+                        </div>
+                        <button class="btn-icon" id="btnClearPromo" title="削除" style="width:28px; height:28px; font-size:0.75rem;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BGM / Sound Effect -->
+                <div>
+                    <div class="section-label">
+                        <span>3. 音声設定 (BGM・効果音)</span>
+                    </div>
+                    <div class="input-group">
+                        <div class="switch-row" style="margin-bottom: 8px;">
+                            <span class="switch-label">
+                                <i class="fa-solid fa-volume-high text-emerald-400"></i> ポップ効果音を自動再生
+                            </span>
+                            <input type="checkbox" id="switchPopSound" class="switch-input" checked>
+                        </div>
+                        <div class="dropzone" id="bgmDropzone" style="padding:10px;">
+                            <i class="fa-solid fa-music dropzone-icon" style="font-size:18px; color:var(--accent-purple);"></i>
+                            <div class="dropzone-text" style="font-size:0.78rem;">好きなBGM音楽を追加 (MP3 / WAV)</div>
+                            <input type="file" id="bgmInput" class="file-input-hidden" accept="audio/*">
+                        </div>
+                        <div id="bgmFileDisplay" style="display:none; font-size:0.72rem; color:var(--accent-purple); padding:4px 8px; background:rgba(139,92,246,0.1); border-radius:6px; margin-top:4px;">
+                            <i class="fa-solid fa-circle-check"></i> <span id="bgmFileName">bgm.mp3</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Center Column: Real-time Video Preview Player -->
+        <div class="panel preview-panel">
+            <div class="panel-header" style="width:100%;">
+                <div class="panel-title">
+                    <i class="fa-solid fa-eye"></i> リアルタイムプレビュー (Preview)
+                </div>
+                <div class="aspect-switcher">
+                    <button class="aspect-btn active" data-ratio="9:16">9:16 縦型 (Reels/TikTok)</button>
+                    <button class="aspect-btn" data-ratio="1:1">1:1 正方形</button>
+                    <button class="aspect-btn" data-ratio="16:9">16:9 横型</button>
+                </div>
+            </div>
+
+            <!-- Canvas View Area -->
+            <div class="preview-canvas-container" id="canvasContainer">
+                <div class="phone-frame" id="phoneFrame">
+                    <div class="phone-notch">
+                        <div class="phone-lens"></div>
+                    </div>
+                    <div class="phone-screen" id="phoneScreen">
+                        <canvas id="videoCanvas" width="1080" height="1920"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="player-bar">
+                <div class="timeline-row">
+                    <input type="range" class="timeline-slider" id="timeSlider" min="0" max="100" value="0" step="0.1">
+                    <div class="time-display" id="timeDisplay">00:00 / 00:15</div>
+                </div>
+                <div class="controls-row">
+                    <div class="playback-btns">
+                        <button class="btn-icon" id="btnRewind" title="先頭へ戻る">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button class="btn-icon play-btn" id="btnPlayPause" title="再生 / 一時停止">
+                            <i class="fa-solid fa-play" id="playIcon"></i>
+                        </button>
+                        <button class="btn-icon" id="btnLoop" title="ループ再生切り替え" style="color:var(--accent-brand);">
+                            <i class="fa-solid fa-repeat"></i>
+                        </button>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.75rem; color:var(--text-muted);">プレビュー画質:</span>
+                        <select class="select-input" id="previewScaleSelect" style="width:auto; padding:4px 8px; font-size:0.75rem;">
+                            <option value="1">1080p 高精細</option>
+                            <option value="0.66" selected>720p 標準 (滑らか)</option>
+                            <option value="0.5">540p 軽量</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Video Style & Settings -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-sliders"></i> 演出＆デザイン調整 (Settings)
+                </div>
+            </div>
+            <div class="panel-body">
+
+                <!-- Template Selector (12 Variations) -->
+                <div>
+                    <div class="section-label">
+                        <span>動画テンプレートスタイル (全12種)</span>
+                    </div>
+                    <div class="template-grid">
+                        <div class="template-card active" data-template="rhythm">
+                            <div class="template-title">
+                                <i class="fa-solid fa-bolt"></i> リズミカルPOP
+                            </div>
+                            <div class="template-desc">
+                                スタンプが次々バウンド＆拡大！TikTok/リールの鉄板テンポ。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="conveyor">
+                            <div class="template-title">
+                                <i class="fa-solid fa-arrow-right-long"></i> 左から右へ流れる
+                            </div>
+                            <div class="template-desc">
+                                ベルトコンベアのように横一列でスムーズに次々通過！
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="rain">
+                            <div class="template-title">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> 上から落ちてくる
+                            </div>
+                            <div class="template-desc">
+                                上空からスタンプがポコポコ降ってきて中央で跳ねる！
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="slide_left">
+                            <div class="template-title">
+                                <i class="fa-solid fa-angles-left"></i> 流星スライド
+                            </div>
+                            <div class="template-desc">
+                                右から勢いよく飛び込んで左へ抜けるスピーディースワイプ。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="carousel3d">
+                            <div class="template-title">
+                                <i class="fa-solid fa-arrows-spin"></i> 3D円形カルーセル
+                            </div>
+                            <div class="template-desc">
+                                メリーゴーラウンドのように立体回転してクローズアップ。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="linetalk">
+                            <div class="template-title">
+                                <i class="fa-solid fa-comments"></i> LINEトーク風
+                            </div>
+                            <div class="template-desc">
+                                実際のトーク画面でポンポン送信されるリアル再現演出。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="grid">
+                            <div class="template-title">
+                                <i class="fa-solid fa-table-cells"></i> 全種ショウケース
+                            </div>
+                            <div class="template-desc">
+                                スタンプが美しく並んで次々ハイライト！豪華な一覧見せ。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="slot">
+                            <div class="template-title">
+                                <i class="fa-solid fa-dice"></i> 今日の運勢スロット
+                            </div>
+                            <div class="template-desc">
+                                高速回転して「今日のおすすめ」が決定！思わず止めたい演出。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="polaroid">
+                            <div class="template-title">
+                                <i class="fa-solid fa-images"></i> ポラロイド写真
+                            </div>
+                            <div class="template-desc">
+                                机の上に斜めにポトポトと写真が重なっていくエモい演出。
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="spiral">
+                            <div class="template-title">
+                                <i class="fa-solid fa-tornado"></i> 渦巻きスパイラル
+                            </div>
+                            <div class="template-desc">
+                                奥からぐるぐる回転しながらダイナミックに飛び出す！
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="flip">
+                            <div class="template-title">
+                                <i class="fa-solid fa-clone"></i> 3Dカード反転
+                            </div>
+                            <div class="template-desc">
+                                カードがくるっと180度裏返ってスタンプが現れる！
+                            </div>
+                        </div>
+
+                        <div class="template-card" data-template="bounce">
+                            <div class="template-title">
+                                <i class="fa-solid fa-baseball"></i> バウンド跳ね回り
+                            </div>
+                            <div class="template-desc">
+                                画面の中をキャラクターがピョンピョン跳ね回る元気な演出。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Settings -->
+                <div>
+                    <div class="section-label">
+                        <span>タイトル・テロップ文言</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <div class="input-group">
+                            <span class="input-label">メインタイトル（スタンプ名など）</span>
+                            <input type="text" class="text-input" id="inputTitle" value="新作スタンプできました！">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-label">サブキャッチコピー</span>
+                            <input type="text" class="text-input" id="inputSubtitle" value="日常で使いやすいゆるかわスタンプ全40種✨">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-label">CTA（終わりの案内文）</span>
+                            <input type="text" class="text-input" id="inputCta" value="プロフィールのリンクからGETしてね！">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speed & Duration -->
+                <div>
+                    <div class="section-label">
+                        <span>テンポ・切り替え速度</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div class="input-group">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span class="input-label">1枚あたりの表示秒数</span>
+                                <span class="range-value" id="speedValueLabel">0.8 秒</span>
+                            </div>
+                            <input type="range" class="range-slider" id="speedSlider" min="0.3" max="2.5" step="0.1" value="0.8">
+                        </div>
+
+                        <div class="input-group">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span class="input-label">オープニング＆終了の長さ</span>
+                                <span class="range-value" id="hookDurationLabel">2.0 秒</span>
+                            </div>
+                            <input type="range" class="range-slider" id="hookDurationSlider" min="1.0" max="4.0" step="0.5" value="2.0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background & Visual Design Controls -->
+                <div>
+                    <div class="section-label">
+                        <span>背景デザイン＆装飾エフェクト</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <div class="input-group">
+                            <span class="input-label">背景スタイル</span>
+                            <select class="select-input" id="bgStyleSelect">
+                                <option value="blur_promo">宣伝画像ブラー（おしゃれで一番おすすめ！）</option>
+                                <option value="gradient_pastel">ふんわりパステルグラデーション</option>
+                                <option value="gradient_vibrant">ビビッドネオン (TikTok風)</option>
+                                <option value="stripe_pop">ポップな斜めストライプ</option>
+                                <option value="polka_dot">カラフル水玉ドット</option>
+                                <option value="lineroom">LINEトークルーム背景 (水色)</option>
+                                <option value="dark_clean">シックなダークグレー</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <span class="input-label">スタンプ枠・影エフェクト</span>
+                            <select class="select-input" id="stampEffectSelect">
+                                <option value="white_stroke" selected>クッキリ白フチ（LINEスタンプ定番✨）</option>
+                                <option value="drop_shadow">ふんわりリッチな影 (Shadow)</option>
+                                <option value="neon_glow">ネオングロー発光 (Neon)</option>
+                                <option value="none">エフェクトなし（素材そのまま）</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <span class="input-label">パーティクル・浮遊装飾</span>
+                            <select class="select-input" id="particleTypeSelect">
+                                <option value="sparkles" selected>キラキラ・紙吹雪 (Sparkles)</option>
+                                <option value="hearts">ぽわぽわハート (Hearts)</option>
+                                <option value="notes">リズミカル音符♪ (Music)</option>
+                                <option value="stars">ピカピカ星 (Stars)</option>
+                                <option value="speedlines">迫力の集中線 (Action)</option>
+                                <option value="none">装飾なし</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <span class="input-label">テーマアクセントカラー</span>
+                            <div class="color-presets" id="colorPresets">
+                                <div class="color-dot active" style="background:#06c755;" data-color="#06c755"></div>
+                                <div class="color-dot" style="background:#ec4899;" data-color="#ec4899"></div>
+                                <div class="color-dot" style="background:#8b5cf6;" data-color="#8b5cf6"></div>
+                                <div class="color-dot" style="background:#06b6d4;" data-color="#06b6d4"></div>
+                                <div class="color-dot" style="background:#f59e0b;" data-color="#f59e0b"></div>
+                                <div class="color-dot" style="background:#ffffff;" data-color="#ffffff"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div style="margin-top: auto; padding-top: 10px;">
+                    <button class="btn btn-primary btn-large" id="btnExportBottom">
+                        <i class="fa-solid fa-film"></i> ショート動画を作成して保存
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Export Progress Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-box">
+            <div style="font-size:32px; color:var(--accent-brand);">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+            </div>
+            <div style="font-size:1.1rem; font-weight:800;" id="exportModalTitle">動画を生成中...</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);" id="exportModalSubtitle">
+                高精細フレームをレンダリングして動画を合成しています
+            </div>
+            <div class="export-progress-bar-bg">
+                <div class="export-progress-bar-fill" id="exportProgressBar"></div>
+            </div>
+            <div style="font-size:0.85rem; font-weight:700; color:var(--accent-brand);" id="exportProgressText">0%</div>
+            <div style="display:flex; justify-content:center; gap:10px; margin-top:10px;">
+                <button class="btn btn-secondary" id="btnCancelExport">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toastBox">
+        <i class="fa-solid fa-circle-info"></i> <span id="toastMsg">通知メッセージ</span>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // --- State Management ---
+        const state = {
+            stamps: [],             // { id, name, img, enabled }
+            promoImage: null,       // Image object
+            promoFileName: '',
+            bgmAudioBuffer: null,   // Web Audio buffer
+            bgmFileName: '',
+            aspectRatio: '9:16',    // '9:16' | '1:1' | '16:9'
+            targetWidth: 1080,
+            targetHeight: 1920,
+            previewScale: 0.66,
+            template: 'rhythm',     // 12 variations
+            title: '新作スタンプできました！',
+            subtitle: '日常で使いやすいゆるかわスタンプ全40種✨',
+            cta: 'プロフィールのリンクからGETしてね！',
+            stampDuration: 0.8,     // seconds per stamp
+            hookDuration: 2.0,      // intro / outro seconds
+            bgStyle: 'blur_promo',
+            stampBorderEffect: 'white_stroke',
+            particleType: 'sparkles',
+            accentColor: '#06c755',
+            enablePopSound: true,
+            isLooping: true,
+            isPlaying: false,
+            currentTime: 0,
+            totalDuration: 15,
+            particles: []
+        };
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+        const phoneFrame = document.getElementById('phoneFrame');
+        const phoneScreen = document.getElementById('phoneScreen');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const playIcon = document.getElementById('playIcon');
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const zipDropzone = document.getElementById('zipDropzone');
+        const zipInput = document.getElementById('zipInput');
+        const promoDropzone = document.getElementById('promoDropzone');
+        const promoInput = document.getElementById('promoInput');
+        const bgmDropzone = document.getElementById('bgmDropzone');
+        const bgmInput = document.getElementById('bgmInput');
+        const stampListContainer = document.getElementById('stampListContainer');
+        const stampCountLabel = document.getElementById('stampCountLabel');
+        const promoPreviewBox = document.getElementById('promoPreviewBox');
+        const promoThumbImg = document.getElementById('promoThumbImg');
+        const promoFileName = document.getElementById('promoFileName');
+        const promoFileMeta = document.getElementById('promoFileMeta');
+        const btnClearPromo = document.getElementById('btnClearPromo');
+        const bgmFileDisplay = document.getElementById('bgmFileDisplay');
+        const bgmFileNameElem = document.getElementById('bgmFileName');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueLabel = document.getElementById('speedValueLabel');
+        const hookDurationSlider = document.getElementById('hookDurationSlider');
+        const hookDurationLabel = document.getElementById('hookDurationLabel');
+        const inputTitle = document.getElementById('inputTitle');
+        const inputSubtitle = document.getElementById('inputSubtitle');
+        const inputCta = document.getElementById('inputCta');
+        const bgStyleSelect = document.getElementById('bgStyleSelect');
+        const stampEffectSelect = document.getElementById('stampEffectSelect');
+        const particleTypeSelect = document.getElementById('particleTypeSelect');
+        const switchPopSound = document.getElementById('switchPopSound');
+        const previewScaleSelect = document.getElementById('previewScaleSelect');
+        const btnExportVideo = document.getElementById('btnExportVideo');
+        const btnExportBottom = document.getElementById('btnExportBottom');
+        const exportModal = document.getElementById('exportModal');
+        const exportProgressBar = document.getElementById('exportProgressBar');
+        const exportProgressText = document.getElementById('exportProgressText');
+        const btnCancelExport = document.getElementById('btnCancelExport');
+        const btnLoadDemo = document.getElementById('btnLoadDemo');
+        const toastBox = document.getElementById('toastBox');
+        let toastTimeout = null;
+
+        // --- Web Audio Context for Procedural Pop Sound and BGM ---
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        // Play Procedural Cute Pop Sound
+        let lastPlayedStampIndex = -1;
+        function playPopSound(freq = 520) {
+            if (!state.enablePopSound) return;
+            try {
+                const actx = getAudioContext();
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, actx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.8, actx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.3, actx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.12);
+
+                osc.connect(gain);
+                gain.connect(actx.destination);
+
+                osc.start();
+                osc.stop(actx.currentTime + 0.12);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            document.getElementById('toastMsg').textContent = msg;
+            toastBox.classList.add('show');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastBox.classList.remove('show');
+            }, 3000);
+        }
+
+        // --- Initialization & Responsive Sizing ---
+        function setCanvasDimensions(ratio) {
+            state.aspectRatio = ratio;
+            if (ratio === '9:16') {
+                state.targetWidth = 1080;
+                state.targetHeight = 1920;
+                phoneFrame.style.aspectRatio = '9 / 16';
+                phoneFrame.style.borderRadius = '40px';
+                phoneScreen.style.borderRadius = '30px';
+                document.querySelector('.phone-notch').style.display = 'flex';
+            } else if (ratio === '1:1') {
+                state.targetWidth = 1080;
+                state.targetHeight = 1080;
+                phoneFrame.style.aspectRatio = '1 / 1';
+                phoneFrame.style.borderRadius = '24px';
+                phoneScreen.style.borderRadius = '16px';
+                document.querySelector('.phone-notch').style.display = 'none';
+            } else {
+                state.targetWidth = 1920;
+                state.targetHeight = 1080;
+                phoneFrame.style.aspectRatio = '16 / 9';
+                phoneFrame.style.borderRadius = '20px';
+                phoneScreen.style.borderRadius = '14px';
+                document.querySelector('.phone-notch').style.display = 'none';
+            }
+            canvas.width = state.targetWidth;
+            canvas.height = state.targetHeight;
+            recalcTotalDuration();
+            renderFrame(state.currentTime);
+        }
+
+        // Recalculate Video Timeline Total Duration across 12 templates
+        function recalcTotalDuration() {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            const count = activeStamps.length;
+
+            if (state.template === 'slot') {
+                state.totalDuration = state.hookDuration + 4.5 + state.hookDuration;
+            } else if (state.template === 'grid') {
+                state.totalDuration = state.hookDuration + Math.max(4.0, count * 0.3) + state.hookDuration;
+            } else if (state.template === 'conveyor') {
+                state.totalDuration = state.hookDuration + Math.max(5.0, count * 0.9) + state.hookDuration;
+            } else if (state.template === 'rain') {
+                state.totalDuration = state.hookDuration + Math.max(4.5, count * 0.7) + state.hookDuration;
+            } else if (state.template === 'carousel3d') {
+                state.totalDuration = state.hookDuration + Math.max(5.0, count * 0.8) + state.hookDuration;
+            } else {
+                // rhythm, slide_left, linetalk, polaroid, spiral, flip, bounce
+                const stampsTime = Math.max(1, count) * state.stampDuration;
+                state.totalDuration = state.hookDuration + stampsTime + state.hookDuration;
+            }
+
+            timeSlider.max = state.totalDuration;
+            updateTimeDisplay();
+        }
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function updateTimeDisplay() {
+            timeDisplay.textContent = `${formatTime(state.currentTime)} / ${formatTime(state.totalDuration)}`;
+            timeSlider.value = state.currentTime;
+        }
+
+        // --- Particle & Floating Effects ---
+        function initParticles() {
+            state.particles = [];
+            const count = 40;
+            for (let i = 0; i < count; i++) {
+                state.particles.push({
+                    x: Math.random() * state.targetWidth,
+                    y: Math.random() * state.targetHeight,
+                    size: Math.random() * 10 + 6,
+                    speedY: Math.random() * 1.5 + 0.8,
+                    speedX: (Math.random() - 0.5) * 1.0,
+                    rot: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.05,
+                    color: ['#06c755', '#ec4899', '#f59e0b', '#38bdf8', '#a855f7', '#ffffff'][Math.floor(Math.random() * 6)],
+                    alpha: Math.random() * 0.7 + 0.3
+                });
+            }
+        }
+
+        function drawHeart(ctx, x, y, size) {
+            ctx.beginPath();
+            const topY = y - size / 2;
+            ctx.moveTo(x, topY + size / 4);
+            ctx.quadraticCurveTo(x, topY, x + size / 4, topY);
+            ctx.quadraticCurveTo(x + size / 2, topY, x + size / 2, topY + size / 4);
+            ctx.quadraticCurveTo(x + size / 2, topY, x + size * 3/4, topY);
+            ctx.quadraticCurveTo(x + size, topY, x + size, topY + size / 4);
+            ctx.quadraticCurveTo(x + size, topY + size / 2, x + size * 3/4, topY + size * 3/4);
+            ctx.lineTo(x + size / 2, topY + size);
+            ctx.lineTo(x + size / 4, topY + size * 3/4);
+            ctx.quadraticCurveTo(x, topY + size / 2, x, topY + size / 4);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            const step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawParticles(t) {
+            if (state.particleType === 'none') return;
+            const type = state.particleType;
+            ctx.save();
+
+            if (type === 'speedlines') {
+                const cx = state.targetWidth / 2;
+                const cy = state.targetHeight / 2;
+                ctx.strokeStyle = state.accentColor;
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = 0.22;
+                const numLines = 28;
+                for (let i = 0; i < numLines; i++) {
+                    const angle = (i / numLines) * Math.PI * 2 + Math.sin(t * 12 + i) * 0.04;
+                    const r1 = 360 + Math.sin(t * 15 + i) * 50;
+                    const r2 = 1250;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+                    ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                return;
+            }
+
+            state.particles.forEach(p => {
+                const py = (p.y + t * 60 * p.speedY) % state.targetHeight;
+                const px = (p.x + Math.sin(t * 2 + p.size) * 30 + t * 30 * p.speedX) % state.targetWidth;
+                const finalX = px < 0 ? px + state.targetWidth : px;
+                const currentRot = p.rot + t * p.rotSpeed * 60;
+
+                ctx.save();
+                ctx.translate(finalX, py);
+                ctx.rotate(currentRot);
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+
+                if (type === 'hearts') {
+                    drawHeart(ctx, -p.size/2, -p.size/2, p.size * 1.5);
+                } else if (type === 'notes') {
+                    ctx.font = `bold ${p.size * 2.2}px sans-serif`;
+                    ctx.fillText('♪', 0, 0);
+                } else if (type === 'stars') {
+                    drawStar(ctx, 0, 0, 5, p.size * 1.4, p.size * 0.65);
+                } else {
+                    // sparkles diamond
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size);
+                    ctx.lineTo(p.size * 0.7, 0);
+                    ctx.lineTo(0, p.size);
+                    ctx.lineTo(-p.size * 0.7, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+            ctx.restore();
+        }
+
+        // --- Stamp Draw Helper with Border / Glow / Shadow Effects ---
+        function drawStampImage(ctx, img, x, y, w, h) {
+            if (!img) return;
+            const effect = state.stampBorderEffect;
+            if (effect === 'white_stroke') {
+                ctx.save();
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 14;
+                ctx.drawImage(img, x, y, w, h);
+                ctx.drawImage(img, x, y, w, h);
+                ctx.restore();
+            } else if (effect === 'drop_shadow') {
+                ctx.save();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 24;
+                ctx.shadowOffsetY = 14;
+                ctx.drawImage(img, x, y, w, h);
+                ctx.restore();
+            } else if (effect === 'neon_glow') {
+                ctx.save();
+                ctx.shadowColor = state.accentColor;
+                ctx.shadowBlur = 32;
+                ctx.drawImage(img, x, y, w, h);
+                ctx.drawImage(img, x, y, w, h);
+                ctx.restore();
+            } else {
+                ctx.drawImage(img, x, y, w, h);
+            }
+        }
+
+        // --- Video Frame Rendering Engine ---
+        function renderFrame(time) {
+            const w = state.targetWidth;
+            const h = state.targetHeight;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Draw Background
+            drawBackground(w, h, time);
+
+            // 2. Draw Decorative Floating Particles
+            drawParticles(time);
+
+            // 3. Render Sequence according to Timeline & Template
+            const introEnd = state.hookDuration;
+            const outroStart = state.totalDuration - state.hookDuration;
+
+            if (time < introEnd) {
+                // Hook / Intro Scene
+                renderIntroScene(time, introEnd, w, h);
+            } else if (time >= outroStart) {
+                // Outro / CTA Scene
+                renderOutroScene(time - outroStart, state.hookDuration, w, h);
+            } else {
+                // Main Stamp Showcase Section across 12 Templates
+                const bodyTime = time - introEnd;
+                const bodyDuration = outroStart - introEnd;
+
+                if (state.template === 'conveyor') {
+                    renderConveyorScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'rain') {
+                    renderRainScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'slide_left') {
+                    renderSlideLeftScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'carousel3d') {
+                    renderCarousel3DScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'linetalk') {
+                    renderLineTalkScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'grid') {
+                    renderGridScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'slot') {
+                    renderSlotScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'polaroid') {
+                    renderPolaroidScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'spiral') {
+                    renderSpiralScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'flip') {
+                    renderFlipScene(bodyTime, bodyDuration, w, h);
+                } else if (state.template === 'bounce') {
+                    renderBounceScene(bodyTime, bodyDuration, w, h);
+                } else {
+                    renderRhythmScene(bodyTime, bodyDuration, w, h);
+                }
+            }
+
+            // Top Header Bar Overlay (Title & Brand)
+            drawOverlayHeader(w, h, time);
+        }
+
+        // Background Renderer
+        function drawBackground(w, h, t) {
+            if (state.bgStyle === 'blur_promo' && state.promoImage) {
+                ctx.save();
+                ctx.filter = 'blur(45px) brightness(0.65)';
+                const scale = 1.25 + Math.sin(t * 0.8) * 0.05;
+                const dw = w * scale;
+                const dh = h * scale;
+                ctx.drawImage(state.promoImage, (w - dw) / 2, (h - dh) / 2, dw, dh);
+                ctx.restore();
+
+                const grad = ctx.createRadialGradient(w/2, h/2, w*0.3, w/2, h/2, w*0.9);
+                grad.addColorStop(0, 'rgba(15, 23, 42, 0.4)');
+                grad.addColorStop(1, 'rgba(11, 15, 25, 0.88)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+            } else if (state.bgStyle === 'gradient_pastel') {
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#fbcfe8');
+                grad.addColorStop(0.5, '#fed7aa');
+                grad.addColorStop(1, '#ddd6fe');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                const dotGap = 60;
+                for (let x = 20; x < w; x += dotGap) {
+                    for (let y = 20; y < h; y += dotGap) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else if (state.bgStyle === 'gradient_vibrant') {
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#0f172a');
+                grad.addColorStop(0.5, '#1e1b4b');
+                grad.addColorStop(1, '#3b0764');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+            } else if (state.bgStyle === 'stripe_pop') {
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#fef08a');
+                grad.addColorStop(1, '#fed7aa');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                const stripeW = 80;
+                const shift = (t * 80) % (stripeW * 2);
+                for (let x = -h - w; x < w * 2; x += stripeW * 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + shift, 0);
+                    ctx.lineTo(x + shift + stripeW, 0);
+                    ctx.lineTo(x + shift + stripeW + h, h);
+                    ctx.lineTo(x + shift + h, h);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            } else if (state.bgStyle === 'polka_dot') {
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, w, h);
+                const dotColors = [state.accentColor, '#f43f5e', '#38bdf8', '#fbbf24', '#a855f7'];
+                const gap = 120;
+                for (let x = 40; x < w; x += gap) {
+                    for (let y = 40; y < h; y += gap) {
+                        const cIdx = Math.floor((x / gap + y / gap) % dotColors.length);
+                        ctx.fillStyle = dotColors[cIdx] + '22';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 16, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else if (state.bgStyle === 'lineroom') {
+                ctx.fillStyle = '#7ac0e8';
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                const grad = ctx.createRadialGradient(w/2, h/2, 100, w/2, h/2, w);
+                grad.addColorStop(0, '#1e293b');
+                grad.addColorStop(1, '#090d16');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+            }
+        }
+
+        // Overlay Header (Stays consistent for TikTok/Reels brand identity)
+        function drawOverlayHeader(w, h, t) {
+            ctx.save();
+            // Semi-transparent pill at top
+            const topY = 120;
+            const barW = Math.min(840, w * 0.85);
+            const barH = 70;
+            const barX = (w - barW) / 2;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            roundRect(ctx, barX, topY, barW, barH, 35);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 2;
+            roundRect(ctx, barX, topY, barW, barH, 35);
+            ctx.stroke();
+
+            // LINE Icon Circle
+            const iconX = barX + 35;
+            const iconY = topY + barH / 2;
+            ctx.fillStyle = state.accentColor;
+            ctx.beginPath();
+            ctx.arc(iconX, iconY, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White speech bubble inner
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('LINE', iconX, iconY);
+
+            // Title text
+            ctx.font = 'bold 28px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.fillText(state.title, iconX + 32, iconY);
+
+            ctx.restore();
+        }
+
+        // --- Scene 1: Intro / Hook ---
+        function renderIntroScene(t, duration, w, h) {
+            const progress = t / duration;
+            // Pop & Zoom Spring Animation
+            const scale = spring(Math.min(1, t / 0.8));
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 40);
+            ctx.scale(scale, scale);
+
+            // Decorative Glowing Background Card
+            const cardW = 680;
+            const cardH = 820;
+            ctx.shadowColor = 'rgba(6, 199, 85, 0.4)';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            roundRect(ctx, -cardW/2, -cardH/2, cardW, cardH, 40);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Border
+            ctx.strokeStyle = state.accentColor;
+            ctx.lineWidth = 6;
+            roundRect(ctx, -cardW/2, -cardH/2, cardW, cardH, 40);
+            ctx.stroke();
+
+            // Draw Promo Image if available, else decorative icon
+            if (state.promoImage) {
+                const imgSize = 480;
+                ctx.save();
+                roundRect(ctx, -imgSize/2, -cardH/2 + 50, imgSize, imgSize, 24);
+                ctx.clip();
+                ctx.drawImage(state.promoImage, -imgSize/2, -cardH/2 + 50, imgSize, imgSize);
+                ctx.restore();
+            } else if (state.stamps.length > 0 && state.stamps[0].img) {
+                const imgSize = 440;
+                ctx.drawImage(state.stamps[0].img, -imgSize/2, -cardH/2 + 70, imgSize, imgSize);
+            }
+
+            // Tag badge "NEW RELEASE!"
+            ctx.fillStyle = '#ef4444';
+            roundRect(ctx, -140, 110, 280, 50, 25);
+            ctx.fill();
+            ctx.font = '900 24px "Inter", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✨ NEW RELEASE ✨', 0, 135);
+
+            // Subtitle
+            ctx.font = 'bold 36px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            wrapText(ctx, state.subtitle, 0, 210, 600, 48);
+
+            ctx.restore();
+
+            // Swipe up guide prompt at bottom
+            const bobY = Math.sin(t * 6) * 12;
+            ctx.save();
+            ctx.font = '800 32px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 10;
+            ctx.fillText('どんなスタンプがあるか見てみてね👇', w / 2, h - 160 + bobY);
+            ctx.restore();
+        }
+
+        // --- Scene 2: Outro / CTA ---
+        function renderOutroScene(t, duration, w, h) {
+            const scale = spring(Math.min(1, t / 0.7));
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 20);
+            ctx.scale(scale, scale);
+
+            // Outro Showcase Card
+            const cardW = 760;
+            const cardH = 880;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 40;
+            roundRect(ctx, -cardW/2, -cardH/2, cardW, cardH, 44);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Border
+            ctx.strokeStyle = state.accentColor;
+            ctx.lineWidth = 8;
+            roundRect(ctx, -cardW/2, -cardH/2, cardW, cardH, 44);
+            ctx.stroke();
+
+            // Mini Stamp Grid Showcase inside Outro (3x2 preview)
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            const gridCols = 3;
+            const gridRows = 2;
+            const itemSize = 130;
+            const startX = -((gridCols * itemSize) + 40) / 2 + itemSize/2 + 10;
+            const startY = -cardH/2 + 140;
+
+            ctx.font = '900 36px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.fillText('LINE STORE で好評発売中！', 0, -cardH/2 + 70);
+
+            for (let i = 0; i < 6; i++) {
+                const s = activeStamps[i % Math.max(1, activeStamps.length)];
+                if (s && s.img) {
+                    const col = i % gridCols;
+                    const row = Math.floor(i / gridCols);
+                    const ix = startX + col * (itemSize + 15);
+                    const iy = startY + row * (itemSize + 15);
+
+                    ctx.fillStyle = '#f1f5f9';
+                    roundRect(ctx, ix - itemSize/2, iy - itemSize/2, itemSize, itemSize, 18);
+                    ctx.fill();
+                    ctx.drawImage(s.img, ix - itemSize/2 + 10, iy - itemSize/2 + 10, itemSize - 20, itemSize - 20);
+                }
+            }
+
+            // Big CTA Button Simulation
+            const btnY = 220;
+            ctx.fillStyle = state.accentColor;
+            roundRect(ctx, -300, btnY, 600, 90, 45);
+            ctx.fill();
+
+            ctx.font = 'bold 36px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('詳しく見る & GETする 🛒', 0, btnY + 45);
+
+            // CTA Text message
+            ctx.font = 'bold 30px "M PLUS Rounded 1c", sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(state.cta, 0, btnY + 140);
+
+            ctx.restore();
+        }
+
+        // --- Template A: Rhythm Pop (TikTok / Reels Trend) ---
+        function renderRhythmScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+
+            const stampDuration = state.stampDuration;
+            const currentIndex = Math.floor(t / stampDuration) % activeStamps.length;
+            const currentStamp = activeStamps[currentIndex];
+            const stampLocalTime = t % stampDuration;
+            const progress = stampLocalTime / stampDuration;
+
+            // Trigger Pop Sound on stamp switch
+            if (state.isPlaying && currentIndex !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = currentIndex;
+                playPopSound(480 + (currentIndex % 6) * 40);
+            }
+
+            // Elastic bounce & wiggle
+            const popScale = spring(Math.min(1, stampLocalTime / 0.35));
+            const rot = Math.sin(stampLocalTime * 12) * 0.08 * (1 - progress);
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 20);
+            ctx.rotate(rot);
+            ctx.scale(popScale, popScale);
+
+            // Outer Concentric Ripple Rings
+            const ringScale = 1 + progress * 0.6;
+            ctx.strokeStyle = state.accentColor;
+            ctx.lineWidth = 4 * (1 - progress);
+            ctx.beginPath();
+            ctx.arc(0, 0, 320 * ringScale, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Background Disc
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 35;
+            ctx.beginPath();
+            ctx.arc(0, 0, 310, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Stamp Image
+            if (currentStamp && currentStamp.img) {
+                const imgSize = 480;
+                ctx.drawImage(currentStamp.img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+            }
+
+            ctx.restore();
+
+            // Number & Index Indicator Pill
+            ctx.save();
+            ctx.translate(w / 2, h / 2 + 370);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            roundRect(ctx, -120, -25, 240, 50, 25);
+            ctx.fill();
+
+            ctx.font = '800 26px "Inter", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${currentIndex + 1} / ${activeStamps.length}`, 0, 0);
+            ctx.restore();
+        }
+
+        // --- Template B: LINE Talk Room Simulation ---
+        function renderLineTalkScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+
+            const stampDuration = state.stampDuration;
+            const currentIndex = Math.floor(t / stampDuration);
+            const currentStamp = activeStamps[currentIndex % activeStamps.length];
+            const localT = t % stampDuration;
+
+            if (state.isPlaying && currentIndex !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = currentIndex;
+                playPopSound(600);
+            }
+
+            // Draw Chat Room Bubble Stream
+            ctx.save();
+
+            // Friend Profile Icon Left
+            const avatarX = 140;
+            const avatarY = h / 2 - 240;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(avatarX, avatarY, 45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = state.accentColor;
+            ctx.beginPath();
+            ctx.arc(avatarX, avatarY, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 34px "Inter"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('友', avatarX, avatarY);
+
+            // Friend Name
+            ctx.font = 'bold 24px "M PLUS Rounded 1c"';
+            ctx.fillStyle = '#334155';
+            ctx.textAlign = 'left';
+            ctx.fillText('ともだち', avatarX + 60, avatarY - 20);
+
+            // Message Bubble: "このスタンプめっちゃ可愛くない？"
+            ctx.fillStyle = '#ffffff';
+            roundRect(ctx, avatarX + 60, avatarY - 5, 420, 65, 20);
+            ctx.fill();
+            ctx.font = 'bold 26px "M PLUS Rounded 1c"';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText('これめっちゃ可愛くない！？😆', avatarX + 85, avatarY + 38);
+
+            // Animated Stamp from Me (Right Side)
+            const stampPop = spring(Math.min(1, localT / 0.3));
+            const stampX = w - 240;
+            const stampY = h / 2 + 60;
+
+            ctx.save();
+            ctx.translate(stampX, stampY);
+            ctx.scale(stampPop, stampPop);
+
+            // Stamp Background shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 20;
+
+            if (currentStamp && currentStamp.img) {
+                const sSize = 380;
+                ctx.drawImage(currentStamp.img, -sSize, -sSize/2, sSize, sSize);
+            }
+            ctx.restore();
+
+            // "既読" (Read) & Time label
+            ctx.font = '600 20px "Inter"';
+            ctx.fillStyle = '#475569';
+            ctx.textAlign = 'right';
+            ctx.fillText('既読', stampX - 400, stampY + 120);
+            ctx.fillText('12:34', stampX - 400, stampY + 145);
+
+            ctx.restore();
+        }
+
+        // --- Template C: Grid Showcase ---
+        function renderGridScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+
+            const cols = 4;
+            const rows = 4;
+            const totalCells = cols * rows;
+            const itemSize = 180;
+            const gap = 20;
+            const gridW = cols * itemSize + (cols - 1) * gap;
+            const startX = (w - gridW) / 2;
+            const startY = 320;
+
+            // Highlight cycle
+            const highlightIndex = Math.floor((t * 2.5) % Math.min(totalCells, activeStamps.length));
+
+            for (let i = 0; i < totalCells; i++) {
+                const stamp = activeStamps[i % activeStamps.length];
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = startX + col * (itemSize + gap);
+                const y = startY + row * (itemSize + gap);
+
+                const isHighlight = (i === highlightIndex);
+                const itemScale = isHighlight ? 1.15 : 1.0;
+
+                ctx.save();
+                ctx.translate(x + itemSize/2, y + itemSize/2);
+                ctx.scale(itemScale, itemScale);
+
+                // Card Box
+                ctx.fillStyle = isHighlight ? state.accentColor : 'rgba(255, 255, 255, 0.9)';
+                ctx.shadowColor = isHighlight ? state.accentColor : 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = isHighlight ? 25 : 8;
+                roundRect(ctx, -itemSize/2, -itemSize/2, itemSize, itemSize, 22);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                if (stamp && stamp.img) {
+                    const imgSize = itemSize - 24;
+                    ctx.drawImage(stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // --- Template D: Slot / Fortune ---
+        function renderSlotScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+
+            // Slot spins fast for 3 seconds then stops
+            const isSpinning = t < 3.2;
+            let currentStamp;
+
+            if (isSpinning) {
+                const speed = 25; // items per sec
+                const idx = Math.floor(t * speed) % activeStamps.length;
+                currentStamp = activeStamps[idx];
+            } else {
+                currentStamp = activeStamps[0]; // winner
+            }
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 20);
+
+            // Title above Slot
+            ctx.font = '900 42px "M PLUS Rounded 1c"';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 15;
+            ctx.fillText(isSpinning ? '🎰 今日のラッキースタンプは…？' : '🎉 今日のあなたにピッタリ！ ✨', 0, -360);
+            ctx.shadowBlur = 0;
+
+            // Slot Machine Outer Frame
+            const boxW = 580;
+            const boxH = 580;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowColor = isSpinning ? 'rgba(245, 158, 11, 0.5)' : state.accentColor;
+            ctx.shadowBlur = 40;
+            roundRect(ctx, -boxW/2, -boxH/2, boxW, boxH, 36);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = isSpinning ? '#f59e0b' : state.accentColor;
+            ctx.lineWidth = 10;
+            roundRect(ctx, -boxW/2, -boxH/2, boxW, boxH, 36);
+            ctx.stroke();
+
+            // Stamp Image
+            if (currentStamp && currentStamp.img) {
+                const imgSize = 460;
+                const bounce = isSpinning ? (Math.random() - 0.5) * 15 : spring(Math.min(1, (t - 3.2) / 0.4));
+                ctx.save();
+                if (!isSpinning) ctx.scale(bounce, bounce);
+                ctx.drawImage(currentStamp.img, -imgSize/2, -imgSize/2 + (isSpinning ? bounce : 0), imgSize, imgSize);
+                ctx.restore();
+            }
+
+            // Stop prompt
+            if (isSpinning) {
+                ctx.font = '800 32px "M PLUS Rounded 1c"';
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillText('⚡ 画面をタップして止めてね！ ⚡', 0, 360);
+            }
+
+            ctx.restore();
+        }
+
+        // --- Template E: Conveyor (Left to Right continuous flow) ---
+        function renderConveyorScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const spacing = 460;
+            const speed = 340; // px/sec moving left to right
+            const totalW = activeStamps.length * spacing;
+            const centerY = h / 2 - 20;
+
+            // Trigger Pop Sound when items cross center
+            const centerIdx = Math.floor(((t * speed + w/2) / spacing)) % activeStamps.length;
+            if (state.isPlaying && centerIdx !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = centerIdx;
+                playPopSound(540);
+            }
+
+            activeStamps.forEach((stamp, i) => {
+                // Moving to the right: x increases with t
+                let x = ((i * spacing + t * speed) % totalW + totalW) % totalW - 250;
+                if (x > w + 400) x -= totalW;
+
+                const distFromCenter = Math.abs(x - w / 2);
+                const focus = Math.max(0, 1 - distFromCenter / (w * 0.42));
+                const scale = 0.85 + focus * 0.42;
+                const waveY = Math.sin(t * 3.5 + i * 0.9) * 22;
+
+                ctx.save();
+                ctx.translate(x, centerY + waveY);
+                ctx.scale(scale, scale);
+
+                ctx.fillStyle = focus > 0.4 ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.82)';
+                ctx.shadowColor = focus > 0.4 ? state.accentColor : 'rgba(0, 0, 0, 0.18)';
+                ctx.shadowBlur = focus > 0.4 ? 32 : 10;
+                roundRect(ctx, -190, -190, 380, 380, 36);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                const imgSize = 320;
+                drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+                ctx.restore();
+            });
+        }
+
+        // --- Template F: Rain / Fall (Falling from top to bottom) ---
+        function renderRainScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const interval = 0.65;
+            const life = 1.6;
+
+            activeStamps.forEach((stamp, i) => {
+                const startTime = i * interval;
+                const localT = t - startTime;
+                if (localT < 0 || localT > life) return;
+
+                const targetY = h / 2 + Math.sin(i * 1.7) * 140;
+                const targetX = w / 2 + Math.sin(i * 2.1) * 230;
+                const p = localT / life;
+                let y;
+                let scale = 1.0;
+                const rot = (i % 2 === 0 ? 1 : -1) * 0.12 * (1 - p);
+
+                if (p < 0.6) {
+                    const fallProgress = p / 0.6;
+                    y = -350 + (targetY + 350) * Math.pow(fallProgress, 2);
+                } else {
+                    const bounceP = (p - 0.6) / 0.4;
+                    y = targetY - Math.sin(bounceP * Math.PI) * 50;
+                    scale = 1.0 + Math.sin(bounceP * Math.PI) * 0.25;
+                }
+
+                if (state.isPlaying && p >= 0.58 && p <= 0.62 && i !== lastPlayedStampIndex) {
+                    lastPlayedStampIndex = i;
+                    playPopSound(580);
+                }
+
+                ctx.save();
+                ctx.translate(targetX, y);
+                ctx.rotate(rot);
+                ctx.scale(scale, scale);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+                ctx.shadowBlur = 24;
+                roundRect(ctx, -180, -180, 360, 360, 32);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                const imgSize = 300;
+                drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+                ctx.restore();
+            });
+        }
+
+        // --- Template G: Slide Left (Right to Left speedy swipe) ---
+        function renderSlideLeftScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const stampDur = state.stampDuration;
+            const idx = Math.floor(t / stampDur) % activeStamps.length;
+            const stamp = activeStamps[idx];
+            const localT = t % stampDur;
+            const p = localT / stampDur;
+
+            if (state.isPlaying && idx !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = idx;
+                playPopSound(620);
+            }
+
+            let x;
+            if (p < 0.35) {
+                const inP = p / 0.35;
+                x = (w + 450) - (w/2 + 450) * spring(inP);
+            } else if (p > 0.75) {
+                const outP = (p - 0.75) / 0.25;
+                x = (w / 2) - (w/2 + 450) * Math.pow(outP, 2);
+            } else {
+                x = w / 2;
+            }
+
+            ctx.save();
+            ctx.translate(x, h / 2 - 20);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.shadowColor = state.accentColor;
+            ctx.shadowBlur = 35;
+            roundRect(ctx, -260, -260, 520, 520, 44);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const imgSize = 440;
+            drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+            ctx.restore();
+        }
+
+        // --- Template H: 3D Carousel (Merry-go-round) ---
+        function renderCarousel3DScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const count = activeStamps.length;
+            const radius = 520;
+            const rotSpeed = 1.2; // rad/sec
+            const items = [];
+
+            activeStamps.forEach((stamp, i) => {
+                const angle = (i / count) * Math.PI * 2 + t * rotSpeed;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                const x = w / 2 + sin * radius;
+                const z = cos; // -1 (back) to +1 (front)
+                const scale = 0.65 + (z + 1) * 0.45;
+                const alpha = 0.35 + (z + 1) * 0.32;
+                items.push({ stamp, x, y: h / 2 - 20, z, scale, alpha });
+            });
+
+            // Sort from back to front
+            items.sort((a, b) => a.z - b.z);
+
+            items.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                ctx.scale(item.scale, item.scale);
+                ctx.globalAlpha = item.alpha;
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+                ctx.shadowColor = item.z > 0.5 ? state.accentColor : 'rgba(0, 0, 0, 0.2)';
+                ctx.shadowBlur = item.z > 0.5 ? 30 : 10;
+                roundRect(ctx, -170, -170, 340, 340, 30);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                const imgSize = 280;
+                drawStampImage(ctx, item.stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+                ctx.restore();
+            });
+        }
+
+        // --- Template I: Polaroid Photo Stack ---
+        function renderPolaroidScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const stampDur = state.stampDuration;
+            const currentIndex = Math.floor(t / stampDur);
+            const maxVisible = 5;
+            const startIdx = Math.max(0, currentIndex - maxVisible + 1);
+
+            for (let i = startIdx; i <= currentIndex; i++) {
+                const stamp = activeStamps[i % activeStamps.length];
+                const age = (currentIndex - i);
+                const localT = (t - i * stampDur);
+                const dropP = Math.min(1, localT / 0.4);
+                const scale = spring(dropP);
+                const rot = Math.sin(i * 1.8) * 0.16;
+
+                ctx.save();
+                ctx.translate(w / 2 + Math.sin(i * 3.2) * 40, h / 2 - 20 + Math.cos(i * 2.1) * 30);
+                ctx.rotate(rot);
+                ctx.scale(scale, scale);
+
+                // Polaroid Card (Wide bottom margin)
+                const cardW = 460;
+                const cardH = 550;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = 'rgba(0,0,0,0.35)';
+                ctx.shadowBlur = 30;
+                roundRect(ctx, -cardW/2, -cardH/2, cardW, cardH, 20);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                const imgSize = 390;
+                drawStampImage(ctx, stamp.img, -imgSize/2, -cardH/2 + 35, imgSize, imgSize);
+
+                ctx.font = 'bold 24px "M PLUS Rounded 1c"';
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.fillText(`No.${(i % activeStamps.length) + 1}`, 0, cardH/2 - 40);
+                ctx.restore();
+            }
+        }
+
+        // --- Template J: Spiral Warp ---
+        function renderSpiralScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const stampDur = state.stampDuration;
+            const idx = Math.floor(t / stampDur) % activeStamps.length;
+            const stamp = activeStamps[idx];
+            const localT = t % stampDur;
+            const p = localT / stampDur;
+
+            if (state.isPlaying && idx !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = idx;
+                playPopSound(500 + (idx % 5) * 50);
+            }
+
+            const scale = Math.pow(p, 1.8) * 1.4;
+            const rot = (1 - p) * Math.PI * 4;
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 20);
+            ctx.rotate(rot);
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.shadowColor = state.accentColor;
+            ctx.shadowBlur = 40;
+            roundRect(ctx, -250, -250, 500, 500, 40);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const imgSize = 420;
+            drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+            ctx.restore();
+        }
+
+        // --- Template K: 3D Card Flip ---
+        function renderFlipScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const stampDur = state.stampDuration;
+            const idx = Math.floor(t / stampDur) % activeStamps.length;
+            const stamp = activeStamps[idx];
+            const localT = t % stampDur;
+            const p = localT / stampDur;
+
+            if (state.isPlaying && idx !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = idx;
+                playPopSound(560);
+            }
+
+            // Flip around Y axis
+            const flipScaleX = Math.abs(Math.cos(p * Math.PI * 2));
+            const bounceY = Math.sin(p * Math.PI) * 30;
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2 - 20 - bounceY);
+            ctx.scale(flipScaleX, 1.0);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.shadowColor = state.accentColor;
+            ctx.shadowBlur = 35;
+            roundRect(ctx, -260, -260, 520, 520, 44);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const imgSize = 430;
+            drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+            ctx.restore();
+        }
+
+        // --- Template L: Bounce Ball ---
+        function renderBounceScene(t, duration, w, h) {
+            const activeStamps = state.stamps.filter(s => s.enabled);
+            if (activeStamps.length === 0) return;
+            const stampDur = state.stampDuration;
+            const idx = Math.floor(t / stampDur) % activeStamps.length;
+            const stamp = activeStamps[idx];
+            const localT = t % stampDur;
+            const p = localT / stampDur;
+
+            if (state.isPlaying && idx !== lastPlayedStampIndex) {
+                lastPlayedStampIndex = idx;
+                playPopSound(650);
+            }
+
+            // Bouncing 3 times
+            const bounces = 3;
+            const bounceP = (p * bounces) % 1.0;
+            const bounceHeight = 180 * (1 - p * 0.7);
+            const y = (h / 2 - 20) - Math.sin(bounceP * Math.PI) * bounceHeight;
+            const squash = 1.0 + Math.sin(bounceP * Math.PI * 2) * 0.15;
+
+            ctx.save();
+            ctx.translate(w / 2, y);
+            ctx.scale(1 / squash, squash);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 30;
+            roundRect(ctx, -240, -240, 480, 480, 40);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const imgSize = 400;
+            drawStampImage(ctx, stamp.img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+            ctx.restore();
+        }
+        function spring(t) {
+            // Damped spring bounce [0..1]
+            return 1 + Math.sin(t * Math.PI * 2.5) * Math.exp(-t * 3.5) * 0.45;
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const chars = text.split('');
+            let line = '';
+            let currentY = y;
+
+            for (let n = 0; n < chars.length; n++) {
+                const testLine = line + chars[n];
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && n > 0) {
+                    ctx.fillText(line, x, currentY);
+                    line = chars[n];
+                    currentY += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, currentY);
+        }
+
+        // --- Playback Loop Engine ---
+        let lastFrameTimestamp = null;
+        let animationFrameId = null;
+
+        function startPlayback() {
+            if (state.isPlaying) return;
+            getAudioContext();
+            state.isPlaying = true;
+            playIcon.className = 'fa-solid fa-pause';
+            lastFrameTimestamp = performance.now();
+            requestAnimationFrame(playbackStep);
+        }
+
+        function pausePlayback() {
+            state.isPlaying = false;
+            playIcon.className = 'fa-solid fa-play';
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        function togglePlayPause() {
+            if (state.isPlaying) pausePlayback();
+            else startPlayback();
+        }
+
+        function playbackStep(timestamp) {
+            if (!state.isPlaying) return;
+            const delta = (timestamp - lastFrameTimestamp) / 1000;
+            lastFrameTimestamp = timestamp;
+
+            state.currentTime += delta;
+            if (state.currentTime >= state.totalDuration) {
+                if (state.isLooping) {
+                    state.currentTime = 0;
+                    lastPlayedStampIndex = -1;
+                } else {
+                    state.currentTime = state.totalDuration;
+                    pausePlayback();
+                }
+            }
+
+            updateTimeDisplay();
+            renderFrame(state.currentTime);
+
+            if (state.isPlaying) {
+                animationFrameId = requestAnimationFrame(playbackStep);
+            }
+        }
+
+        // --- Helper: Check if file is a valid LINE Stamp (01-40) or Emoji (001-040) ---
+        function isStampOrEmojiFile(fileName) {
+            const baseName = fileName.split('/').pop().split('\\').pop();
+            const lower = baseName.toLowerCase();
+
+            // Exclude Tab.png, Main.png, etc. completely
+            if (lower.startsWith('tab') || lower.startsWith('main')) {
+                return false;
+            }
+
+            const nameWithoutExt = baseName.replace(/\.[^/.]+$/, '').trim();
+            // LINE Stamp (01-40, 1-40) or LINE Emoji (001-040) or general number
+            return /^(0[1-9]|[1-3][0-9]|40)$/.test(nameWithoutExt) ||
+                   /^(00[1-9]|0[1-3][0-9]|040)$/.test(nameWithoutExt) ||
+                   /^[0-9]{1,3}$/.test(nameWithoutExt);
+        }
+
+        // --- File Handling: ZIP extraction & Image Loading ---
+        async function handleZipOrImages(files) {
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+            const loadedImages = [];
+
+            showToast('ファイルを解析しています...');
+
+            for (const file of files) {
+                if (file.name.toLowerCase().endsWith('.zip')) {
+                    // Extract ZIP with JSZip
+                    try {
+                        const zip = new JSZip();
+                        const zipContent = await zip.loadAsync(file);
+                        const fileNames = Object.keys(zipContent.files);
+
+                        // Filter valid image entries, explicitly ignoring Tab and Main
+                        const validEntries = fileNames.filter(fileName => {
+                            const zipEntry = zipContent.files[fileName];
+                            if (zipEntry.dir) return false;
+                            const lower = fileName.toLowerCase();
+                            if (lower.includes('__macosx') || lower.startsWith('.')) return false;
+
+                            const baseName = fileName.split('/').pop();
+                            const baseLower = baseName.toLowerCase();
+                            // Do not load Tab.png or Main.png
+                            if (baseLower.startsWith('tab') || baseLower.startsWith('main')) return false;
+
+                            return imageExtensions.some(ext => baseLower.endsWith(ext));
+                        });
+
+                        // Check if standard numbered stamps/emojis (01-40 / 001-040) exist
+                        const numberedEntries = validEntries.filter(isStampOrEmojiFile);
+                        // If numbered stamps/emojis exist, use strictly those; otherwise use all non-tab/main images
+                        const targetEntries = numberedEntries.length > 0 ? numberedEntries : validEntries;
+
+                        // Sort filenames naturally (01.png, 02.png, ..., 40.png / 001.png, ..., 040.png)
+                        targetEntries.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+                        for (const fileName of targetEntries) {
+                            const zipEntry = zipContent.files[fileName];
+                            const blob = await zipEntry.async('blob');
+                            const img = await loadImageFromBlob(blob);
+                            const baseName = fileName.split('/').pop();
+                            loadedImages.push({
+                                id: 'stamp_' + Math.random().toString(36).substr(2, 9),
+                                name: baseName,
+                                img: img,
+                                enabled: true
+                            });
+                        }
+                    } catch (err) {
+                        console.error('ZIP Error:', err);
+                        showToast('ZIPファイルの解凍に失敗しました');
+                    }
+                } else if (imageExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
+                    // Single or multiple image file dropped directly
+                    const baseLower = file.name.toLowerCase();
+                    // Skip Tab and Main files
+                    if (!baseLower.startsWith('tab') && !baseLower.startsWith('main')) {
+                        const img = await loadImageFromBlob(file);
+                        loadedImages.push({
+                            id: 'stamp_' + Math.random().toString(36).substr(2, 9),
+                            name: file.name,
+                            img: img,
+                            enabled: true
+                        });
+                    }
+                }
+            }
+
+            if (loadedImages.length > 0) {
+                // Natural sort if multiple files were selected
+                loadedImages.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+                state.stamps = loadedImages;
+                updateStampListUI();
+                recalcTotalDuration();
+                renderFrame(state.currentTime);
+                showToast(`${loadedImages.length} 枚のスタンプ素材（01～40 / 001～040）を読み込みました！`);
+            } else {
+                showToast('対象のスタンプ画像が見つかりませんでした');
+            }
+        }
+
+        function loadImageFromBlob(blob) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+
+        function updateStampListUI() {
+            stampListContainer.innerHTML = '';
+            stampCountLabel.textContent = `${state.stamps.length} 枚 (有効: ${state.stamps.filter(s => s.enabled).length})`;
+
+            state.stamps.forEach((stamp, index) => {
+                const card = document.createElement('div');
+                card.className = `stamp-card ${stamp.enabled ? '' : 'disabled'}`;
+                card.title = `${stamp.name} (クリックで切替)`;
+
+                const num = document.createElement('div');
+                num.className = 'badge-num';
+                num.textContent = index + 1;
+                card.appendChild(num);
+
+                const img = document.createElement('img');
+                img.src = stamp.img.src;
+                card.appendChild(img);
+
+                card.addEventListener('click', () => {
+                    stamp.enabled = !stamp.enabled;
+                    card.classList.toggle('disabled', !stamp.enabled);
+                    stampCountLabel.textContent = `${state.stamps.length} 枚 (有効: ${state.stamps.filter(s => s.enabled).length})`;
+                    recalcTotalDuration();
+                    renderFrame(state.currentTime);
+                });
+
+                stampListContainer.appendChild(card);
+            });
+        }
+
+        // --- Promo Image Handling ---
+        function setPromoImage(img, fileName) {
+            state.promoImage = img;
+            state.promoFileName = fileName;
+            promoThumbImg.src = img.src;
+            promoFileName.textContent = fileName;
+            promoFileMeta.textContent = `${img.naturalWidth} x ${img.naturalHeight} • メイン宣伝画像`;
+            promoPreviewBox.style.display = 'flex';
+            renderFrame(state.currentTime);
+        }
+
+        async function handlePromoFile(file) {
+            if (!file) return;
+            try {
+                const img = await loadImageFromBlob(file);
+                setPromoImage(img, file.name);
+                showToast('宣伝画像を登録しました！');
+            } catch (err) {
+                console.error(err);
+                showToast('宣伝画像の読み込みに失敗しました');
+            }
+        }
+
+        // --- BGM Audio Handling ---
+        async function handleBgmFile(file) {
+            if (!file) return;
+            try {
+                const actx = getAudioContext();
+                const arrayBuf = await file.arrayBuffer();
+                state.bgmAudioBuffer = await actx.decodeAudioData(arrayBuf);
+                state.bgmFileName = file.name;
+                bgmFileNameElem.textContent = file.name;
+                bgmFileDisplay.style.display = 'block';
+                showToast('BGM音楽を設定しました！');
+            } catch (err) {
+                console.error(err);
+                showToast('音楽ファイルの読み込みに失敗しました');
+            }
+        }
+
+        // --- Demo Data Generator (Instant Wow Experience!) ---
+        function loadDemoData() {
+            showToast('デモスタンプを作成中...');
+            const demoCanvas = document.createElement('canvas');
+            demoCanvas.width = 370;
+            demoCanvas.height = 320;
+            const dctx = demoCanvas.getContext('2d');
+
+            const emojis = ['🦊', '✨', '🍙', '💤', '🎉', '💖', '🔥', '🐾'];
+            const texts = ['おつかれさま', 'ありがとう！', '了解です！', 'すやすや', 'おめでとう！', 'すき！', 'がんばる！', 'またね〜'];
+            const colors = ['#f59e0b', '#ec4899', '#06c755', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#6366f1'];
+
+            const demoStamps = [];
+            for (let i = 0; i < 8; i++) {
+                dctx.clearRect(0, 0, 370, 320);
+
+                // Cute bubble card
+                dctx.fillStyle = colors[i] + '18';
+                roundRect(dctx, 15, 15, 340, 290, 40);
+                dctx.fill();
+                dctx.strokeStyle = colors[i];
+                dctx.lineWidth = 8;
+                roundRect(dctx, 15, 15, 340, 290, 40);
+                dctx.stroke();
+
+                // Emoji
+                dctx.font = '100px sans-serif';
+                dctx.textAlign = 'center';
+                dctx.textBaseline = 'middle';
+                dctx.fillText(emojis[i], 185, 120);
+
+                // Text
+                dctx.font = '900 36px "M PLUS Rounded 1c", sans-serif';
+                dctx.fillStyle = colors[i];
+                dctx.fillText(texts[i], 185, 230);
+
+                const dataUrl = demoCanvas.toDataURL();
+                const img = new Image();
+                img.src = dataUrl;
+
+                demoStamps.push({
+                    id: 'demo_' + i,
+                    name: `demo_${String(i+1).padStart(2,'0')}.png`,
+                    img: img,
+                    enabled: true
+                });
+            }
+
+            // Create Promo image
+            dctx.clearRect(0, 0, 370, 320);
+            dctx.fillStyle = '#06c755';
+            roundRect(dctx, 10, 10, 350, 300, 30);
+            dctx.fill();
+            dctx.fillStyle = '#ffffff';
+            dctx.font = 'bold 32px "M PLUS Rounded 1c"';
+            dctx.textAlign = 'center';
+            dctx.fillText('子狐スタンプ', 185, 130);
+            dctx.fillText('vol.1', 185, 180);
+            const promoImg = new Image();
+            promoImg.src = demoCanvas.toDataURL();
+
+            setPromoImage(promoImg, 'demo_main.png');
+            state.stamps = demoStamps;
+            updateStampListUI();
+            recalcTotalDuration();
+            renderFrame(0);
+            startPlayback();
+            showToast('デモスタンプを読み込みました！');
+        }
+
+        // --- High Quality Video Export using Canvas MediaRecorder / Offline Rendering ---
+        let isExporting = false;
+        let exportCancelled = false;
+
+        async function exportVideo() {
+            if (isExporting) return;
+            if (state.stamps.length === 0) {
+                showToast('スタンプ画像が読み込まれていません！');
+                return;
+            }
+
+            pausePlayback();
+            isExporting = true;
+            exportCancelled = false;
+
+            exportModal.classList.add('active');
+            exportProgressBar.style.width = '0%';
+            exportProgressText.textContent = '0%';
+
+            const exportFormat = document.getElementById('exportFormatSelect')?.value || 'mp4';
+
+            try {
+                if (exportFormat === 'mp4' && window.VideoEncoder && window.Mp4Muxer) {
+                    await exportWithMp4Muxer();
+                } else {
+                    await exportWithMediaRecorder(exportFormat);
+                }
+            } catch (err) {
+                if (err.message !== 'Export cancelled') {
+                    console.error('Export error:', err);
+                    showToast('動画の書き出し中にエラーが発生しました');
+                }
+            } finally {
+                isExporting = false;
+                exportModal.classList.remove('active');
+            }
+        }
+
+        // --- Export Engine 1: Pure H.264 MP4 (WebCodecs + mp4-muxer) ---
+        // Generates official MP4 (ISO BMFF with moov at start) 100% compatible with Windows Media Player, iOS, and TikTok
+        async function exportWithMp4Muxer() {
+            // Ensure main canvas has full target resolution
+            canvas.width = state.targetWidth;
+            canvas.height = state.targetHeight;
+
+            const fps = 30;
+            const totalFrames = Math.ceil(state.totalDuration * fps);
+            const frameInterval = 1 / fps;
+
+            // Check AudioEncoder AAC support
+            let canEncodeAudio = false;
+            let audioEncoder = null;
+            const sampleRate = 44100;
+
+            if (window.AudioEncoder && (state.bgmAudioBuffer || state.enablePopSound)) {
+                try {
+                    const audioSupported = await AudioEncoder.isConfigSupported({
+                        codec: 'mp4a.40.2',
+                        sampleRate: sampleRate,
+                        numberOfChannels: 2,
+                        bitrate: 128000
+                    });
+                    canEncodeAudio = audioSupported.supported;
+                } catch (e) {
+                    canEncodeAudio = false;
+                }
+            }
+
+            // Setup Mp4Muxer with fastStart (places 'moov' atom at the front of the file)
+            const muxerOptions = {
+                target: new Mp4Muxer.ArrayBufferTarget(),
+                video: {
+                    codec: 'avc',
+                    width: canvas.width,
+                    height: canvas.height
+                },
+                fastStart: 'in-memory', // Crucial for Windows Media Player!
+                firstTimestampBehavior: 'strict'
+            };
+
+            if (canEncodeAudio) {
+                muxerOptions.audio = {
+                    codec: 'aac',
+                    sampleRate: sampleRate,
+                    numberOfChannels: 2
+                };
+            }
+
+            const muxer = new Mp4Muxer.Muxer(muxerOptions);
+
+            // Queue all encoded chunks to write them strictly interleaved in chronological order
+            const chunkQueue = [];
+
+            // Configure VideoEncoder (H.264 Baseline / Main for maximum Windows & mobile compatibility)
+            const videoEncoder = new VideoEncoder({
+                output: (chunk, meta) => {
+                    chunkQueue.push({ type: 'video', chunk, meta, timestamp: chunk.timestamp });
+                },
+                error: e => console.error('VideoEncoder error:', e)
+            });
+
+            // Find best supported H.264 codec (Baseline Level 4.2 / 5.0 ensures native Windows Media Foundation decoding)
+            const candidateCodecs = ['avc1.42002a', 'avc1.420032', 'avc1.4d002a', 'avc1.4d0032'];
+            let vCodec = 'avc1.42002a';
+            for (const cand of candidateCodecs) {
+                try {
+                    const isSupp = await VideoEncoder.isConfigSupported({
+                        codec: cand,
+                        width: canvas.width,
+                        height: canvas.height,
+                        bitrate: 8_000_000,
+                        framerate: fps
+                    });
+                    if (isSupp && isSupp.supported) {
+                        vCodec = cand;
+                        break;
+                    }
+                } catch (e) {}
+            }
+
+            videoEncoder.configure({
+                codec: vCodec,
+                width: canvas.width,
+                height: canvas.height,
+                bitrate: 8_000_000,
+                framerate: fps
+            });
+
+            // 1. Encode Audio track (if enabled)
+            if (canEncodeAudio) {
+                try {
+                    audioEncoder = new AudioEncoder({
+                        output: (chunk, meta) => {
+                            chunkQueue.push({ type: 'audio', chunk, meta, timestamp: chunk.timestamp });
+                        },
+                        error: e => console.error('AudioEncoder error:', e)
+                    });
+                    audioEncoder.configure({
+                        codec: 'mp4a.40.2',
+                        sampleRate: sampleRate,
+                        numberOfChannels: 2,
+                        bitrate: 128000
+                    });
+
+                    // Render offline audio track
+                    const totalSamples = Math.ceil(state.totalDuration * sampleRate);
+                    const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
+
+                    if (state.bgmAudioBuffer) {
+                        const bgmSource = offlineCtx.createBufferSource();
+                        bgmSource.buffer = state.bgmAudioBuffer;
+                        bgmSource.loop = true;
+                        bgmSource.connect(offlineCtx.destination);
+                        bgmSource.start(0);
+                    }
+
+                    // Synthesize cute pop sound timings
+                    if (state.enablePopSound) {
+                        const activeStamps = state.stamps.filter(s => s.enabled);
+                        const dur = state.stampDuration;
+                        const introEnd = state.hookDuration;
+                        const outroStart = state.totalDuration - state.hookDuration;
+
+                        for (let t = introEnd; t < outroStart; t += dur) {
+                            const osc = offlineCtx.createOscillator();
+                            const gain = offlineCtx.createGain();
+                            const idx = Math.floor((t - introEnd) / dur);
+                            const freq = 480 + (idx % 6) * 40;
+
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(freq, t);
+                            osc.frequency.exponentialRampToValueAtTime(freq * 1.8, t + 0.08);
+
+                            gain.gain.setValueAtTime(0.3, t);
+                            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+                            osc.connect(gain);
+                            gain.connect(offlineCtx.destination);
+
+                            osc.start(t);
+                            osc.stop(t + 0.12);
+                        }
+                    }
+
+                    const renderedBuffer = await offlineCtx.startRendering();
+
+                    // Chunk and encode AudioData (1024 samples per chunk)
+                    const chunkSize = 1024;
+                    for (let offset = 0; offset < renderedBuffer.length; offset += chunkSize) {
+                        const currentChunk = Math.min(chunkSize, renderedBuffer.length - offset);
+                        const audioData = new AudioData({
+                            format: 'f32-planar',
+                            sampleRate: sampleRate,
+                            numberOfFrames: currentChunk,
+                            numberOfChannels: 2,
+                            timestamp: Math.round((offset / sampleRate) * 1_000_000),
+                            data: (() => {
+                                const left = renderedBuffer.getChannelData(0).subarray(offset, offset + currentChunk);
+                                const right = renderedBuffer.getChannelData(1).subarray(offset, offset + currentChunk);
+                                const combined = new Float32Array(currentChunk * 2);
+                                combined.set(left, 0);
+                                combined.set(right, currentChunk);
+                                return combined;
+                            })()
+                        });
+                        audioEncoder.encode(audioData);
+                        audioData.close();
+                    }
+                    await audioEncoder.flush();
+                } catch (audioErr) {
+                    console.warn('Audio export skipped, writing video only:', audioErr);
+                }
+            }
+
+            // 2. Encode Video Frames directly from main canvas
+            const initialTime = state.currentTime;
+            for (let frame = 0; frame <= totalFrames; frame++) {
+                if (exportCancelled) {
+                    videoEncoder.close();
+                    if (audioEncoder) audioEncoder.close();
+                    renderFrame(initialTime);
+                    throw new Error('Export cancelled');
+                }
+
+                const t = frame * frameInterval;
+                // Directly render to main canvas
+                renderFrame(t);
+
+                const timestampMicros = Math.round(t * 1_000_000);
+                const videoFrame = new VideoFrame(canvas, {
+                    timestamp: timestampMicros,
+                    duration: Math.round(frameInterval * 1_000_000)
+                });
+
+                const isKeyFrame = (frame % (fps * 2) === 0);
+                videoEncoder.encode(videoFrame, { keyFrame: isKeyFrame });
+                videoFrame.close();
+
+                const pct = Math.floor((frame / totalFrames) * 90);
+                exportProgressBar.style.width = pct + '%';
+                exportProgressText.textContent = pct + '%';
+
+                if (frame % 3 === 0) {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+
+            await videoEncoder.flush();
+
+            // 3. Write strictly interleaved chunks in chronological order (PTS)
+            exportProgressBar.style.width = '95%';
+            exportProgressText.textContent = '最適化中... 95%';
+            await new Promise(r => setTimeout(r, 10));
+
+            // Sort all chunks strictly by presentation timestamp (video prioritized on equal timestamp)
+            chunkQueue.sort((a, b) => {
+                if (a.timestamp !== b.timestamp) {
+                    return a.timestamp - b.timestamp;
+                }
+                return a.type === 'video' ? -1 : 1;
+            });
+
+            for (const item of chunkQueue) {
+                if (item.type === 'video') {
+                    muxer.addVideoChunk(item.chunk, item.meta);
+                } else if (muxerOptions.audio) {
+                    muxer.addAudioChunk(item.chunk, item.meta);
+                }
+            }
+
+            muxer.finalize();
+
+            // Restore canvas to current time
+            renderFrame(initialTime);
+
+            const buffer = muxer.target.buffer;
+            const blob = new Blob([buffer], { type: 'video/mp4' });
+            downloadBlob(blob, `LINE_stamp_reels_${Date.now()}.mp4`);
+            showToast('高互換MP4動画の書き出しが完了しました！🎉');
+        }
+
+        // --- Export Engine 2: MediaRecorder Fallback (for WebM or legacy) ---
+        async function exportWithMediaRecorder(exportFormat) {
+            canvas.width = state.targetWidth;
+            canvas.height = state.targetHeight;
+
+            const mimeTypes = exportFormat === 'mp4' ? [
+                'video/mp4;codecs=avc1',
+                'video/mp4',
+                'video/webm;codecs=vp9,opus',
+                'video/webm'
+            ] : [
+                'video/webm;codecs=vp9,opus',
+                'video/webm;codecs=vp8,opus',
+                'video/webm'
+            ];
+            let selectedMime = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'video/webm';
+            const fileExt = selectedMime.includes('mp4') ? 'mp4' : 'webm';
+
+            const fps = 30;
+            const stream = canvas.captureStream(fps);
+
+            const actx = getAudioContext();
+            const audioDest = actx.createMediaStreamDestination();
+
+            let bgmSourceNode = null;
+            if (state.bgmAudioBuffer) {
+                bgmSourceNode = actx.createBufferSource();
+                bgmSourceNode.buffer = state.bgmAudioBuffer;
+                bgmSourceNode.loop = true;
+                bgmSourceNode.connect(audioDest);
+                bgmSourceNode.start();
+            }
+
+            audioDest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+
+            const recorder = new MediaRecorder(stream, {
+                mimeType: selectedMime,
+                videoBitsPerSecond: 8000000
+            });
+
+            const recordedChunks = [];
+            recorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            recorder.start(100);
+
+            const totalFrames = Math.ceil(state.totalDuration * fps);
+            const frameInterval = 1 / fps;
+            const initialTime = state.currentTime;
+
+            for (let frame = 0; frame <= totalFrames; frame++) {
+                if (exportCancelled) {
+                    recorder.stop();
+                    if (bgmSourceNode) bgmSourceNode.stop();
+                    renderFrame(initialTime);
+                    throw new Error('Export cancelled');
+                }
+
+                const t = frame * frameInterval;
+                renderFrame(t);
+
+                const pct = Math.floor((frame / totalFrames) * 100);
+                exportProgressBar.style.width = pct + '%';
+                exportProgressText.textContent = pct + '%';
+
+                await new Promise(r => setTimeout(r, 16));
+            }
+
+            recorder.stop();
+            if (bgmSourceNode) bgmSourceNode.stop();
+
+            await new Promise(resolve => recorder.onstop = resolve);
+            renderFrame(initialTime);
+
+            const blob = new Blob(recordedChunks, { type: selectedMime });
+            downloadBlob(blob, `LINE_stamp_reels_${Date.now()}.${fileExt}`);
+            showToast(`動画(${fileExt.toUpperCase()})の書き出しが完了しました！🎉`);
+        }
+
+        function downloadBlob(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 1000);
+        }
+
+        // --- Event Listeners Wiring ---
+        function initEvents() {
+            // Drag and drop for Stamp ZIP / images
+            zipDropzone.addEventListener('dragover', e => { e.preventDefault(); zipDropzone.classList.add('dragover'); });
+            zipDropzone.addEventListener('dragleave', () => zipDropzone.classList.remove('dragover'));
+            zipDropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                zipDropzone.classList.remove('dragover');
+                if (e.dataTransfer.files) handleZipOrImages(e.dataTransfer.files);
+            });
+            zipInput.addEventListener('change', e => {
+                if (e.target.files) handleZipOrImages(e.target.files);
+            });
+
+            // Drag and drop for Promo Image
+            promoDropzone.addEventListener('dragover', e => { e.preventDefault(); promoDropzone.classList.add('dragover'); });
+            promoDropzone.addEventListener('dragleave', () => promoDropzone.classList.remove('dragover'));
+            promoDropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                promoDropzone.classList.remove('dragover');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) handlePromoFile(e.dataTransfer.files[0]);
+            });
+            promoInput.addEventListener('change', e => {
+                if (e.target.files && e.target.files[0]) handlePromoFile(e.target.files[0]);
+            });
+            btnClearPromo.addEventListener('click', () => {
+                state.promoImage = null;
+                state.promoFileName = '';
+                promoPreviewBox.style.display = 'none';
+                renderFrame(state.currentTime);
+            });
+
+            // Drag and drop for BGM
+            bgmDropzone.addEventListener('dragover', e => { e.preventDefault(); bgmDropzone.classList.add('dragover'); });
+            bgmDropzone.addEventListener('dragleave', () => bgmDropzone.classList.remove('dragover'));
+            bgmDropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                bgmDropzone.classList.remove('dragover');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) handleBgmFile(e.dataTransfer.files[0]);
+            });
+            bgmInput.addEventListener('change', e => {
+                if (e.target.files && e.target.files[0]) handleBgmFile(e.target.files[0]);
+            });
+
+            // Player controls
+            btnPlayPause.addEventListener('click', togglePlayPause);
+            document.getElementById('btnRewind').addEventListener('click', () => {
+                state.currentTime = 0;
+                lastPlayedStampIndex = -1;
+                updateTimeDisplay();
+                renderFrame(0);
+            });
+            document.getElementById('btnLoop').addEventListener('click', e => {
+                state.isLooping = !state.isLooping;
+                e.currentTarget.style.color = state.isLooping ? 'var(--accent-brand)' : 'var(--text-muted)';
+            });
+
+            timeSlider.addEventListener('input', e => {
+                state.currentTime = parseFloat(e.target.value);
+                updateTimeDisplay();
+                renderFrame(state.currentTime);
+            });
+
+            // Aspect Switcher
+            document.querySelectorAll('.aspect-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    setCanvasDimensions(e.currentTarget.dataset.ratio);
+                });
+            });
+
+            // Template switcher
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', e => {
+                    document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+                    const current = e.currentTarget;
+                    current.classList.add('active');
+                    state.template = current.dataset.template;
+                    recalcTotalDuration();
+                    renderFrame(state.currentTime);
+                });
+            });
+
+            // Inputs
+            inputTitle.addEventListener('input', e => { state.title = e.target.value; renderFrame(state.currentTime); });
+            inputSubtitle.addEventListener('input', e => { state.subtitle = e.target.value; renderFrame(state.currentTime); });
+            inputCta.addEventListener('input', e => { state.cta = e.target.value; renderFrame(state.currentTime); });
+
+            speedSlider.addEventListener('input', e => {
+                state.stampDuration = parseFloat(e.target.value);
+                speedValueLabel.textContent = `${state.stampDuration.toFixed(1)} 秒`;
+                recalcTotalDuration();
+                renderFrame(state.currentTime);
+            });
+
+            hookDurationSlider.addEventListener('input', e => {
+                state.hookDuration = parseFloat(e.target.value);
+                hookDurationLabel.textContent = `${state.hookDuration.toFixed(1)} 秒`;
+                recalcTotalDuration();
+                renderFrame(state.currentTime);
+            });
+
+            bgStyleSelect.addEventListener('change', e => {
+                state.bgStyle = e.target.value;
+                renderFrame(state.currentTime);
+            });
+
+            stampEffectSelect.addEventListener('change', e => {
+                state.stampBorderEffect = e.target.value;
+                renderFrame(state.currentTime);
+            });
+
+            particleTypeSelect.addEventListener('change', e => {
+                state.particleType = e.target.value;
+                renderFrame(state.currentTime);
+            });
+
+            switchPopSound.addEventListener('change', e => {
+                state.enablePopSound = e.target.checked;
+            });
+
+            // Color Presets
+            document.querySelectorAll('.color-dot').forEach(dot => {
+                dot.addEventListener('click', e => {
+                    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    state.accentColor = e.currentTarget.dataset.color;
+                    renderFrame(state.currentTime);
+                });
+            });
+
+            // Demo button
+            btnLoadDemo.addEventListener('click', loadDemoData);
+
+            // Export Buttons
+            btnExportVideo.addEventListener('click', exportVideo);
+            btnExportBottom.addEventListener('click', exportVideo);
+            btnCancelExport.addEventListener('click', () => { exportCancelled = true; });
+
+            // Keyboard shortcut (Space to play/pause)
+            window.addEventListener('keydown', e => {
+                if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    togglePlayPause();
+                }
+            });
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initParticles();
+            initEvents();
+            setCanvasDimensions('9:16');
+            loadDemoData(); // Load demo by default so the user immediately sees a working preview!
+        });
+    </script>
+</body>
+</html>

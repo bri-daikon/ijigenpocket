@@ -1,0 +1,112 @@
+Created At: 2026-06-07T06:32:58Z
+Completed At: 2026-06-07T06:32:59Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2656
+Total Bytes: 105350
+Showing lines 1601 to 2400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1601: updateUI();
+1602: 
+1603: // ==========================================
+1604: // AI Room Generator (AI社員に依頼) 機能
+1605: // ==========================================
+1606: 
+1607: const aiGenerateBtn = document.getElementById('ai-generate-btn');
+1608: const aiThemeSelect = document.getElementById('ai-theme-select');
+1609: const aiPlayersSelect = document.getElementById('ai-players-select');
+1610: const aiLayoutSelect = document.getElementById('ai-layout-select');
+1611: const aiChatBox = document.getElementById('ai-chat-box');
+1612: const aiPromptInput = document.getElementById('ai-prompt-input');
+1613: const aiGenBgToggle = document.getElementById('ai-gen-bg-toggle');
+1614: const aiApiKeyInput = document.getElementById('ai-api-key');
+1615: 
+1616: if (aiApiKeyInput) {
+1617:   const savedApiKey = localStorage.getItem('stampToolApiKey');
+1618:   if (savedApiKey) aiApiKeyInput.value = savedApiKey;
+1619:   aiApiKeyInput.addEventListener('input', (e) => {
+1620:     localStorage.setItem('stampToolApiKey', e.target.value.trim());
+1621:   });
+1622: }
+1623: 
+1624: const actionIconsData = [
+1625:   {
+1626:     name: "spot",
+1627:     label: "目星",
+1628:     sub: "SPOT",
+1629:     path: `<path d="M15,40 Q40,15 65,40 Q40,65 15,40 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="8" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#ff007f"/>`
+1630:   },
+1631:   {
+1632:     name: "listen",
+1633:     label: "聞き耳",
+1634:     sub: "LISTEN",
+1635:     path: `<path d="M30,30 C30,20 45,15 50,25 C55,35 40,45 45,55 C48,
+<truncated 45281 bytes>
+pacity: 1
+2332:   });
+2333: 
+2334:   let plW = 160;
+2335:   let plH = 170;
+2336:   if (layoutType === 'right-vertical') {
+2337:     if (numPlayers <= 3) { plW = 180; plH = 200; }
+2338:     else if (numPlayers === 4) { plW = 170; plH = 150; }
+2339:     else { plW = 160; plH = 120; }
+2340:   }
+2341: 
+2342:   for (let i = 0; i < numPlayers; i++) {
+2343:     const plSvg = gen.pl();
+2344:     let plX = 1050;
+2345:     let plY = 40;
+2346:     
+2347:     if (layoutType === 'right-vertical') {
+2348:       plX = 1050;
+2349:       if (numPlayers === 1) {
+2350:         plY = 260;
+2351:       } else {
+2352:         plY = 40 + i * (640 - plH) / (numPlayers - 1);
+2353:       }
+2354:     } else {
+2355:       plY = 510;
+2356:       if (numPlayers === 1) {
+2357:         plX = 660;
+2358:       } else {
+2359:         plX = 280 + i * (720 - plW) / (numPlayers - 1);
+2360:       }
+2361:     }
+2362: 
+2363:     panels.push({
+2364:       id: `ai-pl-${i}-${Date.now()}`,
+2365:       url: createSvgUrl(plSvg),
+2366:       x: plX,
+2367:       y: plY,
+2368:       width: plW,
+2369:       height: plH,
+2370:       originalRatio: plW / plH,
+2371:       flipH: false,
+2372:       flipV: false,
+2373:       visible: true,
+2374:       opacity: 1
+2375:     });
+2376:   }
+2377: 
+2378:   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
+2379:   const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
+2380:   const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+2381: 
+2382:   menuLabels.forEach((label, i) => {
+2383:     const menuSvg = gen.menu(label);
+2384:     let menuX = 50;
+2385:     let menuY = 50;
+2386: 
+2387:     if (layoutType === 'right-vertical') {
+2388:       menuY = 50;
+2389:       menuX = 50 + i * 145;
+2390:     } else {
+2391:       menuX = 50;
+2392:       menuY = 50 + i * 55;
+2393:     }
+2394: 
+2395:     panels.push({
+2396:       id: `ai-menu-${labe
+<truncated 315 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.

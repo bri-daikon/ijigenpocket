@@ -1,0 +1,52 @@
+Created At: 2026-06-04T05:59:30Z
+Completed At: 2026-06-04T05:59:32Z
+The following changes were made by the replace_file_content tool to: y:\ijigenpocket\js\ccfolialayoutmaker.js. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -2177,7 +2177,7 @@
+   updateUI();
+ }
+ 
+-function generateAndLoadDynamicLayout(design, numPlayers, layoutType) {
++function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+   saveStateToHistory();
+   
+   const gen = themeSvgGenerators.dynamic;
+@@ -2185,15 +2185,26 @@
+   panels = [];
+   selectedPanelIds = [];
+ 
+-  const bgSvg = gen.bg(design);
+-  frame = {
+-    url: createSvgUrl(bgSvg),
+-    x: 0,
+-    y: 0,
+-    width: 1280,
+-    height: 720,
+-    originalRatio: 1280 / 720
+-  };
++  if (bgImageUrl) {
++    frame = {
++      url: bgImageUrl,
++      x: 0,
++      y: 0,
++      width: 1280,
++      height: 720,
++      originalRatio: 1280 / 720
++    };
++  } else {
++    const bgSvg = gen.bg(design);
++    frame = {
++      url: createSvgUrl(bgSvg),
++      x: 0,
++      y: 0,
++      width: 1280,
++      height: 720,
++      originalRatio: 1280 / 720
++    };
++  }
+ 
+   const windowSvg = gen.window(design);
+   const windowPanelWidth = 720;
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

@@ -1,0 +1,542 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>アーティトゥマ人生譚</title><style>
+:root{--bg:#111b20;--panel:#203038;--gold:#dfbe79;--text:#f4eedf;--muted:#b9c6bf}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#29463c,var(--bg) 55%);color:var(--text);font-family:"Yu Gothic",sans-serif}button{font:inherit;cursor:pointer}header{border-bottom:1px solid #69827666;padding:20px max(24px,calc((100vw - 1100px)/2));color:var(--gold);font-family:serif;font-size:21px;letter-spacing:.14em}main{max-width:1100px;margin:auto;padding:48px 24px 80px}.eyebrow{color:var(--gold);letter-spacing:.22em;font-size:12px}h1,h2,h3,.story{font-family:"Yu Mincho",serif}h1{font-size:clamp(36px,6vw,62px);line-height:1.4;margin:18px 0}h2{font-size:28px;margin:12px 0 22px}.intro{line-height:2;color:var(--muted);max-width:720px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:25px;margin-top:40px}.card,.side{background:#1c2b31ed;border:1px solid #60746c;padding:30px;box-shadow:0 22px 50px #0003}.side{align-self:start}.story{font-size:17px;line-height:2.1;white-space:pre-line}.choices{display:grid;gap:12px;margin-top:28px}.choice,.primary,.restart{background:#293d37;border:1px solid #aa9165;color:var(--text);padding:17px;text-align:left}.choice:hover,.restart:hover{background:#3d5847}.choice b{display:block;color:var(--gold)}.choice small{color:var(--muted);line-height:1.6}.primary{background:var(--gold);color:#12241e;text-align:center;font-weight:bold}.row{display:flex;justify-content:space-between;border-bottom:1px solid #61756b77;padding:10px 0;font-size:13px}.row strong{color:var(--gold);max-width:65%;text-align:right;overflow-wrap:anywhere}.tags{display:flex;flex-wrap:wrap;gap:6px}.tag{border:1px solid #688171;border-radius:20px;padding:4px 8px;font-size:11px}.log{font-size:12px;line-height:1.8;color:var(--muted);padding-left:18px;max-height:230px;overflow:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.controls{display:flex;gap:8px;flex-wrap:wrap}.restart.running{background:#dfbe79;color:#12241e}.autohint{font-size:12px;color:#b9c6bf;margin-top:14px}.restart{font-size:12px;padding:7px 10px}.hidden{display:none}footer{max-width:1100px;margin:auto;border-top:1px solid #60746c66;padding:20px 24px;color:var(--muted);font-size:12px}@media(max-width:750px){.layout{grid-template-columns:1fr}.side{order:-1}.card,.side{padding:23px}}</style></head><body><header>ARTITUMA　人生譚</header><main><div class="eyebrow">A LIFE SIMULATION IN ARTITUMA</div><h1>生まれは選べない。<br>生き方は、選べる。</h1><p class="intro">八つの種族、六つの魔法、雨季と豊穣期。選択と偶然が一人の人生を形づくる。名を残すか、静かに老いるか。それとも次の朝を迎えられないか。</p><p class="autohint">出生率：ヒト・獣人・妖精族 75% ／ 屍人・鬼人・森人 20% ／ 竜人・魔人 5%</p><div class="layout"><section class="card"><div class="top"><span class="eyebrow" id="chapter">PROLOGUE</span><div class="controls"><button class="restart" id="auto">▶ オート進行</button><button class="restart" id="export-save">セーブ書き出し</button><button class="restart" id="import-save">セーブ読み込み</button><input id="save-file" type="file" accept="application/json,.json" hidden><button class="restart hidden" id="restart">新しい人生</button></div></div><h2 id="title">人生を始める</h2><div class="story" id="story">アーティトゥマ大陸、北西のベルデュワン神皇国。あなたはこの地に生まれる。
+
+どんな血を引き、どんな家庭で育つかは運命に委ねられる。けれど、その先の道はあなたの選択で変わっていく。</div><p class="autohint" id="autohint">オート進行は選択を自動で行い、死亡または人生の終わりで止まります。</p><div class="choices" id="choices"><button class="primary" onclick="start()">運命を引く</button></div></section><aside class="side"><div class="eyebrow">LIFE RECORD</div><h3 id="name">まだ名もない命</h3><div class="tags" id="tags"><span class="tag">人生の開始前</span></div><div id="stats"></div><h3>縁の記録</h3><ol class="log" id="relations"><li>まだ記録はありません。</li></ol><h3>人生の記録</h3><ol class="log" id="log"><li>ここに歩みが刻まれます。</li></ol></aside></div></main><footer>原案の世界設定をもとにしたブラウザ用試作。進行状況はこのブラウザに自動保存されます。別のサイトへ移る際はセーブを書き出し、移転先で読み込んでください。</footer><script>
+const R=[['ヒト族',65,2,'皇都ワンニル'],['獣人族',41,1,'北西の牧草地'],['森人族',360,3,'北の深い森'],['妖精族',28,3,'森と草原の境'],['魔人族',620,5,'国境の町'],['鬼人族',90,0,'西の集落'],['竜人族',1100,5,'中央山岳の麓'],['屍人族',Infinity,0,'人目を避けた廃村']];const pick=a=>a[Math.floor(Math.random()*a.length)],rand=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),$=id=>document.getElementById(id);const HUMAN_TIERS=[
+['奴隷',1,0,65,100,.30,'国外または違法な拘束下。自由と食事を得ることが最初の目標。'],
+['難民',3,30,70,140,.24,'日々の食事にも困り、移動と病にさらされる。'],
+['家がない',5,80,75,170,.18,'屋根がなく、雨季の冷えと増水が脅威になる。'],
+['その日暮らし',10,180,82,220,.12,'働けない日が続けば食事が途切れる。'],
+['辛うじて飢えない程度',16,350,88,270,.08,'食事は確保できるが、診療費の余裕は乏しい。'],
+['一般市民',40,900,94,300,.04,'住まいと仕事があり、暮らしは比較的安定している。'],
+['上級市民',15,2400,97,450,.025,'教育や治療を受けやすい。'],
+['下級貴族',6,6500,98,650,.02,'家名と財産に守られるが、責務もある。'],
+['上級貴族',3,16000,99,1000,.015,'豊かな暮らしと政治的な重圧がある。'],
+['王族',1,40000,100,1500,.02,'神皇王家の一員。生活は守られるが、宮廷の争いと無縁ではない。']
+];const rollHumanTier=()=>{let n=Math.random()*100;for(let i=0;i<HUMAN_TIERS.length;i++){n-=HUMAN_TIERS[i][1];if(n<0)return i}return 9};const SPECIES_WEALTH_WEIGHTS=[
+[1,3,5,10,16,40,15,6,3,1],
+[2,4,7,12,19,36,12,5,2,1],
+[0,1,1,3,8,44,25,12,5,1],
+[1,5,10,18,23,30,9,3,1,0],
+[0,1,2,3,7,32,27,17,8,3],
+[1,4,8,16,25,31,10,4,1,0],
+[0,0,1,2,4,20,28,24,15,6],
+[0,6,12,20,22,22,10,5,2,1]
+];const SPECIES_RISK=[1,1.1,.75,1.2,.7,.95,.5,1.4],SPECIES_UPKEEP=[1,1.05,.9,.75,1.15,.8,1.4,1.25],SPECIES_HEALTH=[0,2,3,-2,4,5,5,0];
+const OTHER_WEALTH_NAMES=['捕らわれの身','流浪の民','住処がない','その日暮らし','辛うじて食料を確保','一般層','豊かな暮らし','有力な一族','統治層','首長の一族'];
+const OTHER_WEALTH_DESCRIPTIONS=['自由と安全な寝床を得ることが最初の目標。','移動しながら食料と身を守る場所を探す。','屋根がなく、雨季や寒さが脅威になる。','働けない日が続けば食料が途切れる。','食料はあるが、治療や備えに余裕がない。','住まいと仕事があり、暮らしは比較的安定している。','教育や治療を受けやすい。','一族のつながりに守られ、責務も負う。','豊かな暮らしと共同体の重責がある。','指導者に連なる立場。安全と引き換えに争いにも巻き込まれる。'];
+const rollWealthTier=race=>{let n=Math.random()*100;for(let i=0;i<10;i++){n-=SPECIES_WEALTH_WEIGHTS[race][i];if(n<0)return i}return 9};
+const wealthName=(race,tier)=>race===0?HUMAN_TIERS[tier][0]:race===4&&tier===9?'魔王家に連なる':race===6&&tier===9?'竜族の長の一族':race===7&&tier===9?'屍人の首領':OTHER_WEALTH_NAMES[tier];
+const wealthDescription=(race,tier)=>race===0?HUMAN_TIERS[tier][6]:race===7&&tier<5?'人目を避ける隠れ家を探し、討伐隊に見つからず生き延びる。':OTHER_WEALTH_DESCRIPTIONS[tier];
+const wealthRisk=(race,tier)=>Math.min(.6,HUMAN_TIERS[tier][5]*SPECIES_RISK[race]);
+const PERSONALITIES=[
+ ['ISTJ','堅実な守り手','約束と日々の仕事を大切にする。'],
+ ['ISFJ','静かな支え手','身近な人の暮らしを守ろうとする。'],
+ ['INFJ','未来を読む導き手','人の心と遠い未来を思い描く。'],
+ ['INTJ','遠謀の策士','知識を集め、先を見通して動く。'],
+ ['ISTP','寡黙な技巧家','手を動かし、難題を自分で解く。'],
+ ['ISFP','心優しい旅人','自由と美しいものを愛する。'],
+ ['INFP','夢を守る理想家','信じるもののために静かに進む。'],
+ ['INTP','果てなき探究者','疑問を追い、仕組みを知りたがる。'],
+ ['ESTP','大胆な挑戦者','目の前の危険にも飛び込む。'],
+ ['ESFP','陽気な冒険家','仲間と今を楽しみながら進む。'],
+ ['ENFP','夢追いの語り手','人と出会い、新しい可能性を追う。'],
+ ['ENTP','ひらめきの発明家','思いついた道を試してみる。'],
+ ['ESTJ','実務の統率者','人をまとめ、目標を形にする。'],
+ ['ESFJ','温かな世話役','仲間の様子を見て力になる。'],
+ ['ENFJ','情熱の先導者','人の力を引き出し、導く。'],
+ ['ENTJ','決断の指揮官','困難の中でも道を決めて進む。']
+];
+const personalityData=()=>PERSONALITIES.find(p=>p[0]===s.personality)||PERSONALITIES[0];
+function personalityWeights(){let code=personalityData()[0],w={study:1,social:1,adventure:1,work:1,care:1,magic:1};if(code[0]==='E')w.social+=2;else w.study++;if(code[1]==='N')w.magic+=2;else{w.work++;w.care++}if(code[2]==='T'){w.work++;w.adventure++}else{w.care+=2;w.social++}if(code[3]==='J'){w.study++;w.work++}else w.adventure+=2;return w}
+function choiceCategory(c){let label=c[0];if(c[3]==='job'){let job=JOBS[s.race].find(j=>j[0]===label);let kind=job?.[2]||(label.includes('勇者')?'武':'祈');return {武:'adventure',魔:'magic',知:'study',技:'work',交:'social',祈:'care'}[kind]}if(/学園|学ぶ|知恵|記録|研究|書|教え/.test(label))return 'study';if(/魔法|精霊|術|神託/.test(label))return 'magic';if(/療養|治癒|助け|看病/.test(label))return 'care';if(/友|家族|伴侶|婚約|出会い|交流/.test(label))return 'social';if(/依頼|探索|旅|逃|戦|討伐|危険|勇者|狩/.test(label))return 'adventure';if(/仕事|家業|立て直す|働|商|工房/.test(label))return 'work';return 'work'}
+function weightedChoice(choices){let w=personalityWeights(),scores=choices.map(c=>Math.max(1,w[choiceCategory(c)]||1)*(s.health<50&&/療養|治癒/.test(c[0])?8:1)),total=scores.reduce((a,b)=>a+b,0),roll=Math.random()*total;for(let i=0;i<choices.length;i++){roll-=scores[i];if(roll<0)return choices[i]}return choices[choices.length-1]}
+function actionCategory(o){if(o.school)return 'study';if(o.work)return {武:'adventure',魔:'magic',知:'study',技:'work',交:'social',祈:'care'}[o.jobType]||'work';if(o.quest)return 'adventure';if(o.bond||o.friends||o.familyBond)return 'social';if(o.magic)return 'magic';if(o.wit)return 'study';if(o.body)return 'adventure';if(o.hp>0)return 'care';return 'work'}
+function applyPersonalityBonus(o){let category=actionCategory(o);if(personalityWeights()[category]<3)return;switch(category){case 'study':s.wit=Math.min(20,s.wit+1);break;case 'magic':s.magic=Math.min(20,s.magic+1);break;case 'social':if(s.partner&&o.bond)s.partner.bond=Math.min(100,s.partner.bond+4);else s.familyBond=Math.min(100,(s.familyBond??50)+4);break;case 'adventure':s.luck=Math.min(20,s.luck+1);break;case 'work':s.coin+=100;break;case 'care':s.health=Math.min(100,s.health+5);break}}
+const rollRace=()=>{let roll=Math.random();return pick(roll<.75?[0,1,3]:roll<.95?[7,5,2]:[6,4])};let s=null,autoOn=false,autoTimer=null,currentChoices=[];const SCHOOL_AGE=[10,10,15,5,null,null,null,null],CAREER_AGE=[16,16,21,11,50,20,60,20];const schoolTalent=()=>s.wit>=8||s.body>=8;const maxTurns=()=>R[s.race][1]===Infinity?120:R[s.race][1];const autoDelay=()=>R[s.race][1]>=250?90:350;function setAuto(on){autoOn=on;clearTimeout(autoTimer);$('auto').textContent=on?'■ オート停止':'▶ オート進行';$('auto').classList.toggle('running',on);if(on)autoTimer=setTimeout(autoStep,autoDelay())}function autoStep(){if(!autoOn)return;if(!s||s.ending){start();return}let choices=currentChoices.filter(c=>c[0]!=='別の求人を見る');if(!choices.length)return;let jobs=choices.filter(c=>c[3]==='job');if(s.work==='未定'&&s.age>=CAREER_AGE[s.race]&&jobs.length)choices=jobs;(weightedChoice(choices)||choices[0])[2]()}$('auto').onclick=()=>setAuto(!autoOn);function save(){localStorage.setItem('artituma-life',JSON.stringify(s))}function exportSave(){let saved=localStorage.getItem('artituma-life');if(!saved){alert('書き出せるセーブがありません。');return}let blob=new Blob([saved],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='artituma-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function importSave(file){if(!file)return;try{let raw=await file.text(),data=JSON.parse(raw);if(!data||!Number.isInteger(data.race)||data.race<0||data.race>=R.length||typeof data.name!=='string'||!Number.isFinite(data.age)||!Array.isArray(data.log))throw Error('format');if(localStorage.getItem('artituma-life')&&!confirm('現在の進行を読み込むセーブで置き換えます。よろしいですか？'))return;localStorage.setItem('artituma-life',JSON.stringify(data));location.reload()}catch(e){alert('セーブファイルを読み込めませんでした。')}finally{$('save-file').value=''}}
+$('export-save').onclick=exportSave;$('import-save').onclick=()=>$('save-file').click();$('save-file').onchange=e=>importSave(e.target.files[0]);function note(t){s.log.unshift(t);s.log=s.log.slice(0,16)}function start(){let race=rollRace(),r=R[race],wealth=rollWealthTier(race);s={race,wealth,gender:Math.random()<.5?'女':'男',personality:pick(PERSONALITIES)[0],location:race===0&&wealth===0?'神皇国の国外':r[3],eventCount:0,lastEventStage:-9,pending:null,captive:false,partner:null,relHistory:[],friends:0,familyBond:rand(30,75),relLastStage:-9,relEventCount:0,birthplace:race===0&&wealth===0?'神皇国の国外':r[3],name:pick(['エル','リナ','カイ','ミラ','ノア','ルゥ'])+'・'+pick(['レイ','ワン','トゥマ','ガリー']),age:0,stage:0,school:'未入学',schoolYears:0,schoolScholarship:false,yearlyVersion:1,health:Math.min(100,HUMAN_TIERS[wealth][3]+SPECIES_HEALTH[race]),coin:HUMAN_TIERS[wealth][2],body:rand(1,3)+(race===1||race===5||race===6?2:0),wit:rand(1,3)+(race===2?2:0),magic:r[2],luck:rand(1,3),rank:10,quests:0,work:'未定',traits:[],attributes:['光','闇','火','水','土','風'].sort(()=>Math.random()-.5).slice(0,r[2]),log:[],ending:null};note(s.birthplace+'で'+r[0]+'として生まれた。'+'裕福度：'+wealthName(race,wealth)+'。性格：'+personalityData()[0]+' '+personalityData()[1]+'。');if((race===0&&wealth>=7)||(race!==0&&race!==7&&wealth>=8&&Math.random()<.55)){s.partner={name:newPartnerName(),status:'婚約者',bond:rand(35,60)};note('家同士の約束で、生まれた時から'+s.partner.name+'が婚約者となった。')}save();render()}function end(title,story){s.ending={title,story};note('結末：'+title);save();render()}function act(o){s.health=Math.max(0,Math.min(100,s.health+(o.hp||0)));s.coin=Math.max(0,s.coin+(o.coin||0));for(let x of ['body','wit','magic','luck'])s[x]=Math.min(20,s[x]+(o[x]||0));if(o.school){s.school='在学中';s.schoolYears=0;s.schoolScholarship=!!o.scholarship;note(s.schoolScholarship?'才能を認められ、特待生として学園に入学した。':'学園に入学した。')}if(o.work){s.work=o.work;s.jobType=o.jobType||s.jobType;s.jobIncome=o.jobIncome||s.jobIncome;s.rareRole=o.rareRole||null;s.jobOffers=null;}if(o.bond&&s.partner)s.partner.bond=Math.max(0,Math.min(100,s.partner.bond+o.bond));if(o.friends)s.friends=Math.max(0,(s.friends||0)+o.friends);if(o.familyBond)s.familyBond=Math.max(0,Math.min(100,(s.familyBond??50)+o.familyBond));if(o.location)s.location=o.location;if(o.captive!==undefined)s.captive=o.captive;if(o.wealth)s.wealth=Math.max(0,Math.min(9,(s.wealth??5)+o.wealth));if(o.trait&&!s.traits.includes(o.trait))s.traits.push(o.trait);if(o.quest)s.quests++;if(o.rank)s.rank=Math.max(1,s.rank-1);applyPersonalityBonus(o);note(o.log);let previousAge=s.age;s.stage++;s.age++;applyChildYear(previousAge);if(s.school==='在学中'){s.schoolYears++;if(s.schoolYears>=6){s.school='卒業';note('六年間の学びを終え、学園を卒業した。')}}s.coin=Math.max(0,s.coin-Math.round(HUMAN_TIERS[s.wealth??5][4]*SPECIES_UPKEEP[s.race]));{if(Math.random()<wealthRisk(s.race,s.wealth??5)){let hurt=rand(10,23);s.health-=hurt;note(s.race===7?'討伐隊に追われ、力を失った。':s.wealth>=8?'一族や権力をめぐる争いで心身をすり減らした。':'病や事故で体力を失った。')}if(s.coin===0&&s.wealth>0&&Math.random()<.22){s.wealth--;note('蓄えが尽き、暮らし向きが一段苦しくなった。')}}if(s.school==='在学中'&&s.wealth<=5&&!s.schoolScholarship){if(schoolTalent()){s.schoolScholarship=true;note('家計が苦しくなったが、才能を認められて特待生となった。')}else{s.school='中退';note('家計が学費を支えられず、学園を中退した。')}}if(!s.coin&&(s.friends||0)>0&&Math.random()<.28){s.coin=180;note('友人が食事と寝床を分けてくれた。')}if(s.partner&&s.partner.status==='配偶者'&&s.partner.bond>=70&&s.health<60&&Math.random()<.18){s.health=Math.min(100,s.health+10);note('伴侶の看病で体力を取り戻した。')}if(!s.coin){s.health-=8;note(s.race===7?'隠れ家と獲物を失い、身を潜める力が弱まった。':s.race===5?'交換品が尽き、食料を確保できなかった。':'蓄えが尽き、食事を切り詰めた。')}if(s.health<=0)end(s.race===7?'封印':'病と困窮',s.race===7?'討伐隊に追い詰められ、長い眠りに封じられた。':'助けを求める力も尽き、人生は途切れた。');else if(s.age>=R[s.race][1])end(s.captive?'囚われた生涯':'天寿',s.captive?'自由を取り戻せないまま長い時を過ごした。':'幾度もの季節を歩き抜き、静かに生涯を閉じた。');else{if(!s.captive){maybeMajorEvent();if(!s.pending)maybeRelationshipEvent()}render()}}const ADULT_AGE=CAREER_AGE;
+const CHILD_EFFECTS={
+  hurt:{hp:-14,body:1},ill:{hp:-18},lost:{coin:-220,luck:1},poor:{coin:-300,familyBond:-5},gain:{coin:350},gift:{coin:200,familyBond:5},train:{body:1,hp:-5},study:{wit:1},spell:{magic:1,hp:-5},friend:{friends:1},family:{familyBond:8},brave:{body:1,luck:1,hp:-8},rescue:{friends:1,familyBond:3,hp:-8},windfall:{coin:900,luck:1},scandal:{friends:-1,familyBond:-6},wealthUp:{wealth:1,coin:500},wealthDown:{wealth:-1,coin:-600},heal:{hp:12,wit:1},luck:{luck:1},wisdom:{wit:1,familyBond:3},magicGain:{magic:1,luck:1},fight:{body:1,hp:-15},trade:{coin:400,wit:1},community:{friends:1,familyBond:5},lonely:{friends:-1,wit:1},hardship:{hp:-10,coin:-250},starve:{hp:-12,coin:-150},treasure:{coin:600},protect:{body:1,familyBond:5,hp:-8},secret:{wit:1,luck:1}
+};
+const CHILD_EVENTS=[
+// ヒト族：学園に入れる10歳まで
+[
+['雨季の川で足を滑らせた。近所の人に助けられた。','hurt'],
+['熱病にかかり、寝台で長い日を過ごした。','ill'],
+['市場で迷子になり、帰り道で小銭を失った。','lost'],
+['家の食料が盗まれ、冬の備えが減った。','poor'],
+['畑で珍しい薬草を見つけ、売って家計を助けた。','gain'],
+['旅人から古い絵本を贈られた。','gift'],
+['年上の子に剣の構えを教わった。','train'],
+['文字の読める隣人に読み書きを習った。','study'],
+['小さな魔石が光り、初めて魔力を感じた。','spell'],
+['井戸端で同い年の友人と出会った。','friend'],
+['病気の家族を看病し、絆が深まった。','family'],
+['魔物の気配に気づき、家畜を小屋へ逃がした。','brave'],
+['転んだ幼子を馬車道から引き戻した。','rescue'],
+['祭りのくじで価値ある魔石を引き当てた。','windfall'],
+['盗みの疑いをかけられ、仲間と気まずくなった。','scandal'],
+['親の商売が成功し、暮らしに余裕ができた。','wealthUp'],
+['実家の店が火事に遭い、暮らしが苦しくなった。','wealthDown'],
+['神殿の治癒師を手伝い、手当てを覚えた。','heal'],
+['落ちた橋を渡らずに済み、危険を免れた。','luck'],
+['祖父母から王都の昔話を聞いた。','wisdom'],
+['魔法使いの実演に触れ、術の感覚をつかんだ。','magicGain'],
+['路地の悪童から友人をかばい、けがをした。','fight'],
+['祭りの手伝いで品を売り、商いを学んだ。','trade'],
+['村の井戸を直す大人たちに協力した。','community'],
+['親友が遠くへ引っ越し、一人で本を読む日が増えた。','lonely'],
+['洪水で寝床と蓄えの一部を失った。','hardship'],
+['凶作で食事が減り、体が弱った。','starve'],
+['古い納屋の床下から忘れられた硬貨を見つけた。','treasure'],
+['小さなきょうだいを野犬から守った。','protect'],
+['古地図に記された抜け道を見つけた。','secret']
+],
+// 獣人族：学園に入れる10歳まで
+[
+['牧草地の穴に落ち、足を痛めた。','hurt'],
+['冷たい雨の夜に熱を出した。','ill'],
+['群れを追って遠くへ行き、荷物をなくした。','lost'],
+['冬の備蓄を野獣に荒らされた。','poor'],
+['狩りの途中で食べられる木の実を大量に見つけた。','gain'],
+['一族から丈夫な小刀を譲られた。','gift'],
+['年長者との追いかけっこで脚力を鍛えた。','train'],
+['星と風の向きから道を読む方法を習った。','study'],
+['風に耳を澄ませ、体内の魔力が目覚めた。','spell'],
+['別の群れの子と競走し、友達になった。','friend'],
+['親と一緒に獲物を運び、信頼を得た。','family'],
+['夜の遠吠えから魔物を察知して知らせた。','brave'],
+['はぐれた子を草原から連れ戻した。','rescue'],
+['角のある希少獣の落とし物を拾った。','windfall'],
+['縄張り争いで仲間と衝突した。','scandal'],
+['一族の狩りが大成功し、住まいが豊かになった。','wealthUp'],
+['家畜の病が広がり、一族の暮らしが傾いた。','wealthDown'],
+['薬草を食べる獣の習性から治療法を覚えた。','heal'],
+['草むらの罠を匂いで見抜いた。','luck'],
+['長老から群れを守る掟を聞いた。','wisdom'],
+['精霊の通る風を感じ、術の手がかりを得た。','magicGain'],
+['年上の子との組み手で負傷した。','fight'],
+['余った毛皮を交換し、取引の知恵を得た。','trade'],
+['共同の見張りに加わり、一族に認められた。','community'],
+['親しい仲間が別の土地へ移り、独りで過ごした。','lonely'],
+['草原の火事で荷車と食料を失った。','hardship'],
+['獲物の少ない季節が続き、空腹に耐えた。','starve'],
+['古い巣穴から銀の首飾りを見つけた。','treasure'],
+['きょうだいを野獣からかばった。','protect'],
+['草原を抜ける秘密の獣道を覚えた。','secret']
+],
+// 森人族：学園に入れる15歳まで
+[
+['濡れた枝から落ち、腕を傷めた。','hurt'],
+['珍しい花粉で高熱を出した。','ill'],
+['霧の森で迷い、持っていた品を失った。','lost'],
+['集落の食料庫が森の獣に荒らされた。','poor'],
+['希少な薬草の群生地を見つけた。','gain'],
+['年長者から小さな精霊石を贈られた。','gift'],
+['木々の間を走り、身のこなしを鍛えた。','train'],
+['葉脈から木の病を見分けることを習った。','study'],
+['樹木の声を聞こうとして魔力を使い果たした。','spell'],
+['森の泉で同世代の友人と出会った。','friend'],
+['倒れた祖樹の苗を家族と植え直した。','family'],
+['魔物の足跡を見つけ、集落に知らせた。','brave'],
+['道に迷った旅人を森の外へ導いた。','rescue'],
+['枯木の根元で魔力を帯びた琥珀を見つけた。','windfall'],
+['禁じられた小径に入った疑いで叱られた。','scandal'],
+['家族の育てた霊木が実り、暮らしが豊かになった。','wealthUp'],
+['森火が家族の樹上の家を焼いた。','wealthDown'],
+['泉の水で傷ついた小動物を手当てした。','heal'],
+['倒木の軋む音に気づき、事故を避けた。','luck'],
+['長老から森と人との古い約束を聞いた。','wisdom'],
+['月明かりの下で精霊術をひとつ覚えた。','magicGain'],
+['集落に入った獣を追い払い、傷を負った。','fight'],
+['森の実を町へ運び、交換を学んだ。','trade'],
+['共同で泉を浄化し、友人が増えた。','community'],
+['親友が遠い森へ移り、木陰で一人学んだ。','lonely'],
+['長雨で家の根元が崩れ、蓄えを失った。','hardship'],
+['森の実りが少なく、食事を切り詰めた。','starve'],
+['古木のうろに忘れられた金具を見つけた。','treasure'],
+['幼い子を折れた枝からかばった。','protect'],
+['精霊だけが知る静かな小径を見つけた。','secret']
+],
+// 妖精族：学園に入れる5歳まで
+[
+['大粒の雨に打たれ、羽を傷めた。','hurt'],
+['冷えた花びらの上で眠り、熱を出した。','ill'],
+['風に流され、集めた品を落とした。','lost'],
+['蜜の貯蔵が虫の群れに奪われた。','poor'],
+['甘い花蜜の隠れた群生地を見つけた。','gain'],
+['家族から光る鈴を贈られた。','gift'],
+['強い風に逆らって飛ぶ練習をした。','train'],
+['花の開く時刻を数え、季節を覚えた。','study'],
+['初めて光の粒を出し、少し疲れた。','spell'],
+['同じ花園の子と秘密基地を作った。','friend'],
+['家族と巣を修繕し、仲が深まった。','family'],
+['蜘蛛の糸に気づき、皆に警告した。','brave'],
+['水たまりに落ちた子を助けた。','rescue'],
+['花冠の中に希少な魔石を見つけた。','windfall'],
+['悪戯の犯人と間違われ、友人とけんかした。','scandal'],
+['一族の花園が豊かに咲き、暮らしが良くなった。','wealthUp'],
+['嵐が住まいの花を倒し、暮らしが苦しくなった。','wealthDown'],
+['朝露で弱った羽を癒やす方法を学んだ。','heal'],
+['突然の突風を花の揺れで察知した。','luck'],
+['祖母から花と精霊の昔話を聞いた。','wisdom'],
+['月光を集める魔法に成功した。','magicGain'],
+['花園へ来た害虫を追い払って傷ついた。','fight'],
+['余った蜜を交換し、品の価値を覚えた。','trade'],
+['皆で花の道を整え、新しい友を得た。','community'],
+['親友が別の花園へ移り、独りで魔法を試した。','lonely'],
+['豪雨で巣と蓄えの一部が流された。','hardship'],
+['花が咲かない日が続き、蜜が足りなくなった。','starve'],
+['木の実の殻に隠された小さな宝石を見つけた。','treasure'],
+['幼いきょうだいを鳥の影から守った。','protect'],
+['葉の裏に続く秘密の抜け道を見つけた。','secret']
+],
+// 魔人族：職業を選べる50歳まで
+[
+['暴れた魔力で腕を焼いた。','hurt'],
+['古い呪いの残滓に触れ、寝込んだ。','ill'],
+['夜市で迷い、携えていた品を失った。','lost'],
+['家の魔力炉が故障し、蓄えが減った。','poor'],
+['使える魔石の欠片を集めて売った。','gain'],
+['親族から守りの護符を渡された。','gift'],
+['異界門の前で守りの構えを学んだ。','train'],
+['古い契約文の読み方を教わった。','study'],
+['初めて呪印を刻み、魔力を消耗した。','spell'],
+['夜市で同世代の魔人と友になった。','friend'],
+['家族の契約整理を手伝い、信頼を得た。','family'],
+['危険な召喚の兆しを見抜き、皆に知らせた。','brave'],
+['魔力炉から逃げ遅れた子を助けた。','rescue'],
+['廃れた書庫で価値ある術式を見つけた。','windfall'],
+['破れた契約の責任を疑われ、孤立した。','scandal'],
+['一族の取引が実を結び、暮らしが上向いた。','wealthUp'],
+['親族の契約失敗で財産を失った。','wealthDown'],
+['呪いを解く手順を学び、自分の傷も癒やした。','heal'],
+['闇に潜む罠を魔力の揺れで見抜いた。','luck'],
+['古老から魔界と人界の境の歴史を聞いた。','wisdom'],
+['封じられた術の一節を安全に覚えた。','magicGain'],
+['召喚獣を押し戻す訓練で負傷した。','fight'],
+['夜市で小さな取引を成功させた。','trade'],
+['町の結界を補修し、新しい縁を得た。','community'],
+['親友が契約で遠方へ移り、書に没頭した。','lonely'],
+['魔力炉の事故で部屋と蓄えを失った。','hardship'],
+['国境が閉ざされ、食料と品物が不足した。','starve'],
+['忘れられた地下室で銀貨を見つけた。','treasure'],
+['暴走した術から家族をかばった。','protect'],
+['古文書に隠れた抜け道を読み取った。','secret']
+],
+// 鬼人族：職業を選べる20歳まで
+[
+['岩場で転び、角を傷めた。','hurt'],
+['寒い山風で高熱を出した。','ill'],
+['山道で迷い、食料袋を落とした。','lost'],
+['貯蔵庫が山獣に荒らされた。','poor'],
+['岩の割れ目で良質な鉱石を見つけた。','gain'],
+['親族から鍛えた木棍を譲られた。','gift'],
+['戦士たちの組み手に混ざった。','train'],
+['岩肌から天気を読む知恵を習った。','study'],
+['鬼火を手のひらに灯し、力を消耗した。','spell'],
+['山砦で気の合う仲間と出会った。','friend'],
+['家族と冬の薪を集め、絆が深まった。','family'],
+['山獣の接近を太鼓で知らせた。','brave'],
+['崖で動けない子を引き上げた。','rescue'],
+['古い坑道で希少な鉱石を見つけた。','windfall'],
+['勝負で熱くなり、友人とけんかした。','scandal'],
+['一族の鍛冶仕事が評判になった。','wealthUp'],
+['土砂崩れで家の仕事場が壊れた。','wealthDown'],
+['山の薬草で傷を手当てする術を覚えた。','heal'],
+['落石の音に気づき、仲間を避難させた。','luck'],
+['長老から昔の戦いの教訓を聞いた。','wisdom'],
+['鬼火の扱いを一つ身につけた。','magicGain'],
+['稽古で強い相手に挑み、傷を負った。','fight'],
+['余った鉱石を交換し、価値を学んだ。','trade'],
+['皆で山道を直し、仲間が増えた。','community'],
+['親友が別の砦へ移り、一人で鍛錬した。','lonely'],
+['厳冬で屋根と食料の一部を失った。','hardship'],
+['獲物のない季節が続き、腹を空かせた。','starve'],
+['古い石垣の下から宝飾品を見つけた。','treasure'],
+['落石からきょうだいを守った。','protect'],
+['敵に見つからない山の抜け道を覚えた。','secret']
+],
+// 竜人族：職業を選べる60歳まで
+[
+['飛行訓練で着地に失敗し、鱗を傷めた。','hurt'],
+['竜脈の乱れで体調を崩した。','ill'],
+['雲の中で方角を見失い、荷物を落とした。','lost'],
+['巣の備蓄が盗まれ、家族が困った。','poor'],
+['山肌で希少な鉱石を見つけた。','gain'],
+['祖先の鱗から作った守り飾りを贈られた。','gift'],
+['翼と尾を使う戦い方を習った。','train'],
+['古竜語の碑文を読み解いた。','study'],
+['初めて息に魔力を乗せ、疲れ果てた。','spell'],
+['山頂の集いで同世代の友を得た。','friend'],
+['家族の宝物庫整理を手伝った。','family'],
+['嵐の兆しを読み、一族に知らせた。','brave'],
+['崖から落ちた若い竜人を助けた。','rescue'],
+['地中の竜脈に眠る魔石を見つけた。','windfall'],
+['宝の扱いを巡り、一族の仲間と対立した。','scandal'],
+['家族の宝物が高く評価され、暮らしが豊かになった。','wealthUp'],
+['山の崩落で一族の住処を失った。','wealthDown'],
+['竜脈の熱で傷を癒やす方法を学んだ。','heal'],
+['雲の裂け目から危険な乱気流を見抜いた。','luck'],
+['古竜から山々の歴史を聞いた。','wisdom'],
+['嵐の魔力を静かに操る術を覚えた。','magicGain'],
+['空中戦の稽古で傷を負った。','fight'],
+['山の鉱石を麓で交換した。','trade'],
+['巣を守る結界作りに加わった。','community'],
+['親友が遠い山へ移り、碑文の研究に没頭した。','lonely'],
+['激しい嵐で巣と蓄えが傷んだ。','hardship'],
+['長い寒期に獲物が減り、力を失った。','starve'],
+['古い岩棚で忘れられた財宝を見つけた。','treasure'],
+['崩れる足場から家族をかばった。','protect'],
+['祖先の地図にない空の道を見つけた。','secret']
+],
+// 屍人族：職業を選べる20歳まで
+[
+['古い階段が崩れ、骨にひびが入った。','hurt'],
+['封印の気配に触れ、力が弱まった。','ill'],
+['霧の廃村で迷い、集めた品を落とした。','lost'],
+['隠れ家の食料と道具が荒らされた。','poor'],
+['廃墟で使える道具を拾い集めた。','gain'],
+['古い墓守から灯火を譲り受けた。','gift'],
+['崩れた壁を運び、骨と体を鍛えた。','train'],
+['墓碑の文字から土地の歴史を学んだ。','study'],
+['魂灯を灯し、力を使い果たした。','spell'],
+['同じ廃村の屍人と親しくなった。','friend'],
+['眠る家族の墓を一緒に守った。','family'],
+['討伐隊の足音に気づき、仲間に知らせた。','brave'],
+['見つかりかけた幼い屍人を隠した。','rescue'],
+['埋もれた納骨堂で価値ある遺品を見つけた。','windfall'],
+['生者に姿を見られ、仲間まで警戒された。','scandal'],
+['隠れ家に安全な物資が届き、暮らしが良くなった。','wealthUp'],
+['討伐隊に隠れ家を知られ、全てを捨てて逃げた。','wealthDown'],
+['損じた骨を直す方法を学び、身を修復した。','heal'],
+['近づく討伐隊の灯りを早く見つけた。','luck'],
+['古い屍人から生前の歴史を聞いた。','wisdom'],
+['魂に残る力を制御できるようになった。','magicGain'],
+['封印の罠を壊そうとして傷ついた。','fight'],
+['廃墟の品を密かに交換した。','trade'],
+['隠れ家の入口を補修し、仲間が増えた。','community'],
+['親しかった屍人が遠くへ去り、墓碑を読み続けた。','lonely'],
+['討伐隊の巡回で寝床と蓄えを失った。','hardship'],
+['隠れ続けて補給できず、力が弱まった。','starve'],
+['崩れた棺の下から古い貨幣を見つけた。','treasure'],
+['仲間を封印具からかばった。','protect'],
+['討伐隊を避けられる地下道を見つけた。','secret']
+]
+];
+function applyChildYear(previousAge){
+ const cutoff=SCHOOL_AGE[s.race]===null?CAREER_AGE[s.race]:SCHOOL_AGE[s.race];
+ if(previousAge>=cutoff||s.captive)return;
+ if(Math.random()>=.45){s.lastChildEvent='平穏な一年を過ごした。';s.lastChildEventAge=s.age;note(previousAge+'歳：平穏な一年を過ごした。');return}
+ const [story,key]=pick(CHILD_EVENTS[s.race]),e=CHILD_EFFECTS[key];
+ for(const stat of ['body','wit','magic','luck'])if(e[stat])s[stat]=Math.max(0,Math.min(20,s[stat]+e[stat]));
+ if(e.hp)s.health=Math.max(0,Math.min(100,s.health+e.hp));
+ if(e.coin)s.coin=Math.max(0,s.coin+e.coin);
+ if(e.friends)s.friends=Math.max(0,(s.friends||0)+e.friends);
+ if(e.familyBond)s.familyBond=Math.max(0,Math.min(100,(s.familyBond??50)+e.familyBond));
+ if(e.wealth)s.wealth=Math.max(0,Math.min(9,s.wealth+e.wealth));
+ const labels={hp:'体力',coin:'所持金',body:'身体',wit:'知恵',magic:'魔力',luck:'幸運',friends:'友人',familyBond:'家族との絆',wealth:'裕福度'};
+ const detail=Object.entries(e).map(([k,v])=>labels[k]+(v>0?'+':'')+v).join('、');
+ s.lastChildEvent=story+'（'+detail+'）';s.lastChildEventAge=s.age;
+ note(previousAge+'歳の出来事：'+s.lastChildEvent)
+}
+function newPartnerName(){return pick(['アレン','フィア','セル','ルシア','ヴィル','ネラ','アルト','リゼ'])+'・'+pick(['レイ','ヴァン','ルミス','エイル','クラウ'])}
+function closePartner(reason){if(!s.partner)return;let name=s.partner.name;s.relHistory??=[];s.relHistory.unshift(name+'と'+reason);s.relHistory=s.relHistory.slice(0,8);note(name+'と'+reason+'。');s.partner=null}
+function beginPartner(status){s.partner={name:newPartnerName(),status,bond:rand(45,70)};note(s.partner.name+'と'+(status==='恋人'?'恋仲になった。':'婚約した。'))}
+function maybeRelationshipEvent(){
+if(s.pending||s.captive||s.age<ADULT_AGE[s.race])return;
+if((s.relEventCount||0)>=(maxTurns()>200?60:18)||s.stage-(s.relLastStage??-9)<(maxTurns()>200?8:3))return;
+let chance=s.partner?.status==='婚約者'?.68:.31;
+if(Math.random()>chance)return;
+let kind;
+if(!s.partner)kind='encounter';
+else if(s.partner.status==='婚約者')kind=Math.random()<((s.partner.bond<45||s.wealth<5)?.55:.16)?'broken':'wedding';
+else if(s.partner.status==='恋人')kind=s.partner.bond<30?'separation':'proposal';
+else kind=Math.random()<.16?'illness':Math.random()<.14||s.partner.bond<40?'divorce':'conflict';
+s.pending='rel:'+kind;s.relEventCount=(s.relEventCount||0)+1;s.relLastStage=s.stage
+}
+function relationshipChoice(o){
+s.pending=null;
+if(o.coin)s.coin=Math.max(0,s.coin+o.coin);
+if(o.hp)s.health=Math.max(0,Math.min(100,s.health+o.hp));
+if(o.bond&&s.partner)s.partner.bond=Math.max(0,Math.min(100,s.partner.bond+o.bond));
+if(o.familyBond)s.familyBond=Math.max(0,Math.min(100,(s.familyBond??50)+o.familyBond));
+if(o.friends)s.friends=Math.max(0,(s.friends||0)+o.friends);
+if(o.wealth)s.wealth=Math.max(0,Math.min(9,s.wealth+o.wealth));
+if(o.status&&s.partner)s.partner.status=o.status;
+if(o.close)closePartner(o.close);
+if(o.create)beginPartner(o.create);
+if(o.log)note(o.log);
+if(s.health<=0)end(s.race===7?'封印':'病と困窮','関係の変化を迎える前に、体力が尽きた。');else render()
+}
+function relationshipChoices(kind){
+let name=s.partner?.name||'その人';
+if(kind==='encounter')return [
+['親しくなってみる','新しい縁が恋に変わるかもしれない。',()=>relationshipChoice({create:'恋人',log:'旅先で出会った人と時間を重ねた。'})],
+['友人として付き合う','人生を支え合う友人を得る。',()=>relationshipChoice({friends:1,log:'新しい友人と出会った。'})],
+['今は一人で進む','自分の道に集中する。',()=>relationshipChoice({wit:1,log:'出会いを見送り、自分の道を選んだ。'})]
+];
+if(kind==='wedding')return [
+['婚約者と結婚する','約束を果たし、共に暮らし始める。',()=>relationshipChoice({status:'配偶者',bond:16,familyBond:8,log:name+'と結婚した。'})],
+['もう少し待つ','互いを知る時間を優先する。',()=>relationshipChoice({bond:4,log:name+'との結婚を先延ばしにした。'})],
+['婚約を破棄する','家の反対を受けても自分の道を選ぶ。',()=>relationshipChoice({close:'婚約破棄',familyBond:-16,log:'家同士の約束を破り、自由を選んだ。'})]
+];
+if(kind==='broken')return [
+['話し合って引き止める','関係を修復できるかは絆次第。',()=>relationshipChoice(Math.random()<.32+(s.partner?.bond||0)/250?{bond:20,log:name+'と話し合い、婚約を続けることになった。'}:{close:'婚約破棄',familyBond:-8,log:'説得は届かず、婚約は破棄された。'})],
+['婚約破棄を受け入れる','傷ついても新しい道を歩く。',()=>relationshipChoice({close:'婚約破棄',luck:1,log:'婚約破棄を受け入れた。'})],
+['家同士で争う','名誉を守るが、代償も大きい。',()=>relationshipChoice({close:'婚約破棄',coin:-1200,familyBond:-12,log:'婚約破棄をめぐり家同士が対立した。'})]
+];
+if(kind==='proposal')return [
+['結婚を申し込む','二人でこれからの人生を歩む。',()=>relationshipChoice({status:'配偶者',bond:15,log:name+'と結婚した。'})],
+['恋人のままでいる','今の関係を大切にする。',()=>relationshipChoice({bond:8,log:name+'と恋人として過ごすことにした。'})],
+['別れを告げる','別の人生を選ぶ。',()=>relationshipChoice({close:'別離',log:name+'との関係を終えた。'})]
+];
+if(kind==='separation')return [
+['関係を修復する','本音を話し、もう一度向き合う。',()=>relationshipChoice({bond:22,log:name+'と本音を語り合った。'})],
+['別れる','悲しみを抱え、新しい日々へ進む。',()=>relationshipChoice({close:'別離',log:name+'と別れた。'})],
+['距離を置く','しばらく互いの時間を持つ。',()=>relationshipChoice({bond:-5,log:name+'とは距離を置くことにした。'})]
+];
+if(kind==='divorce')return [
+['やり直したいと伝える','まだ絆が残っていれば届くかもしれない。',()=>relationshipChoice(Math.random()<.32+(s.partner?.bond||0)/250?{bond:24,log:name+'と関係を修復した。'}:{close:'離婚',log:'話し合いの末、離婚した。'})],
+['離婚を受け入れる','財産を分け、別々の道を歩む。',()=>relationshipChoice({close:'離婚',coin:-Math.floor(s.coin*.3),log:name+'と離婚した。'})],
+['別居する','結論を急がず離れて暮らす。',()=>relationshipChoice({bond:-8,log:name+'と別居を始めた。'})]
+];
+if(kind==='illness')return [
+['診療所へ連れていく','高い費用を払って治療を頼む。',()=>relationshipChoice(Math.random()<.58?{coin:-2200,bond:12,log:name+'は治療を受け、危機を越えた。'}:{coin:-2200,close:'死別',log:name+'は治療の甲斐なく亡くなった。'})],
+['神殿に祈る','聖女の癒やしが届くことを願う。',()=>relationshipChoice(Math.random()<.42?{bond:10,log:name+'は神殿の癒やしで回復した。'}:{close:'死別',log:name+'を看取り、深い悲しみが残った。'})],
+['そばで看取る','最期の時間を共に過ごす。',()=>relationshipChoice({close:'死別',familyBond:-8,log:name+'の最期を見届けた。'})]
+];
+return [
+['話し合う','すれ違いを言葉にする。',()=>relationshipChoice({bond:16,log:name+'と腹を割って話し合った。'})],
+['しばらく距離を置く','争いを避けるが、絆は弱まる。',()=>relationshipChoice({bond:-12,log:name+'とは少し距離を置いた。'})],
+['共に旅に出る','新しい景色で関係を立て直す。',()=>relationshipChoice({coin:-600,bond:10,log:name+'と旅をして、心を通わせた。'})]
+]
+}
+function relationshipStory(kind){
+let name=s.partner?.name||'旅先の人';
+return {
+encounter:['新しい出会い','仕事や旅の途中で、'+name+'と出会った。短い会話が心に残る。'],
+wedding:['婚約者との未来',name+'との婚約から時が流れた。家族は結婚を望んでいるが、決めるのはあなたたちだ。'],
+broken:['婚約破棄を告げられる',name+'の家から婚約を解消したいとの知らせが届いた。家の事情と二人の気持ちが揺れている。'],
+proposal:['二人のこれから',name+'との時間を重ねた。結婚を考える節目が訪れた。'],
+separation:['すれ違う恋人',name+'との間に距離ができた。このままでは関係が終わるかもしれない。'],
+divorce:['離婚の申し出',name+'が別々の人生を歩みたいと告げた。長く続いた暮らしに、決断の時が来た。'],
+illness:['伴侶の危篤',name+'が重い病に倒れた。助かる可能性はあるが、時間がない。'],
+conflict:['暮らしのすれ違い',name+'との暮らしで、仕事や家族をめぐる意見がぶつかった。']
+}[kind]
+}
+function maybeMajorEvent(){
+if(s.stage<2||s.pending||s.captive)return;
+let limit=maxTurns()>200?40:8;
+if((s.eventCount||0)>=limit||s.stage-(s.lastEventStage??-9)<3||Math.random()>.32)return;
+let pool=['raid','raid','kidnap','windfall','windfall','flood','flood'];
+if(s.wealth>=4)pool.push('bankrupt','bankrupt');
+let kind=pick(pool);
+s.pending=kind;s.eventCount=(s.eventCount||0)+1;s.lastEventStage=s.stage;
+if(kind==='raid'){if(s.partner?.status==='配偶者'&&Math.random()<.08)closePartner('死別');s.coin=Math.floor(s.coin*.3);s.wealth=Math.max(0,s.wealth-2);s.health=Math.max(1,s.health-rand(8,18));s.location='故郷の焼け跡';note('薄紫に光る魔物の群れが故郷を襲い、住まいと蓄えを失った。')}
+if(kind==='bankrupt'){if(s.partner)s.partner.bond=Math.max(0,s.partner.bond-25);s.coin=Math.floor(s.coin*.12);s.wealth=Math.max(0,s.wealth-3);note('実家の商いが破綻し、借財とともに暮らしが崩れた。')}
+if(kind==='flood'){s.coin=Math.floor(s.coin*.5);s.wealth=Math.max(0,s.wealth-1);s.health=Math.max(1,s.health-8);note('雨季の増水で家と田畑が水に呑まれた。')}
+if(kind==='kidnap')note('国境を越える違法な人さらいに狙われた。');
+if(kind==='windfall'){if(s.partner)s.partner.bond=Math.min(100,s.partner.bond+5);note('鉱山道で価値の高い魔石の鉱脈を見つけた。')}
+}
+function eventChoice(o){
+if(o.dead){s.pending=null;end(s.race===7?'封印':o.dead,s.race===7?'災厄の中で長い眠りに封じられた。':o.story);return}
+s.pending=null;
+s.health=Math.max(0,Math.min(100,s.health+(o.hp||0)));
+s.coin=Math.max(0,s.coin+(o.coin||0));
+s.wealth=Math.max(0,Math.min(9,(s.wealth??5)+(o.wealth||0)));
+if(o.location)s.location=o.location;
+if(o.work){s.work=o.work;s.jobType=o.jobType||s.jobType;s.jobIncome=o.jobIncome||s.jobIncome;s.rareRole=o.rareRole||null;s.jobOffers=null;}
+if(o.captive!==undefined)s.captive=o.captive;
+if(o.trait&&!s.traits.includes(o.trait))s.traits.push(o.trait);
+if(o.body)s.body+=o.body;if(o.wit)s.wit+=o.wit;if(o.luck)s.luck+=o.luck;
+note(o.log);
+if(s.health<=0)end(s.race===7?'封印':'災厄の犠牲',s.race===7?'追手に封じられた。':'事件で負った傷から回復できなかった。');else render()
+}
+function majorChoices(kind){
+if(kind==='raid')return [
+['生き延びるため逃げる','故郷を離れ、安全な場所を探す。',()=>eventChoice(Math.random()<.88?{location:'皇都ワンニルの貧民区',trait:'故郷喪失',hp:-5,log:'焼け跡を背に逃れ、新しい土地にたどり着いた。'}:{dead:'魔物の襲撃',story:'逃げ道を塞がれ、魔物の群れに呑まれた。'})],
+['家族や友を探す','危険を承知で焼け跡に戻る。',()=>eventChoice(Math.random()<.52+s.wit*.03?{hp:-12,trait:'大切な人との再会',log:'瓦礫の中から大切な人を見つけ、一緒に避難した。'}:{hp:-38,trait:'故郷喪失',log:'探し続けたが見つからず、傷を負って脱出した。'})],
+['魔物に立ち向かう','勝てば人々を救えるが、命を懸ける。',()=>eventChoice(s.body+s.magic+rand(0,5)>=9?{coin:3200,trait:'故郷の守り手',body:1,log:'魔物を退け、生き残った人々を守った。'}:{dead:'故郷を守った最期',story:'魔物に立ち向かい、人々を逃がした末に倒れた。'})]
+];
+if(kind==='kidnap')return [
+['必死に抵抗する','相手を振り切れなければ捕らわれる。',()=>eventChoice(s.body+s.luck+rand(0,5)>=8?{hp:-10,trait:'危機からの脱出',log:'人さらいを振り切って逃げ延びた。'}:{captive:true,wealth:-s.wealth,coin:-s.coin,hp:-20,location:'国境外の闇市場',log:'抵抗したが捕らわれ、違法な奴隷として売られた。'})],
+['助けを呼ぶ','警備隊や旅人に届くかは運次第。',()=>eventChoice(Math.random()<.45+s.luck*.04?{trait:'救われた命',log:'助けの声が届き、連れ去られずに済んだ。'}:{captive:true,wealth:-s.wealth,coin:-s.coin,location:'国境外の闇市場',log:'助けは間に合わず、国境の外へ連れ去られた。'})],
+['身を守って隙を待つ','まずは生き延び、逃げる機会を探す。',()=>eventChoice({captive:true,wealth:-s.wealth,coin:-s.coin,hp:-8,location:'国境外の闇市場',log:'違法な奴隷として囚われ、逃げる機会を待った。'})]
+];
+if(kind==='bankrupt')return [
+['家の負債を引き受ける','家族を支えるが、再起には時間がかかる。',()=>eventChoice({hp:-8,trait:'借財',wit:1,log:'借財を背負いながら家族の暮らしを守った。'})],
+['ギルドでやり直す','身分を捨てて仕事を始める。',()=>eventChoice({coin:500,work:'探索者',body:1,trait:'再出発',log:'探索者ギルドに入り、一から生計を立て直した。'})],
+['危険な取引で取り返す','成功すれば大金、失敗すればさらに転落。',()=>eventChoice(Math.random()<.36+s.wit*.025?{coin:18000,wealth:3,trait:'大逆転',log:'危険な取引が当たり、失った財産を取り戻した。'}:{coin:-s.coin,wealth:-1,hp:-18,log:'取引は失敗し、残った財産も失った。'})]
+];
+if(kind==='windfall')return [
+['魔石を売り払う','確実な大金を手にする。',()=>eventChoice({coin:12000,wealth:2,trait:'一山当てた',log:'魔石を売り、大きな財産を得た。'})],
+['工房に投資する','当たればさらに大きい。失敗の可能性もある。',()=>eventChoice(Math.random()<.55+s.wit*.025?{coin:26000,wealth:3,trait:'一山当てた',log:'魔石工房への投資が実り、一躍裕福になった。'}:{coin:1000,log:'工房の事業は失敗し、わずかな利益だけが残った。'})],
+['仲間と分け合う','収入は減るが、信頼できる仲間ができる。',()=>eventChoice({coin:4500,wealth:1,luck:1,trait:'信頼できる仲間',log:'魔石の利益を分け合い、頼れる仲間を得た。'})]
+];
+return [
+['家財を守る','洪水の中で財産を運び出す。',()=>eventChoice(Math.random()<.65+s.body*.035?{coin:1600,hp:-8,log:'濁流から家財を運び出した。'}:{hp:-32,log:'流れに足を取られ、家財を失い傷を負った。'})],
+['早めに避難する','財産を諦め、命を優先する。',()=>eventChoice({location:'皇都ワンニルの避難所',trait:'洪水を生き延びた',log:'早めに避難し、命を守った。'})],
+['取り残された人を救う','助けられるかどうかは自分の力次第。',()=>eventChoice(s.body+s.magic+rand(0,5)>=7?{coin:2200,trait:'洪水の救い手',log:'流れの中から人々を救い、感謝された。'}:{dead:'雨季の濁流',story:'人を救おうと濁流へ飛び込み、戻らなかった。'})]
+]
+}
+function captiveChoices(){return [
+['脱出を試みる','見張りの隙を突く。失敗すれば傷を負う。',()=>act(s.body+s.wit+rand(0,5)>=7?{captive:false,wealth:1,coin:250,location:'国境の避難集落',trait:'自由を取り戻した',log:'見張りを出し抜き、自由を取り戻した。'}:{hp:-18,log:'脱出に失敗し、監視が厳しくなった。'})],
+['仲間を作り、機会を待つ','体力を保ち、脱出の助けを探す。',()=>act({wit:1,hp:4,log:'囚われた人々と密かに助け合った。'})],
+['外の助けを探す','危険な伝言を託して救出を願う。',()=>act(Math.random()<.32+s.luck*.04?{captive:false,wealth:1,coin:300,location:'皇都ワンニルの避難所',trait:'救出された',log:'伝言が届き、救出された。'}:{hp:-12,log:'伝言は見つかり、救出は叶わなかった。'})]
+]}
+function showChoices(choices){currentChoices=choices;$('choices').innerHTML='';choices.forEach(c=>{let b=document.createElement('button');b.className='choice';b.innerHTML='<b>'+c[0]+'</b><small>'+c[1]+'</small>';b.onclick=c[2];$('choices').appendChild(b)});save();if(autoOn){clearTimeout(autoTimer);autoTimer=setTimeout(autoStep,autoDelay())}}
+function quest(){let kind=pick(['溝掃除','魔物討伐','護衛','人探し']);if(kind==='溝掃除')return act({coin:rand(400,1100),quest:true,rank:s.quests>3,log:'溝掃除の依頼を終え、報酬を得た。'});let power=s.body+s.magic+s.wit/2+rand(0,5)+(s.rareRole==='hero'?4:0),diff=kind==='魔物討伐'?8:6;if(power<diff&&Math.random()<.42)return end(kind==='魔物討伐'?'魔物の爪':'依頼中の事故',kind+'の途中、予期せぬ危険に遭い、帰らなかった。');act({hp:power<diff?-rand(20,45):0,coin:rand(900,3500),quest:true,rank:s.quests%3===2,log:kind+'を達成した'+(power<diff?'が深手を負った。':'。')})}function travel(){let v=Math.random();if(v<.11&&s.body+s.luck<6)return end('街道での遭難','舗装のない街道で馬車が転倒した。助けは間に合わなかった。');act(v<.25?{hp:-35,coin:-800,log:'旅の途中で魔物に襲われ、命からがら逃げた。'}:{coin:rand(200,1800),luck:1,trait:'旅の記憶',log:'異国の人々と出会い、新しい景色を知った。'})}const JOBS=[
+// ヒト族 20
+[['探索者','ギルドの依頼を請ける','武',900],['魔石職人','魔石を加工し道具を作る','技',1100],['神殿奉仕者','祈りと救護を担う','祈',650],['農夫','畑を守り食を支える','技',650],['商人','街道を渡り品を売買する','交',1050],['鍛冶師','武具と農具を鍛える','技',1100],['薬師','薬草を調合し病を癒やす','知',950],['治癒師','回復魔法で人を助ける','魔',1050],['魔導書写し','古い術式を写し継ぐ','知',900],['学園教師','次の世代へ知恵を伝える','知',850],['衛兵','街と門を警護する','武',850],['騎士','領主に仕えて戦う','武',1250],['宮廷書記','記録と政務を扱う','知',1050],['料理人','食堂や屋敷で腕を振るう','技',850],['仕立屋','衣服を縫い暮らしを彩る','技',800],['船乗り','川と海の荷を運ぶ','武',900],['宿屋主人','旅人を迎え情報を集める','交',950],['吟遊詩人','歌と物語を各地に届ける','交',750],['遺跡調査員','古代の遺構を調べる','知',1150],['領地代官','租税と土地を管理する','交',1300]],
+// 獣人族 15
+[['斥候','鋭い感覚で敵を探る','武',1000],['狩人','獲物を追い食料を得る','武',900],['前衛戦士','盾となり仲間を守る','武',1050],['護衛','旅人と荷を守る','武',1050],['闘技士','腕を磨き競技で戦う','武',1100],['魔物追跡者','足跡から魔物を追う','武',1150],['国境警備兵','辺境の砦を守る','武',1050],['獣騎兵','騎獣とともに戦場を駆ける','武',1200],['罠師','仕掛けを作り敵を捕らえる','技',950],['隊商先導者','危険な街道で道案内をする','武',1000],['治療猟師','野外で傷を手当てする','知',900],['部族長の使者','争いの仲立ちと伝令を担う','交',950],['盾鍛冶','戦う者の防具を作る','技',1000],['洞窟探索者','地下の危険を調べる','武',1100],['戦技教官','若い戦士を鍛える','武',1000]],
+// 森人 13
+[['森の魔導師','樹木と魔力を結ぶ','魔',1050],['精霊契約師','精霊と契りを交わす','魔',1150],['結界織り','森と集落に守りを張る','魔',1100],['薬草魔術師','草木から癒やしを引き出す','魔',1000],['樹医','病んだ木を治す','魔',950],['幻術師','幻で道と姿を隠す','魔',1100],['月詠み','月の巡りから兆しを読む','魔',900],['風の伝令','風術で知らせを運ぶ','魔',950],['記憶樹の守人','古い記憶を記録する','知',950],['森番','森の境を守り巡る','武',900],['魔弓師','術を宿した弓を操る','魔',1100],['泉の治癒師','泉の力で傷を癒やす','魔',1050],['種子育て','希少な霊木を育てる','技',900]],
+// 妖精族 13
+[['花粉魔術師','花粉で幻と癒やしを生む','魔',750],['露の治癒師','朝露に魔力を宿す','魔',800],['光の踊り手','光術で人々を励ます','魔',750],['夢渡り','夢に入り心を探る','魔',850],['祝福紡ぎ','小さな幸運を織り込む','魔',850],['風鈴術師','風の音で術を編む','魔',750],['蜜薬師','蜜と薬草を調合する','魔',800],['幻灯師','魔法の灯りと幻を作る','魔',850],['星屑集め','夜空の魔力を採る','魔',900],['小径案内人','秘密の道を旅人に示す','交',700],['精霊の通訳','精霊の声を聞き伝える','魔',850],['魔法菓子職人','不思議な菓子を作る','技',750],['雨粒占い師','雨に未来の兆しを読む','魔',800]],
+// 魔人 10
+[['契約魔導師','魔力の契約を結び管理する','魔',1350],['深淵研究者','禁じられた遺構を調べる','知',1400],['影の交渉人','表に出ない取引を仲立ちする','交',1450],['呪印師','印に強い術を刻む','魔',1300],['魔力炉守','魔力炉の暴走を抑える','魔',1250],['異界門番','境界の門を監視する','武',1350],['魂鑑定士','魂に刻まれた記憶を読む','魔',1200],['魔角細工師','希少素材を加工する','技',1250],['夜市商人','夜に開く市で品を扱う','交',1200],['破呪師','強い呪いを解きほぐす','魔',1400]],
+// 鬼人 10
+[['鬼武者','武を極め戦場に立つ','武',1200],['棍術師','棍の技で仲間を守る','武',1050],['山砦守','山の砦を守備する','武',1000],['岩砕き','石と鉱脈を切り開く','武',950],['戦太鼓打ち','太鼓で隊を鼓舞する','交',900],['鬼火鍛冶','鬼火で武具を鍛える','技',1100],['決闘裁定人','争いを正面から裁く','交',1050],['巨獣狩り','大きな獣を追う','武',1250],['部族護人','一族の民を守る','武',1000],['酒宴の語り部','戦いの記憶を語り継ぐ','交',850]],
+// 竜人 10
+[['竜鱗騎士','竜鱗の鎧で民を守る','武',1500],['古竜語学者','失われた竜語を解く','知',1350],['炎息鍛冶','竜の火で希少金属を鍛える','技',1450],['天空巡察者','高空から領土を見張る','武',1450],['竜骨守護者','祖先の遺骨を守る','祈',1200],['嵐呼び','雷と風を操る','魔',1500],['宝物庫番','一族の宝を管理する','知',1250],['竜脈探査師','地中の魔力脈を探る','魔',1450],['飛竜使い','飛竜とともに移動する','武',1400],['竜王の伝令','遠方の一族に命を届ける','交',1300]],
+// 屍人 10
+[['墓所の番人','墓所と眠る者を守る','武',650],['遺骨修復師','損なわれた骨を修復する','技',700],['死語の書記','死者の言葉を記す','知',750],['魂灯守','魂を導く灯を絶やさない','魔',700],['夜警','眠らぬ身で街を見張る','武',750],['記憶拾い','失われた生前の記憶を探す','知',650],['葬送歌い','死者を送る歌を歌う','祈',650],['封印監視者','危険な封印を見守る','魔',850],['骨細工師','骨から道具を作る','技',700],['廃墟案内人','滅びた街の道を知る','交',750]]
+];
+const JOB_BONUS={武:{body:1},魔:{magic:1},知:{wit:1},技:{wit:1},交:{luck:1},祈:{magic:1}};
+function rollRareJob(){if(s.rareOffer!==undefined)return;let r=Math.random();s.rareOffer=r<.005?'saint':r<.015?'hero':null;s.jobOffers=null;if(s.rareOffer)note(s.rareOffer==='saint'?'神殿から特別な神託が届いた。':'古い予言に名が現れ、勇者候補として招かれた。')}
+function drawJobs(){let pool=JOBS[s.race].map((_,i)=>i);for(let i=pool.length-1;i>0;i--){let j=rand(0,i);[pool[i],pool[j]]=[pool[j],pool[i]]}s.jobOffers=pool.slice(0,s.rareOffer?4:5)}
+function careerChoices(){rollRareJob();if(!Array.isArray(s.jobOffers)||s.jobOffers.length!==(s.rareOffer?4:5)||s.jobOffers.some(i=>!JOBS[s.race][i]))drawJobs();let result=s.jobOffers.map(i=>{let j=JOBS[s.race][i];return [j[0],j[1]+'。収入目安 '+j[3]+' トゥマ／年。',()=>act({work:j[0],jobType:j[2],jobIncome:j[3],coin:Math.round(j[3]/2),...JOB_BONUS[j[2]],log:j[0]+'として働き始めた。'}),'job']});if(s.rareOffer){let sacred=s.rareOffer==='saint',name=sacred?(s.gender==='女'?'聖女':'聖人'):'勇者',income=sacred?2200:2400,type=sacred?'祈':'武';result.push([name+' ★レア',sacred?'神託を受け、人々を癒やし守る。':'予言に選ばれ、強大な魔物に立ち向かう。',()=>act({work:name,rareRole:s.rareOffer,jobType:type,jobIncome:income,coin:income,trait:sacred?'神託を受けた':'勇者に選ばれた',...(sacred?{magic:2,wit:1,hp:12}:{body:2,luck:1,hp:8}),log:name+'として使命を受けた。'}),'job'])}result.push(['別の求人を見る','通常職の候補を入れ替える。レア判定は一生に一度。',()=>{drawJobs();render()}]);return result}
+function render(){if(!s)return;if(s.wealth==null)s.wealth=5;if(!s.yearlyVersion){s.stage=s.age;s.yearlyVersion=1} s.school??='未入学';s.schoolYears??=0;s.schoolScholarship??=s.school==='在学中'&&s.wealth<=5;s.gender??=Math.random()<.5?'女':'男';s.personality??=pick(PERSONALITIES)[0];s.relHistory??=[];s.friends??=0;s.familyBond??=50;let r=R[s.race];$('restart').classList.remove('hidden');$('restart').onclick=()=>{localStorage.removeItem('artituma-life');location.reload()};$('name').textContent=s.name;$('tags').innerHTML=[r[0],s.work,...(s.partner?[s.partner.status+'：'+s.partner.name]:[]),...(s.captive?['拘束中']:[]),...s.traits].map(x=>'<span class="tag">'+x+'</span>').join('');$('stats').innerHTML=[['年齢',s.age+'歳'],['性別',s.gender==='女'?'女性':'男性'],['性格',personalityData()[0]+' '+personalityData()[1]],...(SCHOOL_AGE[s.race]===null?[]:[['学園',s.school+(s.school==='在学中'?'（'+s.schoolYears+'年目'+(s.schoolScholarship?'・特待生':'')+'）':'')]]),['現在地',s.location||s.birthplace||r[3]],['家族との絆',(s.familyBond??50)+'/100'],['友人',String(s.friends||0)+'人'],...(s.partner?[['大切な人',s.partner.name+'（'+s.partner.status+'・絆'+s.partner.bond+'）']]:[]),...[['裕福度',(s.wealth+1)+'/10　'+wealthName(s.race,s.wealth)],['境遇による危険',(wealthRisk(s.race,s.wealth)*100).toFixed(1)+'% / 節目']],[s.race===5?'交換品の価値':'所持金',s.coin.toLocaleString()+(s.race===5?' トゥマ相当':' トゥマ')],['体力',s.health+' / 100'],['身体 / 知恵 / 魔力 / 幸運',[s.body,s.wit,s.magic,s.luck].join(' / ')],['探索者階級',s.work==='探索者'?s.rank+'級':'—']].map(x=>'<div class="row"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');$('log').innerHTML=s.log.map(x=>'<li>'+x+'</li>').join('');if(s.ending||s.stage>=maxTurns()){if(!s.ending){s.ending={title:s.captive?'囚われた生涯':s.traits.includes('家族と居場所')?'穏やかな帰郷':s.rank<=5?'名を知られた探索者':'歩み続けた人',story:s.captive?'長い年月を囚われたまま過ごし、自由を取り戻せなかった。':'幾度もの雨季と豊穣期を越え、自ら選んだ場所に人生の足跡を残した。'};save()}$('chapter').textContent='THE END';$('title').textContent=s.ending.title;$('story').textContent=s.ending.story+'\n\n'+s.name+'、'+s.age+'歳。'+r[0]+'として'+(s.birthplace||r[3])+'に生まれ、'+s.work+'として生きた。探索者の依頼は'+s.quests+'件達成した。';currentChoices=[];$('choices').innerHTML='<button class="primary" onclick="start()">別の人生を始める</button>';if(autoOn)setAuto(false);return}if(s.pending?.startsWith('rel:')){let kind=s.pending.slice(4),data=relationshipStory(kind);$('chapter').textContent='RELATIONSHIP';$('title').textContent=data[0];$('story').textContent=data[1];showChoices(relationshipChoices(kind));return}if(s.pending){let data={
+raid:['故郷の壊滅','薄紫に光る魔物の群れが故郷を襲った。家も畑も焼け、助けを求める声が聞こえる。'],
+kidnap:['違法な人さらい','国境沿いで人さらいに囲まれた。神皇国では奴隷制は禁止されているが、闇の取引は今も続いている。'],
+bankrupt:['実家の破産','家の商いが破綻した。屋敷や仕事道具は差し押さえられ、これまでの暮らしは失われた。'],
+windfall:['一山当てる好機','山道で大きな魔石の鉱脈を見つけた。人生を変える価値があるかもしれない。'],
+flood:['雨季の大洪水','長い雨で川が氾濫し、水が住まいに迫っている。何を守るか決めなければならない。']
+};$('chapter').textContent='TURNING POINT';$('title').textContent=data[s.pending][0];$('story').textContent=data[s.pending][1];showChoices(majorChoices(s.pending));return}
+if(s.captive){$('chapter').textContent='CAPTIVITY';$('title').textContent='囚われた日々';$('story').textContent='違法な奴隷として国境の外に囚われている。自由を取り戻すには、危険を冒すか助けを待つしかない。';showChoices(captiveChoices());return}
+$('chapter').textContent='AGE '+s.age+' → '+(s.age+1);let child=s.work==='未定'&&(s.age<CAREER_AGE[s.race]||s.school==='在学中'),career=s.work==='未定'&&!child,schoolAge=SCHOOL_AGE[s.race],schoolCandidate=child&&schoolAge!==null&&s.age>=schoolAge&&s.school!=='在学中'&&s.school!=='卒業',scholarship=s.wealth<=5&&schoolTalent(),canSchool=schoolCandidate&&(s.wealth>=6||scholarship);$('title').textContent=child?'子ども時代の一年':career?'職を選ぶ':s.age%3===2?'長い雨の年':'この一年をどう生きる？';$('story').textContent=child?(s.location||r[3])+'で迎えた'+s.age+'歳の一年。'+(s.age===0?personalityData()[2]:'')+wealthDescription(s.race,s.wealth)+(canSchool?scholarship?'才能を認められ、特待生として学園に通える。':'学園に通える年齢になった。':s.school==='在学中'?'学園での学びが続いている。':schoolCandidate?'家計に学園へ通う余裕はない。知恵か身体能力が際立てば特待生になれる。':'一族や周囲の大人から暮らしを学んでいる。'):career?'成長したあなたは、自分の仕事を選ぶ。皇都ワンニルの門は誰にでも開かれている。':s.age%3===2?'ベルデュワン神皇国に雨季が来た。川は増水し、人々は家に籠もる。':(s.location||'皇都ワンニル')+'の朝。仕事と新しい噂を探す人々が行き交っている。';if(s.lastChildEventAge===s.age)$('story').textContent+='\n\n昨年：'+s.lastChildEvent;let choices=child?[['家族や共同体を手伝う','暮らしの知恵と体力を育てる。',()=>act({body:1,coin:250,familyBond:5,log:'家族や共同体を手伝い、一年を過ごした。'})],['遊びと探索で過ごす','友人と土地を知る。危険もある。',()=>act(Math.random()<.85?{luck:1,friends:1,log:'友人と遊び、新しい場所を見つけた。'}:{hp:-18,log:'探索中に魔物の気配に遭い、傷を負った。'})],['一族の技を学ぶ','学校のない種族も、年長者から技を受け継ぐ。',()=>act({wit:1,magic:s.magic?1:0,log:'年長者から暮らしと技を教わった。'})]]:career?careerChoices():[['ギルドの依頼を受ける','雑用から魔物討伐まで。',quest],[s.age%3===2?'雨季に家を守る':s.work+'の仕事をする','職業に応じた収入を得る。',()=>act({coin:s.jobIncome||700,hp:s.rareRole==='saint'?10:s.rareRole==='hero'?-rand(0,6):s.jobType==='武'?-rand(0,9):s.age%3===2?3:0,familyBond:s.rareRole==='saint'?3:0,log:s.work+'として働き、一年を過ごした。'})],[s.health<65?'魔法診療所で療養':'知らない土地へ旅立つ',s.health<65?'費用を払い傷を癒やす。':'新たな縁と危険が待つ。',s.health<65?()=>act({coin:-1200,hp:40,log:'診療所で体力を取り戻した。'}):travel]];if(canSchool)choices.unshift([scholarship?'特待生として学園に入学する':'学園に入学する',scholarship?'才能による選抜。学費免除と生活支援を受け、六年間学ぶ。':'家計が学費を負担し、六年間学ぶ。',()=>act({school:true,scholarship,wit:1,coin:scholarship?350:-250,log:'新しい仲間とともに学園生活が始まった。'})]);if(child&&s.school==='在学中')choices.unshift(['学園で学ぶ',s.schoolScholarship?'特待生の支援を受けて授業と実習に励む。':'授業と実習で知恵を育てる。',()=>act({wit:1,coin:s.schoolScholarship?350:-150,friends:1,log:'学園で学び、同級生と親しくなった。'})]);if(child&&s.school==='卒業')choices.unshift(['卒業後も学ぶ','仕事に就く前の一年を勉学に充てる。',()=>act({wit:1,log:'卒業後も自分で学び続けた。'})]);if(child&&s.wealth<=2)choices.push(...[
+['助けを求める','共同体や旅人に保護を願う。',()=>act({wealth:1,hp:8,log:'助けを得て、安全な場所で眠れた。'})],
+['働ける場所を探す','わずかな賃金と引き換えに働く。',()=>act({coin:300,body:1,log:'小さな仕事を見つけ、食事を手に入れた。'})],
+['危険を承知で逃げる','自由への近道だが、失敗すれば傷を負う。',()=>act(Math.random()<.55?{wealth:2,luck:1,log:'追手を振り切り、自由な土地へたどり着いた。'}:{hp:-28,log:'逃走に失敗し、深い傷を負った。'})]
+]);if(child&&s.wealth>=7)choices.push(['一族の教えを受ける','技と政務を学び、人脈を築く。',()=>act({wit:2,luck:1,coin:-600,log:'家門の教育を受け、宮廷の人脈を得た。'})]);
+if(!child&&!career&&!s.captive){if(s.partner)choices.push([s.partner.status==='婚約者'?'婚約者に手紙を書く':s.partner.status==='配偶者'?'伴侶と過ごす':'恋人と過ごす','大切な人との絆を深める。',()=>act({bond:14,coin:-150,hp:4,log:s.partner.name+'と穏やかな時間を過ごした。'})]);else if(s.age>=ADULT_AGE[s.race])choices.push(['出会いを探す','誰かと親しくなるきっかけを作る。',()=>{if(Math.random()<.65+s.luck*.03)beginPartner('恋人');act({coin:-200,friends:1,log:'新しい人々と出会い、交流した。'})}]);choices.push(['家族や友人と過ごす','困った時に支え合える関係を育てる。',()=>act({familyBond:8,friends:1,coin:-100,log:'家族や友人と語り合い、絆を深めた。'})])}
+if(!child&&!career&&s.wealth<9)choices.push(['暮らしを立て直す','稼ぎと縁を頼りに一段上の生活を目指す。',()=>{let chance=.32+s.wit*.035+s.luck*.025+(s.coin>1500?.12:0);act(Math.random()<chance?{wealth:1,coin:500,hp:5,log:'仕事と助けによって暮らし向きが上がった。'}:{hp:-8,coin:250,log:'懸命に働いたが、まだ生活は変わらなかった。'})}]);
+if(!child&&!career&&R[s.race][1]>=250&&s.stage%4===0){
+let longEvents=[
+['次の世代を教える','若者に技や知識を伝え、師として生きる。',{wit:1,trait:'師の記憶',log:'新しい世代に技を伝えた。教え子は遠くへ旅立った。'}],
+['変わる街を歩く','昔の草原に築かれた街で、新しい暮らしを知る。',{luck:1,coin:500,trait:'時代の証人',log:'かつての草原に街が生まれ、人々の暮らしが変わった。'}],
+['古い友を見送る','短命の友との別れに向き合い、記憶を残す。',{hp:-5,wit:1,trait:'友の記憶',log:'友を見送り、その生涯を語り継ぐと決めた。'}],
+['記録を残す','長い歳月に見た出来事を一冊の書にまとめる。',{wit:1,coin:-200,trait:'年代記',log:'歳月の記録を綴り、後の人々に託した。'}]
+];let e=longEvents[(Math.floor(s.stage/4)-1)%longEvents.length];choices.push([e[0],e[1],()=>act(e[2])])}if(!child&&!career&&s.magic)choices.push(['魔法を磨く','使える属性：'+s.attributes.join('・'),()=>act({magic:1,coin:-500,log:'魔法を鍛えた。'})]);if(!child&&!career&&s.coin>=6000)choices.push(['家を構える','穏やかな居場所を築く。',()=>act({coin:-3500,hp:8,trait:'家族と居場所',log:'暮らしの拠点を築いた。'})]);showChoices(choices)}try{let saved=localStorage.getItem('artituma-life');if(saved){s=JSON.parse(saved);render()}}catch(e){localStorage.removeItem('artituma-life')}
+</script></body></html>
+
+
+
+
+
+
+
+

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予定提出カレンダー｜予定とタスクを見やすく整理する無料ツール</title>
+    <meta name="description" content="予定を時間・日・週・月・年単位で整理できる無料カレンダーツールです。カテゴリ色分け、デザインテーマ、異次元タスク連携、Googleカレンダー取込、月間予定表の画像保存に対応しています。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/SSCalendar.html">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for UI -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2canvas for saving as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="css/sscalendar.css">
+</head>
+<body data-theme="premium-glass" class="font-sans">
+
+    <!-- Header Section -->
+    <header class="main-header sticky top-0 z-20 p-4 shadow-md">
+        <div class="max-w-full mx-auto flex flex-wrap items-center justify-between gap-4 px-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="calendar"></i> 予定提出カレンダー
+                </h1>
+                <div class="flex items-center bg-black/10 rounded-lg p-1">
+                    <button onclick="changeDate(-1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-left"></i></button>
+                    <button onclick="goToToday()" class="px-4 py-1 text-sm font-medium hover:bg-black/10 rounded-md transition text-current">今日</button>
+                    <button onclick="changeDate(1)" class="p-2 hover:bg-black/10 rounded-md transition"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <h2 id="currentDateDisplay" class="text-lg font-bold"></h2>
+            </div>
+
+            <div class="flex flex-wrap gap-1 bg-black/10 p-1 rounded-xl">
+                <button onclick="setView('hourly')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="hourly">時間</button>
+                <button onclick="setView('day')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="day">1日</button>
+                <button onclick="setView('week')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="week">1週</button>
+                <button onclick="setView('2weeks')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="2weeks">2週</button>
+                <button onclick="setView('month')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="month">月</button>
+                <button onclick="setView('3months')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="3months">3ヶ月</button>
+                <button onclick="setView('year')" class="view-btn px-3 py-1.5 text-xs sm:text-sm rounded-lg" data-view="year">年</button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="downloadBtn" onclick="downloadCalendarImage()" class="hidden border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> 画像で保存
+                </button>
+                <select id="themeSelect" onchange="setTheme(this.value)" class="outline-none cursor-pointer text-sm font-semibold">
+                    <option value="premium-glass">✨ プレミアム・ガラス</option>
+                    <option value="default">デフォルト</option>
+                    <option value="antique">アンティーク調</option>
+                    <option value="pastel-pink">パステルピンク</option>
+                    <option value="pastel-green">パステルグリーン</option>
+                    <option value="pastel-yellow">パステルイエロー</option>
+                    <option value="neon-pink">ネオンピンク</option>
+                    <option value="neon-blue">ネオンブルー</option>
+                    <option value="neon-green">ネオングリーン</option>
+                    <option value="black">ブラック</option>
+                    <option value="beige">ベージュ</option>
+                    <option value="rainbow">七色</option>
+                </select>
+                <button onclick="openCategoryModal()" class="border border-current px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-black/5 transition text-sm">
+                    <i data-lucide="settings" class="w-4 h-4"></i> カテゴリ
+                </button>
+                <button onclick="importFromGoogleCalendar()" class="border border-blue-500 text-blue-600 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-50 transition text-sm font-bold bg-white">
+                    <i data-lucide="calendar-sync" class="w-4 h-4"></i> Gカレンダーから取込
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition shadow-md font-bold">
+                    <i data-lucide="plus"></i> 予定を追加
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="full-width-container mx-auto p-4" id="calendarContainer"></main>
+
+    <section class="calendar-guide" aria-labelledby="guide-title">
+        <p class="guide-label">GUIDE</p>
+        <h2 id="guide-title">予定提出カレンダーでできること</h2>
+        <p class="guide-lead">予定を登録し、時間・日・週・月・年など目的に合う範囲で確認できるブラウザ用カレンダーです。TRPGの予定調整、創作の締切、仕事や日常のスケジュールなどをカテゴリ別に色分けし、見やすい予定表として整理できます。</p>
+
+        <div class="guide-grid">
+            <article><h3>7種類の表示で予定を確認</h3><p>時間、1日、1週、2週、月、3か月、年の表示を切り替えられます。直近の時間割から長期予定まで、同じデータを用途に合わせて確認できます。</p></article>
+            <article><h3>カテゴリとテーマを自由に設定</h3><p>予定のカテゴリ名と色を追加し、内容ごとに分類できます。カレンダー全体もガラス調、パステル、ネオン、アンティークなどから選べます。</p></article>
+            <article><h3>異次元タスクと自動連携</h3><p>異次元タスクに登録した未完了かつ期限付きのタスクを、終日予定として自動表示します。タスク予定をクリックするとタスク管理画面へ移動できます。</p></article>
+            <article><h3>Googleカレンダーと連携</h3><p>Googleカレンダーから予定を読み込めます。また、予定編集画面の「Google」ボタンから、入力内容をGoogleカレンダーの予定作成画面へ引き継げます。</p></article>
+        </div>
+
+        <h2>基本的な使い方</h2>
+        <ol class="guide-steps">
+            <li><span>1</span><p>「予定を追加」またはカレンダーの日付を押し、タイトル、カテゴリ、開始・終了日時、メモを入力します。</p></li>
+            <li><span>2</span><p>上部の「時間」「1日」「1週」「2週」「月」「3ヶ月」「年」から、確認したい表示範囲を選びます。</p></li>
+            <li><span>3</span><p>登録済みの予定を押すと、内容の編集・複製・削除ができます。カテゴリ設定やテーマも必要に応じて変更してください。</p></li>
+            <li><span>4</span><p>月表示では「画像で保存」を使い、現在の月間予定表をPNG画像として保存できます。</p></li>
+        </ol>
+
+        <div class="guide-note">
+            <h2>データ保存とGoogle連携について</h2>
+            <p>このカレンダーで作成した予定・カテゴリ・テーマは、利用中のブラウザ内に保存されます。別の端末やブラウザには自動同期されず、ブラウザの保存データを削除すると消える場合があります。</p>
+            <p>「Gカレンダーから取込」を使用すると、Googleへのログインと閲覧許可を求める画面が開きます。許可後は、基本カレンダーから過去3か月前〜今後6か月程度の予定を読み込みます。読み込んだ予定はこのツールのブラウザ保存データへ追加され、同じGoogle予定は次回取込時に更新されます。</p>
+        </div>
+
+        <h2>よくある質問</h2>
+        <div class="guide-faq">
+            <details><summary>異次元タスクの予定が表示されません</summary><p>異次元タスク側で「未完了」かつ「期限が設定されている」タスクだけが表示されます。また、同じブラウザで両方のツールを利用している必要があります。</p></details>
+            <details><summary>Googleカレンダーへ自動で予定が登録されますか？</summary><p>予定編集画面の「Google」ボタンは、Googleカレンダーの予定作成画面を開く機能です。内容を確認し、Google側で保存操作を行ってください。</p></details>
+            <details><summary>Googleカレンダーから取り込むと予定が重複しますか？</summary><p>同じGoogle予定の識別情報が保存されている場合は、追加ではなく内容を更新します。ただし、このツールで個別に作成した似た名前の予定とは別の予定として扱われます。</p></details>
+            <details><summary>カレンダーを画像に保存できません</summary><p>画像保存は月表示で利用できます。「月」を選ぶと上部に「画像で保存」ボタンが表示されます。予定が多い場合は、生成に少し時間がかかることがあります。</p></details>
+        </div>
+
+        <nav class="guide-links" aria-label="関連ページ">
+            <a class="guide-primary" href="/ijigentask.html">異次元タスクを使う →</a>
+            <a href="/">ほかのツールを見る →</a>
+            <a href="/wordpress/">制作・改善記事を読む →</a>
+        </nav>
+    </section>
+
+    <footer>
+        <p>Product by <a href="https://ijigenpocket.booth.pm/" target="_blank">異次元ポケット</a></p>
+    </footer>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" id="modalTitle">予定の登録</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">タイトル</label>
+                    <input type="text" id="eventTitle" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">カテゴリー</label>
+                    <select id="eventCategory" class="w-full border-gray-300 border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 py-2">
+                    <input type="checkbox" id="eventAllDay" class="w-5 h-5 rounded cursor-pointer accent-blue-600" onchange="toggleTimeInputs()">
+                    <label for="eventAllDay" class="text-sm font-bold cursor-pointer">終日予定にする</label>
+                </div>
+                <div class="grid grid-cols-2 gap-4 border-t pt-4 border-gray-100">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始日</label>
+                        <input type="date" id="eventStartDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了日</label>
+                        <input type="date" id="eventEndDate" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div id="timeInputs" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">開始時間</label>
+                        <input type="time" id="eventStartTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">終了時間</label>
+                        <input type="time" id="eventEndTime" class="w-full border-gray-300 border rounded-lg p-3 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">メモ</label>
+                    <textarea id="eventDescription" class="w-full border-gray-300 border rounded-lg p-3 h-24 outline-none resize-none" placeholder="メモを入力してください"></textarea>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button id="saveBtn" onclick="saveEvent()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">保存する</button>
+                    <button id="googleExportBtn" onclick="exportToGoogle()" class="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition text-sm font-bold">
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Google
+                    </button>
+                </div>
+                <div class="flex flex-col gap-2 pt-2">
+                    <button id="duplicateBtn" onclick="duplicateEvent()" class="w-full text-blue-500 text-sm font-bold hidden hover:underline">この予定を複製する</button>
+                    <button id="deleteBtn" onclick="deleteEvent()" class="w-full text-red-500 text-sm font-bold hidden hover:underline">この予定を削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh] text-gray-900">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">カテゴリ管理</h3>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-xl space-y-3">
+                    <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider">新しいカテゴリを追加</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="newCatName" placeholder="カテゴリ名" class="flex-1 border rounded-lg p-2 outline-none">
+                        <input type="color" id="newCatColor" value="#3b82f6" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+                        <button onclick="addCategory()" class="bg-blue-600 text-white px-4 rounded-lg font-bold hover:bg-blue-700 transition">追加</button>
+                    </div>
+                </div>
+                <div id="categoryList" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/sscalendar.js"></script>
+</body>
+</html>

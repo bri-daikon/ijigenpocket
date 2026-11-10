@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; padding: 20px; color: #333; }
+      div { margin-bottom: 20px; }
+      label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #555; }
+      input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+      button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+      button:hover { background: #1d4ed8; }
+      .desc { font-size: 11px; color: #888; margin-bottom: 15px; }
+    </style>
+  </head>
+  <body>
+    <h3 style="margin-top:0; color:#1e40af;">⚔️ セットアップ</h3>
+    <p class="desc">※シートの内容は一度すべてリセットされます</p>
+    <div>
+      <label>参加人数 (PC/NPC)</label>
+      <input type="number" id="numChars" value="4" min="1">
+    </div>
+    <div>
+      <label>最大ラウンド数</label>
+      <input type="number" id="numRounds" value="10" min="1">
+    </div>
+    <button onclick="setup()">展開する</button>
+
+    <script>
+      function setup() {
+        var numChars = document.getElementById('numChars').value;
+        var numRounds = document.getElementById('numRounds').value;
+        var btn = document.querySelector('button');
+        btn.innerText = '処理中...';
+        btn.disabled = true;
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .setupBattle(numChars, numRounds);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,96 @@
+Created At: 2026-06-08T13:56:08Z
+Completed At: 2026-06-08T13:56:09Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 3056
+Total Bytes: 121211
+Showing lines 2324 to 3056
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2324:     } else {
+2325:       // 従来通りのモックデモモード
+2326:       const themeNames = {
+2327:         custom: 'AIにおまかせ',
+2328:         cyberpunk: 'サイバーパンク',
+2329:         horror: '和風ホラー',
+2330:         classic: 'クラシック洋館',
+2331:         fantasy: 'ファンタジー・魔法'
+2332:       };
+2333:       const selectedThemeVal = theme === 'custom' ? 'cyberpunk' : theme;
+2334:       const themeName = themeNames[theme];
+2335: 
+2336:       let layoutName = '右側縦並び';
+2337:       if (layoutType === 'bottom-horizontal') layoutName = '下部横並び';
+2338:       else if (layoutType.startsWith('pattern')) {
+2339:         const pNum = layoutType.replace('pattern', '');
+2340:         layoutName = `パターン${pNum}`;
+2341:       }
+2342: 
+2343:       setTimeout(() => {
+2344:         if (bgOnly) {
+2345:           addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！今回はパーツを配置せず、テーマ【${themeName}】に沿って1枚絵のデモ画像を出力しますね。`);
+2346:         } else {
+2347:           addChatMessage(employees.takumi, `CEO、ご指示ありがとうございます！テーマ【${themeName}】、人数【${numPlayers}人】、配置【${layoutName}】ですね。さっそく企画立案しました。`);
+2348:         }
+2349:         
+2350:         setTimeout(() => {
+2351:           if (bgOnly) {
+2352:             addChatMessage(employees.aoi, `了解！キャンバスに合わせた比率で1枚のココフォリア背景（デモ）を描画する
+<truncated 23205 bytes>
+  opacity: 1
+3000:     });
+3001:   }
+3002: 
+3003:   // 4. アクションアイコンの描画
+3004:   const actionW = 75;
+3005:   const actionH = 75;
+3006:   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+3007:   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+3008: 
+3009:   for (let i = 0; i < actionIconsData.length; i++) {
+3010:     const icon = actionIconsData[i];
+3011:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+3012:     let actionX = baseActionX;
+3013:     let actionY = baseActionY;
+3014: 
+3015:     if (design.action_x === undefined) {
+3016:       if (layoutType === 'right-vertical') {
+3017:         actionY = 550;
+3018:         actionX = 50 + i * 125;
+3019:       } else {
+3020:         actionX = 50 + (i % 2) * 90;
+3021:         actionY = 350 + Math.floor(i / 2) * 90;
+3022:       }
+3023:     } else {
+3024:       actionX = baseActionX + i * (actionW + 15);
+3025:     }
+3026: 
+3027:     let actionUrl = createSvgUrl(actionSvg);
+3028:     if (partsImg) {
+3029:       const scaleX = partsImg.naturalWidth / canvasWidth;
+3030:       const scaleY = partsImg.naturalHeight / canvasHeight;
+3031:       actionUrl = await combineImageAndSvg(
+3032:         partsImg,
+3033:         actionX * scaleX, actionY * scaleY,
+3034:         actionW * scaleX, actionH * scaleY,
+3035:         actionSvg, actionW, actionH
+3036:       );
+3037:     }
+3038: 
+3039:     panels.push({
+3040:       id: `ai-action-${icon.name}-${Date.now()}`,
+3041:       url: actionUrl,
+3042:       x: actionX,
+3043:       y: actionY,
+3044:       width: actionW,
+3045:       height: actionH,
+3046:       originalRatio: actionW / actionH,
+3047:       flipH: false,
+3048:       flipV: false,
+3049:       visible: true,
+3050:       opacity: 1
+3051:     });
+3052:   }
+3053: 
+3054:   updateUI();
+3055: }
+3056: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

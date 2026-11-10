@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>締切・タスク管理</title>
+<style>
+:root{color-scheme:light;--teal:#0f766e;--line:#dbe4e2;--muted:#64706e}*{box-sizing:border-box}body{margin:0;background:#f5f7f6;color:#243330;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.6}main{max-width:1080px;margin:auto;padding:40px 24px 60px}h1{font-size:clamp(24px,4vw,32px);margin:0 0 8px;letter-spacing:.04em}h2{font-size:18px;margin:0 0 18px}.intro{color:var(--muted);margin:0 0 22px}.summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}.summary span{background:white;border:1px solid var(--line);border-radius:8px;padding:8px 14px}.summary strong{margin-left:10px}.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:22px;box-shadow:0 3px 10px #20352d03}form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px}label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}input,select,textarea,button{font:inherit}input:not([type=checkbox]),select,textarea{min-width:0;width:100%;padding:10px 12px;border:1px solid #bfcfca;border-radius:6px;background:white;color:inherit}textarea{resize:vertical}input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #7ad1c3;outline-offset:2px}.wide{grid-column:1/-1}.actions,.toolbar,.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}button{cursor:pointer;border:1px solid #baccc6;background:white;color:#344b44;border-radius:6px;padding:9px 15px;font-weight:600}button:hover{background:#eef5f2}.primary{background:var(--teal);border-color:var(--teal);color:white}.primary:hover{background:#115e59}.danger{color:#a52c2c}.filters{margin-bottom:18px;align-items:end}.filters>label:first-child{flex:2;min-width:180px}.filters>label:nth-child(2){flex:1;min-width:140px}.check{flex-direction:row;align-items:center;gap:8px;min-height:44px;font-weight:400}input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal);flex-shrink:0}.section-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.section-top h2{margin:0}.count{color:var(--muted);font-size:14px}.task{border:1px solid var(--line);border-left:5px solid #b8d2ca;border-radius:7px;padding:16px;display:flex;gap:12px;margin-top:12px}.task.overdue{border-left-color:#c94141}.task.today{border-left-color:#e48522}.task.soon{border-left-color:#d4af31}.task>input{margin-top:6px}.task-content{flex:1;min-width:0}.task-title{font-weight:650;font-size:17px;overflow-wrap:anywhere}.done .task-title{text-decoration:line-through;color:#7a8581}.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:7px;font-size:13px}.badge{border-radius:4px;background:#eef4f1;padding:2px 8px}.overdue .remaining{background:#fff0f0;color:#a32323}.today .remaining{background:#fff2e2;color:#8e4c08}.high{color:#9d2929;background:#fff0f0}.memo{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:var(--muted);margin:9px 0 0}.task-actions{display:flex;gap:6px;align-items:start}.task-actions button{font-size:13px;padding:5px 9px}.empty{text-align:center;padding:28px;color:var(--muted)}.empty p{margin-top:0}.data-panel{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.data-panel h2{margin-bottom:12px}.print-controls select{width:auto}.footnote{font-size:12px;color:var(--muted);margin:12px 0 0}#status{margin:0 0 18px;white-space:pre-wrap;color:var(--teal)}#status.error{color:#ad2828}[hidden]{display:none!important}#print-area{display:none}@media(max-width:700px){main{padding:24px 14px}.panel{padding:18px}form{grid-template-columns:1fr 1fr}.title-field{grid-column:1/-1}.task{flex-wrap:wrap}.task-actions{margin-left:30px}.task-content{flex-basis:75%}.summary{gap:6px}.summary span{font-size:13px;padding:7px 10px}.data-panel>div{width:100%}}@media(max-width:420px){form{grid-template-columns:1fr}.title-field{grid-column:auto}}
+.view-switch{display:flex;gap:6px;margin-bottom:16px}.view-switch [aria-pressed=true]{background:var(--teal);color:white;border-color:var(--teal)}
+.gantt{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:12px}.gantt-names{flex:0 0 180px;width:180px;border-right:1px solid var(--line);background:white;z-index:2}.gantt-name-head{height:72px;padding:24px 10px;font-weight:600}.gantt-name{height:40px;padding:9px 10px;border-top:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gantt-name.done{color:#7a8581;text-decoration:line-through}.gantt-scroll{flex:1;min-width:0;overflow-x:auto}.gantt-track{position:relative;min-width:100%}.gantt-months,.gantt-ticks{position:relative;height:28px;border-bottom:1px solid var(--line)}.gantt-months span,.gantt-ticks span{position:absolute;white-space:nowrap;padding-left:3px;overflow:hidden}.gantt-ticks{height:44px;padding-top:0}.gantt-row{height:40px;position:relative;border-top:1px solid var(--line);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:var(--tick-width) 100%}.gantt-bar{position:absolute;top:10px;height:18px;min-width:4px;border-radius:5px;background:var(--teal)}.gantt-bar.overdue{border:2px solid #c94141}.gantt-bar.today{border:2px solid #e48522}.gantt-bar.done{background:#89958f}.gantt-remaining{position:absolute;top:8px;white-space:nowrap;padding:0 4px;border-radius:3px;background:#ffffffeb;color:#344b44;font-size:11px}.gantt-remaining.overdue{color:#c94141;font-weight:700}.gantt-remaining.today{color:#98500d;font-weight:700}.gantt-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.gantt-legend-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 9px;border:1px solid var(--line);border-radius:999px;font-size:12px;overflow-wrap:anywhere}.gantt-legend-dot{width:10px;height:10px;flex-shrink:0;border-radius:50%}.gantt-today{position:absolute;top:28px;bottom:0;border-left:2px solid #0d9488;pointer-events:none}.gantt-today span{position:absolute;top:20px;left:2px;background:#0f766e;color:white;border-radius:3px;padding:0 3px;white-space:nowrap}
+.gantt-group-name{font-weight:700;border-left:6px solid var(--category-color);background:#eef4f1}.gantt-row.gantt-group-row{background:#eef4f1}
+@media print{
+html,body{background:#fff!important;color:#000!important;font-family:system-ui,-apple-system,sans-serif;font-size:10pt}body>main{display:none!important}#print-area{display:block!important}#print-area h1{font-size:17pt;margin:0 0 4mm;letter-spacing:0}#print-area .print-scope{font-size:9pt;margin:0 0 5mm}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}th,td{border:0.3mm solid #bbb;padding:2.5mm 2mm;text-align:left;vertical-align:top;overflow-wrap:anywhere;background:#fff!important;color:#000!important}th{font-size:9pt;font-weight:700}td{font-size:9pt}tr{break-inside:avoid;page-break-inside:avoid}.paper-check{text-align:center;font-size:13pt;line-height:1.2}.paper-memo{white-space:pre-wrap;font-size:8pt;margin-top:1.5mm}.notes{margin-top:7mm;break-inside:avoid;page-break-inside:avoid}.notes h2{font-size:11pt;margin:0 0 2mm}.writing-line{height:9mm;border-bottom:0.3mm solid #bbb}.print-empty{text-align:center;padding:6mm}#print-area.landscape tbody tr{height:12mm}#print-area.landscape .paper-writing{white-space:pre-wrap;min-height:12mm}
+#print-area .print-calendar{height:155mm;break-inside:avoid;page-break-inside:avoid}
+#print-area .print-calendar thead tr{height:7mm}
+#print-area .print-calendar th{text-align:center;padding:1mm}
+#print-area .print-calendar td{padding:1mm 1.5mm}
+#print-area .calendar-cell{height:var(--calendar-cell-height);overflow:hidden}
+#print-area .calendar-date{display:inline-block;min-width:6mm;text-align:center;line-height:6mm;font-size:10pt}
+#print-area .calendar-today{border:0.5mm solid #000;border-radius:50%;font-weight:700}
+#print-area .print-calendar .calendar-outside{color:#999!important}
+#print-area .calendar-outside .calendar-cell{opacity:.5}
+#print-area .calendar-tasks{margin:1mm 0 0;padding:0;list-style:none;font-size:8pt;line-height:1.4}
+#print-area .calendar-tasks li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#print-area .print-gantt .paper-group-name{border-left:2mm solid var(--category-color);font-weight:700;background:#eef4f1!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+#print-area .print-gantt .paper-group-cell{background:#eef4f1!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+#print-area .print-gantt td{padding:0;vertical-align:middle}
+#print-area .print-gantt .paper-task{padding:2mm;white-space:normal}
+#print-area .paper-timeline{position:relative;margin-right:28%;min-height:10mm}
+#print-area .paper-axis{height:15mm;font-size:7pt;font-weight:400}
+#print-area .paper-tick{position:absolute;top:7mm;white-space:nowrap;border-left:0.2mm solid #bbb;padding-left:0.5mm}
+#print-area .paper-endpoints{font-size:7pt;white-space:normal}
+#print-area .paper-bar{position:absolute;top:3mm;height:4mm;min-width:0.4mm;border:0.25mm solid #555;border-radius:1mm;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+#print-area .paper-bar.overdue{border:0.7mm solid #c94141}
+#print-area .paper-bar.today{border:0.7mm double #a35308}
+#print-area .paper-category{position:absolute;top:2mm;font-size:7pt;line-height:1.3;padding-left:1mm;overflow-wrap:anywhere}
+#print-area .paper-today{position:absolute;top:0;bottom:0;border-left:0.5mm dashed #0f766e;pointer-events:none}
+#print-area .paper-today-label{position:absolute;top:11mm;white-space:nowrap;font-size:7pt}
+#print-area .gantt-legend-dot{print-color-adjust:exact;-webkit-print-color-adjust:exact;border:0.2mm solid #555}
+
+}
+</style>
+<style id="page-style">@page{size:A4 portrait;margin:15mm 12mm}</style>
+</head>
+<body>
+<main>
+<header><h1>締切・タスク管理</h1><p class="intro">締切を見渡す。紙に書き足す。毎日を少し、整える。</p><div class="summary"><span>期限切れ <strong id="overdue-count">0件</strong></span><span>今日が締切 <strong id="today-count">0件</strong></span><span>今週（7日以内）<strong id="week-count">0件</strong></span></div></header>
+<p id="status" role="status" aria-live="polite" hidden></p>
+<p id="storage-warning" hidden style="background:#fff7e0;border:1px solid #e3c766;color:#6b5410;border-radius:8px;padding:10px 14px;margin:0 0 18px">この開き方ではデータを自動保存できません。追加・編集はできますが、画面を閉じると消えてしまいます。SafariやChromeなどのブラウザで開くと自動保存されます。</p>
+<section class="panel" aria-labelledby="form-heading"><h2 id="form-heading">タスクを追加</h2><form id="task-form">
+<label class="title-field">タイトル（必須）<input id="title" required maxlength="300" placeholder="例：企画書を提出する"></label>
+<label>締切日（必須）<input id="due-date" type="date" required min="0001-01-01" max="9999-12-31"></label>
+<label>開始日（任意）<input id="start-date" type="date" min="0001-01-01" max="9999-12-31"></label>
+<label>カテゴリ<input id="category" list="categories" placeholder="例：仕事"><datalist id="categories"></datalist></label>
+<label>優先度<select id="priority"><option value="high">高</option><option value="normal" selected>通常</option><option value="low">低</option></select></label>
+<label class="wide">メモ<textarea id="memo" rows="2" placeholder="補足や準備しておくこと"></textarea></label>
+<label>繰り返し<select id="repeat"><option value="none">なし</option><option value="weekly">毎週</option><option value="monthly">毎月</option></select></label>
+<label>回数（起点を含む）<input id="repeat-count" type="number" min="1" max="52" value="4" disabled></label>
+<p id="repeat-help" class="footnote wide">毎週は締切日の曜日で7日ごと。毎月は元の日を基準に、その月の末日までに丸めます。開始日も同じ間隔でずらします。</p>
+<div class="wide"><label for="extra-date">他の日にも同じタスクを入れる（追加は最大30日）</label><div class="actions"><input id="extra-date" type="date" min="0001-01-01" max="9999-12-31" style="width:auto"><button id="add-date" type="button">日を追加</button></div><div id="extra-dates" class="actions" style="margin-top:8px" aria-label="追加した日付"></div><p id="bulk-help" class="footnote" aria-live="polite"></p></div>
+<div class="actions wide"><button id="delete-series" class="danger" type="button" hidden></button><button class="primary" id="save-button" type="submit">追加</button><button id="cancel-edit" type="button" hidden>編集をキャンセル</button></div>
+</form></section>
+<section class="panel" aria-labelledby="list-heading"><div class="section-top"><h2 id="list-heading">タスク一覧</h2><span class="count" id="list-count"></span></div>
+<div class="view-switch" role="group" aria-label="表示切替"><button id="view-list" type="button" aria-pressed="true" aria-controls="task-list">一覧</button><button id="view-gantt" type="button" aria-pressed="false" aria-controls="gantt">ガント</button><label>ガントの並び替え<select id="gantt-sort" disabled><option value="due">締切順</option><option value="category">カテゴリ別</option></select></label></div>
+<div class="filters"><label>検索<input type="search" id="search" placeholder="タイトル・メモで検索"></label><label>カテゴリ<select id="category-filter"><option value="">すべて</option></select></label><label class="check"><input id="unfinished" type="checkbox">未完了のみ</label></div><div id="task-list"></div><div id="gantt" hidden aria-label="タスクのガントチャート"></div></section>
+<section class="panel data-panel"><div><h2>紙に印刷する</h2><div class="toolbar print-controls"><label for="print-content">印刷する内容</label><select id="print-content"><option value="list">締切リスト</option><option value="gantt">ガントチャート</option><option value="calendar">月間カレンダー</option></select><label id="print-month-field" for="print-month" hidden>対象月<input id="print-month" type="month" min="0001-01" max="9999-12"></label><label for="print-range">印刷範囲</label><select id="print-range"><option value="all">すべて</option><option value="open">未完了のみ</option><option value="week">今週分</option></select><label for="print-orientation">用紙の向き</label><select id="print-orientation"><option value="portrait">A4縦</option><option value="landscape">A4横</option></select><button id="print-button" class="primary">印刷する</button></div><p class="footnote">今週分：期限切れと、今日から7日後まで。締切リストには検索・カテゴリの絞り込みを反映しません。ガントは画面の検索・カテゴリ・未完了のみを反映します。月間カレンダーは完了タスクを除外し、検索・カテゴリ・印刷範囲にかかわらず締切日で表示します。<br>A4縦／A4横・倍率100%推奨。必要に応じてブラウザのヘッダーとフッターをオフにしてください。</p></div>
+<div><h2>データ管理</h2><div class="toolbar"><button id="export">JSONエクスポート</button><button id="import">JSONインポート</button><button id="clear" class="danger">全削除</button><input id="import-file" type="file" accept=".json,application/json" hidden></div><p class="footnote">このブラウザに自動保存されます。大切なデータはエクスポートして保管してください。</p></div></section>
+</main>
+<section id="print-area" aria-label="印刷用締切リスト"></section>
+<script>
+'use strict';
+const KEY='deadlineManagerTasksV1', DAY=86400000, $=id=>document.getElementById(id);
+let extraDates=[];
+let tasks=[], editingId=null, storageBlocked=false, memoryOnly=false, currentView='list';
+const priorityLabels={high:'高',normal:'通常',low:'低'}, rank={high:0,normal:1,low:2};
+function localDate(date=new Date()){return `${String(date.getFullYear()).padStart(4,'0')}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+function dateNumber(value){const [y,m,d]=value.split('-').map(Number);const date=new Date(0);date.setUTCFullYear(y,m-1,d);date.setUTCHours(0,0,0,0);return date.getTime()/DAY;}
+function validDate(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value<'0001-01-01')return false;const n=dateNumber(value), date=new Date(n*DAY);return `${String(date.getUTCFullYear()).padStart(4,'0')}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`===value;}
+function days(task){return dateNumber(task.dueDate)-dateNumber(localDate());}
+function remaining(task){const n=days(task);return n<0?`期限切れ ${-n}日`:n===0?'今日':n===1?'明日':`あと${n}日`;}
+function formattedDate(value){const [,m,d]=value.split('-').map(Number);return `${m}/${d}（${'日月火水木金土'[new Date(dateNumber(value)*DAY).getUTCDay()]}）`;}
+function el(tag,text,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;}
+function notify(message,error=false){$('status').textContent=message;$('status').className=error?'error':'';$('status').hidden=false;}
+function sorted(){return [...tasks].sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||rank[a.priority]-rank[b.priority]||Date.parse(a.createdAt)-Date.parse(b.createdAt));}
+function filteredTasks(){const query=$('search').value.toLocaleLowerCase();return sorted().filter(t=>(!$('unfinished').checked||!t.done)&&(!$('category-filter').value||t.category===$('category-filter').value)&&(t.title.toLocaleLowerCase().includes(query)||t.memo.toLocaleLowerCase().includes(query)));}
+function validate(data){if(!Array.isArray(data))throw Error('タスクの配列形式のJSONを選択してください。');const ids=new Set();return data.map(t=>{if(!t||typeof t!=='object'||typeof t.id!=='string'||!t.id||ids.has(t.id)||typeof t.title!=='string'||!t.title.trim()||!validDate(t.dueDate)||(t.startDate!==undefined&&t.startDate!==''&&!validDate(t.startDate))||typeof t.category!=='string'||!Object.hasOwn(priorityLabels,t.priority)||typeof t.memo!=='string'||typeof t.done!=='boolean'||typeof t.createdAt!=='string'||!Number.isFinite(Date.parse(t.createdAt)))throw Error('タスクの形式が正しくありません（必須項目・日付・IDなどを確認してください）。');ids.add(t.id);return {id:t.id,title:t.title,dueDate:t.dueDate,startDate:t.startDate??'',category:t.category,priority:t.priority,memo:t.memo,done:t.done,createdAt:t.createdAt,...(typeof t.seriesId==='string'?{seriesId:t.seriesId}:{})};});}
+function persist(next){if(storageBlocked){notify("保存データの読み込みエラーのため、変更を停止しています。",true);return false;}if(memoryOnly){tasks=next;render();return true;}try{localStorage.setItem(KEY,JSON.stringify(next));tasks=next;render();return true;}catch(e){memoryOnly=true;$('storage-warning').hidden=false;tasks=next;render();notify('この環境では自動保存できないため、画面を開いている間だけ保持します。',true);return true;}}
+function resetForm(){editingId=null;$('task-form').reset();$('due-date').value=localDate();$('form-heading').textContent='タスクを追加';$('save-button').textContent='追加';$('cancel-edit').hidden=true;extraDates=[];updateBulkInputs();}
+function edit(task){extraDates=[];editingId=task.id;updateBulkInputs();for(const [id,key] of [['title','title'],['due-date','dueDate'],['start-date','startDate'],['category','category'],['priority','priority'],['memo','memo']])$(id).value=task[key];$('form-heading').textContent='タスクを編集';$('save-button').textContent='変更を保存';$('cancel-edit').hidden=false;$('title').focus();$('task-form').scrollIntoView({behavior:'smooth',block:'center'});}
+function newId(){return globalThis.crypto?.randomUUID?.()||`task-${Date.now()}-${Math.random().toString(36).slice(2)}`;}
+function ordinalDate(n){const d=new Date(n*DAY);return `${String(d.getUTCFullYear()).padStart(4,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}
+// Always shift from the original date, so a February clamp cannot drift into March.
+function shiftedDate(value,mode,index){
+if(mode==='weekly')return ordinalDate(dateNumber(value)+7*index);
+const [y,m,day]=value.split('-').map(Number),first=new Date(0),end=new Date(0);
+first.setUTCFullYear(y,m-1+index,1);end.setUTCFullYear(first.getUTCFullYear(),first.getUTCMonth()+1,0);
+first.setUTCDate(Math.min(day,end.getUTCDate()));return ordinalDate(first.getTime()/DAY);
+}
+function updateBulkInputs(){
+const editing=editingId!==null,hasExtras=extraDates.length>0;
+$('repeat').disabled=editing||hasExtras;
+$('repeat-count').disabled=editing||hasExtras||$('repeat').value==='none';
+$('extra-date').disabled=editing;$('add-date').disabled=editing;
+$('bulk-help').textContent=editing?'編集では繰り返し・追加日は使えません。':hasExtras?'追加日があるため繰り返しは無効です。':'';
+$('extra-dates').replaceChildren(...extraDates.map(date=>{const button=el('button',date+' ×');button.type='button';button.disabled=editing;button.setAttribute('aria-label',date+'を取り消す');button.onclick=()=>{extraDates=extraDates.filter(d=>d!==date);updateBulkInputs();};return button;}));
+const task=tasks.find(t=>t.id===editingId),series=typeof task?.seriesId==='string';
+$('delete-series').hidden=!series;
+if(series)$('delete-series').textContent=`この繰り返し全${tasks.filter(t=>t.seriesId===task.seriesId).length}件を削除`;
+}
+$('repeat').onchange=updateBulkInputs;
+$('due-date').onchange=()=>{extraDates=extraDates.filter(d=>d!==$('due-date').value);updateBulkInputs();};
+$('add-date').onclick=()=>{
+if(editingId!==null)return;const date=$('extra-date').value;
+if(!validDate(date)){notify('追加する日を入力してください。',true);return;}
+if(date===$('due-date').value||extraDates.includes(date)){notify('その日はすでに指定されています。',true);return;}
+if(extraDates.length>=30){notify('追加日は最大30日です。',true);return;}
+extraDates.push(date);extraDates.sort();$('extra-date').value='';updateBulkInputs();
+};
+$('delete-series').onclick=()=>{
+const task=tasks.find(t=>t.id===editingId);if(typeof task?.seriesId!=='string')return;
+const count=tasks.filter(t=>t.seriesId===task.seriesId).length;
+if(confirm(`この繰り返し全${count}件を削除しますか？`)&&persist(tasks.filter(t=>t.seriesId!==task.seriesId))){resetForm();notify(`${count}件のタスクを削除しました。`);}
+};
+function render(){
+updateBulkInputs();
+const open=tasks.filter(t=>!t.done);$('overdue-count').textContent=open.filter(t=>days(t)<0).length+'件';$('today-count').textContent=open.filter(t=>days(t)===0).length+'件';$('week-count').textContent=open.filter(t=>days(t)>=0&&days(t)<=7).length+'件';
+const categories=[...new Set(tasks.map(t=>t.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));const selected=$('category-filter').value;$('categories').replaceChildren(...categories.map(c=>{const o=el('option');o.value=c;return o;}));$('category-filter').replaceChildren(new Option('すべて',''),...categories.map(c=>new Option(c,c)));$('category-filter').value=categories.includes(selected)?selected:'';
+const shown=filteredTasks();
+$('list-count').textContent=`${shown.length} / ${tasks.length}件`;$('task-list').replaceChildren();
+if(!shown.length){const empty=el('div',undefined,'empty');empty.append(el('p',tasks.length?'条件に一致するタスクがありません。':'タスクを追加して、締切を整理しましょう。'));if(!tasks.length){const b=el('button','サンプルを入れる');b.type='button';b.onclick=addSamples;empty.append(b);}$('task-list').append(empty);}
+for(const t of shown){const n=days(t);const row=el('article',undefined,'task'+(t.done?' done':n<0?' overdue':n===0?' today':n<=3?' soon':''));const check=el('input');check.type='checkbox';check.checked=t.done;check.setAttribute('aria-label',`${t.title}を完了にする`);check.onchange=()=>{if(!persist(tasks.map(x=>x.id===t.id?{...x,done:check.checked}:x)))check.checked=t.done;};const content=el('div',undefined,'task-content');content.append(el('div',t.title,'task-title'));const meta=el('div',undefined,'meta');meta.append(el('span',formattedDate(t.dueDate)),el('span',remaining(t),'badge remaining'));if(t.category)meta.append(el('span',t.category,'badge'));meta.append(el('span',priorityLabels[t.priority],t.priority==='high'?'badge high':'badge'));content.append(meta);if(t.memo)content.append(el('p',t.memo,'memo'));const actions=el('div',undefined,'task-actions');const e=el('button','編集'),d=el('button','削除','danger');e.setAttribute('aria-label',`${t.title}を編集`);d.setAttribute('aria-label',`${t.title}を削除`);e.onclick=()=>edit(t);d.onclick=()=>{if(confirm(`「${t.title}」を削除しますか？`)&&persist(tasks.filter(x=>x.id!==t.id))&&editingId===t.id)resetForm();};actions.append(e,d);row.append(check,content,actions);$('task-list').append(row);}
+$('gantt-sort').disabled=currentView!=='gantt';
+$('task-list').hidden=currentView!=='list';$('gantt').hidden=currentView!=='gantt';
+if(currentView==='gantt')renderGantt(shown);
+buildPrint();}
+// Calendar ordinals keep bar widths stable across local daylight-saving changes.
+function ganttStart(task){return Math.min(dateNumber(task.startDate||localDate(new Date(task.createdAt))),dateNumber(task.dueDate));}
+function calendarLabel(n){const d=new Date(n*DAY);return `${d.getUTCFullYear()}/${d.getUTCMonth()+1}/${d.getUTCDate()}`;}
+// A fixed palette and unsigned string hash keep category colors stable across sessions.
+const ganttPalette=['#2563eb','#7c3aed','#be185d','#15803d','#0891b2','#806044','#64748b','#74951c'];
+function ganttCategoryColor(category){
+if(!category)return '#0f766e';
+let hash=0;for(let i=0;i<category.length;i++)hash=(Math.imul(hash,31)+category.charCodeAt(i))>>>0;
+return ganttPalette[hash%ganttPalette.length];
+}
+// Preserve the filtered deadline order within each category; never mutate task data.
+function ganttRows(shown){
+if($('gantt-sort').value!=='category')return shown.map(task=>({task}));
+const groups=new Map();
+for(const task of shown){if(!groups.has(task.category))groups.set(task.category,[]);groups.get(task.category).push(task);}
+return [...groups.keys()].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'ja')).flatMap(category=>{
+const members=groups.get(category);return [{category,count:members.length},...members.map(task=>({task}))];
+});
+}
+function ganttGroupName(entry,className,tag='div'){
+const name=el(tag,`${entry.category||'未分類'}（${entry.count}件）`,className);
+name.style.setProperty('--category-color',ganttCategoryColor(entry.category));return name;
+}
+function renderGantt(shown){
+const area=$('gantt');area.replaceChildren();
+if(!shown.length){area.append(el('p','表示できるタスクがありません','empty'));return;}
+const legend=el('div',undefined,'gantt-legend');legend.setAttribute('aria-label','カテゴリの凡例');
+for(const category of [...new Set(shown.map(task=>task.category))].sort((a,b)=>a.localeCompare(b,'ja'))){
+const chip=el('span',undefined,'gantt-legend-chip'),dot=el('span',undefined,'gantt-legend-dot');dot.style.backgroundColor=ganttCategoryColor(category);dot.setAttribute('aria-hidden','true');chip.append(dot,el('span',category||'未分類'));legend.append(chip);
+}
+area.append(legend);
+const today=dateNumber(localDate());let first=today-1,last=today+7;
+for(const task of shown){first=Math.min(first,ganttStart(task));last=Math.max(last,dateNumber(task.dueDate));}
+const total=last-first+1,weekly=total>62;
+// Use a bounded day width; long histories remain scrollable without per-day DOM nodes.
+const dayWidth=Math.max(4,Math.min(36,Math.max(320,area.clientWidth-180)/total));
+const width=total*dayWidth;
+const chart=el('div',undefined,'gantt'),names=el('div',undefined,'gantt-names');names.append(el('div','タスク名','gantt-name-head'));
+const scroll=el('div',undefined,'gantt-scroll'),track=el('div',undefined,'gantt-track');scroll.tabIndex=0;scroll.setAttribute('aria-label','タイムライン（横スクロール可能）');track.style.width=width+'px';
+const months=el('div',undefined,'gantt-months'),ticks=el('div',undefined,'gantt-ticks');
+for(let n=first;n<=last;){const date=new Date(n*DAY),next=new Date(0);next.setUTCFullYear(date.getUTCFullYear(),date.getUTCMonth()+1,1);next.setUTCHours(0,0,0,0);const end=Math.min(last+1,next.getTime()/DAY);const label=el('span',`${date.getUTCFullYear()}年${date.getUTCMonth()+1}月`);label.style.left=(n-first)*dayWidth+'px';label.style.width=(end-n)*dayWidth+'px';months.append(label);n=end;}
+// Weeks start on Monday; the first partial week is covered by the month header.
+const firstTick=weekly?first+(8-new Date(first*DAY).getUTCDay())%7:first;
+let tick=firstTick;
+for(;tick<=last;tick+=weekly?7:1){const date=new Date(tick*DAY),label=el('span',weekly?`${date.getUTCMonth()+1}/${date.getUTCDate()}`:String(date.getUTCDate()));label.style.left=(tick-first)*dayWidth+'px';label.style.width=dayWidth*(weekly?7:1)+'px';ticks.append(label);}
+track.append(months,ticks);track.style.setProperty('--tick-width',dayWidth*(weekly?7:1)+'px');
+for(const entry of ganttRows(shown)){
+if(!entry.task){names.append(ganttGroupName(entry,'gantt-name gantt-group-name'));track.append(el('div',undefined,'gantt-row gantt-group-row'));continue;}
+const task=entry.task;const name=el('div',task.title,'gantt-name'+(task.done?' done':''));name.title=task.title;names.append(name);const row=el('div',undefined,'gantt-row'),start=ganttStart(task),end=dateNumber(task.dueDate),left=(start-first)*dayWidth,barWidth=(end-start+1)*dayWidth;
+row.style.backgroundPosition=(firstTick-first)*dayWidth+'px 0';
+const urgency=task.done?'':days(task)<0?' overdue':days(task)===0?' today':'';
+const bar=el('div',undefined,'gantt-bar'+(task.done?' done':urgency));if(!task.done)bar.style.backgroundColor=ganttCategoryColor(task.category);bar.style.left=left+'px';bar.style.width=barWidth+'px';bar.title=`${task.title}：${calendarLabel(start)}〜${calendarLabel(end)}（${remaining(task)}）`;bar.setAttribute('role','img');bar.setAttribute('aria-label',bar.title);
+const label=el('span',remaining(task),'gantt-remaining'+urgency);const labelWidth=110;label.style.left=(left+barWidth+labelWidth<=width?left+barWidth+3:Math.max(0,left+barWidth-labelWidth))+'px';row.append(bar,label);track.append(row);}
+const marker=el('div',undefined,'gantt-today');marker.style.left=(today-first)*dayWidth+'px';marker.append(el('span','今日'));track.append(marker);scroll.append(track);chart.append(names,scroll);area.append(chart);
+}
+function buildPrintGantt(area){
+const shown=filteredTasks();
+area.replaceChildren(el('h1',`ガントチャート（印刷日：${localDate().replaceAll('-','/')}）`));
+const legend=el('div',undefined,'gantt-legend');legend.setAttribute('aria-label','カテゴリの凡例');
+for(const category of [...new Set(shown.map(t=>t.category))].sort((a,b)=>a.localeCompare(b,'ja'))){const chip=el('span',undefined,'gantt-legend-chip'),dot=el('span',undefined,'gantt-legend-dot');dot.style.backgroundColor=ganttCategoryColor(category);chip.append(dot,el('span',category||'未分類'));legend.append(chip);}area.append(legend);
+if(!shown.length){area.append(el('p','対象のタスクはありません。','print-empty'));return;}
+const today=dateNumber(localDate());let first=today-1,last=today+7;
+for(const task of shown){first=Math.min(first,ganttStart(task));last=Math.max(last,dateNumber(task.dueDate));}
+const total=last-first+1,weekly=total>62,percent=n=>(n-first)/total*100;
+const table=el('table',undefined,'print-gantt'),cols=el('colgroup');for(const width of ['24%','76%']){const col=el('col');col.style.width=width;cols.append(col);}
+const head=el('thead'),hr=el('tr'),axisCell=el('th'),axis=el('div',undefined,'paper-timeline paper-axis');
+axis.append(el('span',`${calendarLabel(first)} 〜 ${calendarLabel(last)}${weekly?'（週目盛り）':''}`,'paper-endpoints'));
+const firstTick=weekly?first+(8-new Date(first*DAY).getUTCDay())%7:first;
+for(let n=firstTick;n<=last;n+=weekly?7:1){const date=new Date(n*DAY),tick=el('span',`${date.getUTCMonth()+1}/${date.getUTCDate()}`,'paper-tick');tick.style.left=percent(n)+'%';axis.append(tick);}
+const todayLabel=el('span','今日','paper-today-label');todayLabel.style.left=percent(today)+'%';axis.append(todayLabel);axisCell.append(axis);const nameHead=el('th','タスク名');nameHead.scope='col';axisCell.scope='col';hr.append(nameHead,axisCell);head.append(hr);
+const body=el('tbody');for(const entry of ganttRows(shown)){
+if(!entry.task){const row=el('tr',undefined,'paper-group-row'),name=ganttGroupName(entry,'paper-task paper-group-name','th');name.scope='row';const cell=el('td',undefined,'paper-group-cell'),timeline=el('div',undefined,'paper-timeline'),marker=el('div',undefined,'paper-today');marker.style.left=percent(today)+'%';timeline.append(marker);cell.append(timeline);row.append(name,cell);body.append(row);continue;}
+const task=entry.task;const row=el('tr'),name=el('th',task.title+(task.done?'（完了）':''),'paper-task');name.scope='row';const cell=el('td'),timeline=el('div',undefined,'paper-timeline'),start=ganttStart(task),end=dateNumber(task.dueDate),right=percent(end+1);
+const bar=el('div',undefined,'paper-bar'+(!task.done?(days(task)<0?' overdue':days(task)===0?' today':''):''));bar.style.backgroundColor=ganttCategoryColor(task.category);bar.style.left=percent(start)+'%';bar.style.width=(end-start+1)/total*100+'%';bar.title=`${calendarLabel(start)}〜${calendarLabel(end)}（${remaining(task)}）`;bar.setAttribute('aria-label',bar.title);
+const category=el('span',task.category,'paper-category');category.style.left=right+'%';category.style.width=(100-right+38)+'%';const marker=el('div',undefined,'paper-today');marker.style.left=percent(today)+'%';timeline.append(bar,category,marker);cell.append(timeline);row.append(name,cell);body.append(row);}table.append(cols,head,body);area.append(table);
+}
+function buildPrintCalendar(area){
+const input=$('print-month');
+if(!/^\d{4}-\d{2}$/.test(input.value)||!validDate(input.value+'-01'))input.value=localDate().slice(0,7);
+const [year,month]=input.value.split('-').map(Number),first=dateNumber(input.value+'-01');
+const next=new Date(first*DAY);next.setUTCMonth(next.getUTCMonth()+1);
+const count=next.getTime()/DAY-first,offset=new Date(first*DAY).getUTCDay(),weeks=Math.ceil((offset+count)/7),start=first-offset,today=localDate();
+area.replaceChildren(el('h1',`${year}年${month}月 締切カレンダー`),el('p','未完了タスクのみ・締切日で表示（各日最大3件）／丸印は今日','print-scope'));
+const byDate=new Map();for(const task of sorted()){if(task.done)continue;const items=byDate.get(task.dueDate)||[];items.push(task);byDate.set(task.dueDate,items);}
+const table=el('table',undefined,'print-calendar');table.style.setProperty('--calendar-cell-height',`${148/weeks-3}mm`);
+const head=el('thead'),header=el('tr');for(const name of '日月火水木金土'){const th=el('th',name);th.scope='col';header.append(th);}head.append(header);
+const body=el('tbody');for(let week=0;week<weeks;week++){const row=el('tr');row.style.height=`${148/weeks}mm`;for(let day=0;day<7;day++){
+const n=start+week*7+day,date=new Date(n*DAY),key=`${String(date.getUTCFullYear()).padStart(4,'0')}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`;
+const cell=el('td',undefined,n<first||n>=first+count?'calendar-outside':undefined),content=el('div',undefined,'calendar-cell'),number=el('span',String(date.getUTCDate()),'calendar-date'+(key===today?' calendar-today':''));
+cell.dataset.date=key;if(key===today)number.setAttribute('aria-label','今日 '+key);content.append(number);
+const items=byDate.get(key)||[],list=el('ul',undefined,'calendar-tasks');for(const task of items.slice(0,3)){const item=el('li',task.title);item.title=task.title;list.append(item);}if(items.length>3)list.append(el('li',`他${items.length-3}件`));content.append(list);cell.append(content);row.append(cell);
+}body.append(row);}table.append(head,body);area.append(table);
+}
+function buildPrint(){const isGantt=$('print-content').value==='gantt',isCalendar=$('print-content').value==='calendar';$('print-month-field').hidden=!isCalendar;if(isGantt||isCalendar)$('print-orientation').value='landscape';$('print-orientation').disabled=isGantt||isCalendar;$('print-range').disabled=isGantt||isCalendar;$('print-area').setAttribute('aria-label',isGantt?'印刷用ガントチャート':isCalendar?'印刷用月間カレンダー':'印刷用締切リスト');const landscape=$('print-orientation').value==='landscape';$('page-style').textContent=`@page{size:A4 ${landscape?'landscape':'portrait'};margin:15mm 12mm}`;if(isCalendar){$('print-area').classList.add('landscape');buildPrintCalendar($('print-area'));return;}if(isGantt){$('print-area').classList.add('landscape');buildPrintGantt($('print-area'));return;}const range=$('print-range').value;const selected=sorted().filter(t=>range==='all'||range==='open'&&!t.done||range==='week'&&days(t)<=7);const area=$('print-area');area.classList.toggle('landscape',landscape);area.replaceChildren(el('h1',`締切リスト（印刷日：${localDate().replaceAll('-','/')}）`),el('p',`印刷範囲：${{all:'すべて',open:'未完了のみ',week:'今週分（期限切れを含む）'}[range]} ／ ${selected.length}件`,'print-scope'));
+const table=el('table'),cols=el('colgroup');for(const width of (landscape?['4%','12%','23%','11%','7%','13%','30%']:['6%','16%','34%','15%','10%','19%'])){const c=el('col');c.style.width=width;cols.append(c);}const head=el('thead'),hr=el('tr');for(const title of (landscape?['□','締切日','タスク','カテゴリ','優先度','残り日数','メモ・書き込み']:['□','締切日','タスク','カテゴリ','優先度','残り日数'])){const th=el('th',title);th.scope='col';hr.append(th);}head.append(hr);const body=el('tbody');for(const t of selected){const row=el('tr'),name=el('td',t.title);if(t.done)name.append(el('div','（完了）'));if(t.memo&&!landscape)name.append(el('div',t.memo,'paper-memo'));row.append(el('td','□','paper-check'),el('td',t.dueDate.slice(0,4)+'/'+formattedDate(t.dueDate)),name,el('td',t.category||'—'),el('td',priorityLabels[t.priority]),el('td',remaining(t)));if(landscape){const memo=el('td');memo.append(el('div',t.memo,'paper-writing'));row.append(memo);}body.append(row);}if(!selected.length){const cell=el('td','対象のタスクはありません。','print-empty');cell.colSpan=landscape?7:6;const row=el('tr');row.append(cell);body.append(row);}table.append(cols,head,body);const notes=el('section',undefined,'notes');notes.append(el('h2','メモ・追加記入欄'));for(let i=0;i<(landscape?8:5);i++)notes.append(el('div',undefined,'writing-line'));area.append(table,notes);}
+function addSamples(){if(tasks.some(t=>t.id.startsWith('sample-v1-')))return;const today=dateNumber(localDate());const samples=[['企画書を提出する',-1,'仕事','high','提出前に内容を最終確認'],['資料を確認する',0,'仕事','normal','確認した点をメモする'],['来週の予定を立てる',5,'暮らし','low','必要な準備も書き出す']].map((v,i)=>({id:`sample-v1-${i}`,title:v[0],startDate:'',dueDate:new Date((today+v[1])*DAY).toISOString().slice(0,10),category:v[2],priority:v[3],memo:v[4],done:false,createdAt:new Date(Date.now()+i).toISOString()}));persist([...tasks,...samples]);}
+$('task-form').onsubmit=e=>{
+e.preventDefault();const title=$('title').value.trim(),dueDate=$('due-date').value,startDate=$('start-date').value;
+if(!title||!validDate(dueDate)||(startDate!==''&&!validDate(startDate))){notify('タイトルと正しい締切日・開始日（任意）を入力してください。',true);return;}
+const previous=tasks.find(t=>t.id===editingId),extras=[...new Set(extraDates)].filter(d=>d!==dueDate);
+const mode=previous||extras.length?'none':$('repeat').value,count=mode==='none'?1:Number($('repeat-count').value);
+if(!Number.isInteger(count)||count<1||count>52||extras.length>30){notify('繰り返し回数は1〜52、追加日は最大30日で指定してください。',true);return;}
+const base={title,dueDate,startDate,category:$('category').value.trim(),priority:$('priority').value,memo:$('memo').value.trim(),done:previous?.done||false,createdAt:previous?.createdAt||new Date().toISOString()};
+let generated;
+if(previous)generated=[{...base,id:previous.id,...(typeof previous.seriesId==='string'?{seriesId:previous.seriesId}:{})}];
+else if(extras.length)generated=[dueDate,...extras].map(date=>({...base,id:newId(),dueDate:date,startDate:startDate?ordinalDate(dateNumber(startDate)+dateNumber(date)-dateNumber(dueDate)):''}));
+else {const seriesId=mode==='none'?null:newId();generated=Array.from({length:count},(_,i)=>({...base,id:newId(),dueDate:mode==='none'?dueDate:shiftedDate(dueDate,mode,i),startDate:startDate?(mode==='none'?startDate:shiftedDate(startDate,mode,i)):'',...(seriesId!==null?{seriesId}:{})}));}
+if(generated.some(t=>!validDate(t.dueDate)||(t.startDate!==''&&!validDate(t.startDate)))){notify('生成する日付が対応範囲（0001年〜9999年）を超えています。日付や回数を変更してください。',true);return;}
+if(persist(previous?tasks.map(t=>t.id===editingId?generated[0]:t):[...tasks,...generated])){resetForm();notify(previous?'タスクを更新しました。':`${generated.length}件のタスクを追加しました。`);}
+};
+for(const view of ['list','gantt'])$('view-'+view).onclick=()=>{currentView=view;for(const name of ['list','gantt'])$('view-'+name).setAttribute('aria-pressed',String(name===view));render();};
+$('gantt-sort').onchange=()=>{render();buildPrint();};
+window.addEventListener('resize',()=>{if(currentView==='gantt')render();});
+$('cancel-edit').onclick=resetForm;for(const id of ['search','category-filter','unfinished'])$(id).addEventListener('input',render);
+$('print-month').value=localDate().slice(0,7);$('print-month').onchange=buildPrint;$('print-content').onchange=buildPrint;$('print-range').onchange=buildPrint;$('print-orientation').onchange=buildPrint;$('print-button').onclick=()=>{buildPrint();window.print();};window.addEventListener('beforeprint',buildPrint);
+$('export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(tasks,null,2)],{type:'application/json;charset=utf-8'}));const a=el('a');a.href=url;a.download=`deadline-manager-${localDate()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const imported=validate(JSON.parse((await file.text()).replace(/^\uFEFF/,'')));if(confirm(`${imported.length}件を読み込み、現在の${tasks.length}件を置き換えますか？`)&&persist(imported)){resetForm();notify('データをインポートしました。');}}catch(err){notify('インポートできませんでした。'+(err instanceof SyntaxError?'正しいJSONファイルを選択してください。':err.message),true);}finally{e.target.value='';}};
+$('clear').onclick=()=>{if(confirm('すべてのタスクを削除しますか？この操作は元に戻せません。')&&persist([])){resetForm();notify('すべてのタスクを削除しました。');}};
+let savedRaw=null,storageAccessError=false;try{savedRaw=localStorage.getItem(KEY);}catch(e){storageAccessError=true;}if(storageAccessError){memoryOnly=true;$('storage-warning').hidden=false;}else if(savedRaw!==null){try{tasks=validate(JSON.parse(savedRaw));}catch(e){storageBlocked=true;notify('保存データを読み込めませんでした。既存データを守るため、追加・保存する前にブラウザの保存状態を確認してください。',true);$('task-form').querySelector('button[type=submit]').disabled=true;$('import').disabled=true;$('clear').disabled=true;}}
+resetForm();render();let lastDay=localDate();setInterval(()=>{if(localDate()!==lastDay){lastDay=localDate();if(!editingId)$('due-date').value=lastDay;render();}},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
+</script>
+<!-- 使い方：このHTMLをブラウザで開き、タスクを追加します。編集・完了・検索が可能です。
+データは使用中のブラウザに保存されます。JSONでバックアップできます（インポートは全件置換）。
+印刷範囲と用紙の向き（A4縦／A4横）を選び「印刷する」を押します。印刷末尾の記入欄は縦5行・横8行です。 -->
+</body>
+</html>

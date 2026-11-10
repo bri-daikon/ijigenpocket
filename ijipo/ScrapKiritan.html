@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap Kiritan Ver.4 | 異次元ポケット</title>
+    <meta name="description" content="Scrap Kiritanは、画像の切り抜き、モザイク、文字入れ、一括リサイズ、圧縮、分割などをブラウザ上で行える無料の画像加工ツールです。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/ScrapKiritan.html">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/scrapkiritan.css">
+</head>
+<body class="min-h-screen flex flex-col selection:bg-blue-100">
+
+    <div class="flex-grow w-full max-w-6xl mx-auto p-4 md:p-10 flex flex-col justify-start">
+        <div class="glass-card shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] rounded-[40px] overflow-hidden border border-white/20 mb-10">
+            
+            <header class="pt-10 pb-6 px-8 text-center border-b border-slate-100">
+                <h1 class="text-4xl font-black text-slate-900 tracking-tighter">Scrap Kiritan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"> Ver.4</span></h1>
+                
+                <!-- Main Tabs -->
+                <div class="flex justify-center mt-8 space-x-2 bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto">
+                    <button onclick="switchMainTab('editor')" id="main-tab-editor" class="tab-btn active px-6 py-2.5 rounded-xl text-sm font-bold transition-all">スクショエディタ</button>
+                    <button onclick="switchMainTab('resizer')" id="main-tab-resizer" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">一括リサイズ</button>
+                    <button onclick="switchMainTab('cropper1280')" id="main-tab-cropper1280" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">1280×670切り抜き</button>
+                    <button onclick="switchMainTab('color')" id="main-tab-color" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">カラーツール</button>
+                    <button onclick="switchMainTab('iconmaker')" id="main-tab-iconmaker" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">丸形アイコン</button>
+                    <button onclick="switchMainTab('texteditor')" id="main-tab-texteditor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">文字入れ・画像編集</button>
+                    <button onclick="switchMainTab('compressor')" id="main-tab-compressor" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">画像圧縮</button>
+                    <button onclick="switchMainTab('splitter')" id="main-tab-splitter" class="tab-btn px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">画像分割</button>
+                </div>
+            </header>
+
+            <div class="p-6 md:p-10">
+                
+                <!-- SECTION: MAIN EDITOR -->
+                <div id="view-editor" class="main-view">
+                    <div class="flex flex-wrap gap-5 mb-10 justify-center">
+                        <label class="btn-hover bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold cursor-pointer flex items-center gap-3 text-base shadow-xl shadow-slate-900/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span>画像を選択 / 貼り付け</span>
+                            <input type="file" id="fileInput" class="hidden" accept="image/*">
+                        </label>
+                        
+                        <button id="cropButton" class="hidden btn-hover bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 text-base shadow-xl shadow-emerald-500/10">
+                            <span>✂️</span>
+                            <span>切り抜いて編集へ</span>
+                        </button>
+                    </div>
+
+                    <div id="dropZone" class="img-container relative group ring-1 ring-slate-100">
+                        <img id="imageToCrop" src="" alt="Editor" class="hidden">
+                        <div id="initialGuide" class="flex flex-col items-center justify-center text-center p-12 transition-all duration-500">
+                            <div class="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <p class="text-xl font-bold text-slate-700">画像をドロップまたは貼り付け</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-5 mt-6 justify-center">
+                        <button id="cropButtonBottom" class="hidden btn-hover bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 text-base shadow-xl shadow-emerald-500/10">
+                            <span>✂️</span>
+                            <span>切り抜いて編集へ</span>
+                        </button>
+                    </div>
+
+                    <div id="resultWrapper" class="hidden mt-16">
+                        <div class="flex items-center gap-6 mb-8">
+                            <div class="h-px flex-grow bg-slate-100"></div>
+                            <h2 class="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Editor & Preview</h2>
+                            <div class="h-px flex-grow bg-slate-100"></div>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-8">
+                            <!-- 編集ツールバー -->
+                            <div class="flex flex-wrap items-center justify-center gap-3 bg-slate-50 p-3 rounded-3xl border border-slate-200">
+                                <button id="toolMosaic" class="tool-btn active px-5 py-2.5 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2"><span>🖌️</span> モザイク</button>
+                                <button id="toolStamp" class="tool-btn px-5 py-2.5 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2"><span>🎨</span> スタンプ</button>
+                                <button id="toolRect" class="tool-btn px-5 py-2.5 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2"><span>⬜</span> 枠入れ</button>
+                                <button id="toolText" class="tool-btn px-5 py-2.5 rounded-xl font-bold bg-white text-slate-600 shadow-sm transition-all flex items-center gap-2"><span>T</span> 文字入れ</button>
+                                
+                                <div class="w-px h-6 bg-slate-200 mx-1"></div>
+                                
+                                <div id="stampList" class="hidden flex gap-1">
+                                    <button class="stamp-option p-1.5 text-xl hover:scale-125 transition-transform" data-emoji="❤️">❤️</button>
+                                    <button class="stamp-option p-1.5 text-xl hover:scale-125 transition-transform" data-emoji="✅">✅</button>
+                                    <button class="stamp-option p-1.5 text-xl hover:scale-125 transition-transform" data-emoji="❌">❌</button>
+                                    <button class="stamp-option p-1.5 text-xl hover:scale-125 transition-transform" data-emoji="💡">💡</button>
+                                    <button class="stamp-option p-1.5 text-xl hover:scale-125 transition-transform" data-emoji="👉️">👉️</button>
+                                </div>
+
+                                <div id="colorPanel" class="hidden flex items-center gap-2 px-2">
+                                    <div class="w-10 h-10 color-picker-wrapper">
+                                        <input type="color" id="mainColor" value="#3b82f6">
+                                    </div>
+                                </div>
+
+                                <div id="textInputWrapper" class="hidden flex items-center">
+                                    <textarea id="textToInsert" placeholder="文字を入力... (改行可)" rows="2" class="px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm resize-y min-h-[40px] max-h-32 w-56 leading-snug"></textarea>
+                                </div>
+
+                                <div id="sizeControl" class="flex items-center gap-3 px-2">
+                                    <input type="range" id="brushSize" min="2" max="150" value="40" class="accent-blue-600 w-24">
+                                </div>
+                                
+                                <button id="resetEdit" class="px-5 py-2.5 rounded-xl font-bold bg-red-50 text-red-500 hover:bg-red-100 transition-all">リセット</button>
+                            </div>
+
+                            <div class="relative p-2 bg-white shadow-2xl rounded-2xl border border-slate-100 overflow-hidden">
+                                <canvas id="editorCanvas"></canvas>
+                            </div>
+
+                            <button id="downloadButton" class="btn-hover bg-blue-600 text-white px-10 py-5 rounded-[1.5rem] font-bold flex items-center gap-4 text-lg shadow-2xl shadow-blue-600/20">
+                                <span>加工して保存する</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: BATCH RESIZER -->
+                <div id="view-resizer" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="space-y-4">
+                                <label class="block text-sm font-bold text-slate-700">1. 設定</label>
+                                <div class="flex space-x-3 mb-3">
+                                    <button onclick="setResizeMode('px')" id="mode-px" class="flex-1 py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all">ピクセル (px)</button>
+                                    <button onclick="setResizeMode('percent')" id="mode-percent" class="flex-1 py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">パーセント (%)</button>
+                                </div>
+                                
+                                <!-- ピクセル指定時の詳細設定 -->
+                                <div id="px-settings-group" class="space-y-3">
+                                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="radio" name="resize-axis" value="width" checked onchange="toggleResizeAxis()" class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300">
+                                            <span class="text-sm font-bold text-slate-700">横幅を基準にする</span>
+                                        </label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" id="batch-width-value" value="800" class="w-20 text-right border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 text-sm disabled:opacity-40">
+                                            <span class="text-xs font-bold text-slate-400">px</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <label class="flex items-center space-x-3 cursor-pointer">
+                                            <input type="radio" name="resize-axis" value="height" onchange="toggleResizeAxis()" class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300">
+                                            <span class="text-sm font-bold text-slate-700">高さを基準にする</span>
+                                        </label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" id="batch-height-value" value="1440" disabled class="w-20 text-right border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 text-sm disabled:opacity-40">
+                                            <span class="text-xs font-bold text-slate-400">px</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- パーセント指定時の設定 (非表示) -->
+                                <div id="percent-settings-group" class="hidden relative">
+                                    <input type="number" id="batch-resize-value" value="50" class="w-full border-2 border-slate-100 rounded-2xl px-4 py-4 focus:ring-2 focus:ring-blue-500 outline-none font-black text-xl text-slate-700">
+                                    <span id="batch-unit-label" class="absolute right-4 top-5 text-slate-300 font-bold">%</span>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <label class="block text-sm font-bold text-slate-700">2. 画像を選択</label>
+                                <div class="relative h-28 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                                    <input type="file" id="batch-file-input" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    <span class="text-blue-500 font-bold text-sm">ファイルをドロップ</span>
+                                    <span class="text-slate-400 text-[10px] mt-1">複数選択可能 / 出力: PNG</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="batch-preview-container" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-8"></div>
+
+                        <button id="batch-exec-btn" disabled class="w-full btn-hover bg-slate-900 text-white py-5 rounded-2xl font-black text-lg disabled:opacity-20 shadow-xl">
+                            PNGリサイズして個別保存
+                        </button>
+                        <div id="batch-status" class="mt-4 text-center text-xs font-bold text-blue-600 hidden"></div>
+                    </div>
+                </div>
+
+                <!-- SECTION: 1280x670 CROPPER -->
+                <div id="view-cropper1280" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-2xl mx-auto flex flex-col items-center">
+                        <div class="flex flex-wrap gap-5 mb-6 justify-center w-full">
+                            <label class="btn-hover bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold cursor-pointer flex items-center gap-3 text-base shadow-xl shadow-slate-900/10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <span>画像を選択 / 貼り付け</span>
+                                <input type="file" id="crop1280-file-input" class="hidden" accept="image/*">
+                            </label>
+                            
+                            <button id="crop1280-exec-btn" class="hidden btn-hover bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 text-base shadow-xl shadow-emerald-500/10">
+                                <span>✂️</span>
+                                <span>1280×670で切り抜いて保存</span>
+                            </button>
+                        </div>
+
+                        <div id="crop1280-drop-zone" class="img-container relative group ring-1 ring-slate-100 w-full min-h-[300px] flex items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <img id="crop1280-image" src="" alt="Cropper 1280" class="hidden max-h-[500px]">
+                            <div id="crop1280-initial-guide" class="flex flex-col items-center justify-center text-center p-12 transition-all duration-500">
+                                <div class="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <p class="text-xl font-bold text-slate-700">画像をドロップまたは貼り付け</p>
+                                <p class="text-slate-400 text-xs mt-2">アスペクト比 1280:670 (約1.91:1) で切り抜きます</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: COLOR TOOL -->
+                <div id="view-color" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-md mx-auto py-6">
+                        <div class="flex flex-col items-center">
+                            <div class="w-48 h-48 mb-8 relative color-picker-wrapper">
+                                <input type="color" id="utility-color-input" value="#3b82f6" class="shadow-2xl">
+                            </div>
+                            
+                            <div class="w-full space-y-4">
+                                <!-- HEX 入力・表示 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label for="utility-hex-input" class="text-xs font-bold text-slate-500 uppercase tracking-wider">HEX</label>
+                                        <button onclick="copyColorValue('hex')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all text-slate-700">HEXをコピー</button>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="text" id="utility-hex-input" value="#3B82F6" placeholder="#3B82F6" spellcheck="false" class="w-full font-mono text-2xl font-black text-slate-700 tracking-tight bg-white px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+
+                                <!-- RGB 入力・表示 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label for="utility-rgb-input" class="text-xs font-bold text-slate-500 uppercase tracking-wider">RGB</label>
+                                        <button onclick="copyColorValue('rgb')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm hover:bg-slate-100 transition-all text-slate-700">RGBをコピー</button>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="text" id="utility-rgb-input" value="rgb(59, 130, 246)" placeholder="rgb(59, 130, 246)" spellcheck="false" class="w-full font-mono text-lg font-bold text-slate-700 tracking-tight bg-white px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <!-- R, G, B 個別入力 -->
+                                    <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200 text-xs font-bold text-slate-500">
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-red-500 font-black">R</span>
+                                            <input type="number" id="utility-r-input" min="0" max="255" value="59" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-emerald-500 font-black">G</span>
+                                            <input type="number" id="utility-g-input" min="0" max="255" value="130" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                        <div class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200">
+                                            <span class="text-blue-500 font-black">B</span>
+                                            <input type="number" id="utility-b-input" min="0" max="255" value="246" class="w-full text-right outline-none font-mono font-bold text-slate-700 bg-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 互換性維持のための非表示要素 -->
+                            <span id="utility-hex" class="hidden">#3B82F6</span>
+                            <span id="utility-rgb" class="hidden">rgb(59, 130, 246)</span>
+                            <div id="utility-notif" class="mt-6 text-emerald-500 font-black text-sm opacity-0 transition-opacity">COPIED!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: ICON MAKER -->
+                <div id="view-iconmaker" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. アイコン画像を選ぶ (背景透明推奨)</label>
+                                    <input type="file" id="icon-imageInput" accept="image/png, image/jpeg, image/webp" 
+                                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                </div>
+
+                                <!-- 画像の拡大縮小・位置調整 -->
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-bold text-slate-700">画像の拡大・縮小</label>
+                                        <span id="icon-scale-val" class="text-xs font-mono font-bold text-indigo-600">100%</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <input type="range" id="icon-scale-slider" min="10" max="300" value="100" class="w-full accent-indigo-600">
+                                        <button id="icon-scale-reset-btn" type="button" class="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition-all whitespace-nowrap shadow-sm">リセット</button>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">※プレビュー上でドラッグして位置調整、マウスホイールで拡大縮小も可能です</p>
+                                </div>
+
+                                <!-- 2. 背景色（グラデーション）選択 -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">2. 背景色を選ぶ（グラデーション）</label>
+                                    <div class="flex items-center space-x-6">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-bold text-slate-600">上:</span>
+                                            <div class="w-10 h-10 color-picker-wrapper">
+                                                <input type="color" id="icon-colorTop" value="#4F46E5" class="shadow-sm">
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm font-bold text-slate-600">下:</span>
+                                            <div class="w-10 h-10 color-picker-wrapper">
+                                                <input type="color" id="icon-colorBottom" value="#EC4899" class="shadow-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. クレジットテキスト入力 -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">3. クレジットテキスト</label>
+                                    <input type="text" id="icon-textInput" value="©異次元ポケット" 
+                                        class="block w-full px-4 py-3 text-sm text-slate-700 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow font-medium">
+                                </div>
+
+                                <!-- 4. ダウンロードボタン -->
+                                <div class="pt-4">
+                                    <button id="icon-downloadBtn" class="w-full btn-hover bg-indigo-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-indigo-600/10 disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        画像をダウンロード
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl p-4 border-2 border-dashed border-slate-200 min-h-[300px]">
+                                <p id="icon-placeholderText" class="text-slate-400 text-sm font-bold mb-4">ここにプレビューが表示されます</p>
+                                <!-- このCanvasに画像を合成して描画します -->
+                                <canvas id="icon-previewCanvas" class="max-w-full h-auto rounded-full shadow-2xl hidden cursor-grab active:cursor-grabbing"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: TEXT EDITOR -->
+                <div id="view-texteditor" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <!-- 左側：操作パネル (5/12) -->
+                            <div class="lg:col-span-5 space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 背景画像を選択</label>
+                                    <div id="texteditor-dropzone" class="relative h-24 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="texteditor-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-xs">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- ツール選択 -->
+                                <div class="border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">ツールを選択</label>
+                                    <div class="flex space-x-3 mb-3">
+                                        <button id="texteditor-tool-select" onclick="switchTextEditorTool('select')" class="flex-grow py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5"><span>👆️</span> 選択 / 移動</button>
+                                        <button id="texteditor-tool-eraser" onclick="switchTextEditorTool('eraser')" class="flex-grow py-2.5 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5"><span>🧽</span> 消しゴム</button>
+                                    </div>
+                                    <div id="texteditor-eraser-settings" class="hidden bg-white p-3 rounded-2xl border border-slate-100 space-y-2">
+                                        <div class="flex justify-between text-[11px] font-bold text-slate-400">
+                                            <span>消しゴムの太さ</span>
+                                            <span id="texteditor-eraser-size-val">30px</span>
+                                        </div>
+                                        <input type="range" id="texteditor-eraser-size" min="5" max="100" value="30" class="w-full accent-blue-600">
+                                    </div>
+                                </div>
+
+                                <!-- 2. テキスト追加/編集 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. テキストを追加・編集</label>
+                                    <div class="flex gap-2">
+                                        <textarea id="texteditor-text-input" placeholder="テキストを入力... (改行可)" rows="2" class="flex-grow px-4 py-2.5 text-sm text-slate-700 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow font-medium resize-none"></textarea>
+                                        <button id="texteditor-add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 rounded-xl transition-colors">追加</button>
+                                    </div>
+
+                                    <!-- スタイル詳細設定 -->
+                                    <div class="grid grid-cols-3 gap-3 text-xs font-semibold text-slate-600">
+                                        <div>
+                                            <span class="block mb-1">フォント:</span>
+                                            <select id="texteditor-font-select" class="w-full px-2 py-2 border border-slate-200 rounded-lg bg-white outline-none">
+                                                <option value="sans-serif">ゴシック (Sans-serif)</option>
+                                                <option value="serif">明朝 (Serif)</option>
+                                                <option value="monospace">等幅 (Monospace)</option>
+                                                <option value="Impact">インパクト (Impact)</option>
+                                                <option value="Arial">Arial</option>
+                                                <option value="'Helvetica Neue'">Helvetica</option>
+                                                <option value="'Times New Roman'">Times New Roman</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <span class="block mb-1">配置方向:</span>
+                                            <select id="texteditor-writing-mode" class="w-full px-2 py-2 border border-slate-200 rounded-lg bg-white outline-none">
+                                                <option value="horizontal">横書き</option>
+                                                <option value="vertical">縦書き</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <span class="block mb-1">装飾:</span>
+                                            <div class="flex flex-col gap-1 py-1">
+                                                <label class="flex items-center gap-1 cursor-pointer">
+                                                    <input type="checkbox" id="texteditor-bold-cb" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                    <span>太字</span>
+                                                </label>
+                                                <label class="flex items-center gap-1 cursor-pointer">
+                                                    <input type="checkbox" id="texteditor-italic-cb" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                    <span>斜体</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 色とサイズ・縁取り設定 -->
+                                    <div class="space-y-3 bg-white p-4 rounded-2xl border border-slate-100">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-bold text-slate-600">文字色 / 縁取り色:</span>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 color-picker-wrapper">
+                                                    <input type="color" id="texteditor-fill-color" value="#ffffff">
+                                                </div>
+                                                <div class="w-8 h-8 color-picker-wrapper">
+                                                    <input type="color" id="texteditor-stroke-color" value="#000000">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                                <span>文字サイズ</span>
+                                                <span id="texteditor-size-val">40px</span>
+                                            </div>
+                                            <input type="range" id="texteditor-size-slider" min="10" max="200" value="40" class="w-full accent-blue-600">
+                                        </div>
+
+                                        <div>
+                                            <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                                <span>縁取りの太さ</span>
+                                                <span id="texteditor-stroke-val">6px</span>
+                                            </div>
+                                            <input type="range" id="texteditor-stroke-slider" min="0" max="30" value="6" class="w-full accent-blue-600">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. レイヤー管理 / テキスト一覧 -->
+                                <div class="border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">3. レイヤー (配置された文字)</label>
+                                    <div id="texteditor-layer-list" class="space-y-2 max-h-40 overflow-y-auto pr-1 text-xs">
+                                        <p class="text-slate-400 text-center py-4">文字がまだ追加されていません</p>
+                                    </div>
+                                </div>
+
+                                <!-- 4. 画像フィルター & 編集 -->
+                                <div class="border-t border-slate-200 pt-4 space-y-3">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">4. 画像調整 (フィルター)</label>
+                                    <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded-2xl border border-slate-100 text-[10px] font-bold text-slate-500">
+                                        <div>
+                                            <div class="flex justify-between mb-1"><span>明るさ</span><span id="texteditor-bright-val">100%</span></div>
+                                            <input type="range" id="texteditor-bright-slider" min="50" max="150" value="100" class="w-full accent-slate-700">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between mb-1"><span>コントラスト</span><span id="texteditor-contrast-val">100%</span></div>
+                                            <input type="range" id="texteditor-contrast-slider" min="50" max="150" value="100" class="w-full accent-slate-700">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. キャンバスの背景色 -->
+                                <div class="border-t border-slate-200 pt-4 space-y-2">
+                                    <label class="block text-sm font-bold text-slate-700">5. キャンバスの背景色</label>
+                                    <div class="flex space-x-2 bg-white p-1 rounded-xl border border-slate-100">
+                                        <button onclick="setTextEditorCanvasBg('transparent')" id="canvas-bg-btn-transparent" class="flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border-2 border-blue-600 bg-blue-50 text-blue-700 checkerboard-bg">格子（透明）</button>
+                                        <button onclick="setTextEditorCanvasBg('white')" id="canvas-bg-btn-white" class="flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-white text-slate-700">白</button>
+                                        <button onclick="setTextEditorCanvasBg('black')" id="canvas-bg-btn-black" class="flex-grow py-1.5 rounded-lg text-xs font-bold transition-all border border-slate-200 bg-slate-900 text-white">黒</button>
+                                    </div>
+                                </div>
+
+                                <!-- 6. ダウンロードボタン -->
+                                <div class="pt-4">
+                                    <button id="texteditor-download-btn" class="w-full btn-hover bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        画像を保存する
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 (7/12) -->
+                            <div class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200 min-h-[450px]">
+                                <div id="texteditor-placeholder" class="text-center">
+                                    <p class="text-slate-400 text-sm font-bold">ここにキャンバスが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に背景画像を選択してください</p>
+                                </div>
+                                <!-- 編集用Canvas -->
+                                <div class="relative max-w-full overflow-hidden rounded-2xl shadow-2xl hidden" id="texteditor-canvas-container">
+                                    <canvas id="texteditor-canvas" class="max-w-full h-auto block cursor-move checkerboard-bg"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: IMAGE COMPRESSOR -->
+                <div id="view-compressor" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 圧縮したい画像を選択</label>
+                                    <div id="compressor-dropzone" class="relative h-28 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="compressor-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-sm">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. 圧縮設定 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. 保存設定</label>
+                                    
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-2">フォーマット:</span>
+                                        <div class="flex space-x-2">
+                                            <button id="compressor-fmt-jpeg" onclick="setCompressorFormat('image/jpeg')" class="flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all">JPEG</button>
+                                            <button id="compressor-fmt-webp" onclick="setCompressorFormat('image/webp')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">WebP</button>
+                                            <button id="compressor-fmt-png" onclick="setCompressorFormat('image/png')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">PNG</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="compressor-quality-wrapper">
+                                        <div class="flex justify-between text-[11px] font-bold text-slate-400 mb-1">
+                                            <span>画質 (Quality)</span>
+                                            <span id="compressor-quality-val">80%</span>
+                                        </div>
+                                        <input type="range" id="compressor-quality-slider" min="1" max="100" value="80" class="w-full accent-blue-600">
+                                        <p class="text-[10px] text-slate-400 mt-1">※PNGの場合は画質設定は適用されません</p>
+                                    </div>
+
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-1">リサイズ (横幅):</span>
+                                        <select id="compressor-resize-select" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none text-sm font-bold text-slate-600">
+                                            <option value="original">元のサイズを維持</option>
+                                            <option value="1920">1920px (フルHD)</option>
+                                            <option value="1280">1280px (HD)</option>
+                                            <option value="1024">1024px</option>
+                                            <option value="800">800px</option>
+                                            <option value="400">400px</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- 3. ダウンロードボタン -->
+                                <div class="pt-4 border-t border-slate-200">
+                                    <button id="compressor-download-btn" class="w-full btn-hover bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed" disabled>
+                                        圧縮して保存する
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-center bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200">
+                                <div id="compressor-placeholder" class="text-center">
+                                    <p class="text-slate-400 text-sm font-bold">ここに圧縮プレビューが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に画像を選択してください</p>
+                                </div>
+
+                                <div id="compressor-preview-container" class="w-full hidden">
+                                    <!-- 圧縮結果情報 -->
+                                    <div class="flex flex-col gap-3 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm w-full">
+                                        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                                            <span class="text-xs font-bold text-slate-400">元画像サイズ:</span>
+                                            <span id="compressor-original-size" class="text-sm font-black text-slate-700">- KB</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-bold text-blue-500">圧縮後のサイズ:</span>
+                                            <div class="text-right">
+                                                <span id="compressor-new-size" class="text-lg font-black text-blue-600">- KB</span>
+                                                <span id="compressor-ratio" class="text-[10px] font-bold text-emerald-500 block">(-%)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- プレビュー画像 -->
+                                    <div class="relative w-full overflow-hidden rounded-xl shadow-lg border border-slate-200 checkerboard-bg flex justify-center items-center">
+                                        <img id="compressor-preview-img" src="" alt="プレビュー" class="max-w-full max-h-[300px] object-contain">
+                                    </div>
+                                    <!-- 隠しCanvas (処理用) -->
+                                    <canvas id="compressor-canvas" class="hidden"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION: IMAGE SPLITTER -->
+                <div id="view-splitter" class="main-view hidden animate-in fade-in duration-500">
+                    <div class="max-w-5xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- 左側：操作パネル -->
+                            <div class="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                <!-- 1. 画像アップロード -->
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. 分割したい画像を選択</label>
+                                    <div id="splitter-dropzone" class="relative h-28 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-slate-50/50 transition-colors">
+                                        <input type="file" id="splitter-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <span class="text-blue-500 font-bold text-sm">ファイルをドロップまたはクリック</span>
+                                        <span class="text-slate-400 text-[10px] mt-1">画像を直接ペースト(Ctrl+V)でもOK</span>
+                                    </div>
+                                </div>
+
+                                <!-- 2. 分割設定 -->
+                                <div class="space-y-4 border-t border-slate-200 pt-4">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">2. 分割設定</label>
+                                    
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-2">分割方向:</span>
+                                        <div class="flex space-x-2">
+                                            <button id="splitter-dir-horizontal" onclick="setSplitterDirection('horizontal')" class="flex-grow py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-xs transition-all">横方向に分割<br><span class="text-[10px] font-normal">(縦線でスライス)</span></button>
+                                            <button id="splitter-dir-vertical" onclick="setSplitterDirection('vertical')" class="flex-grow py-2 rounded-xl border-2 border-slate-200 text-slate-400 font-bold text-xs transition-all">縦方向に分割<br><span class="text-[10px] font-normal">(横線でスライス)</span></button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-500 mb-1">分割数:</span>
+                                        <select id="splitter-count-select" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white outline-none text-sm font-bold text-slate-600">
+                                            <option value="2">2分割</option>
+                                            <option value="3">3分割</option>
+                                            <option value="4" selected>4分割</option>
+                                        </select>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between items-end mb-1">
+                                            <span class="block text-xs font-bold text-slate-500">SNS用 隙間補正 (ピクセル):</span>
+                                            <span id="splitter-gap-val" class="text-xs font-bold text-blue-600">0px</span>
+                                        </div>
+                                        <input type="range" id="splitter-gap-input" min="0" max="40" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                        <p class="text-[10px] text-slate-400 mt-1">※X等で並べた際の隙間による「ずれ」を補正します（通常10〜12px程度）</p>
+                                    </div>
+                                </div>
+
+                                <!-- 3. 実行ボタン -->
+                                <div class="pt-4 border-t border-slate-200">
+                                    <button id="splitter-download-btn" class="hidden w-full btn-hover bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-2xl shadow-lg disabled:opacity-20 disabled:cursor-not-allowed">
+                                        すべて保存（個別ダウンロード）
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 右側：プレビュー画面 -->
+                            <div class="flex flex-col items-center justify-start bg-slate-50/50 rounded-[2rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
+                                <div id="splitter-placeholder" class="text-center my-auto">
+                                    <p class="text-slate-400 text-sm font-bold">ここに分割プレビューが表示されます</p>
+                                    <p class="text-slate-400 text-xs mt-1">先に画像を選択してください</p>
+                                </div>
+
+                                <div id="splitter-preview-container" class="w-full hidden overflow-hidden">
+                                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-200">
+                                        <span class="text-sm font-bold text-slate-600">プレビュー</span>
+                                        <span id="splitter-info" class="text-xs font-bold text-slate-400"></span>
+                                    </div>
+                                    <!-- プレビュー画像が追加される -->
+                                    <div id="splitter-pieces" class="flex gap-2 overflow-x-auto pb-4 justify-center"></div>
+                                </div>
+                                <!-- 隠し要素 (処理用) -->
+                                <img id="splitter-original-img" src="" class="hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <section class="bg-white/95 rounded-[32px] shadow-xl border border-white/30 p-6 md:p-10 mb-10 text-slate-800" aria-labelledby="guide-title">
+            <div class="max-w-4xl mx-auto">
+                <p class="text-sm font-bold tracking-widest text-blue-600 uppercase mb-2">Guide</p>
+                <h2 id="guide-title" class="text-3xl font-black tracking-tight mb-4">Scrap Kiritanでできること</h2>
+                <p class="leading-8 text-slate-600 mb-8">Scrap Kiritanは、ブログやSNS、TRPGの素材制作で頻繁に行う画像加工を、ひとつの画面にまとめたブラウザツールです。専用ソフトを起動せず、画像を選択または貼り付けてすぐに作業できます。</p>
+
+                <div class="grid md:grid-cols-2 gap-5 mb-10">
+                    <article class="rounded-2xl bg-slate-50 border border-slate-200 p-5"><h3 class="text-lg font-bold mb-2">スクリーンショット編集</h3><p class="text-sm leading-7 text-slate-600">必要な範囲を切り抜き、モザイク、スタンプ、枠、文字を追加できます。公開前に名前や個人情報を隠したい場合にも便利です。</p></article>
+                    <article class="rounded-2xl bg-slate-50 border border-slate-200 p-5"><h3 class="text-lg font-bold mb-2">リサイズ・圧縮</h3><p class="text-sm leading-7 text-slate-600">複数画像の大きさをまとめて変更したり、JPEG・WebP・PNG形式で容量を調整したりできます。</p></article>
+                    <article class="rounded-2xl bg-slate-50 border border-slate-200 p-5"><h3 class="text-lg font-bold mb-2">SNS向け切り抜き・分割</h3><p class="text-sm leading-7 text-slate-600">1280×670の比率に合わせた切り抜きや、1枚の画像を2～4枚に分割する加工に対応しています。</p></article>
+                    <article class="rounded-2xl bg-slate-50 border border-slate-200 p-5"><h3 class="text-lg font-bold mb-2">アイコン・文字入り画像</h3><p class="text-sm leading-7 text-slate-600">丸形アイコンの作成、背景色の設定、文字の配置や縁取りなど、告知画像づくりに役立つ機能を利用できます。</p></article>
+                </div>
+
+                <h2 class="text-2xl font-black mb-4">基本的な使い方</h2>
+                <ol class="list-decimal pl-6 space-y-3 leading-7 text-slate-600 mb-10">
+                    <li>画面上部から目的に合うタブを選びます。</li>
+                    <li>加工したい画像を選択するか、クリップボードから貼り付けます。</li>
+                    <li>切り抜き範囲、サイズ、文字、画質などを調整します。</li>
+                    <li>プレビューを確認してから保存ボタンを押します。</li>
+                </ol>
+
+                <div class="rounded-2xl bg-blue-50 border border-blue-100 p-5 mb-10">
+                    <h2 class="text-xl font-black mb-2">画像データの取り扱い</h2>
+                    <p class="leading-7 text-slate-600">選択した画像は、対応している処理を利用者のブラウザ内で行うために使われます。大切な画像を加工するときは、念のため元ファイルを残した状態でご利用ください。</p>
+                </div>
+
+                <h2 class="text-2xl font-black mb-4">よくある質問</h2>
+                <div class="space-y-4">
+                    <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">スマートフォンでも使えますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">ブラウザから利用できます。画像サイズや端末の性能によっては処理に時間がかかるため、大きな画像や複数画像の加工はパソコンをおすすめします。</p></details>
+                    <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">うまく保存できない場合は？</summary><p class="mt-3 text-sm leading-7 text-slate-600">画像を減らす、画像サイズを小さくする、別の保存形式を選ぶ、ページを再読み込みする方法をお試しください。</p></details>
+                    <details class="rounded-2xl border border-slate-200 p-5"><summary class="font-bold cursor-pointer">利用料金はかかりますか？</summary><p class="mt-3 text-sm leading-7 text-slate-600">このページで公開している機能は無料で利用できます。</p></details>
+                </div>
+
+                <div class="mt-10 flex flex-wrap gap-3">
+                    <a href="/" class="inline-flex items-center px-5 py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-slate-700">ほかのツールを見る →</a>
+                    <a href="/wordpress/" class="inline-flex items-center px-5 py-3 rounded-full border border-slate-300 font-bold hover:bg-slate-50">制作・改善記事を読む →</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="w-full py-10 px-6 flex flex-col items-center">
+        <div class="group flex flex-col items-center">
+            <span class="text-slate-500 text-[9px] uppercase tracking-[0.3em] font-black mb-4 opacity-40">Integrated Creative Toolkit</span>
+            <div class="flex items-center gap-2">
+                <span class="text-lg font-bold text-white tracking-tight">Product by 異次元ポケット</span>
+            </div>
+            <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer" class="mt-4 px-5 py-1.5 rounded-full bg-white/5 text-white/40 text-[10px] font-bold hover:bg-white/10 hover:text-white transition-all border border-white/5 backdrop-blur-sm">
+                ijigenpocket.booth.pm
+            </a>
+        </div>
+    </footer>
+
+    <!-- Cropper.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/scrapkiritan.js?v=4.3"></script>
+</body>
+</html>

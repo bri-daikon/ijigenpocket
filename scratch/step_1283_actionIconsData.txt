@@ -1,0 +1,91 @@
+Created At: 2026-06-07T08:01:15Z
+Completed At: 2026-06-07T08:01:16Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2939
+Total Bytes: 115851
+Showing lines 2200 to 2939
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2200:         const responseData = JSON.parse(cleanedJson);
+2201:         
+2202:         // 議論ログを順次表示
+2203:         const steps = responseData.discussion || [];
+2204:         for (let idx = 0; idx < steps.length; idx++) {
+2205:           await new Promise(resolve => setTimeout(resolve, 1500));
+2206:           const msg = steps[idx];
+2207:           const speakerObj = msg.speaker === 'aoi' ? employees.aoi : employees.takumi;
+2208:           addChatMessage(speakerObj, msg.text);
+2209:         }
+2210:         
+2211:         let bgImageUrl = null;
+2212:         if (genBg) {
+2213:           await new Promise(resolve => setTimeout(resolve, 1000));
+2214:           addChatMessage(employees.aoi, "要望に合わせた背景のモデリング（画像生成）を開始するね！数秒かかるから待っててね。");
+2215:           
+2216:           try {
+2217:             const styleDesc = responseData.design.style_description || "beautiful illustration";
+2218:             const basePrompt = customPrompt || theme;
+2219:             const imagenPrompt = `A beautiful background illustration for a TRPG room session on CCfolia, thematic to ${basePrompt}. Style is ${styleDesc}. ${responseData.design.bg_gradient_start ? `using color palette near ${responseData.design.bg_gradient_start} and ${responseData.design.bg_gradient_end}.` : ""} Dark, atmospheric, high quality digital art, 16:9 aspect ratio, clean, no text.`;
+2220:             
+2221:             const imageBytes = await callImagenApiForBackground(apiKey, imagenPrompt);
+2222:             bgImageUrl = `data:image/png;b
+<truncated 24979 bytes>
+   flipH: false,
+2882:       flipV: false,
+2883:       visible: true,
+2884:       opacity: 1
+2885:     });
+2886:   }
+2887: 
+2888:   // 4. アクションアイコンの描画
+2889:   const actionW = 75;
+2890:   const actionH = 75;
+2891:   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+2892:   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+2893: 
+2894:   for (let i = 0; i < actionIconsData.length; i++) {
+2895:     const icon = actionIconsData[i];
+2896:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2897:     let actionX = baseActionX;
+2898:     let actionY = baseActionY;
+2899: 
+2900:     if (design.action_x === undefined) {
+2901:       if (layoutType === 'right-vertical') {
+2902:         actionY = 550;
+2903:         actionX = 50 + i * 125;
+2904:       } else {
+2905:         actionX = 50 + (i % 2) * 90;
+2906:         actionY = 350 + Math.floor(i / 2) * 90;
+2907:       }
+2908:     } else {
+2909:       actionX = baseActionX + i * (actionW + 15);
+2910:     }
+2911: 
+2912:     let actionUrl = createSvgUrl(actionSvg);
+2913:     if (partsImg) {
+2914:       actionUrl = await combineImageAndSvg(
+2915:         partsImg,
+2916:         partsImg.naturalWidth * 0.55, partsImg.naturalHeight * 0.65,
+2917:         partsImg.naturalWidth * 0.30, partsImg.naturalHeight * 0.30,
+2918:         actionSvg, actionW, actionH
+2919:       );
+2920:     }
+2921: 
+2922:     panels.push({
+2923:       id: `ai-action-${icon.name}-${Date.now()}`,
+2924:       url: actionUrl,
+2925:       x: actionX,
+2926:       y: actionY,
+2927:       width: actionW,
+2928:       height: actionH,
+2929:       originalRatio: actionW / actionH,
+2930:       flipH: false,
+2931:       flipV: false,
+2932:       visible: true,
+2933:       opacity: 1
+2934:     });
+2935:   }
+2936: 
+2937:   updateUI();
+2938: }
+2939: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

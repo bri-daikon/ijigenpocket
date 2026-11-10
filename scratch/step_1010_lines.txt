@@ -1,0 +1,76 @@
+Created At: 2026-06-06T13:03:27Z
+Completed At: 2026-06-06T13:03:28Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2522
+Total Bytes: 96273
+Showing lines 1680 to 1750
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1680:       <p class="text-gray-300 leading-relaxed">${text}</p>
+1681:     </div>
+1682:   `;
+1683:   aiChatBox.appendChild(msgEl);
+1684:   aiChatBox.scrollTop = aiChatBox.scrollHeight;
+1685: }
+1686: 
+1687: async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt) {
+1688:   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+1689:   
+1690:   const systemPrompt = `
+1691: あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
+1692: 以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
+1693: 
+1694: 【チームメンバー】
+1695: - タクミ (プランナー): 部屋全体の配置や使いやすさを企画する
+1696: - アオイ (デザイナー): 部屋のカラーコーディネートや装飾のスタイルを担当する
+1697: 
+1698: 【CEOからの要望】
+1699: - 大枠のテーマ: ${theme}
+1700: - プレイヤー人数: ${numPlayers}人部屋
+1701: - 配置: ${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
+1702: - 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
+1703: 
+1704: 【出力指示】
+1705: 1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーや装飾にするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
+1706: 2. 次に、相談の結果決定した部
+<truncated 544 bytes>
+PLパネルの主な枠線の色 (16進数)
+1712:    - text_color: 各種ラベルのテキスト文字色 (16進数)
+1713:    - panel_bg: 前景窓やPLパネルなどのコンテナの内側背景色 (透過半透明で表示されるため、暗めの色推奨、16進数)
+1714:    - style_description: 今回設計したスタイルの短い説明 (例: "夕暮れのアンティークカフェ")
+1715: 
+1716: 出力は必ず以下の有効なJSONフォーマットのみとしてください。前置きや\`\`\`json マークダウンなどは含めないでください。
+1717: 
+1718: {
+1719:   "discussion": [
+1720:     {"speaker": "takumi", "text": "タクミの発言1"},
+1721:     {"speaker": "aoi", "text": "アオイの発言1"},
+1722:     {"speaker": "takumi", "text": "タクミの発言2"},
+1723:     {"speaker": "aoi", "text": "アオイの発言2"}
+1724:   ],
+1725:   "design": {
+1726:     "bg_gradient_start": "#XXXXXX",
+1727:     "bg_gradient_end": "#XXXXXX",
+1728:     "accent_color": "#XXXXXX",
+1729:     "accent_color_rgb": "R, G, B",
+1730:     "border_color": "#XXXXXX",
+1731:     "text_color": "#XXXXXX",
+1732:     "panel_bg": "#XXXXXX",
+1733:     "style_description": "説明"
+1734:   }
+1735: }
+1736: `;
+1737: 
+1738:   let delay = 1000;
+1739:   for (let i = 0; i < 3; i++) {
+1740:     try {
+1741:       const response = await fetch(url, {
+1742:         method: 'POST',
+1743:         headers: { 'Content-Type': 'application/json' },
+1744:         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: systemPrompt }] }] })
+1745:       });
+1746:       
+1747:       if (response.status === 503 || response.status === 429) {
+1748:         if (i < 2) {
+1749:           console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms...`);
+1750:           await new Promise(resolve => setTimeout(resolve, delay));
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

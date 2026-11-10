@@ -1,0 +1,130 @@
+Created At: 2026-06-07T07:41:17Z
+Completed At: 2026-06-07T07:41:18Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2824
+Total Bytes: 111948
+Showing lines 2440 to 2656
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2440:       }
+2441:     } else if (layoutType === 'pattern3') {
+2442:       plY = 430;
+2443:       if (numPlayers === 1) {
+2444:         plX = 630;
+2445:       } else {
+2446:         plX = 300 + i * 160;
+2447:       }
+2448:     } else if (layoutType === 'pattern4') {
+2449:       plY = 50;
+2450:       if (numPlayers === 1) {
+2451:         plX = 290;
+2452:       } else {
+2453:         plX = 50 + i * 160;
+2454:       }
+2455:     } else if (layoutType === 'pattern5') {
+2456:       plY = 420;
+2457:       if (numPlayers === 1) {
+2458:         plX = 570;
+2459:       } else {
+2460:         plX = 280 + i * 180;
+2461:       }
+2462:     } else if (layoutType === 'pattern6') {
+2463:       plY = 510;
+2464:       if (numPlayers === 1) {
+2465:         plX = 570;
+2466:       } else {
+2467:         plX = 150 + i * 260;
+2468:       }
+2469:     } else if (layoutType === 'pattern7') {
+2470:       plY = 80;
+2471:       if (numPlayers === 1) {
+2472:         plX = 550;
+2473:       } else {
+2474:         plX = 150 + i * 260;
+2475:       }
+2476:     }
+2477: 
+2478:     const plSvg = gen.pl(null, plW, plH);
+2479: 
+2480:     panels.push({
+2481:       id: `ai-pl-${i}-${Date.now()}`,
+2482:       url: createSvgUrl(plSvg),
+2483:       x: plX,
+2484:       y: plY,
+2485:       width: plW,
+2486:       height: plH,
+2487:       originalRatio: plW / plH,
+2488:       flipH: false,
+2489:       flipV: false,
+2490:       visible: true,
+2491:       opacity: 1
+2492:     });
+2493:   }
+2494: 
+2495:   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
+2496:   
+2497:   let menuLayout = 'horizontal';
+2498: 
+<truncated 3355 bytes>
+createSvgUrl(actionSvg),
+2596:       x: actionX,
+2597:       y: actionY,
+2598:       width: actionW,
+2599:       height: actionH,
+2600:       originalRatio: actionW / actionH,
+2601:       flipH: false,
+2602:       flipV: false,
+2603:       visible: true,
+2604:       opacity: 1
+2605:     });
+2606:   });
+2607: 
+2608:   updateUI();
+2609: }
+2610: 
+2611: function generateAndLoadDynamicLayout(design, numPlayers, layoutType, bgImageUrl) {
+2612:   saveStateToHistory();
+2613:   
+2614:   const gen = themeSvgGenerators.dynamic;
+2615: 
+2616:   frame = null;
+2617:   panels = [];
+2618:   selectedPanelIds = [];
+2619: 
+2620:   if (design && design.no_background) {
+2621:     frame = null;
+2622:     canvasBgColor = 'transparent';
+2623:   } else if (bgImageUrl) {
+2624:     frame = {
+2625:       url: bgImageUrl,
+2626:       x: 0,
+2627:       y: 0,
+2628:       width: 1280,
+2629:       height: 720,
+2630:       originalRatio: 1280 / 720
+2631:     };
+2632:   } else {
+2633:     const bgSvg = gen.bg(design);
+2634:     frame = {
+2635:       url: createSvgUrl(bgSvg),
+2636:       x: 0,
+2637:       y: 0,
+2638:       width: 1280,
+2639:       height: 720,
+2640:       originalRatio: 1280 / 720
+2641:     };
+2642:   }
+2643: 
+2644:   // 1. メイン画面の描画
+2645:   const windowSvg = gen.window(design);
+2646:   const windowPanelWidth = design.window_width !== undefined ? design.window_width : 720;
+2647:   const windowPanelHeight = design.window_height !== undefined ? design.window_height : 405;
+2648:   let windowX = design.window_x !== undefined ? design.window_x : 50;
+2649:   let windowY = design.window_y !== undefined ? design.window_y : 110;
+2650: 
+2651:   if (design.window_x === undefined) {
+2652:     // 従来のフォールバック計算
+2653:     if (layoutType === 'bottom-horizontal') {
+2654:       windowX = 280;
+2655:       windowY = 50;
+2656:     }
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

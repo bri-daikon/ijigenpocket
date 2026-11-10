@@ -1,0 +1,78 @@
+Created At: 2026-06-06T13:08:36Z
+Completed At: 2026-06-06T13:08:36Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2587
+Total Bytes: 100183
+Showing lines 1645 to 1770
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1645:     label: "アイデア",
+1646:     sub: "IDEA",
+1647:     path: `<path d="M40,20 C28,20 28,38 34,45 L34,55 L46,55 L46,45 C52,38 52,20 40,20 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="34" y1="58" x2="46" y2="58" stroke="#ff007f" stroke-width="2"/><line x1="40" y1="62" x2="40" y2="62" stroke="#00f0ff" stroke-width="3" stroke-linecap="round"/>`
+1648:   },
+1649:   {
+1650:     name: "san",
+1651:     label: "SANチェック",
+1652:     sub: "SAN",
+1653:     path: `<path d="M40,40 m-25,0 a25,25 0 1,0 50,0 a25,25 0 1,0 -50,0 M40,40 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 M40,40 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" fill="none" stroke="#00f0ff" stroke-width="1.5" opacity="0.6"/><path d="M40,40 L40,22 M40,40 L53,50 M40,40  const systemPrompt = `
+1654: あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
+1655: 以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
+1656: 
+1657: 【チームメンバー】
+1658: - タクミ (プランナー): 部屋全体の配置や使いやすさを企画する
+1659: - アオイ (デザイナー): 部屋のカラーコーディネートや装飾のスタイルを担当する
+1660: 
+1661: 【CEOからの要望】
+1662: - 大枠のテーマ: ${theme}
+1663: - プレイヤー人数: ${numPlayers}人部屋
+1664: - 配置: ${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
+1665: - 追加の要望（フリー入力）: "${customPrompt || '特になし'}
+<truncated 4745 bytes>
+\`\`\`json マークダウンなどは含めないでください。
+1724: 
+1725: {
+1726:   "discussion": [
+1727:     {"speaker": "takumi", "text": "タクミの発言1"},
+1728:     {"speaker": "aoi", "text": "アオイの発言1"},
+1729:     {"speaker": "takumi", "text": "タクミの発言2"},
+1730:     {"speaker": "aoi", "text": "アオイの発言2"}
+1731:   ],
+1732:   "design": {
+1733:     "bg_gradient_start": "#XXXXXX",
+1734:     "bg_gradient_end": "#XXXXXX",
+1735:     "accent_color": "#XXXXXX",
+1736:     "accent_color_rgb": "R, G, B",
+1737:     "border_color": "#XXXXXX",
+1738:     "text_color": "#XXXXXX",
+1739:     "panel_bg": "#XXXXXX",
+1740:     "style_description": "説明",
+1741:     "window_x": 座標数値,
+1742:     "window_y": 座標数値,
+1743:     "window_width": 横幅数値,
+1744:     "window_height": 縦幅数値,
+1745:     "pl_panels": [
+1746:       {"x": X座標数値, "y": Y座標数値, "width": 横幅数値, "height": 縦幅数値},
+1747:       ...
+1748:     ],
+1749:     "menu_x": X座標数値,
+1750:     "menu_y": Y座標数値,
+1751:     "menu_layout": "horizontal" または "vertical",
+1752:     "action_x": X座標数値,
+1753:     "action_y": Y座標数値
+1754:   }
+1755: }
+1756: `;
+1757: 
+1758:   let delay = 1000;
+1759:   for (let i = 0; i < 3; i++) {
+1760:     try {
+1761:       const response = await fetch(url, {
+1762:         method: 'POST',
+1763:         headers: { 'Content-Type': 'application/json' },
+1764:         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: systemPrompt }] }] })
+1765:       });
+1766:       
+1767:       if (response.status === 503 || response.status === 429) {
+1768:         if (i < 2) {
+1769:           console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms...`);
+1770:           await new Promise(resolve => setTimeout(resolve, delay));
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

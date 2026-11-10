@@ -1,0 +1,115 @@
+Created At: 2026-06-04T05:34:23Z
+Completed At: 2026-06-04T05:34:24Z
+File Path: `file:///Y:/ijigenpocket/js/ccfolialayoutmaker.js`
+Total Lines: 2165
+Total Bytes: 83863
+Showing lines 1601 to 2165
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1601:   saveStateToHistory();
+1602:   canvasBgColor = color;
+1603:   updateUI();
+1604: }
+1605: 
+1606: const canvasBgColorsList = ['trans', 'white', 'gray', 'black'];
+1607: const canvasTargetMap = { 'trans': 'transparent', 'white': 'white', 'gray': 'gray', 'black': 'black' };
+1608: canvasBgColorsList.forEach(c => {
+1609:   const btn = document.getElementById(`canvas-bg-${c}`);
+1610:   if (btn) {
+1611:     btn.addEventListener('click', () => setCanvasBg(canvasTargetMap[c]));
+1612:   }
+1613: });
+1614: 
+1615: // 初期描画と初期背景色の設定
+1616: canvasBgColor = 'black';
+1617: setPreviewBg('blue');
+1618: updateUI();
+1619: 
+1620: // ==========================================
+1621: // AI Room Generator (AI社員に依頼) 機能
+1622: // ==========================================
+1623: 
+1624: const aiGenerateBtn = document.getElementById('ai-generate-btn');
+1625: const aiThemeSelect = document.getElementById('ai-theme-select');
+1626: const aiPlayersSelect = document.getElementById('ai-players-select');
+1627: const aiLayoutSelect = document.getElementById('ai-layout-select');
+1628: const aiChatBox = document.getElementById('ai-chat-box');
+1629: 
+1630: const actionIconsData = [
+1631:   {
+1632:     name: "spot",
+1633:     label: "目星",
+1634:     sub: "SPOT",
+1635:     path: `<path d="M15,40 Q40,15 65,40 Q40,65 15,40 Z" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="8" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="40" cy="40" r="3" fill="#ff007f"/>`
+1636:   },
+1637:   {
+1638:     name: "listen",
+1639:     label: "聞き耳",
+1640:     sub: "L
+<truncated 28110 bytes>
+ const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+2101: 
+2102:   menuLabels.forEach((label, i) => {
+2103:     const menuSvg = gen.menu(label);
+2104:     let menuX = 50;
+2105:     let menuY = 50;
+2106: 
+2107:     if (layoutType === 'right-vertical') {
+2108:       menuY = 50;
+2109:       menuX = 50 + i * 145;
+2110:     } else {
+2111:       menuX = 50;
+2112:       menuY = 50 + i * 55;
+2113:     }
+2114: 
+2115:     panels.push({
+2116:       id: `ai-menu-${label}-${Date.now()}`,
+2117:       url: createSvgUrl(menuSvg),
+2118:       x: menuX,
+2119:       y: menuY,
+2120:       width: menuW,
+2121:       height: menuH,
+2122:       originalRatio: menuW / menuH,
+2123:       flipH: false,
+2124:       flipV: false,
+2125:       visible: true,
+2126:       opacity: 1
+2127:     });
+2128:   });
+2129: 
+2130:   // 5. アクションアイコン (6個) の追加
+2131:   const actionW = 75;
+2132:   const actionH = 75;
+2133: 
+2134:   actionIconsData.forEach((icon, i) => {
+2135:     const actionSvg = gen.action(icon.label, icon.sub, icon.path);
+2136:     let actionX = 50;
+2137:     let actionY = 550;
+2138: 
+2139:     if (layoutType === 'right-vertical') {
+2140:       actionY = 550;
+2141:       actionX = 50 + i * 125;
+2142:     } else {
+2143:       // 2列×3行で左側メニューの下に並べる
+2144:       actionX = 50 + (i % 2) * 90;
+2145:       actionY = 350 + Math.floor(i / 2) * 90;
+2146:     }
+2147: 
+2148:     panels.push({
+2149:       id: `ai-action-${icon.name}-${Date.now()}`,
+2150:       url: createSvgUrl(actionSvg),
+2151:       x: actionX,
+2152:       y: actionY,
+2153:       width: actionW,
+2154:       height: actionH,
+2155:       originalRatio: actionW / actionH,
+2156:       flipH: false,
+2157:       flipV: false,
+2158:       visible: true,
+2159:       opacity: 1
+2160:     });
+2161:   });
+2162: 
+2163:   updateUI();
+2164: }
+2165: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

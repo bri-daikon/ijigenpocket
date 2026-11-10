@@ -1,0 +1,95 @@
+Created At: 2026-06-04T08:25:07Z
+Completed At: 2026-06-04T08:25:07Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker.js`
+Total Lines: 2406
+Total Bytes: 92334
+Showing lines 1601 to 2400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1601: 2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコード等で指定してください。
+1602:    - bg_gradient_start: 背景のグラデーション開始色 (ダークカラー推奨、16進数)
+1603:    - bg_gradient_end: 背景のグラデーション終了色 (ダークカラー推奨、16進数)
+1604:    - accent_color: アクセントとして輝かせるネオンやスリットなどの色 (16進数)
+1605:    - accent_color_rgb: 上記アクセント色のRGB成分 (例: "0, 240, 255")
+1606:    - border_color: 窓やPLパネルの主な枠線の色 (16進数)
+1607:    - text_color: 各種ラベルのテキスト文字色 (16進数)
+1608:    - panel_bg: 前景窓やPLパネルなどのコンテナの内側背景色 (透過半透明で表示されるため、暗めの色推奨、16進数)
+1609:    - style_description: 今回設計したスタイルの短い説明 (例: "夕暮れのアンティークカフェ")
+1610: 
+1611: 出力は必ず以下の有効なJSONフォーマットのみとしてください。前置きや\`\`\`json マークダウンなどは含めないでください。
+1612: 
+1613: {
+1614:   "discussion": [
+1615:     {"speaker": "takumi", "text": "タクミの発言1"},
+1616:     {"speaker": "aoi", "text": "アオイの発言1"},
+1617:     {"speaker": "takumi", "text": "タクミの発言2"},
+1618:     {"speaker": "aoi", "text": "アオイの発言2"}
+1619:   ],
+1620:   "design": {
+1621:     "bg_gradient_start": "#XXXXXX",
+1622:     "bg_gradient_end": "#XXXXXX",
+1623:     "accent_color": "#XXXXXX",
+16
+<truncated 37232 bytes>
+9:   }
+2340: 
+2341:   const menuLabels = ["houserule", "battle", "insanity", "growth", "other"];
+2342:   const menuW = (layoutType === 'bottom-horizontal') ? 180 : 130;
+2343:   const menuH = (layoutType === 'bottom-horizontal') ? 36 : 32;
+2344: 
+2345:   menuLabels.forEach((label, i) => {
+2346:     const menuSvg = gen.menu(design, label);
+2347:     let menuX = 50;
+2348:     let menuY = 50;
+2349: 
+2350:     if (layoutType === 'right-vertical') {
+2351:       menuY = 50;
+2352:       menuX = 50 + i * 145;
+2353:     } else {
+2354:       menuX = 50;
+2355:       menuY = 50 + i * 55;
+2356:     }
+2357: 
+2358:     panels.push({
+2359:       id: `ai-menu-${label}-${Date.now()}`,
+2360:       url: createSvgUrl(menuSvg),
+2361:       x: menuX,
+2362:       y: menuY,
+2363:       width: menuW,
+2364:       height: menuH,
+2365:       originalRatio: menuW / menuH,
+2366:       flipH: false,
+2367:       flipV: false,
+2368:       visible: true,
+2369:       opacity: 1
+2370:     });
+2371:   });
+2372: 
+2373:   const actionW = 75;
+2374:   const actionH = 75;
+2375: 
+2376:   actionIconsData.forEach((icon, i) => {
+2377:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2378:     let actionX = 50;
+2379:     let actionY = 550;
+2380: 
+2381:     if (layoutType === 'right-vertical') {
+2382:       actionY = 550;
+2383:       actionX = 50 + i * 125;
+2384:     } else {
+2385:       actionX = 50 + (i % 2) * 90;
+2386:       actionY = 350 + Math.floor(i / 2) * 90;
+2387:     }
+2388: 
+2389:     panels.push({
+2390:       id: `ai-action-${icon.name}-${Date.now()}`,
+2391:       url: createSvgUrl(actionSvg),
+2392:       x: actionX,
+2393:       y: actionY,
+2394:       width: actionW,
+2395:       height: actionH,
+2396:       originalRatio: actionW / actionH,
+2397:       flipH: false,
+2398:       flipV: false,
+2399:       visible: true,
+2400:       opacity: 1
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

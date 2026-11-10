@@ -1,0 +1,85 @@
+Created At: 2026-06-06T13:05:54Z
+Completed At: 2026-06-06T13:05:55Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2635
+Total Bytes: 102971
+Showing lines 1750 to 1850
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1750:     "menu_y": Y座標数値,
+1751:     "menu_layout": "horizontal" または "vertical",
+1752:     "action_x": X座標数値,
+1753:     "action_y": Y座標数値
+1754:   }
+1755: }
+1756: `; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+1757:   
+1758:   const systemPrompt = `
+1759: あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
+1760: 以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
+1761: 
+1762: 【チームメンバー】
+1763: - タクミ (プランナー): 部屋全体の配置や使いやすさを企画する
+1764: - アオイ (デザイナー): 部屋のカラーコーディネートや装飾のスタイルを担当する
+1765: 
+1766: 【CEOからの要望】
+1767: - 大枠のテーマ: ${theme}
+1768: - プレイヤー人数: ${numPlayers}人部屋
+1769: - 配置: ${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
+1770: - 追加の要望（フリー入力）: "${customPrompt || '特になし'}"
+1771: 
+1772: 【出力指示】
+1773: 1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーや装飾にするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
+1774: 2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコード等で指定してください。
+1775:    
+<truncated 1605 bytes>
+ "style_description": "説明"
+1802:   }
+1803: }
+1804: `;
+1805: 
+1806:   let delay = 1000;
+1807:   for (let i = 0; i < 3; i++) {
+1808:     try {
+1809:       const response = await fetch(url, {
+1810:         method: 'POST',
+1811:         headers: { 'Content-Type': 'application/json' },
+1812:         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: systemPrompt }] }] })
+1813:       });
+1814:       
+1815:       if (response.status === 503 || response.status === 429) {
+1816:         if (i < 2) {
+1817:           console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms...`);
+1818:           await new Promise(resolve => setTimeout(resolve, delay));
+1819:           delay *= 2;
+1820:           continue;
+1821:         }
+1822:       }
+1823:       
+1824:       if (!response.ok) throw new Error(`API error: ${response.status} ${response.statusText}`);
+1825:       
+1826:       const data = await response.json();
+1827:       return data.candidates[0].content.parts[0].text;
+1828:     } catch (err) {
+1829:       if (i === 2) throw err;
+1830:       console.warn(`Fetch error: ${err.message}. Retrying in ${delay}ms...`);
+1831:       await new Promise(resolve => setTimeout(resolve, delay));
+1832:       delay *= 2;
+1833:     }
+1834:   }
+1835: }
+1836: 
+1837: async function callImagenApiForBackground(apiKey, prompt) {
+1838:   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+1839:   
+1840:   let delay = 1000;
+1841:   for (let i = 0; i < 3; i++) {
+1842:     try {
+1843:       const response = await fetch(url, {
+1844:         method: 'POST',
+1845:         headers: { 'Content-Type': 'application/json' },
+1846:         body: JSON.stringify({
+1847:           contents: [{
+1848:             parts: [{
+1849:               text: prompt
+1850:             }]
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

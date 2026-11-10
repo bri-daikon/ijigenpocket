@@ -70,9 +70,14 @@
                 <div class="flex-1 overflow-y-auto mb-4 border border-slate-100 rounded-lg p-2 bg-slate-50 space-y-2 min-h-[150px]" id="snippet-list-container">
                     <!-- JavaScriptで動的に描画 -->
                 </div>
-                <div class="flex justify-between items-center mt-2">
-                    <button onclick="showSnippetForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">➕ 新規スニペット</button>
-                    <button onclick="closeModal('snippet-modal')" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">閉じる</button>
+                <div class="flex justify-between items-center mt-2 flex-wrap gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="showSnippetForm()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">➕ 新規スニペット</button>
+                        <button onclick="exportSnippetsJSON()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="スニペット一覧をJSONファイルとして保存（バックアップ）">📤 保存</button>
+                        <button onclick="document.getElementById('snippet-import-input').click()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="スニペットJSONファイルを読み込んで追加">📥 復元</button>
+                        <input type="file" id="snippet-import-input" accept=".json" class="hidden" onchange="importSnippetsJSON(this)">
+                    </div>
+                    <button onclick="closeModal('snippet-modal')" class="px-4 py-1.5 text-slate-500 hover:bg-slate-100 rounded-lg text-xs transition">閉じる</button>
                 </div>
             </div>
 

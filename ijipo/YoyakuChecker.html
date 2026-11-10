@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約チェッカー | 二重予約防止・発売スケジュール管理</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                        },
+                        shop: {
+                            amazon: '#f59e0b',
+                            square: '#ef4444',
+                            nintendo: '#dc2626',
+                            amiami: '#3b82f6',
+                            animate: '#6366f1',
+                            other: '#8b5cf6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+            50% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 5px rgba(239, 68, 68, 0.1); }
+        }
+        .alert-duplicate {
+            animation: pulse-border 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- ヘッダー -->
+    <header class="glass-card sticky top-0 z-40 border-b px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-xl shadow-lg shadow-rose-500/20">
+                🛡️
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
+                    予約チェッカー <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">二重予約防止</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Googleスプレッドシート自動連携ダッシュボード</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btn-sync" onclick="fetchSheetData()" class="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5 active:scale-95">
+                <span id="sync-icon" class="inline-block transition-transform duration-500">🔄</span>
+                <span class="hidden sm:inline">最新取得</span>
+            </button>
+            <button onclick="openAddModal()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-1.5 active:scale-95">
+                <span>➕</span>
+                <span class="hidden sm:inline">手動追加</span>
+            </button>
+            <button onclick="openSettingsModal()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all text-xs" title="連携設定">
+                ⚙️
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- 二重予約防止！クイック検索セクション -->
+        <section class="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-indigo-950/60 via-slate-900/80 to-slate-950 border border-indigo-500/20 shadow-2xl">
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 max-w-3xl mx-auto text-center space-y-4">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                    💡 買い物・予約前の必須チェック
+                </span>
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
+                    「これ、もう予約したっけ？」を瞬時に判定
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-400">
+                    気になる商品名やゲーム名、キーワードを打ち込んでください。類似予約があれば即座に警告します。
+                </p>
+
+                <!-- 巨大検索インプット -->
+                <div class="relative mt-2">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 text-lg">
+                        🔎
+                    </div>
+                    <input type="text" id="duplicate-checker-input" oninput="handleCheckInput(this.value)" placeholder="商品名・タイトルを検索（例: ドラクエ、Switch、フィギュア、ゼルダ...）"
+                        class="w-full pl-12 pr-12 py-3.5 sm:py-4 rounded-2xl glass-input text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none transition-all">
+                    <button id="btn-clear-search" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-white text-sm">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- 検索結果ダイレクト警告バナー -->
+                <div id="check-alert-box" class="hidden text-left p-4 rounded-2xl transition-all"></div>
+            </div>
+        </section>
+
+        <!-- ステータス概要カウンター -->
+        <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl">
+                    📦
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">予約中アイテム</div>
+                    <div id="count-reserved" class="text-xl sm:text-2xl font-black text-white">0</div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl">
+                    📅
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">今月到着予定</div>
+                    <div id="count-this-month" class="text-xl sm:text-2xl font-black text-amber-300">0</div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center text-xl">
+                    🚨
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">重複アラート</div>
+                    <div id="count-duplicates" class="text-xl sm:text-2xl font-black text-rose-400">0</div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl">
+                    💰
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">予約合計額（概算）</div>
+                    <div id="total-price" class="text-base sm:text-lg font-black text-emerald-300 truncate">¥0</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ツールバー & フィルター -->
+        <section class="glass-card p-4 rounded-2xl space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <!-- ショップフィルタータブ -->
+                <div id="shop-filter-tabs" class="flex flex-wrap gap-1.5 text-xs font-semibold">
+                    <button onclick="setShopFilter('ALL')" data-shop="ALL" class="filter-tab px-3 py-1.5 rounded-xl bg-indigo-600 text-white shadow-sm transition-all">すべて</button>
+                    <button onclick="setShopFilter('Amazon')" data-shop="Amazon" class="filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all">Amazon</button>
+                    <button onclick="setShopFilter('スクウェア・エニックス')" data-shop="スクウェア・エニックス" class="filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all">スクエニ e-STORE</button>
+                    <button onclick="setShopFilter('ニンテンドー')" data-shop="ニンテンドー" class="filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all">マイニンテンドー</button>
+                    <button onclick="setShopFilter('HYPSTER')" data-shop="HYPSTER" class="filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all">HYPSTER</button>
+                    <button onclick="setShopFilter('その他')" data-shop="その他" class="filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all">その他ショップ</button>
+                </div>
+
+                <!-- 表示モード切替 & ソート -->
+                <div class="flex items-center gap-2">
+                    <select id="sort-select" onchange="renderList()" class="px-2.5 py-1.5 rounded-xl glass-input text-xs text-slate-200 focus:outline-none cursor-pointer">
+                        <option value="release-asc">📅 発売日：近い順</option>
+                        <option value="release-desc">📅 発売日：遠い順</option>
+                        <option value="order-desc">🕒 注文日：新しい順</option>
+                        <option value="price-desc">💎 金額：高い順</option>
+                    </select>
+
+                    <div class="flex items-center bg-slate-900/80 p-0.5 rounded-xl border border-white/5">
+                        <button id="view-timeline-btn" onclick="setViewMode('timeline')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/15 text-white transition-all" title="発売月別タイムライン">
+                            🗓️ 月別
+                        </button>
+                        <button id="view-card-btn" onclick="setViewMode('cards')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all" title="カードグリッド">
+                            🎴 カード
+                        </button>
+                        <button id="view-table-btn" onclick="setViewMode('table')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all" title="テーブル詳細">
+                            📋 一覧
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-1 border-t border-white/5">
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-1.5 cursor-pointer hover:text-slate-200 select-none">
+                        <input type="checkbox" id="filter-hide-completed" onchange="renderList()" class="rounded border-white/20 bg-slate-800 text-indigo-500 focus:ring-0">
+                        <span>発送済み・受取完了を隠す</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer hover:text-rose-300 select-none">
+                        <input type="checkbox" id="filter-duplicates-only" onchange="renderList()" class="rounded border-white/20 bg-slate-800 text-rose-500 focus:ring-0">
+                        <span>⚠️ 重複警告のみ表示</span>
+                    </label>
+                </div>
+                <div id="data-meta-status" class="text-[11px] text-slate-500">
+                    読み込み待機中
+                </div>
+            </div>
+        </section>
+
+        <!-- メイン表示領域（タイムライン / カード / テーブル） -->
+        <section id="items-container" class="space-y-6">
+            <!-- JavaScriptで動的描画 -->
+        </section>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="mt-auto border-t border-white/5 py-4 px-4 text-center text-xs text-slate-500">
+        異次元ポケット • 予約チェッカー © 2026
+    </footer>
+
+    <!-- ==================== 手動追加モーダル ==================== -->
+    <div id="add-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card max-w-lg w-full rounded-3xl p-6 border border-white/10 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <span>➕</span> 予約を手動で登録
+                </h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+            
+            <form id="manual-add-form" onsubmit="saveManualItem(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">商品名 <span class="text-rose-400">*</span></label>
+                    <input type="text" id="manual-item-name" required placeholder="例: ドラゴンクエストXII、Switchソフト等"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">ショップ名</label>
+                        <input type="text" id="manual-shop-name" placeholder="Amazon, スクエニ, 店舗など"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">発売・お届け予定日</label>
+                        <input type="text" id="manual-release-date" placeholder="2026-11-20 または 2026年11月"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">数量</label>
+                        <input type="number" id="manual-quantity" value="1" min="1"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-slate-300 font-semibold mb-1">金額</label>
+                        <input type="text" id="manual-price" placeholder="¥8,800"
+                            class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">注文番号・メモ</label>
+                    <input type="text" id="manual-order-id" placeholder="予約番号や店舗名など"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white focus:outline-none">
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2 border-t border-white/10">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300">キャンセル</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-600/30">追加する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== 設定モーダル ==================== -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card max-w-xl w-full rounded-3xl p-6 border border-white/10 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <span>⚙️</span> スプレッドシート連携設定
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+            
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">スプレッドシートID <span class="text-indigo-400 font-mono text-[10px]">(推奨：JSONP連携)</span></label>
+                    <input type="text" id="setting-sheet-id" 
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white font-mono text-xs focus:outline-none">
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        ※スプレッドシート右上の「共有」で <strong>「リンクを知っている全員（閲覧者）」</strong> に設定すると、ローカルファイルから最も安定して自動読み込みできます。
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">GAS Web App URL <span class="text-emerald-400 font-mono text-[10px]">(さらにセキュア・確実)</span></label>
+                    <input type="text" id="setting-gas-url" placeholder="https://script.google.com/macros/s/.../exec"
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white font-mono text-xs focus:outline-none">
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        ※GASの「デプロイ」からウェブアプリURLを発行した場合、ここに貼り付けるとCORSなしで直接取得できます。
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">公開CSVのURL <span class="text-slate-500 font-mono text-[10px]">(ウェブに公開)</span></label>
+                    <input type="text" id="setting-csv-url" 
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white font-mono text-xs focus:outline-none">
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 space-y-2">
+                    <div class="font-bold text-indigo-300 flex items-center gap-1.5">
+                        <span>📋</span> ワンタッチ・スプレッドシート貼り付け取込
+                    </div>
+                    <p class="text-[11px] text-slate-300">
+                        スプレッドシートを全選択（Ctrl+A）してコピーし、下の枠に貼り付けるだけで即座に反映することも可能です。
+                    </p>
+                    <textarea id="paste-import-area" rows="2" placeholder="スプレッドシートのセルをコピーしてここに貼り付け..."
+                        class="w-full px-3 py-2 rounded-xl glass-input text-white text-[11px] font-mono focus:outline-none"></textarea>
+                    <button type="button" onclick="importFromPaste()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs">
+                        貼り付け内容を取り込む
+                    </button>
+                </div>
+
+                <div class="pt-3 flex justify-between items-center border-t border-white/10">
+                    <button onclick="resetDefaultSettings()" class="text-slate-400 hover:text-slate-200 text-[11px]">初期値に戻す</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300">閉じる</button>
+                        <button type="button" onclick="saveSettings()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-white shadow-lg shadow-indigo-600/30">保存して再取得</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        // 設定デフォルト値
+        const DEFAULT_CONFIG = {
+            sheetId: "1kXaS3UBAXH8fJAJnwPUdsE7178ApzXdcLlmVTv045_s",
+            gasUrl: "",
+            csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9dnH5sTlU1ZVlF-sp6VqIq4I7kZT5WqUoDPjcLxf5tuyIVztpH_Pu4hmRdPy87Onm0FoGZZc1-5wj/pub?output=csv"
+        };
+
+        // アプリ状態
+        let appConfig = loadConfig();
+        let allItems = [];
+        let manualItems = loadManualItems();
+        let currentShopFilter = 'ALL';
+        let currentViewMode = 'timeline'; // 'timeline' | 'cards' | 'table'
+
+        // 起動時初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchSheetData();
+        });
+
+        function loadConfig() {
+            const saved = localStorage.getItem('yoyaku_checker_config');
+            if (saved) {
+                try { return Object.assign({}, DEFAULT_CONFIG, JSON.parse(saved)); } catch(e){}
+            }
+            return Object.assign({}, DEFAULT_CONFIG);
+        }
+
+        function saveConfig(cfg) {
+            appConfig = cfg;
+            localStorage.setItem('yoyaku_checker_config', JSON.stringify(cfg));
+        }
+
+        function loadManualItems() {
+            const saved = localStorage.getItem('yoyaku_checker_manual_items');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e){}
+            }
+            return [];
+        }
+
+        function saveManualItemsToStorage(items) {
+            manualItems = items;
+            localStorage.setItem('yoyaku_checker_manual_items', JSON.stringify(items));
+        }
+
+        // ==================== マルチ方式データ取得 ====================
+        async function fetchSheetData() {
+            const syncIcon = document.getElementById('sync-icon');
+            const metaStatus = document.getElementById('data-meta-status');
+            syncIcon.classList.add('animate-spin');
+            metaStatus.textContent = 'データ取得中...';
+
+            let fetchedItems = null;
+
+            // 方式1: GAS Web App URLが設定されている場合
+            if (appConfig.gasUrl) {
+                try {
+                    const res = await fetch(appConfig.gasUrl);
+                    if (res.ok) {
+                        const json = await res.json();
+                        fetchedItems = parseGasJson(json);
+                        metaStatus.textContent = `GAS連動成功 (${new Date().toLocaleTimeString('ja-JP')})`;
+                    }
+                } catch(e) {
+                    console.warn('GAS fetch failed', e);
+                }
+            }
+
+            // 方式2: Google Visualization API (JSONP) - file:// からでも動作
+            if (!fetchedItems && appConfig.sheetId) {
+                try {
+                    fetchedItems = await fetchViaGvizJsonp(appConfig.sheetId);
+                    if (fetchedItems && fetchedItems.length > 0) {
+                        metaStatus.textContent = `Google連携中 (${new Date().toLocaleTimeString('ja-JP')})`;
+                    }
+                } catch (e) {
+                    console.warn('GViz JSONP failed', e);
+                }
+            }
+
+            // 方式3: 公開CSV fetch（ローカルサーバーやCORS対応環境）
+            if (!fetchedItems && appConfig.csvUrl) {
+                try {
+                    const url = appConfig.csvUrl + (appConfig.csvUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const csvText = await res.text();
+                        fetchedItems = parseCsv(csvText);
+                        metaStatus.textContent = `CSV直接取得 (${new Date().toLocaleTimeString('ja-JP')})`;
+                    }
+                } catch (e) {
+                    console.warn('CSV fetch failed (likely CORS on file://)', e);
+                }
+            }
+
+            // 取得結果の反映
+            syncIcon.classList.remove('animate-spin');
+            if (fetchedItems) {
+                allItems = [...fetchedItems, ...manualItems];
+            } else {
+                // キャッシュまたは手動アイテム
+                const cached = localStorage.getItem('yoyaku_checker_sheet_cache');
+                if (cached) {
+                    try {
+                        const parsedCache = JSON.parse(cached);
+                        allItems = [...parsedCache, ...manualItems];
+                        metaStatus.textContent = `前回キャッシュを表示中（再接続は右上の⚙️から設定）`;
+                    } catch(e) {
+                        allItems = [...manualItems];
+                        metaStatus.textContent = `連携待ち（⚙️で「共有」または貼り付け取込をご利用ください）`;
+                    }
+                } else {
+                    allItems = [...manualItems];
+                    metaStatus.textContent = `連携待ち（⚙️で「共有」または貼り付け取込をご利用ください）`;
+                }
+            }
+
+            if (fetchedItems) {
+                localStorage.setItem('yoyaku_checker_sheet_cache', JSON.stringify(fetchedItems));
+            }
+
+            // 重複チェック＆集計
+            calculateDuplicates();
+            updateCounters();
+            renderList();
+
+            const curSearch = document.getElementById('duplicate-checker-input').value;
+            if (curSearch) handleCheckInput(curSearch);
+        }
+
+        // Google Visualization API JSONP
+        function fetchViaGvizJsonp(sheetId) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'gviz_cb_' + Date.now();
+                const script = document.createElement('script');
+                const timer = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('GViz JSONP timeout'));
+                }, 8000);
+
+                function cleanup() {
+                    clearTimeout(timer);
+                    delete window[callbackName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+
+                window[callbackName] = function(response) {
+                    cleanup();
+                    try {
+                        if (!response || !response.table || !response.table.rows) {
+                            resolve([]);
+                            return;
+                        }
+                        const rows = response.table.rows;
+                        const items = [];
+                        rows.forEach((r, idx) => {
+                            const c = r.c || [];
+                            const val = (index) => (c[index] && c[index].v !== null && c[index].v !== undefined) ? String(c[index].v).trim() : '';
+                            const fVal = (index) => (c[index] && c[index].f) ? String(c[index].f).trim() : val(index);
+
+                            const itemName = val(2);
+                            if (!itemName || itemName === '商品名') return; // ヘッダー行スキップ
+
+                            items.push({
+                                id: 'gviz_' + idx,
+                                orderDate: fVal(0) || val(0),
+                                shopName: val(1) || '不明ショップ',
+                                itemName: itemName,
+                                releaseDate: fVal(3) || val(3) || '未定',
+                                quantity: val(4) || '1',
+                                price: fVal(5) || val(5),
+                                orderId: val(6),
+                                status: val(7) || '予約中',
+                                sheetWarning: val(8),
+                                messageId: val(9),
+                                isManual: false,
+                                isDuplicate: false,
+                                duplicateReasons: []
+                            });
+                        });
+                        resolve(items);
+                    } catch(err) {
+                        reject(err);
+                    }
+                };
+
+                script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${callbackName}&t=${Date.now()}`;
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error('GViz script load error (Check sheet permissions)'));
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        // GAS Web App JSONパース
+        function parseGasJson(data) {
+            if (!Array.isArray(data) || data.length <= 1) return [];
+            const items = [];
+            for (let i = 1; i < data.length; i++) {
+                const r = data[i];
+                if (!r || !r[2]) continue;
+                items.push({
+                    id: 'gas_' + i,
+                    orderDate: r[0] || '',
+                    shopName: r[1] || '不明ショップ',
+                    itemName: r[2] || '',
+                    releaseDate: r[3] || '未定',
+                    quantity: r[4] || '1',
+                    price: r[5] || '',
+                    orderId: r[6] || '',
+                    status: r[7] || '予約中',
+                    sheetWarning: r[8] || '',
+                    messageId: r[9] || '',
+                    isManual: false,
+                    isDuplicate: false,
+                    duplicateReasons: []
+                });
+            }
+            return items;
+        }
+
+        // CSV/TSVコピペ取込
+        function importFromPaste() {
+            const raw = document.getElementById('paste-import-area').value.trim();
+            if (!raw) return;
+
+            let parsed = [];
+            if (raw.includes('\t')) {
+                // TSV (スプレッドシートのセルコピーはタブ区切り)
+                const lines = raw.split(/\r?\n/);
+                for (let i = 0; i < lines.length; i++) {
+                    const cols = lines[i].split('\t').map(c => c.trim());
+                    if (!cols[2] || cols[2] === '商品名') continue;
+                    parsed.push({
+                        id: 'paste_' + i,
+                        orderDate: cols[0] || '',
+                        shopName: cols[1] || '不明ショップ',
+                        itemName: cols[2],
+                        releaseDate: cols[3] || '未定',
+                        quantity: cols[4] || '1',
+                        price: cols[5] || '',
+                        orderId: cols[6] || '',
+                        status: cols[7] || '予約中',
+                        sheetWarning: cols[8] || '',
+                        messageId: cols[9] || '',
+                        isManual: false,
+                        isDuplicate: false,
+                        duplicateReasons: []
+                    });
+                }
+            } else {
+                parsed = parseCsv(raw);
+            }
+
+            if (parsed.length > 0) {
+                localStorage.setItem('yoyaku_checker_sheet_cache', JSON.stringify(parsed));
+                allItems = [...parsed, ...manualItems];
+                calculateDuplicates();
+                updateCounters();
+                renderList();
+                document.getElementById('data-meta-status').textContent = `貼り付けデータを取込完了 (${parsed.length}件)`;
+                closeSettingsModal();
+            } else {
+                alert('有効なデータ行が見つかりませんでした。');
+            }
+        }
+
+
+        // 簡易CSVパーサー（引用符・カンマ・改行対応）
+        function parseCsv(text) {
+            if (!text || text.trim() === '') return [];
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        currentField += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    currentRow.push(currentField.trim());
+                    currentField = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') i++;
+                    currentRow.push(currentField.trim());
+                    if (currentRow.some(f => f !== '')) rows.push(currentRow);
+                    currentRow = [];
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+                currentRow.push(currentField.trim());
+                if (currentRow.some(f => f !== '')) rows.push(currentRow);
+            }
+
+            if (rows.length <= 1) return []; // ヘッダーのみまたは空
+
+            // 期待カラムインデックス:
+            // 0: 注文日, 1: ショップ名, 2: 商品名, 3: 発売・お届け予定日, 4: 数量, 5: 金額, 6: 注文番号, 7: ステータス, 8: 重複警告, 9: メッセージID
+            const items = [];
+            for (let i = 1; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r[2]) continue; // 商品名がないものはスキップ
+
+                items.push({
+                    id: 'sheet_' + i,
+                    orderDate: r[0] || '',
+                    shopName: r[1] || '不明ショップ',
+                    itemName: r[2] || '',
+                    releaseDate: r[3] || '未定',
+                    quantity: r[4] || '1',
+                    price: r[5] || '',
+                    orderId: r[6] || '',
+                    status: r[7] || '予約中',
+                    sheetWarning: r[8] || '',
+                    messageId: r[9] || '',
+                    isManual: false,
+                    isDuplicate: false,
+                    duplicateReasons: []
+                });
+            }
+            return items;
+        }
+
+        // ==================== 重複判定ロジック ====================
+        function normalizeTitle(str) {
+            if (!str) return '';
+            return str
+                .toLowerCase()
+                .replace(/【.*?】|\[.*?\]|（.*?）|\(.*?\)/g, '') // 特典などの括弧を除去
+                .replace(/[\s\-_・:：]/g, '') // 空白記号除去
+                .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)) // 全角英数半角化
+                .replace(/[Ａ-Ｚａ-ｚ]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+        }
+
+        function calculateDuplicates() {
+            // リセット
+            allItems.forEach(it => {
+                it.isDuplicate = false;
+                it.duplicateReasons = [];
+            });
+
+            for (let i = 0; i < allItems.length; i++) {
+                for (let j = i + 1; j < allItems.length; j++) {
+                    const a = allItems[i];
+                    const b = allItems[j];
+
+                    // キャンセル済みのものは重複判定から除外
+                    if (a.status.includes('キャンセル') || b.status.includes('キャンセル')) continue;
+
+                    const normA = normalizeTitle(a.itemName);
+                    const normB = normalizeTitle(b.itemName);
+
+                    let match = false;
+                    let reason = '';
+
+                    // 完全一致または前方/部分長一致
+                    if (normA && normB) {
+                        if (normA === normB) {
+                            match = true;
+                            reason = `同一商品名（${b.shopName}にもあり）`;
+                        } else if (normA.length >= 5 && normB.length >= 5) {
+                            if (normA.includes(normB) || normB.includes(normA)) {
+                                match = true;
+                                reason = `類似商品名（${b.shopName}にもあり）`;
+                            }
+                        }
+                    }
+
+                    if (match) {
+                        a.isDuplicate = true;
+                        a.duplicateReasons.push(reason);
+                        b.isDuplicate = true;
+                        b.duplicateReasons.push(`同一・類似商品名（${a.shopName}にもあり）`);
+                    }
+                }
+            }
+        }
+
+        // ==================== 二重予約防止！クイック検索 ====================
+        function handleCheckInput(query) {
+            const clearBtn = document.getElementById('btn-clear-search');
+            const alertBox = document.getElementById('check-alert-box');
+            const q = query.trim().toLowerCase();
+
+            if (!q) {
+                clearBtn.classList.add('hidden');
+                alertBox.classList.add('hidden');
+                renderList();
+                return;
+            }
+
+            clearBtn.classList.remove('hidden');
+
+            const normQ = normalizeTitle(q);
+            // 該当するアイテムを抽出
+            const matches = allItems.filter(item => {
+                const normName = normalizeTitle(item.itemName);
+                return normName.includes(normQ) || normQ.includes(normName) || item.itemName.toLowerCase().includes(q);
+            });
+
+            if (matches.length > 0) {
+                alertBox.className = "text-left p-4 rounded-2xl border bg-rose-950/80 border-rose-500/50 shadow-lg alert-duplicate space-y-2";
+                alertBox.innerHTML = `
+                    <div class="flex items-center gap-2 text-rose-300 font-extrabold text-sm sm:text-base">
+                        <span class="text-xl">🚨</span> 【警告】既に ${matches.length} 件の予約が見つかりました！
+                    </div>
+                    <div class="space-y-1.5 text-xs">
+                        ${matches.map(m => `
+                            <div class="bg-black/40 p-2.5 rounded-xl border border-rose-500/20 flex flex-wrap justify-between items-center gap-2">
+                                <div>
+                                    <span class="font-bold text-white">${escapeHtml(m.itemName)}</span>
+                                    <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold ${getShopBadgeClass(m.shopName)}">${escapeHtml(m.shopName)}</span>
+                                </div>
+                                <div class="text-[11px] text-slate-300">
+                                    発売/お届け: <strong class="text-amber-300">${escapeHtml(m.releaseDate)}</strong> | 注文番号: ${escapeHtml(m.orderId || 'なし')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-[11px] text-rose-300/80 font-medium">
+                        ⚠️ 二重予約になっていないか、注文内容やお届け先をもう一度ご確認ください！
+                    </p>
+                `;
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.className = "text-left p-3.5 rounded-2xl border bg-emerald-950/60 border-emerald-500/40 space-y-1";
+                alertBox.innerHTML = `
+                    <div class="flex items-center gap-2 text-emerald-300 font-bold text-xs sm:text-sm">
+                        <span>✅</span> 「${escapeHtml(query)}」に該当する予約は見つかりませんでした。
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        まだ予約されていない可能性が高いです。安心して予約手続きを進められます！
+                    </p>
+                `;
+                alertBox.classList.remove('hidden');
+            }
+
+            renderList(q);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('duplicate-checker-input');
+            input.value = '';
+            handleCheckInput('');
+            input.focus();
+        }
+
+        // ==================== 統計集計 ====================
+        function updateCounters() {
+            let reservedCount = 0;
+            let thisMonthCount = 0;
+            let dupCount = 0;
+            let totalPrice = 0;
+
+            const now = new Date();
+            const curYear = now.getFullYear();
+            const curMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+            const thisMonthPrefix = `${curYear}-${curMonth}`;
+
+            allItems.forEach(item => {
+                const isCompleted = item.status.includes('受取') || item.status.includes('完了') || item.status.includes('キャンセル');
+                if (!isCompleted) {
+                    reservedCount++;
+                }
+
+                if (item.isDuplicate || (item.sheetWarning && item.sheetWarning.includes('重複'))) {
+                    dupCount++;
+                }
+
+                if (item.releaseDate && (item.releaseDate.startsWith(thisMonthPrefix) || item.releaseDate.includes(`${curYear}年${curMonth}月`))) {
+                    thisMonthCount++;
+                }
+
+                // 金額パース（例: "8,800円" や "￥8,800"）
+                if (item.price) {
+                    const num = parseInt(item.price.replace(/[^0-9]/g, ''), 10);
+                    if (!isNaN(num)) totalPrice += num;
+                }
+            });
+
+            document.getElementById('count-reserved').textContent = reservedCount;
+            document.getElementById('count-this-month').textContent = thisMonthCount;
+            document.getElementById('count-duplicates').textContent = dupCount;
+            document.getElementById('total-price').textContent = totalPrice > 0 ? `¥${totalPrice.toLocaleString()}` : '¥0';
+        }
+
+        // ==================== 一覧描画 ====================
+        function setShopFilter(shop) {
+            currentShopFilter = shop;
+            document.querySelectorAll('#shop-filter-tabs .filter-tab').forEach(btn => {
+                if (btn.getAttribute('data-shop') === shop) {
+                    btn.className = "filter-tab px-3 py-1.5 rounded-xl bg-indigo-600 text-white shadow-sm transition-all";
+                } else {
+                    btn.className = "filter-tab px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all";
+                }
+            });
+            renderList();
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const btnTL = document.getElementById('view-timeline-btn');
+            const btnCard = document.getElementById('view-card-btn');
+            const btnTable = document.getElementById('view-table-btn');
+
+            [btnTL, btnCard, btnTable].forEach(b => {
+                b.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+            });
+
+            if (mode === 'timeline') btnTL.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-white/15 text-white transition-all";
+            if (mode === 'cards') btnCard.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-white/15 text-white transition-all";
+            if (mode === 'table') btnTable.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-white/15 text-white transition-all";
+
+            renderList();
+        }
+
+        function getFilteredAndSortedItems(searchQuery = '') {
+            const hideCompleted = document.getElementById('filter-hide-completed').checked;
+            const duplicatesOnly = document.getElementById('filter-duplicates-only').checked;
+            const sortMode = document.getElementById('sort-select').value;
+
+            let list = allItems.filter(item => {
+                // ショップフィルター
+                if (currentShopFilter !== 'ALL') {
+                    if (currentShopFilter === 'その他') {
+                        if (item.shopName.includes('Amazon') || item.shopName.includes('スクウェア') || item.shopName.includes('ニンテンドー') || item.shopName.includes('HYPSTER')) {
+                            return false;
+                        }
+                    } else if (!item.shopName.includes(currentShopFilter)) {
+                        return false;
+                    }
+                }
+
+                // 完了隠す
+                if (hideCompleted && (item.status.includes('受取') || item.status.includes('完了') || item.status.includes('キャンセル'))) {
+                    return false;
+                }
+
+                // 重複のみ
+                if (duplicatesOnly && !item.isDuplicate && !(item.sheetWarning && item.sheetWarning.includes('重複'))) {
+                    return false;
+                }
+
+                // 検索クエリ
+                if (searchQuery) {
+                    const normQ = normalizeTitle(searchQuery);
+                    const normN = normalizeTitle(item.itemName);
+                    if (!normN.includes(normQ) && !normQ.includes(normN) && !item.itemName.toLowerCase().includes(searchQuery)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            // ソート
+            list.sort((a, b) => {
+                if (sortMode === 'release-asc') {
+                    if (!a.releaseDate || a.releaseDate === '未定') return 1;
+                    if (!b.releaseDate || b.releaseDate === '未定') return -1;
+                    return a.releaseDate.localeCompare(b.releaseDate);
+                } else if (sortMode === 'release-desc') {
+                    if (!a.releaseDate || a.releaseDate === '未定') return 1;
+                    if (!b.releaseDate || b.releaseDate === '未定') return -1;
+                    return b.releaseDate.localeCompare(a.releaseDate);
+                } else if (sortMode === 'order-desc') {
+                    return (b.orderDate || '').localeCompare(a.orderDate || '');
+                } else if (sortMode === 'price-desc') {
+                    const pA = parseInt((a.price || '').replace(/[^0-9]/g, ''), 10) || 0;
+                    const pB = parseInt((b.price || '').replace(/[^0-9]/g, ''), 10) || 0;
+                    return pB - pA;
+                }
+                return 0;
+            });
+
+            return list;
+        }
+
+        function renderList(searchQuery = '') {
+            const container = document.getElementById('items-container');
+            const items = getFilteredAndSortedItems(searchQuery);
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-card p-12 rounded-3xl text-center space-y-3">
+                        <div class="text-4xl">📭</div>
+                        <h4 class="text-base font-bold text-slate-300">表示できる予約データがありません</h4>
+                        <p class="text-xs text-slate-500 max-w-md mx-auto">
+                            メールがまだ届いていないか、フィルターに一致するものがありません。右上の「手動追加」ボタンから登録することも可能です！
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentViewMode === 'timeline') {
+                renderTimelineView(container, items);
+            } else if (currentViewMode === 'cards') {
+                renderCardsView(container, items);
+            } else {
+                renderTableView(container, items);
+            }
+        }
+
+        // 月別タイムライン
+        function renderTimelineView(container, items) {
+            // 月別にグループ化
+            const groups = {};
+            items.forEach(it => {
+                let monthKey = '未定 / 不明';
+                if (it.releaseDate && it.releaseDate !== '未定') {
+                    const m = it.releaseDate.match(/^(\d{4})[/\-年](\d{1,2})/);
+                    if (m) {
+                        monthKey = `${m[1]}年 ${m[2].padStart(2, '0')}月`;
+                    } else {
+                        monthKey = it.releaseDate;
+                    }
+                }
+                if (!groups[monthKey]) groups[monthKey] = [];
+                groups[monthKey].push(it);
+            });
+
+            let html = '';
+            for (const [month, groupItems] of Object.entries(groups)) {
+                html += `
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="px-3.5 py-1 rounded-full text-xs font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                🗓️ ${escapeHtml(month)}
+                            </span>
+                            <span class="text-xs text-slate-500 font-bold">${groupItems.length} 件</span>
+                            <div class="flex-1 border-t border-white/5"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            ${groupItems.map(item => renderItemCardHtml(item)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // カードグリッド
+        function renderCardsView(container, items) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    ${items.map(item => renderItemCardHtml(item)).join('')}
+                </div>
+            `;
+        }
+
+        function renderItemCardHtml(item) {
+            const isAlert = item.isDuplicate || (item.sheetWarning && item.sheetWarning.includes('重複'));
+            return `
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5 ${isAlert ? 'border-rose-500/60 bg-rose-950/20 shadow-lg shadow-rose-900/10' : ''}">
+                    <div class="space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black ${getShopBadgeClass(item.shopName)}">
+                                ${escapeHtml(item.shopName)}
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                ${item.isManual ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">手動</span>' : ''}
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold ${getStatusBadgeClass(item.status)}">
+                                    ${escapeHtml(item.status)}
+                                </span>
+                            </div>
+                        </div>
+
+                        ${isAlert ? `
+                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold">
+                                <span>⚠️</span> <span>二重・類似予約の可能性あり</span>
+                            </div>
+                        ` : ''}
+
+                        <h4 class="text-sm font-bold text-white line-clamp-2 leading-snug" title="${escapeHtml(item.itemName)}">
+                            ${escapeHtml(item.itemName)}
+                        </h4>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-xs text-slate-400">
+                        <div class="flex justify-between items-center">
+                            <span>発売/お届け:</span>
+                            <strong class="text-amber-300 font-bold">${escapeHtml(item.releaseDate)}</strong>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span>金額 / 数量:</span>
+                            <span class="text-slate-200 font-bold">${formatPriceDisplay(item.price)} <span class="text-slate-500 font-normal">(${escapeHtml(item.quantity)}点)</span></span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-500">
+                            <span>注文日: ${escapeHtml(item.orderDate || '不明')}</span>
+                            ${item.orderId ? `<span class="truncate max-w-[120px]" title="${escapeHtml(item.orderId)}">#${escapeHtml(item.orderId)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // テーブルビュー
+        function renderTableView(container, items) {
+            container.innerHTML = `
+                <div class="glass-card rounded-2xl overflow-hidden border border-white/10">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-white/5 border-b border-white/10 text-slate-400 font-bold uppercase text-[10px]">
+                                <tr>
+                                    <th class="py-3 px-4">状態</th>
+                                    <th class="py-3 px-4">ショップ</th>
+                                    <th class="py-3 px-4">商品名</th>
+                                    <th class="py-3 px-4">発売・お届け予定</th>
+                                    <th class="py-3 px-4">金額</th>
+                                    <th class="py-3 px-4">注文日</th>
+                                    <th class="py-3 px-4">注文番号</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-slate-300">
+                                ${items.map(item => {
+                                    const isAlert = item.isDuplicate || (item.sheetWarning && item.sheetWarning.includes('重複'));
+                                    return `
+                                        <tr class="hover:bg-white/5 transition-colors ${isAlert ? 'bg-rose-950/20' : ''}">
+                                            <td class="py-3 px-4 whitespace-nowrap">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getStatusBadgeClass(item.status)}">
+                                                    ${escapeHtml(item.status)}
+                                                </span>
+                                                ${isAlert ? '<span class="ml-1 text-rose-400 font-bold" title="重複警告">⚠️</span>' : ''}
+                                            </td>
+                                            <td class="py-3 px-4 whitespace-nowrap">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getShopBadgeClass(item.shopName)}">
+                                                    ${escapeHtml(item.shopName)}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 font-bold text-white max-w-xs truncate" title="${escapeHtml(item.itemName)}">
+                                                ${escapeHtml(item.itemName)}
+                                            </td>
+                                            <td class="py-3 px-4 whitespace-nowrap text-amber-300 font-bold">
+                                                ${escapeHtml(item.releaseDate)}
+                                            </td>
+                                            <td class="py-3 px-4 whitespace-nowrap font-bold text-slate-200">
+                                                ${formatPriceDisplay(item.price)}
+                                            </td>
+                                            <td class="py-3 px-4 whitespace-nowrap text-slate-400">
+                                                ${escapeHtml(item.orderDate || '-')}
+                                            </td>
+                                            <td class="py-3 px-4 whitespace-nowrap text-slate-500 font-mono text-[10px]">
+                                                ${escapeHtml(item.orderId || '-')}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatPriceDisplay(price) {
+            if (price === null || price === undefined || price === '') return '未記載';
+            const num = parseInt(String(price).replace(/[^0-9]/g, ''), 10);
+            if (isNaN(num)) return escapeHtml(price);
+            return `¥${num.toLocaleString()}`;
+        }
+
+        // ==================== バッジスタイル補助 ====================
+        function getShopBadgeClass(shop) {
+            if (!shop) return 'bg-slate-700 text-slate-200';
+            if (shop.includes('Amazon')) return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            if (shop.includes('スクウェア') || shop.includes('スクエニ')) return 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+            if (shop.includes('ニンテンドー')) return 'bg-red-500/20 text-red-300 border border-red-500/30';
+            if (shop.includes('HYPSTER') || shop.includes('ヒプマイ')) return 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30';
+            if (shop.includes('あみあみ')) return 'bg-blue-500/20 text-blue-300 border border-blue-500/30';
+            if (shop.includes('アニメイト')) return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+            return 'bg-purple-500/20 text-purple-300 border border-purple-500/30';
+        }
+
+        function getStatusBadgeClass(status) {
+            if (!status) return 'bg-slate-800 text-slate-400';
+            if (status.includes('予約中')) return 'bg-blue-500/20 text-blue-300 border border-blue-500/30';
+            if (status.includes('発送') || status.includes('受取') || status.includes('完了')) return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            if (status.includes('キャンセル')) return 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            return 'bg-slate-800 text-slate-300';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // ==================== 手動追加モーダル ====================
+        function openAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('manual-item-name').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('manual-add-form').reset();
+        }
+
+        function saveManualItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('manual-item-name').value.trim();
+            if (!name) return;
+
+            const newItem = {
+                id: 'manual_' + Date.now(),
+                orderDate: new Date().toISOString().split('T')[0],
+                shopName: document.getElementById('manual-shop-name').value.trim() || '手動登録',
+                itemName: name,
+                releaseDate: document.getElementById('manual-release-date').value.trim() || '未定',
+                quantity: document.getElementById('manual-quantity').value || '1',
+                price: document.getElementById('manual-price').value.trim() || '',
+                orderId: document.getElementById('manual-order-id').value.trim() || '',
+                status: '予約中',
+                sheetWarning: '',
+                messageId: '',
+                isManual: true,
+                isDuplicate: false,
+                duplicateReasons: []
+            };
+
+            manualItems.unshift(newItem);
+            saveManualItemsToStorage(manualItems);
+            closeAddModal();
+            fetchSheetData();
+        }
+
+        // ==================== 設定モーダル ====================
+        function openSettingsModal() {
+            document.getElementById('setting-csv-url').value = appConfig.csvUrl;
+            document.getElementById('setting-sheet-id').value = appConfig.sheetId;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const url = document.getElementById('setting-csv-url').value.trim();
+            const id = document.getElementById('setting-sheet-id').value.trim();
+            saveConfig({ csvUrl: url, sheetId: id });
+            closeSettingsModal();
+            fetchSheetData();
+        }
+
+        function resetDefaultSettings() {
+            document.getElementById('setting-csv-url').value = DEFAULT_CONFIG.csvUrl;
+            document.getElementById('setting-sheet-id').value = DEFAULT_CONFIG.sheetId;
+        }
+    </script>
+</body>
+</html>

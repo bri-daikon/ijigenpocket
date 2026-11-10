@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ぽよぽよ！くらげパズル｜クラゲを育てる無料合体ゲーム</title>
+    <meta name="description" content="同じ種類のクラゲをぶつけて合体させ、最高レベルのゴッドクラゲを目指す無料ブラウザゲームです。パソコンとスマートフォンで遊べ、スコア画像の保存やXでの共有にも対応しています。">
+    <link rel="canonical" href="https://ijipo.candypop.jp/MiniGame/jellyfish_game.html">
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2983319261531210"
+     crossorigin="anonymous"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Matter.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: pan-y;
+            user-select: none;
+            -webkit-user-select: none;
+            overscroll-behavior-y: auto;
+        }
+        #game-container {
+            touch-action: none;
+            overscroll-behavior: contain;
+        }
+        /* Custom Scrollbar for customize panel */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-sky-900 via-indigo-900 to-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-2 md:p-4 overflow-x-hidden">
+
+    <!-- Header / Scoreboard -->
+    <header class="w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-lg flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+            <div class="animate-bounce">
+                <img src="img/01.png" alt="jellyfish" class="w-10 h-10 object-contain drop-shadow-md">
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-sky-200 leading-tight">ぽよぽよ！くらげパズル</h1>
+                <div class="flex gap-3 text-xs mt-0.5">
+                    <span class="text-slate-300">SCORE: <strong id="score" class="text-amber-300 text-base">0</strong></span>
+                    <span class="text-slate-300">BEST: <strong id="best-score" class="text-emerald-300 text-base">0</strong></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Jellyfish Preview -->
+        <div class="flex flex-col items-center bg-black/20 px-3 py-1.5 rounded-xl border border-white/10">
+            <span class="text-[10px] text-sky-200 font-bold uppercase tracking-wider">NEXT</span>
+            <div id="next-preview" class="w-10 h-10 flex items-center justify-center mt-1">
+                <!-- Preview Canvas or Image injected by JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="relative w-full max-w-md flex-1 flex flex-col items-center justify-center">
+        <!-- Canvas Wrapper with custom border -->
+        <div id="game-container" class="relative w-full aspect-[2/3] max-h-[65vh] bg-sky-950/60 rounded-3xl border-4 border-sky-400/40 shadow-2xl overflow-hidden backdrop-blur-sm cursor-crosshair">
+            <!-- Drop Guide Line -->
+            <div id="guide-line" class="absolute top-0 bottom-0 w-0.5 border-r-2 border-dashed border-sky-300/50 pointer-events-none hidden"></div>
+            
+            <!-- Game Over Overlay -->
+            <div id="game-over-modal" class="absolute inset-0 bg-slate-900/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden transition-opacity">
+                <img src="img/end.png" alt="Game Over" class="w-32 h-32 object-contain mb-2 drop-shadow-lg">
+                <h2 class="text-2xl font-extrabold text-rose-400 mb-1">GAME OVER</h2>
+                <p class="text-xs text-slate-300 mb-4">くらげが水面からあふれてしまいました！</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
+                    <p class="text-xs text-slate-400">最終スコア</p>
+                    <p id="final-score" class="text-3xl font-extrabold text-amber-300">0</p>
+                </div>
+                
+                <a href="https://store.line.me/stickershop/author/6151799/ja" target="_blank" class="w-full bg-[#06C755]/10 border border-[#06C755]/30 hover:bg-[#06C755]/20 rounded-xl p-3 mb-4 transition-colors flex flex-col items-center justify-center group">
+                    <span class="text-[10px] text-slate-300 mb-1">かわいいキャラクターたちはLINEスタンプや絵文字になってます</span>
+                    <span class="text-xs font-bold text-[#06C755] flex items-center gap-1 group-hover:underline">
+                        LINEストアを見る
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </span>
+                </a>
+
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像を保存 / シェア
+                    </button>
+                </div>
+                <button onclick="restartGame()" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    もう一度あそぶ 🔄
+                </button>
+            </div>
+
+            <!-- Game Clear Overlay -->
+            <div id="game-clear-modal" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 hidden transition-opacity">
+                <img src="img/nice1.png" alt="Clear!" class="w-32 h-32 object-contain mb-4 animate-bounce drop-shadow-lg">
+                <h2 class="text-2xl font-extrabold text-amber-300 mb-1">CONGRATULATIONS!</h2>
+                <p class="text-xs text-slate-300 mb-4">最高レベルのクラゲが誕生しました！</p>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10 w-full mb-4">
+                    <p class="text-xs text-slate-400">達成時スコア</p>
+                    <p id="clear-score" class="text-3xl font-extrabold text-emerald-400">0</p>
+                </div>
+
+                <a href="https://store.line.me/stickershop/author/6151799/ja" target="_blank" class="w-full bg-[#06C755]/10 border border-[#06C755]/30 hover:bg-[#06C755]/20 rounded-xl p-3 mb-4 transition-colors flex flex-col items-center justify-center group">
+                    <span class="text-[10px] text-slate-300 mb-1">かわいいキャラクターたちはLINEスタンプや絵文字になってます</span>
+                    <span class="text-xs font-bold text-[#06C755] flex items-center gap-1 group-hover:underline">
+                        LINEストアを見る
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </span>
+                </a>
+
+                <div class="flex gap-2 w-full mb-4">
+                    <button onclick="shareResult()" class="flex-1 bg-black text-white hover:bg-gray-800 font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        𝕏でシェア
+                    </button>
+                    <button onclick="downloadScreenshot()" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-2 rounded-xl shadow-lg active:scale-95 transition-all text-xs flex items-center justify-center gap-1">
+                        📷 画像を保存 / シェア
+                    </button>
+                </div>
+                <button onclick="continueGameAfterClear()" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                    続けてあそぶ ✨
+                </button>
+            </div>
+
+            <!-- Matter.js Canvas render target -->
+            <canvas id="game-canvas" class="w-full h-full block"></canvas>
+        </div>
+    </main>
+
+    <!-- Controls & Action Buttons -->
+    <footer class="w-full max-w-md mt-2 flex gap-2">
+        <button onclick="restartGame()" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all border border-white/20">
+            <span>🔄</span> リセット
+        </button>
+    </footer>
+
+    <!-- Footer Credit -->
+    <div class="mt-4 mb-2 text-center text-[10px] text-white/60">
+        Product By <a href="https://ijigenpocket.booth.pm/" target="_blank" class="underline hover:text-white transition-colors">異次元ポケット</a>
+    </div>
+
+    <section class="w-full max-w-4xl mt-8 mb-8 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl p-6 md:p-10 select-text touch-pan-y" aria-labelledby="guide-title">
+        <p class="text-xs font-bold tracking-[0.2em] text-sky-300 mb-2">GAME GUIDE</p>
+        <h2 id="guide-title" class="text-2xl md:text-3xl font-extrabold text-white mb-4">ぽよぽよ！くらげパズルの遊び方</h2>
+        <p class="text-sm md:text-base leading-8 text-slate-300 mb-8">上からクラゲを落とし、同じ種類同士をぶつけて大きなクラゲへ合体させるパズルゲームです。水槽からあふれないよう配置を工夫しながら、全11段階の最終形態「ゴッドクラゲ」を目指しましょう。</p>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-10">
+            <article class="rounded-2xl bg-sky-950/50 border border-sky-300/20 p-5"><h3 class="font-bold text-sky-200 mb-2">クラゲを落とす</h3><p class="text-sm leading-7 text-slate-300">パソコンではゲーム画面上でマウスを動かして位置を決め、クリックすると落とせます。スマートフォンでは画面を指でなぞって位置を決め、指を離すと落下します。</p></article>
+            <article class="rounded-2xl bg-sky-950/50 border border-sky-300/20 p-5"><h3 class="font-bold text-sky-200 mb-2">同じ種類を合体</h3><p class="text-sm leading-7 text-slate-300">同じ段階のクラゲが触れると、ひとつ上の大きなクラゲへ合体してスコアが加算されます。違う種類同士は合体しません。</p></article>
+            <article class="rounded-2xl bg-sky-950/50 border border-sky-300/20 p-5"><h3 class="font-bold text-sky-200 mb-2">NEXTを確認</h3><p class="text-sm leading-7 text-slate-300">画面右上の「NEXT」には、次に落とすクラゲが表示されます。現在のクラゲだけでなく、次の一手も考えて置き場所を決めましょう。</p></article>
+            <article class="rounded-2xl bg-sky-950/50 border border-sky-300/20 p-5"><h3 class="font-bold text-sky-200 mb-2">クリアとゲームオーバー</h3><p class="text-sm leading-7 text-slate-300">ゴッドクラゲが誕生するとゲームクリアです。クラゲが赤い点線より上に約1.8秒とどまると、水槽からあふれたと判定されゲームオーバーになります。</p></article>
+        </div>
+
+        <h2 class="text-xl md:text-2xl font-extrabold text-white mb-4">基本操作</h2>
+        <ol class="space-y-3 text-sm leading-7 text-slate-300 mb-10">
+            <li class="flex gap-3 rounded-xl bg-white/5 p-4"><span class="grid place-items-center shrink-0 w-7 h-7 rounded-full bg-sky-500 text-white font-bold">1</span><p>ゲーム画面内で左右へ動かし、点線ガイドを見ながら落下位置を決めます。</p></li>
+            <li class="flex gap-3 rounded-xl bg-white/5 p-4"><span class="grid place-items-center shrink-0 w-7 h-7 rounded-full bg-sky-500 text-white font-bold">2</span><p>クリックまたはタッチ終了でクラゲを落とします。次に落とせるまで約0.5秒の間隔があります。</p></li>
+            <li class="flex gap-3 rounded-xl bg-white/5 p-4"><span class="grid place-items-center shrink-0 w-7 h-7 rounded-full bg-sky-500 text-white font-bold">3</span><p>同じクラゲの近くへ落として合体させ、より大きなクラゲへ育てます。</p></li>
+            <li class="flex gap-3 rounded-xl bg-white/5 p-4"><span class="grid place-items-center shrink-0 w-7 h-7 rounded-full bg-sky-500 text-white font-bold">4</span><p>やり直したいときは「リセット」を押します。ゲーム終了後はスコアをXで共有したり、結果画面を画像として保存したりできます。</p></li>
+        </ol>
+
+        <div class="rounded-2xl bg-amber-400/10 border border-amber-300/30 p-5 mb-10">
+            <h2 class="text-xl font-extrabold text-amber-200 mb-3">攻略のコツ</h2>
+            <ul class="space-y-2 text-sm leading-7 text-slate-300 list-disc pl-5">
+                <li>大きなクラゲは下側へ集め、小さなクラゲを上で合体させる空間を残しましょう。</li>
+                <li>片側だけを高く積まず、左右の高さを見ながら水槽全体を使いましょう。</li>
+                <li>「NEXT」を見て、次のクラゲまでつながる置き場所を考えると連続合体を狙いやすくなります。</li>
+                <li>クラゲは落下や合体で跳ねるため、点線付近では慌てて次を落とさず、動きが落ち着くのを待つのも有効です。</li>
+            </ul>
+        </div>
+
+        <h2 class="text-xl md:text-2xl font-extrabold text-white mb-4">よくある質問</h2>
+        <div class="space-y-3">
+            <details class="rounded-xl border border-white/15 p-4"><summary class="font-bold text-sky-200 cursor-pointer">ベストスコアは保存されますか？</summary><p class="mt-3 text-sm leading-7 text-slate-300">利用中のブラウザ内に保存されます。同じ端末・ブラウザで次回遊ぶときも表示されますが、ブラウザの保存データを削除するとリセットされる場合があります。</p></details>
+            <details class="rounded-xl border border-white/15 p-4"><summary class="font-bold text-sky-200 cursor-pointer">クリア後も続けて遊べますか？</summary><p class="mt-3 text-sm leading-7 text-slate-300">遊べます。クリア画面の「続けてあそぶ」を押すと、その時点のクラゲとスコアを残したままゲームを再開できます。</p></details>
+            <details class="rounded-xl border border-white/15 p-4"><summary class="font-bold text-sky-200 cursor-pointer">リセットするとベストスコアも消えますか？</summary><p class="mt-3 text-sm leading-7 text-slate-300">消えません。リセットされるのは現在の水槽と今回のスコアで、ベストスコアはブラウザ内に残ります。</p></details>
+            <details class="rounded-xl border border-white/15 p-4"><summary class="font-bold text-sky-200 cursor-pointer">スマートフォンで画面をスクロールできません</summary><p class="mt-3 text-sm leading-7 text-slate-300">ゲーム画面内ではクラゲの位置操作を優先するため、指によるページスクロールを止めています。説明を読むときは、ゲーム画面の外側から上下へスワイプしてください。</p></details>
+        </div>
+
+        <nav class="mt-10 flex flex-wrap gap-3" aria-label="関連ページ">
+            <a href="/" class="inline-flex items-center px-5 py-3 rounded-full bg-sky-500 hover:bg-sky-400 text-white font-bold transition">ほかのツール・ゲームを見る →</a>
+            <a href="https://store.line.me/stickershop/author/6151799/ja" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-5 py-3 rounded-full border border-white/20 hover:bg-white/10 text-white font-bold transition">キャラクターのLINEスタンプを見る →</a>
+        </nav>
+    </section>
+
+    <script>
+        // --- 1. GAME DATA & CONFIGURATION ---
+        // 11 Levels of Jellyfish (Size, Color, Score, Default Render)
+        const JELLYFISH_TYPES = [
+            { level: 0, name: "赤ちゃんクラゲ", radius: 18, color: "#f472b6", score: 2, emoji: "🪼", imgSrc: "img/01.png" },
+            { level: 1, name: "ももくらげ",     radius: 26, color: "#fb7185", score: 4, emoji: "🌸", imgSrc: "img/02.png" },
+            { level: 2, name: "きいろくらげ",   radius: 35, color: "#facc15", score: 8, emoji: "⭐", imgSrc: "img/03.png" },
+            { level: 3, name: "みんとくらげ",   radius: 45, color: "#4ade80", score: 16, emoji: "🌱", imgSrc: "img/04.png" },
+            { level: 4, name: "そらくらげ",     radius: 56, color: "#38bdf8", score: 32, emoji: "💧", imgSrc: "img/05.png" },
+            { level: 5, name: "むらさきくらげ", radius: 68, color: "#c084fc", score: 64, emoji: "🔮", imgSrc: "img/06.png" },
+            { level: 6, name: "みかんくらげ",   radius: 80, color: "#fb923c", score: 128, emoji: "🍊", imgSrc: "img/07.png" },
+            { level: 7, name: "にじくらげ",     radius: 93, color: "#e879f9", score: 256, emoji: "🌈", imgSrc: "img/08.png" },
+            { level: 8, name: "キングくらげ",   radius: 106, color: "#f43f5e", score: 512, emoji: "👑", imgSrc: "img/09.png" },
+            { level: 9, name: "エンペラー",     radius: 120, color: "#06b6d4", score: 1024, emoji: "✨", imgSrc: "img/10.png" },
+            { level: 10, name: "ゴッドクラゲ",  radius: 135, color: "#a855f7", score: 2048, emoji: "🌟", imgSrc: "img/11.png" }
+        ];
+        let loadedImgObjects = new Array(JELLYFISH_TYPES.length).fill(null);
+
+        // Game State Variables
+        let score = 0;
+        let bestScore = parseInt(localStorage.getItem('jellyfish_best_score') || '0');
+        let currentLevel = 0;
+        let nextLevel = 0;
+        let canDrop = true;
+        let isGameOver = false;
+        let isGameCleared = false;
+        let dropCooldown = false;
+
+        // Matter.js Module Aliases
+        const { Engine, Render, Runner, Bodies, Composite, Body, Events, Vector } = Matter;
+
+        let engine, world, runner;
+        let canvas, ctx;
+        let containerWidth, containerHeight;
+        let currentDropperX = 0;
+
+        // --- 2. INITIALIZATION & SETUP ---
+        window.addEventListener('load', () => {
+            loadFixedImages();
+            initGame();
+            setupEvents();
+            updateScoreUI();
+        });
+
+        function initGame() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            const container = document.getElementById('game-container');
+            
+            containerWidth = container.clientWidth;
+            containerHeight = container.clientHeight;
+
+            // Set high DPI canvas resolution
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = containerWidth * dpr;
+            canvas.height = containerHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Create Physics Engine
+            engine = Engine.create({
+                gravity: { x: 0, y: 1.2, scale: 0.001 }
+            });
+            world = engine.world;
+
+            // Create Boundaries (Walls & Floor)
+            const wallOptions = { isStatic: true, friction: 0.3, restitution: 0.2 };
+            const wallThickness = 100;
+
+            // Floor
+            const floor = Bodies.rectangle(
+                containerWidth / 2, 
+                containerHeight + wallThickness / 2, 
+                containerWidth * 2, 
+                wallThickness, 
+                wallOptions
+            );
+            // Left Wall
+            const leftWall = Bodies.rectangle(
+                -wallThickness / 2, 
+                containerHeight / 2, 
+                wallThickness, 
+                containerHeight * 2, 
+                wallOptions
+            );
+            // Right Wall
+            const rightWall = Bodies.rectangle(
+                containerWidth + wallThickness / 2, 
+                containerHeight / 2, 
+                wallThickness, 
+                containerHeight * 2, 
+                wallOptions
+            );
+
+            Composite.add(world, [floor, leftWall, rightWall]);
+
+            // Start Physics Runner
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // Setup Collision Handler for Merging
+            Events.on(engine, 'collisionStart', handleCollisions);
+
+            // Spawn initial next items
+            currentLevel = getRandomSpawnLevel();
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+
+            currentDropperX = containerWidth / 2;
+
+            // Start Animation Render Loop
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- 3. MERGING LOGIC & PHYSICS ---
+        function handleCollisions(event) {
+            if (isGameOver) return;
+
+            const pairs = event.pairs;
+            for (let i = 0; i < pairs.length; i++) {
+                const { bodyA, bodyB } = pairs[i];
+
+                // Check if both bodies are valid jellyfish and have matching level
+                if (bodyA.jellyLevel !== undefined && bodyB.jellyLevel !== undefined) {
+                    if (bodyA.jellyLevel === bodyB.jellyLevel && !bodyA.isMerging && !bodyB.isMerging) {
+                        const currentLvl = bodyA.jellyLevel;
+                        
+                        // Maximum level reached?
+                        if (currentLvl >= JELLYFISH_TYPES.length - 1) continue;
+
+                        // Mark as merging to prevent duplicate collision processing
+                        bodyA.isMerging = true;
+                        bodyB.isMerging = true;
+
+                        // Midpoint for new merged jellyfish
+                        const midX = (bodyA.position.x + bodyB.position.x) / 2;
+                        const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                        // Add score
+                        const nextType = JELLYFISH_TYPES[currentLvl + 1];
+                        addScore(nextType.score);
+
+                        // Remove old bodies and spawn upgraded body
+                        setTimeout(() => {
+                            Composite.remove(world, bodyA);
+                            Composite.remove(world, bodyB);
+
+                            const newJelly = createJellyBody(midX, midY, currentLvl + 1);
+                            Composite.add(world, newJelly);
+
+                            // Bounce effect
+                            Body.setVelocity(newJelly, { x: (Math.random() - 0.5) * 2, y: -2 });
+
+                            // Check for Game Clear condition (max level reached)
+                            if (currentLvl + 1 === JELLYFISH_TYPES.length - 1 && !isGameCleared) {
+                                triggerGameClear();
+                            }
+                        }, 10);
+                    }
+                }
+            }
+        }
+
+        function createJellyBody(x, y, level) {
+            const type = JELLYFISH_TYPES[level];
+            const body = Bodies.circle(x, y, type.radius, {
+                restitution: 0.3,
+                friction: 0.1,
+                density: 0.002,
+                label: `JellyLevel_${level}`
+            });
+            body.jellyLevel = level;
+            return body;
+        }
+
+        function getRandomSpawnLevel() {
+            // Drop only small levels (0 to 3)
+            return Math.floor(Math.random() * 4);
+        }
+
+        // --- 4. PLAYER CONTROLS & DROPPING ---
+        function setupEvents() {
+            const container = document.getElementById('game-container');
+            const guideLine = document.getElementById('guide-line');
+
+            function updateGuidePosition(clientX) {
+                if (!canDrop || isGameOver) return;
+                const rect = container.getBoundingClientRect();
+                let x = clientX - rect.left;
+                
+                // Keep within boundaries
+                const currentRadius = JELLYFISH_TYPES[currentLevel].radius;
+                x = Math.max(currentRadius, Math.min(containerWidth - currentRadius, x));
+                
+                currentDropperX = x;
+                guideLine.style.left = `${x}px`;
+                guideLine.style.display = 'block';
+            }
+
+            // Mouse / Touch Move
+            container.addEventListener('mousemove', (e) => updateGuidePosition(e.clientX));
+            container.addEventListener('mouseleave', () => guideLine.style.display = 'none');
+
+            container.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // 画面のスクロールを防止
+                if (e.touches.length > 0) {
+                    updateGuidePosition(e.touches[0].clientX);
+                }
+            }, { passive: false });
+
+            // Drop Action on Click / Touch End
+            container.addEventListener('click', (e) => {
+                updateGuidePosition(e.clientX);
+                dropJellyfish();
+            });
+
+            container.addEventListener('touchend', (e) => {
+                dropJellyfish();
+                guideLine.style.display = 'none';
+            });
+        }
+
+        function dropJellyfish() {
+            if (!canDrop || dropCooldown || isGameOver) return;
+
+            dropCooldown = true;
+            const radius = JELLYFISH_TYPES[currentLevel].radius;
+            const spawnY = 40; // Top margin
+
+            // Create and drop jellyfish body
+            const body = createJellyBody(currentDropperX, spawnY, currentLevel);
+            Composite.add(world, body);
+
+            // Prepare next drop
+            currentLevel = nextLevel;
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+
+            // Cooldown delay (500ms)
+            setTimeout(() => {
+                dropCooldown = false;
+            }, 500);
+        }
+
+        // --- 5. CUSTOM CANVAS RENDER LOOP ---
+        function renderLoop() {
+            if (!ctx) return;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, containerWidth, containerHeight);
+
+            // 1. Draw Game Over Limit Line (Red dashed line at top)
+            const deadLineY = 70;
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = "rgba(244, 63, 94, 0.6)";
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, deadLineY);
+            ctx.lineTo(containerWidth, deadLineY);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Draw Ready Dropper Jellyfish at top
+            if (canDrop && !isGameOver && !dropCooldown) {
+                drawJellyfishItem(ctx, currentDropperX, 40, currentLevel, 0.85);
+            }
+
+            // 3. Draw All Active Physics Bodies
+            const bodies = Composite.allBodies(world);
+            let overflowDetected = false;
+
+            bodies.forEach(body => {
+                if (body.jellyLevel !== undefined) {
+                    const { x, y } = body.position;
+                    const angle = body.angle;
+                    
+                    drawJellyfishItem(ctx, x, y, body.jellyLevel, 1.0, angle);
+
+                    // Check for Game Over condition (body stationary above line)
+                    if (y - JELLYFISH_TYPES[body.jellyLevel].radius < deadLineY && Math.abs(body.velocity.y) < 0.2) {
+                        if (!body.overflowStartTime) {
+                            body.overflowStartTime = Date.now();
+                        } else if (Date.now() - body.overflowStartTime > 1800) { // 1.8 seconds grace time
+                            overflowDetected = true;
+                        }
+                    } else {
+                        body.overflowStartTime = null;
+                    }
+                }
+            });
+
+            if (overflowDetected && !isGameOver) {
+                triggerGameOver();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Draw Single Jellyfish (Custom Image or Vector Cute Jellyfish Fallback)
+        function drawJellyfishItem(targetCtx, x, y, level, opacity = 1.0, angle = 0) {
+            const type = JELLYFISH_TYPES[level];
+            const radius = type.radius;
+
+            targetCtx.save();
+            targetCtx.translate(x, y);
+            targetCtx.rotate(angle);
+            targetCtx.globalAlpha = opacity;
+
+            // If user uploaded a custom image for this level, render it!
+            if (loadedImgObjects[level]) {
+                targetCtx.beginPath();
+                targetCtx.arc(0, 0, radius, 0, Math.PI * 2);
+                targetCtx.clip();
+                targetCtx.drawImage(loadedImgObjects[level], -radius, -radius, radius * 2, radius * 2);
+            } else {
+                // Otherwise, draw cute vector jellyfish procedurally
+                // Jelly Umbrella Body
+                targetCtx.beginPath();
+                targetCtx.fillStyle = type.color;
+                targetCtx.arc(0, -radius * 0.1, radius, Math.PI, 0, false);
+                targetCtx.quadraticCurveTo(radius * 0.5, radius * 0.5, 0, radius * 0.5);
+                targetCtx.quadraticCurveTo(-radius * 0.5, radius * 0.5, -radius, -radius * 0.1);
+                targetCtx.fill();
+
+                // Inner Glow / Highlight
+                targetCtx.beginPath();
+                targetCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
+                targetCtx.arc(-radius * 0.3, -radius * 0.4, radius * 0.3, 0, Math.PI * 2);
+                targetCtx.fill();
+
+                // Tentacles
+                targetCtx.strokeStyle = type.color;
+                targetCtx.lineWidth = Math.max(2, radius * 0.1);
+                targetCtx.lineCap = "round";
+                const tentacleCount = 4;
+                for (let i = 0; i < tentacleCount; i++) {
+                    const tx = -radius * 0.6 + (radius * 1.2 / (tentacleCount - 1)) * i;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(tx, radius * 0.4);
+                    targetCtx.quadraticCurveTo(tx + (i % 2 === 0 ? 5 : -5), radius * 0.7, tx, radius * 0.9);
+                    targetCtx.stroke();
+                }
+
+                // Cute Eyes
+                targetCtx.fillStyle = "#1e293b";
+                const eyeOffset = radius * 0.3;
+                const eyeSize = Math.max(2, radius * 0.12);
+                targetCtx.beginPath();
+                targetCtx.arc(-eyeOffset, -radius * 0.1, eyeSize, 0, Math.PI * 2);
+                targetCtx.arc(eyeOffset, -radius * 0.1, eyeSize, 0, Math.PI * 2);
+                targetCtx.fill();
+
+                // Smile
+                targetCtx.beginPath();
+                targetCtx.strokeStyle = "#1e293b";
+                targetCtx.lineWidth = Math.max(1.5, radius * 0.08);
+                targetCtx.arc(0, -radius * 0.05, radius * 0.15, 0.2, Math.PI - 0.2);
+                targetCtx.stroke();
+            }
+
+            // Outline Ring
+            targetCtx.beginPath();
+            targetCtx.arc(0, 0, radius, 0, Math.PI * 2);
+            targetCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            targetCtx.lineWidth = 2;
+            targetCtx.stroke();
+
+            targetCtx.restore();
+        }
+
+        // --- 6. UI & GAME OVER MANAGEMENT ---
+        function addScore(points) {
+            score += points;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('jellyfish_best_score', bestScore.toString());
+            }
+            updateScoreUI();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('best-score').innerText = bestScore;
+        }
+
+        function updateNextPreview() {
+            const container = document.getElementById('next-preview');
+            container.innerHTML = '';
+            
+            const pCanvas = document.createElement('canvas');
+            pCanvas.width = 40;
+            pCanvas.height = 40;
+            const pCtx = pCanvas.getContext('2d');
+            
+            drawJellyfishItem(pCtx, 20, 20, nextLevel, 1.0);
+            container.appendChild(pCanvas);
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            canDrop = false;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-modal').classList.remove('hidden');
+        }
+
+        function triggerGameClear() {
+            isGameCleared = true;
+            canDrop = false;
+            document.getElementById('clear-score').innerText = score;
+            document.getElementById('game-clear-modal').classList.remove('hidden');
+        }
+
+        function shareResult() {
+            const text = `ぽよぽよ！くらげパズルで遊んだよ！\nスコア: ${score}\n\n#くらげパズル #異次元ポケット`;
+            const url = window.location.href;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+            window.open(twitterUrl, '_blank');
+        }
+
+        function downloadScreenshot() {
+            const container = document.getElementById('game-container');
+            
+            html2canvas(container, {
+                backgroundColor: null,
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], `jellyfish_score_${score}.png`, { type: 'image/png' });
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    // スマホのネイティブシェア（画像保存も可能）を試みる
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: 'ぽよぽよ！くらげパズル',
+                            text: `スコア: ${score} でゲームオーバー！\n#くらげパズル #異次元ポケット\n`
+                        }).catch((error) => {
+                            console.log('シェアがキャンセルされました', error);
+                            // シェアが失敗した場合やキャンセルされた場合は長押し保存画面へ
+                            showImageModal(imageUrl, file);
+                        });
+                    } else {
+                        // ネイティブシェア非対応（アプリ内ブラウザ等）の場合
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                            showImageModal(imageUrl, file);
+                        } else {
+                            // PCなどのフォールバック処理（直接ダウンロード）
+                            const link = document.createElement('a');
+                            link.download = file.name;
+                            link.href = imageUrl;
+                            link.click();
+                        }
+                    }
+                }, 'image/png');
+            });
+        }
+
+        function showImageModal(imageUrl, file) {
+            let modal = document.getElementById('image-save-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'image-save-modal';
+                modal.className = 'absolute inset-0 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity';
+                modal.innerHTML = `
+                    <p class="text-white font-bold mb-2">画像を長押しして保存してください</p>
+                    <p class="text-xs text-slate-400 mb-4">※保存できない場合は「直接ダウンロード」をお試しください</p>
+                    <img id="save-image-preview" src="" style="-webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; pointer-events: auto;" class="max-w-full max-h-[50vh] rounded-xl shadow-2xl mb-4 border border-white/20 object-contain">
+                    
+                    <div class="flex gap-2 w-full mb-4">
+                        <button id="direct-download-btn" class="flex-1 bg-white/20 hover:bg-white/30 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all text-sm">
+                            ⬇️ 直接ダウンロード
+                        </button>
+                    </div>
+
+                    <button onclick="document.getElementById('image-save-modal').classList.add('hidden')" class="bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 px-8 rounded-xl shadow-lg active:scale-95 transition-all text-sm w-full">
+                        閉じる
+                    </button>
+                `;
+                document.getElementById('game-container').appendChild(modal);
+            }
+            
+            document.getElementById('save-image-preview').src = imageUrl;
+            
+            // Setup direct download button
+            const dlBtn = document.getElementById('direct-download-btn');
+            dlBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = file ? file.name : 'jellyfish_score.png';
+                link.href = imageUrl;
+                link.click();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function continueGameAfterClear() {
+            document.getElementById('game-clear-modal').classList.add('hidden');
+            canDrop = true;
+        }
+
+        function restartGame() {
+            // Remove all physics bodies except walls
+            const bodies = Composite.allBodies(world);
+            bodies.forEach(body => {
+                if (body.jellyLevel !== undefined) {
+                    Composite.remove(world, body);
+                }
+            });
+
+            score = 0;
+            isGameOver = false;
+            isGameCleared = false;
+            canDrop = true;
+            dropCooldown = false;
+            updateScoreUI();
+
+            document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('game-clear-modal').classList.add('hidden');
+            
+            currentLevel = getRandomSpawnLevel();
+            nextLevel = getRandomSpawnLevel();
+            updateNextPreview();
+        }
+
+        // --- 7. LOAD FIXED IMAGES ---
+        function loadFixedImages() {
+            JELLYFISH_TYPES.forEach((type, idx) => {
+                const img = new Image();
+                img.src = type.imgSrc;
+                img.onload = () => {
+                    loadedImgObjects[idx] = img;
+                    if (idx === nextLevel || idx === currentLevel) {
+                        updateNextPreview();
+                    }
+                };
+            });
+        }
+    </script>
+</body>
+</html>

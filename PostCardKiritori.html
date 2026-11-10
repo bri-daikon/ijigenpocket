@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポストカード分割＆はがきサイズ変換ツール</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- JSZip for bulk ZIP download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        /* Custom scrollbar for sleek UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .checkerboard {
+            background-color: #f8fafc;
+            background-image: 
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-30 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-orange-500 text-white p-2 rounded-xl shadow-lg shadow-orange-500/30">
+                    <i data-lucide="scissors" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        ポストカード分割＆はがきサイズ変換ツール
+                        <span class="text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full font-medium">100×148mm 比率対応</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">まとめ画像を1枚ずつ綺麗に切り抜き、印刷用はがき比率（1200×1776px）に自動調整します</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="imageUpload" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 border border-slate-600 shadow-sm">
+                    <i data-lucide="upload" class="w-4 h-4 text-orange-400"></i>
+                    <span>画像を読み込む</span>
+                    <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                </label>
+                <button id="downloadAllBtn" disabled class="bg-orange-500 hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white px-5 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg shadow-orange-500/20 disabled:shadow-none">
+                    <i data-lucide="folder-down" class="w-4 h-4"></i>
+                    <span>9枚まとめてZIP保存</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Source Image & Crop Grid Controls (5 cols on lg) -->
+        <div class="lg:col-span-5 flex flex-col gap-5">
+            
+            <!-- Upload & Interactive Canvas Box -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i data-lucide="grid" class="w-4 h-4 text-orange-400"></i>
+                        1. 分割ラインの確認・微調整
+                    </h2>
+                    <div class="flex gap-1.5">
+                        <button id="presetHalloweenBtn" class="text-xs bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/40 px-2.5 py-1 rounded-lg transition font-medium" title="左中段が正方形に近いハロウィン画像用のレイアウト">
+                            ハロウィン仕様
+                        </button>
+                        <button id="presetEqualBtn" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2.5 py-1 rounded-lg transition" title="均等な3×3グリッド">
+                            均等3×3
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dropzone / Interactive Guide Container -->
+                <div id="dropzone" class="relative w-full min-h-[360px] bg-slate-900/90 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center overflow-hidden transition-colors">
+                    
+                    <!-- Placeholder UI before image load -->
+                    <div id="emptyState" class="text-center p-6 flex flex-col items-center">
+                        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 border border-slate-700 text-orange-400">
+                            <i data-lucide="image-plus" class="w-8 h-8"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-200 mb-1">ここにまとめ画像をドラッグ＆ドロップ</p>
+                        <p class="text-xs text-slate-400 mb-4">または上の「画像を読み込む」ボタンから選択してください</p>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <button id="loadDemoBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-orange-300 border border-orange-500/30 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                サンプルレイアウトで試す
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Canvas Container (Hidden initially) -->
+                    <div id="canvasWrapper" class="relative w-full h-full hidden flex items-center justify-center p-2 select-none">
+                        <canvas id="guideCanvas" class="max-w-full max-h-[520px] rounded shadow-md cursor-crosshair"></canvas>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-400 mt-2.5 flex items-start gap-1.5 leading-relaxed">
+                    <i data-lucide="info" class="w-4 h-4 text-orange-400 shrink-0 mt-0.5"></i>
+                    <span>画像上の<strong class="text-orange-300">オレンジ色の分割線</strong>をマウスや指でドラッグすると、切り抜き位置を直接動かして調整できます。</span>
+                </p>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col gap-4 shadow-xl">
+                <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-orange-400"></i>
+                    2. はがきサイズ＆余白の調整設定
+                </h2>
+
+                <!-- Fit Mode -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <label class="cursor-pointer border border-slate-600 rounded-xl p-2.5 flex flex-col gap-1 bg-slate-900/50 hover:bg-slate-700/50 transition has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/10">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">全体を表示 (推奨)</span>
+                            <input type="radio" name="fitMode" value="contain" checked class="accent-orange-500">
+                        </div>
+                        <span class="text-[11px] text-slate-400">絵柄が切れないように収め、足りない上下左右に背景色を足します</span>
+                    </label>
+
+                    <label class="cursor-pointer border border-slate-600 rounded-xl p-2.5 flex flex-col gap-1 bg-slate-900/50 hover:bg-slate-700/50 transition has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/10">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">枠いっぱいに拡大</span>
+                            <input type="radio" name="fitMode" value="cover" class="accent-orange-500">
+                        </div>
+                        <span class="text-[11px] text-slate-400">はがき比率を隙間なく埋めます（正方形に近いカードは左右が少し切れます）</span>
+                    </label>
+
+                    <label class="cursor-pointer border border-slate-600 rounded-xl p-2.5 flex flex-col gap-1 bg-slate-900/50 hover:bg-slate-700/50 transition has-[:checked]:border-orange-500 has-[:checked]:bg-orange-500/10">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">比率を伸ばす</span>
+                            <input type="radio" name="fitMode" value="stretch" class="accent-orange-500">
+                        </div>
+                        <span class="text-[11px] text-slate-400">余白を作らず、縦横をはがきサイズに引き伸ばしてぴったり合わせます</span>
+                    </label>
+                </div>
+
+                <!-- Sliders & Background Color -->
+                <div class="space-y-3 pt-1 border-t border-slate-700/80">
+                    <!-- Trim Edge -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300 font-medium">境界線のフチ削り（隣の枠線の混入防止）</span>
+                            <span id="trimValueLabel" class="text-orange-400 font-mono">4 px</span>
+                        </div>
+                        <input type="range" id="edgeTrimSlider" min="0" max="30" value="4" class="w-full accent-orange-500 cursor-pointer">
+                    </div>
+
+                    <!-- Outer Margin -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300 font-medium">はがき外周の余白（印刷時のフチ幅）</span>
+                            <span id="marginValueLabel" class="text-orange-400 font-mono">0 px (フチなし)</span>
+                        </div>
+                        <input type="range" id="outerMarginSlider" min="0" max="80" value="0" step="4" class="w-full accent-orange-500 cursor-pointer">
+                    </div>
+
+                    <!-- Background Fill Mode -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <span class="text-xs text-slate-300 font-medium">余白の背景色：</span>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs flex items-center gap-1 cursor-pointer bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                                <input type="radio" name="bgMode" value="auto" checked class="accent-orange-500">
+                                <span>カードの端の色を自動取得</span>
+                            </label>
+                            <label class="text-xs flex items-center gap-1.5 cursor-pointer bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                                <input type="radio" name="bgMode" value="custom" class="accent-orange-500">
+                                <span>単色指定</span>
+                                <input type="color" id="customBgColor" value="#ffffff" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent p-0">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: 9 Generated Postcards Preview & Individual Download (7 cols on lg) -->
+        <div class="lg:col-span-7 bg-slate-800 border border-slate-700 rounded-2xl p-4 sm:p-5 flex flex-col shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-700">
+                <div>
+                    <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-orange-400"></i>
+                        3. はがきサイズ（100×148mm比率）プレビュー＆個別保存
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">各カードの「微調整」ボタンを押すと、1枚ずつ切り抜き範囲を細かく直せます</p>
+                </div>
+                <span class="text-xs font-mono bg-slate-900 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">
+                    出力解像度: 1200 × 1776 px (PNG)
+                </span>
+            </div>
+
+            <!-- 9 Cards Grid -->
+            <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-1 content-start">
+                <!-- Cards will be dynamically populated here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Individual Card Fine-Tuning Modal -->
+    <div id="fineTuneModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-lg w-full p-5 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="crop" class="w-4 h-4 text-orange-400"></i>
+                    <span>カードの切り抜き微調整</span>
+                </h3>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div class="checkerboard rounded-xl p-2 flex items-center justify-center border border-slate-600">
+                    <canvas id="modalPreviewCanvas" class="w-full max-w-[180px] h-auto shadow-md rounded"></canvas>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <p class="text-slate-300 leading-relaxed">このカードだけの切り抜き境界（上下左右のオフセット）と背景色を個別に調整できます。</p>
+                    
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">上端の位置調整 (Top)</span>
+                            <span id="offsetTopVal" class="font-mono text-orange-300">0 px</span>
+                        </div>
+                        <input type="range" id="offsetTop" min="-60" max="60" value="0" class="w-full accent-orange-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">下端の位置調整 (Bottom)</span>
+                            <span id="offsetBottomVal" class="font-mono text-orange-300">0 px</span>
+                        </div>
+                        <input type="range" id="offsetBottom" min="-60" max="60" value="0" class="w-full accent-orange-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">左端の位置調整 (Left)</span>
+                            <span id="offsetLeftVal" class="font-mono text-orange-300">0 px</span>
+                        </div>
+                        <input type="range" id="offsetLeft" min="-60" max="60" value="0" class="w-full accent-orange-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-slate-400">右端の位置調整 (Right)</span>
+                            <span id="offsetRightVal" class="font-mono text-orange-300">0 px</span>
+                        </div>
+                        <input type="range" id="offsetRight" min="-60" max="60" value="0" class="w-full accent-orange-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-slate-700">
+                <button id="resetCardOffsetBtn" class="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600">
+                    リセット
+                </button>
+                <button id="saveModalBtn" class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-5 py-2 rounded-xl transition">
+                    完了して閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 border border-orange-500/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-orange-400"></i>
+        <span id="toastMsg">処理が完了しました</span>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Postcard standard dimensions (100mm x 148mm at ~304.8 DPI -> 1200 x 1776 px)
+        const POSTCARD_WIDTH = 1200;
+        const POSTCARD_HEIGHT = 1776;
+
+        // Card metadata matching the user's Halloween collection
+        const CARD_NAMES = [
+            "01_HAPPY_HALLOWEEN_カボチャ",
+            "02_お化けのパレード",
+            "03_空飛ぶ魔女_HAPPY_HALLOWEEN",
+            "04_黒猫とカボチャ",
+            "05_お菓子くれなきゃいたずらするぞ",
+            "06_お化け屋敷_Halloween_Night",
+            "07_森のハロウィン_カボチャの収穫",
+            "08_墓地とスケルトン",
+            "09_MERRY_HALLOWEEN_魔女の釜"
+        ];
+
+        // State management
+        let sourceImage = null;
+        
+        // Split ratios (0.0 to 1.0)
+        // Left column has unique horizontal splits in the Halloween collage!
+        let gridSplits = {
+            v1: 0.333,          // Vertical split between Col 1 & Col 2
+            v2: 0.666,          // Vertical split between Col 2 & Col 3
+            hLeft1: 0.312,      // Horizontal split 1 for Col 1 (Left)
+            hLeft2: 0.542,      // Horizontal split 2 for Col 1 (Left: cat card is shorter, forest card is taller)
+            hMidRight1: 0.312,  // Horizontal split 1 for Col 2 & 3
+            hMidRight2: 0.665   // Horizontal split 2 for Col 2 & 3
+        };
+
+        // Per-card fine-tuning pixel offsets (in source image pixels)
+        let cardOffsets = Array.from({ length: 9 }, () => ({ top: 0, bottom: 0, left: 0, right: 0 }));
+        let activeModalCardIndex = null;
+
+        // Generated offscreen canvases for quick download
+        const outputCanvases = Array.from({ length: 9 }, () => {
+            const c = document.createElement('canvas');
+            c.width = POSTCARD_WIDTH;
+            c.height = POSTCARD_HEIGHT;
+            return c;
+        });
+
+        // DOM Elements
+        const imageUpload = document.getElementById('imageUpload');
+        const dropzone = document.getElementById('dropzone');
+        const emptyState = document.getElementById('emptyState');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const guideCanvas = document.getElementById('guideCanvas');
+        const guideCtx = guideCanvas.getContext('2d');
+        const cardsGrid = document.getElementById('cardsGrid');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const presetHalloweenBtn = document.getElementById('presetHalloweenBtn');
+        const presetEqualBtn = document.getElementById('presetEqualBtn');
+        const loadDemoBtn = document.getElementById('loadDemoBtn');
+
+        // Controls
+        const edgeTrimSlider = document.getElementById('edgeTrimSlider');
+        const trimValueLabel = document.getElementById('trimValueLabel');
+        const outerMarginSlider = document.getElementById('outerMarginSlider');
+        const marginValueLabel = document.getElementById('marginValueLabel');
+        const customBgColor = document.getElementById('customBgColor');
+
+        // Modal Elements
+        const fineTuneModal = document.getElementById('fineTuneModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalPreviewCanvas = document.getElementById('modalPreviewCanvas');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveModalBtn = document.getElementById('saveModalBtn');
+        const resetCardOffsetBtn = document.getElementById('resetCardOffsetBtn');
+        const offsetInputs = {
+            top: document.getElementById('offsetTop'),
+            bottom: document.getElementById('offsetBottom'),
+            left: document.getElementById('offsetLeft'),
+            right: document.getElementById('offsetRight')
+        };
+        const offsetLabels = {
+            top: document.getElementById('offsetTopVal'),
+            bottom: document.getElementById('offsetBottomVal'),
+            left: document.getElementById('offsetLeftVal'),
+            right: document.getElementById('offsetRightVal')
+        };
+
+        // Initialize UI Card Slots
+        function initCardSlots() {
+            cardsGrid.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col gap-2.5 shadow-md hover:border-slate-500 transition group';
+                cardEl.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-200 truncate" title="${CARD_NAMES[i]}">
+                            <span class="inline-block w-5 h-5 rounded-full bg-slate-800 text-orange-400 text-center leading-5 font-mono mr-1 border border-slate-700">${i + 1}</span>
+                            ${CARD_NAMES[i].replace(/^\d+_/, '')}
+                        </span>
+                        <button onclick="openFineTuneModal(${i})" class="text-slate-400 hover:text-orange-300 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-md transition flex items-center gap-1 text-[11px] border border-slate-700">
+                            <i data-lucide="SlidersHorizontal" class="w-3 h-3"></i>
+                            微調整
+                        </button>
+                    </div>
+                    <div class="checkerboard rounded-lg p-2 flex items-center justify-center border border-slate-800 relative overflow-hidden aspect-[100/148]">
+                        <canvas id="previewCanvas_${i}" width="300" height="444" class="w-full h-full object-contain shadow-sm rounded-sm"></canvas>
+                    </div>
+                    <button onclick="downloadSingleCard(${i})" class="w-full bg-slate-800 hover:bg-orange-500 text-slate-200 hover:text-white py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 border border-slate-700 hover:border-orange-400 shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>この1枚を保存</span>
+                    </button>
+                `;
+                cardsGrid.appendChild(cardEl);
+            }
+            lucide.createIcons();
+        }
+
+        // Show notification toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2600);
+        }
+
+        // Generate a synthetic Halloween 9-card collage for immediate testing if user clicks Demo
+        function createDemoCollageImage() {
+            const demoCanvas = document.createElement('canvas');
+            demoCanvas.width = 1200;
+            demoCanvas.height = 1750;
+            const ctx = demoCanvas.getContext('2d');
+
+            // Fill white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, demoCanvas.width, demoCanvas.height);
+
+            const demoRects = getCardSourceRects(demoCanvas.width, demoCanvas.height, 8);
+            const demoColors = [
+                '#f8cba6', '#f28524', '#2f4b73',
+                '#f5deb3', '#f9a825', '#dcd0ff',
+                '#d7a96b', '#1b365d', '#b388be'
+            ];
+            const titles = [
+                "HAPPY HALLOWEEN!", "お化けのパレード", "HAPPY HALLOWEEN",
+                "黒猫とカボチャ", "TRICK OR TREAT!", "お化け屋敷",
+                "森のハロウィン", "墓地とスケルトン", "MERRY HALLOWEEN"
+            ];
+
+            demoRects.forEach((r, idx) => {
+                // Card background
+                ctx.fillStyle = demoColors[idx];
+                ctx.fillRect(r.x, r.y, r.w, r.h);
+
+                // Border
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6);
+
+                // Title text
+                ctx.fillStyle = (idx === 2 || idx === 7) ? '#ffffff' : '#1e293b';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(titles[idx], r.x + r.w / 2, r.y + 65);
+
+                // Message box simulation
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.fillRect(r.x + r.w * 0.12, r.y + r.h * 0.45, r.w * 0.76, r.h * 0.4);
+
+                ctx.fillStyle = '#334155';
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('To:', r.x + r.w * 0.16, r.y + r.h * 0.55);
+                ctx.fillText('From:', r.x + r.w * 0.16, r.y + r.h * 0.80);
+            });
+
+            const img = new Image();
+            img.onload = () => {
+                setSourceImage(img);
+                showToast('サンプルレイアウトを読み込みました。ご自身の画像もドラッグ＆ドロップできます！');
+            };
+            img.src = demoCanvas.toDataURL();
+        }
+
+        // Load user image file
+        function handleImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    setSourceImage(img);
+                    showToast('画像を読み込み、9枚のポストカードに分割しました！');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setSourceImage(img) {
+            sourceImage = img;
+            emptyState.classList.add('hidden');
+            canvasWrapper.classList.remove('hidden');
+            downloadAllBtn.disabled = false;
+
+            // Reset individual offsets
+            cardOffsets = Array.from({ length: 9 }, () => ({ top: 0, bottom: 0, left: 0, right: 0 }));
+
+            drawGuideCanvas();
+            renderAllPostcards();
+        }
+
+        // Compute the 9 rectangles in source image coordinates
+        function getCardSourceRects(imgW, imgH, trimPx = 0) {
+            const x0 = 0, x1 = imgW * gridSplits.v1, x2 = imgW * gridSplits.v2, x3 = imgW;
+            
+            // Left column Y coordinates
+            const yL0 = 0, yL1 = imgH * gridSplits.hLeft1, yL2 = imgH * gridSplits.hLeft2, yL3 = imgH;
+            // Middle & Right column Y coordinates
+            const yR0 = 0, yR1 = imgH * gridSplits.hMidRight1, yR2 = imgH * gridSplits.hMidRight2, yR3 = imgH;
+
+            const rawRects = [
+                // Row 1
+                { x: x0, y: yL0, w: x1 - x0, h: yL1 - yL0 },
+                { x: x1, y: yR0, w: x2 - x1, h: yR1 - yR0 },
+                { x: x2, y: yR0, w: x3 - x2, h: yR1 - yR0 },
+                // Row 2
+                { x: x0, y: yL1, w: x1 - x0, h: yL2 - yL1 },
+                { x: x1, y: yR1, w: x2 - x1, h: yR2 - yR1 },
+                { x: x2, y: yR1, w: x3 - x2, h: yR2 - yR1 },
+                // Row 3
+                { x: x0, y: yL2, w: x1 - x0, h: yL3 - yL2 },
+                { x: x1, y: yR2, w: x2 - x1, h: yR3 - yR2 },
+                { x: x2, y: yR2, w: x3 - x2, h: yR3 - yR2 }
+            ];
+
+            return rawRects.map((r, i) => {
+                const off = cardOffsets[i] || { top: 0, bottom: 0, left: 0, right: 0 };
+                const rx = Math.max(0, r.x + trimPx + off.left);
+                const ry = Math.max(0, r.y + trimPx + off.top);
+                const rw = Math.max(20, r.w - trimPx * 2 - off.left + off.right);
+                const rh = Math.max(20, r.h - trimPx * 2 - off.top + off.bottom);
+                return { x: rx, y: ry, w: rw, h: rh };
+            });
+        }
+
+        // Draw Interactive Guide Canvas on Left Panel
+        function drawGuideCanvas() {
+            if (!sourceImage) return;
+
+            // Scale canvas for crisp display
+            const maxDisplayW = 500;
+            const scale = Math.min(1, maxDisplayW / sourceImage.width);
+            guideCanvas.width = Math.round(sourceImage.width * scale);
+            guideCanvas.height = Math.round(sourceImage.height * scale);
+
+            const w = guideCanvas.width;
+            const h = guideCanvas.height;
+
+            guideCtx.clearRect(0, 0, w, h);
+            guideCtx.drawImage(sourceImage, 0, 0, w, h);
+
+            // Draw semi-transparent dark overlay on cut lines
+            guideCtx.lineWidth = 3;
+            guideCtx.strokeStyle = '#f97316'; // Orange-500
+
+            const vx1 = w * gridSplits.v1;
+            const vx2 = w * gridSplits.v2;
+            const hyL1 = h * gridSplits.hLeft1;
+            const hyL2 = h * gridSplits.hLeft2;
+            const hyR1 = h * gridSplits.hMidRight1;
+            const hyR2 = h * gridSplits.hMidRight2;
+
+            // Vertical line 1 & 2
+            guideCtx.beginPath();
+            guideCtx.moveTo(vx1, 0); guideCtx.lineTo(vx1, h);
+            guideCtx.moveTo(vx2, 0); guideCtx.lineTo(vx2, h);
+            // Horizontal Left
+            guideCtx.moveTo(0, hyL1); guideCtx.lineTo(vx1, hyL1);
+            guideCtx.moveTo(0, hyL2); guideCtx.lineTo(vx1, hyL2);
+            // Horizontal Mid & Right
+            guideCtx.moveTo(vx1, hyR1); guideCtx.lineTo(w, hyR1);
+            guideCtx.moveTo(vx1, hyR2); guideCtx.lineTo(w, hyR2);
+            guideCtx.stroke();
+
+            // Draw drag handles
+            const handles = [
+                { x: vx1, y: h * 0.15 }, { x: vx2, y: h * 0.15 },
+                { x: vx1 * 0.5, y: hyL1 }, { x: vx1 * 0.5, y: hyL2 },
+                { x: vx1 + (w - vx1) * 0.5, y: hyR1 }, { x: vx1 + (w - vx1) * 0.5, y: hyR2 }
+            ];
+
+            handles.forEach(pt => {
+                guideCtx.fillStyle = '#ffffff';
+                guideCtx.beginPath();
+                guideCtx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                guideCtx.fill();
+                guideCtx.lineWidth = 2.5;
+                guideCtx.strokeStyle = '#ea580c';
+                guideCtx.stroke();
+            });
+        }
+
+        // Sample dominant edge color of a cropped card so padding looks completely natural
+        function sampleEdgeBackgroundColor(img, rect) {
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = 36;
+            sampleCanvas.height = 36;
+            const ctx = sampleCanvas.getContext('2d');
+            ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, 36, 36);
+            
+            // Sample pixels slightly inside the perimeter to avoid dark outline borders
+            const coords = [
+                [4, 4], [18, 3], [31, 4],
+                [3, 18],          [32, 18],
+                [4, 31], [18, 32], [31, 31]
+            ];
+            let rSum = 0, gSum = 0, bSum = 0;
+            coords.forEach(([x, y]) => {
+                const data = ctx.getImageData(x, y, 1, 1).data;
+                rSum += data[0];
+                gSum += data[1];
+                bSum += data[2];
+            });
+            const n = coords.length;
+            return `rgb(${Math.round(rSum / n)}, ${Math.round(gSum / n)}, ${Math.round(bSum / n)})`;
+        }
+
+        // Render all 9 postcards onto offscreen high-res canvases & preview canvases
+        function renderAllPostcards() {
+            if (!sourceImage) return;
+
+            const trimPx = parseInt(edgeTrimSlider.value, 10) || 0;
+            const marginPx = parseInt(outerMarginSlider.value, 10) || 0;
+            const fitMode = document.querySelector('input[name="fitMode"]:checked').value;
+            const bgMode = document.querySelector('input[name="bgMode"]:checked').value;
+            const customColor = customBgColor.value;
+
+            const rects = getCardSourceRects(sourceImage.width, sourceImage.height, trimPx);
+
+            rects.forEach((rect, i) => {
+                const outCanvas = outputCanvases[i];
+                const ctx = outCanvas.getContext('2d');
+
+                // Determine background fill color
+                const fillColor = (bgMode === 'auto')
+                    ? sampleEdgeBackgroundColor(sourceImage, rect)
+                    : customColor;
+
+                ctx.fillStyle = fillColor;
+                ctx.fillRect(0, 0, POSTCARD_WIDTH, POSTCARD_HEIGHT);
+
+                // Target drawing area inside postcard after outer margin
+                const availW = POSTCARD_WIDTH - marginPx * 2;
+                const availH = POSTCARD_HEIGHT - marginPx * 2;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(marginPx, marginPx, availW, availH);
+                ctx.clip();
+
+                if (fitMode === 'stretch') {
+                    ctx.drawImage(
+                        sourceImage,
+                        rect.x, rect.y, rect.w, rect.h,
+                        marginPx, marginPx, availW, availH
+                    );
+                } else {
+                    const scaleX = availW / rect.w;
+                    const scaleY = availH / rect.h;
+                    const scale = (fitMode === 'contain')
+                        ? Math.min(scaleX, scaleY)
+                        : Math.max(scaleX, scaleY);
+
+                    const drawW = rect.w * scale;
+                    const drawH = rect.h * scale;
+                    const drawX = marginPx + (availW - drawW) / 2;
+                    const drawY = marginPx + (availH - drawH) / 2;
+
+                    ctx.drawImage(
+                        sourceImage,
+                        rect.x, rect.y, rect.w, rect.h,
+                        drawX, drawY, drawW, drawH
+                    );
+                }
+                ctx.restore();
+
+                // Update visible preview canvas
+                const previewCanvas = document.getElementById(`previewCanvas_${i}`);
+                if (previewCanvas) {
+                    const pCtx = previewCanvas.getContext('2d');
+                    pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                    pCtx.drawImage(outCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+                }
+            });
+
+            // If fine-tune modal is open, refresh its preview too
+            if (activeModalCardIndex !== null) {
+                updateModalPreview();
+            }
+        }
+
+        // Interactive Dragging on Guide Canvas
+        let draggingLine = null;
+
+        function getPointerPos(e) {
+            const rect = guideCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                xRatio: Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width)),
+                yRatio: Math.max(0.05, Math.min(0.95, (clientY - rect.top) / rect.height))
+            };
+        }
+
+        function onGuidePointerDown(e) {
+            if (!sourceImage) return;
+            const pos = getPointerPos(e);
+            const threshold = 0.04;
+
+            if (Math.abs(pos.xRatio - gridSplits.v1) < threshold) {
+                draggingLine = 'v1';
+            } else if (Math.abs(pos.xRatio - gridSplits.v2) < threshold) {
+                draggingLine = 'v2';
+            } else if (pos.xRatio < gridSplits.v1) {
+                if (Math.abs(pos.yRatio - gridSplits.hLeft1) < threshold) draggingLine = 'hLeft1';
+                else if (Math.abs(pos.yRatio - gridSplits.hLeft2) < threshold) draggingLine = 'hLeft2';
+            } else {
+                if (Math.abs(pos.yRatio - gridSplits.hMidRight1) < threshold) draggingLine = 'hMidRight1';
+                else if (Math.abs(pos.yRatio - gridSplits.hMidRight2) < threshold) draggingLine = 'hMidRight2';
+            }
+
+            if (draggingLine && e.cancelable) e.preventDefault();
+        }
+
+        function onGuidePointerMove(e) {
+            if (!draggingLine || !sourceImage) return;
+            if (e.cancelable) e.preventDefault();
+            const pos = getPointerPos(e);
+
+            if (draggingLine === 'v1') {
+                gridSplits.v1 = Math.min(pos.xRatio, gridSplits.v2 - 0.1);
+            } else if (draggingLine === 'v2') {
+                gridSplits.v2 = Math.max(pos.xRatio, gridSplits.v1 + 0.1);
+            } else if (draggingLine === 'hLeft1') {
+                gridSplits.hLeft1 = Math.min(pos.yRatio, gridSplits.hLeft2 - 0.1);
+            } else if (draggingLine === 'hLeft2') {
+                gridSplits.hLeft2 = Math.max(pos.yRatio, gridSplits.hLeft1 + 0.1);
+            } else if (draggingLine === 'hMidRight1') {
+                gridSplits.hMidRight1 = Math.min(pos.yRatio, gridSplits.hMidRight2 - 0.1);
+            } else if (draggingLine === 'hMidRight2') {
+                gridSplits.hMidRight2 = Math.max(pos.yRatio, gridSplits.hMidRight1 + 0.1);
+            }
+
+            drawGuideCanvas();
+            renderAllPostcards();
+        }
+
+        function onGuidePointerUp() {
+            draggingLine = null;
+        }
+
+        guideCanvas.addEventListener('mousedown', onGuidePointerDown);
+        window.addEventListener('mousemove', onGuidePointerMove);
+        window.addEventListener('mouseup', onGuidePointerUp);
+
+        guideCanvas.addEventListener('touchstart', onGuidePointerDown, { passive: false });
+        window.addEventListener('touchmove', onGuidePointerMove, { passive: false });
+        window.addEventListener('touchend', onGuidePointerUp);
+
+        // Individual Card Fine-Tuning Modal Logic
+        window.openFineTuneModal = function(index) {
+            if (!sourceImage) {
+                showToast('先にまとめ画像を読み込んでください');
+                return;
+            }
+            activeModalCardIndex = index;
+            modalTitle.innerHTML = `<i data-lucide="crop" class="w-4 h-4 text-orange-400"></i><span>#${index + 1} ${CARD_NAMES[index].replace(/^\d+_/, '')} の微調整</span>`;
+            lucide.createIcons();
+
+            const off = cardOffsets[index];
+            ['top', 'bottom', 'left', 'right'].forEach(dir => {
+                offsetInputs[dir].value = off[dir];
+                offsetLabels[dir].textContent = `${off[dir] > 0 ? '+' : ''}${off[dir]} px`;
+            });
+
+            fineTuneModal.classList.remove('hidden');
+            fineTuneModal.classList.add('flex');
+            updateModalPreview();
+        };
+
+        function updateModalPreview() {
+            if (activeModalCardIndex === null) return;
+            const srcCanvas = outputCanvases[activeModalCardIndex];
+            modalPreviewCanvas.width = 300;
+            modalPreviewCanvas.height = 444;
+            const ctx = modalPreviewCanvas.getContext('2d');
+            ctx.clearRect(0, 0, 300, 444);
+            ctx.drawImage(srcCanvas, 0, 0, 300, 444);
+        }
+
+        ['top', 'bottom', 'left', 'right'].forEach(dir => {
+            offsetInputs[dir].addEventListener('input', (e) => {
+                if (activeModalCardIndex === null) return;
+                const val = parseInt(e.target.value, 10) || 0;
+                cardOffsets[activeModalCardIndex][dir] = val;
+                offsetLabels[dir].textContent = `${val > 0 ? '+' : ''}${val} px`;
+                renderAllPostcards();
+            });
+        });
+
+        resetCardOffsetBtn.addEventListener('click', () => {
+            if (activeModalCardIndex === null) return;
+            cardOffsets[activeModalCardIndex] = { top: 0, bottom: 0, left: 0, right: 0 };
+            ['top', 'bottom', 'left', 'right'].forEach(dir => {
+                offsetInputs[dir].value = 0;
+                offsetLabels[dir].textContent = '0 px';
+            });
+            renderAllPostcards();
+        });
+
+        function closeFineTuneModal() {
+            fineTuneModal.classList.add('hidden');
+            fineTuneModal.classList.remove('flex');
+            activeModalCardIndex = null;
+        }
+
+        closeModalBtn.addEventListener('click', closeFineTuneModal);
+        saveModalBtn.addEventListener('click', closeFineTuneModal);
+
+        // Single Card Download
+        window.downloadSingleCard = function(index) {
+            if (!sourceImage) {
+                showToast('先に画像を読み込んでください');
+                return;
+            }
+            const canvas = outputCanvases[index];
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${CARD_NAMES[index]}_はがきサイズ.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`「${CARD_NAMES[index]}」を保存しました！`);
+            }, 'image/png');
+        };
+
+        // Bulk ZIP Download
+        downloadAllBtn.addEventListener('click', async () => {
+            if (!sourceImage) return;
+            const originalText = downloadAllBtn.innerHTML;
+            downloadAllBtn.disabled = true;
+            downloadAllBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>ZIP作成中...</span>`;
+            lucide.createIcons();
+
+            try {
+                const zip = new JSZip();
+                const folder = zip.folder("halloween_postcards_100x148mm");
+
+                for (let i = 0; i < 9; i++) {
+                    const dataUrl = outputCanvases[i].toDataURL('image/png');
+                    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+                    folder.file(`${CARD_NAMES[i]}_1200x1776.png`, base64Data, { base64: true });
+                }
+
+                const content = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "ハロウィン_ポストカード9枚セット_はがきサイズ.zip";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showToast('全9枚のポストカードをZIPで一括保存しました！');
+            } catch (err) {
+                console.error(err);
+                showToast('ZIPの作成中にエラーが発生しました');
+            } finally {
+                downloadAllBtn.disabled = false;
+                downloadAllBtn.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        });
+
+        // Event Listeners for Settings & Presets
+        presetHalloweenBtn.addEventListener('click', () => {
+            gridSplits = {
+                v1: 0.333,
+                v2: 0.666,
+                hLeft1: 0.312,
+                hLeft2: 0.542,
+                hMidRight1: 0.312,
+                hMidRight2: 0.665
+            };
+            drawGuideCanvas();
+            renderAllPostcards();
+            showToast('ハロウィン画像専用の分割比率を適用しました');
+        });
+
+        presetEqualBtn.addEventListener('click', () => {
+            gridSplits = {
+                v1: 0.333,
+                v2: 0.666,
+                hLeft1: 0.333,
+                hLeft2: 0.666,
+                hMidRight1: 0.333,
+                hMidRight2: 0.666
+            };
+            drawGuideCanvas();
+            renderAllPostcards();
+            showToast('均等3×3グリッドを適用しました');
+        });
+
+        edgeTrimSlider.addEventListener('input', (e) => {
+            trimValueLabel.textContent = `${e.target.value} px`;
+            renderAllPostcards();
+        });
+
+        outerMarginSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            marginValueLabel.textContent = val === 0 ? '0 px (フチなし)' : `${val} px`;
+            renderAllPostcards();
+        });
+
+        document.querySelectorAll('input[name="fitMode"], input[name="bgMode"]').forEach(el => {
+            el.addEventListener('change', renderAllPostcards);
+        });
+
+        customBgColor.addEventListener('input', () => {
+            document.querySelector('input[name="bgMode"][value="custom"]').checked = true;
+            renderAllPostcards();
+        });
+
+        // File upload & Drag-and-Drop listeners
+        imageUpload.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleImageFile(e.target.files[0]);
+            }
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-orange-500', 'bg-slate-800/60');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-orange-500', 'bg-slate-800/60');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-orange-500', 'bg-slate-800/60');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleImageFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        loadDemoBtn.addEventListener('click', createDemoCollageImage);
+
+        // Initialize empty cards on load & render sample so preview is immediately interactive
+        window.onload = () => {
+            initCardSlots();
+            createDemoCollageImage();
+        };
+    </script>
+</body>
+</html>

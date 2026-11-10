@@ -1,0 +1,117 @@
+Created At: 2026-06-07T07:41:20Z
+Completed At: 2026-06-07T07:41:20Z
+File Path: `file:///y:/ijigenpocket/js/ccfolialayoutmaker_ai.js`
+Total Lines: 2824
+Total Bytes: 111948
+Showing lines 2657 to 2824
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2657:   }
+2658: 
+2659:   panels.push({
+2660:     id: 'ai-window-' + Date.now(),
+2661:     url: createSvgUrl(windowSvg),
+2662:     x: windowX,
+2663:     y: windowY,
+2664:     width: windowPanelWidth,
+2665:     height: windowPanelHeight,
+2666:     originalRatio: windowPanelWidth / windowPanelHeight,
+2667:     flipH: false,
+2668:     flipV: false,
+2669:     visible: true,
+2670:     opacity: 1
+2671:   });
+2672: 
+2673:   // 2. PLパネルの描画
+2674:   const plPanelsData = design.pl_panels || [];
+2675:   for (let i = 0; i < numPlayers; i++) {
+2676:     let plX = 1050;
+2677:     let plY = 40;
+2678:     let plW = 160;
+2679:     let plH = 170;
+2680: 
+2681:     if (plPanelsData[i]) {
+2682:       plX = plPanelsData[i].x !== undefined ? plPanelsData[i].x : plX;
+2683:       plY = plPanelsData[i].y !== undefined ? plPanelsData[i].y : plY;
+2684:       plW = plPanelsData[i].width !== undefined ? plPanelsData[i].width : plW;
+2685:       plH = plPanelsData[i].height !== undefined ? plPanelsData[i].height : plH;
+2686:     } else {
+2687:       // 従来のフォールバック計算
+2688:       if (layoutType === 'right-vertical') {
+2689:         if (numPlayers <= 3) { plW = 180; plH = 200; }
+2690:         else if (numPlayers === 4) { plW = 170; plH = 150; }
+2691:         else { plW = 160; plH = 120; }
+2692:         
+2693:         plX = 1050;
+2694:         if (numPlayers === 1) {
+2695:           plY = 260;
+2696:         } else {
+2697:           plY = 40 + i * (640 - plH) / (numPlayers - 1);
+2698:         }
+2699:       } else {
+2700:         plW = 160;
+2701:         plH = 170;
+2702:         plY = 5
+<truncated 1974 bytes>
+        menuX = baseMenuX + i * (menuW + 15);
+2764:       } else {
+2765:         menuY = baseMenuY + i * (menuH + 10);
+2766:       }
+2767:     }
+2768: 
+2769:     panels.push({
+2770:       id: `ai-menu-${label}-${Date.now()}`,
+2771:       url: createSvgUrl(menuSvg),
+2772:       x: menuX,
+2773:       y: menuY,
+2774:       width: menuW,
+2775:       height: menuH,
+2776:       originalRatio: menuW / menuH,
+2777:       flipH: false,
+2778:       flipV: false,
+2779:       visible: true,
+2780:       opacity: 1
+2781:     });
+2782:   });
+2783: 
+2784:   // 4. アクションアイコンの描画
+2785:   const actionW = 75;
+2786:   const actionH = 75;
+2787:   const baseActionX = design.action_x !== undefined ? design.action_x : 50;
+2788:   const baseActionY = design.action_y !== undefined ? design.action_y : 550;
+2789: 
+2790:   actionIconsData.forEach((icon, i) => {
+2791:     const actionSvg = gen.action(design, icon.label, icon.sub, icon.path);
+2792:     let actionX = baseActionX;
+2793:     let actionY = baseActionY;
+2794: 
+2795:     if (design.action_x === undefined) {
+2796:       if (layoutType === 'right-vertical') {
+2797:         actionY = 550;
+2798:         actionX = 50 + i * 125;
+2799:       } else {
+2800:         actionX = 50 + (i % 2) * 90;
+2801:         actionY = 350 + Math.floor(i / 2) * 90;
+2802:       }
+2803:     } else {
+2804:       actionX = baseActionX + i * (actionW + 15);
+2805:     }
+2806: 
+2807:     panels.push({
+2808:       id: `ai-action-${icon.name}-${Date.now()}`,
+2809:       url: createSvgUrl(actionSvg),
+2810:       x: actionX,
+2811:       y: actionY,
+2812:       width: actionW,
+2813:       height: actionH,
+2814:       originalRatio: actionW / actionH,
+2815:       flipH: false,
+2816:       flipV: false,
+2817:       visible: true,
+2818:       opacity: 1
+2819:     });
+2820:   });
+2821: 
+2822:   updateUI();
+2823: }
+2824: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

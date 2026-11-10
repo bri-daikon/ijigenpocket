@@ -140,7 +140,7 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- 左ペイン: コントロール & スタンプ管理 (lg:col-span-4) -->
-        <aside class="lg:col-span-4 flex flex-col gap-5 sticky top-20">
+        <aside class="lg:col-span-4 flex flex-col gap-5">
 
             <!-- スタンプアップロード ＆ 取り込みエリア -->
             <div class="p-4 md:p-5 rounded-2xl bg-[#151c2d]/90 border border-slate-800 shadow-xl backdrop-blur">
@@ -220,13 +220,108 @@
 
                 <!-- カラーテーマ選択 -->
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5">カラーテーマ</label>
-                    <div class="flex items-center gap-2">
-                        <button onclick="setColorTheme('line-green')" data-theme="line-green" class="theme-btn w-7 h-7 rounded-full bg-[#06c755] ring-2 ring-white shadow" title="LINEグリーン"></button>
-                        <button onclick="setColorTheme('pastel-pink')" data-theme="pastel-pink" class="theme-btn w-7 h-7 rounded-full bg-[#ec4899] shadow" title="パステルチェリー"></button>
-                        <button onclick="setColorTheme('cyber-dark')" data-theme="cyber-dark" class="theme-btn w-7 h-7 rounded-full bg-[#0ea5e9] shadow" title="サイバーナイト"></button>
-                        <button onclick="setColorTheme('warm-craft')" data-theme="warm-craft" class="theme-btn w-7 h-7 rounded-full bg-[#f59e0b] shadow" title="ウォームクラフト"></button>
-                        <button onclick="setColorTheme('vibrant-blue')" data-theme="vibrant-blue" class="theme-btn w-7 h-7 rounded-full bg-[#3b82f6] shadow" title="オーシャンブルー"></button>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-[11px] font-bold text-slate-400">背景カラー＆テーマ</label>
+                        <span id="currentThemeLabel" class="text-[10px] text-emerald-400 font-bold font-mono">LINEグリーン</span>
+                    </div>
+                    <!-- プリセットパレット -->
+                    <div class="flex items-center gap-2 mb-3">
+                        <button onclick="setColorTheme('line-green')" data-theme="line-green" class="theme-btn w-7 h-7 rounded-full bg-[#06c755] ring-2 ring-white shadow transition-transform hover:scale-110" title="LINEグリーン"></button>
+                        <button onclick="setColorTheme('pastel-pink')" data-theme="pastel-pink" class="theme-btn w-7 h-7 rounded-full bg-[#ec4899] shadow transition-transform hover:scale-110" title="パステルチェリー"></button>
+                        <button onclick="setColorTheme('cyber-dark')" data-theme="cyber-dark" class="theme-btn w-7 h-7 rounded-full bg-[#0ea5e9] shadow transition-transform hover:scale-110" title="サイバーナイト"></button>
+                        <button onclick="setColorTheme('warm-craft')" data-theme="warm-craft" class="theme-btn w-7 h-7 rounded-full bg-[#f59e0b] shadow transition-transform hover:scale-110" title="ウォームクラフト"></button>
+                        <button onclick="setColorTheme('vibrant-blue')" data-theme="vibrant-blue" class="theme-btn w-7 h-7 rounded-full bg-[#3b82f6] shadow transition-transform hover:scale-110" title="オーシャンブルー"></button>
+                        <button onclick="toggleCustomGradient(true)" id="btnCustomGradientToggle" class="px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 transition-all" title="自由な色でグラデーションを作る">
+                            <i data-lucide="palette" class="w-3 h-3 text-amber-400"></i> カスタム
+                        </button>
+                    </div>
+
+                    <!-- 自由なカスタムグラデーション設定パネル -->
+                    <div id="customGradientControls" class="hidden p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+                        <div class="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                            <span>🎨 自由グラデーション調整</span>
+                            <button onclick="resetCustomGradient()" class="text-slate-500 hover:text-emerald-400 underline">リセット</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[9px] text-slate-500 mb-0.5">開始色 (Color 1)</label>
+                                <div class="flex items-center gap-1.5 bg-slate-900 rounded-lg p-1 border border-slate-800">
+                                    <input type="color" id="gradientColor1" value="#062b1a" oninput="updateCustomGradient()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0">
+                                    <span id="gradientColor1Hex" class="text-[10px] font-mono text-slate-300">#062b1a</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[9px] text-slate-500 mb-0.5">終了色 (Color 2)</label>
+                                <div class="flex items-center gap-1.5 bg-slate-900 rounded-lg p-1 border border-slate-800">
+                                    <input type="color" id="gradientColor2" value="#03150d" oninput="updateCustomGradient()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0">
+                                    <span id="gradientColor2Hex" class="text-[10px] font-mono text-slate-300">#03150d</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] text-slate-500 mb-0.5">
+                                <span>角度 (Angle)</span>
+                                <span id="gradientAngleVal" class="font-mono text-slate-400">135°</span>
+                            </div>
+                            <input type="range" id="gradientAngle" min="0" max="360" value="135" oninput="updateCustomGradient()" class="w-full accent-emerald-500 cursor-pointer h-1.5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表示パーツ＆配置設定（パーツの自由選択・サイズ調整） -->
+            <div class="p-4 md:p-5 rounded-2xl bg-[#151c2d]/90 border border-slate-800 shadow-xl backdrop-blur space-y-3.5">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                        <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i> 表示パーツ＆配置設定
+                    </h2>
+                    <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-500/30">自由配置</span>
+                </div>
+
+                <!-- パーツ表示ON/OFFチェックボックス -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5">掲載パーツの選択 (チェックでON/OFF)</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowQr" checked onchange="togglePart('showQrCode', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="qr-code" class="w-3.5 h-3.5 text-emerald-400"></i> QRコード</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowSideStamps" checked onchange="togglePart('showSideStamps', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="images" class="w-3.5 h-3.5 text-emerald-400"></i> 横にスタンプ</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowPrice" checked onchange="togglePart('showPrice', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="tag" class="w-3.5 h-3.5 text-emerald-400"></i> 価格表示</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowBadge" checked onchange="togglePart('showBadge', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i> 発売バッジ</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowCopy" checked onchange="togglePart('showCopy', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-400"></i> キャッチコピー</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                            <input type="checkbox" id="checkShowAuthor" checked onchange="togglePart('showAuthor', this.checked)" class="accent-emerald-500 rounded w-4 h-4">
+                            <span class="font-bold text-slate-200 flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-400"></i> 作者名/URL</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- スタンプ表示サイズ調整 -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-1.5">スタンプ表示サイズ (はみ出し微調整)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setStampScale('compact')" data-scale="compact" class="scale-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-center text-xs font-bold text-slate-300">
+                            コンパクト
+                        </button>
+                        <button onclick="setStampScale('normal')" data-scale="normal" class="scale-btn active-pill py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-center text-xs font-bold">
+                            標準
+                        </button>
+                        <button onclick="setStampScale('large')" data-scale="large" class="scale-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-center text-xs font-bold text-slate-300">
+                            ゆったり
+                        </button>
                     </div>
                 </div>
             </div>
@@ -271,8 +366,8 @@
             </div>
         </aside>
 
-        <!-- 右ペイン: リアルタイムプレビュー (lg:col-span-8) -->
-        <section class="lg:col-span-8 flex flex-col items-center justify-center gap-4">
+        <!-- 右ペイン: リアルタイムプレビュー (lg:col-span-8 固定表示) -->
+        <section class="lg:col-span-8 lg:sticky lg:top-20 flex flex-col items-center justify-start gap-3 w-full">
 
             <!-- プレビュー枠ツールバー -->
             <div class="w-full max-w-4xl flex items-center justify-between text-xs text-slate-400 px-2">
@@ -283,8 +378,8 @@
             </div>
 
             <!-- バナー描画キャンバス領域 -->
-            <div class="w-full flex items-center justify-center p-2 sm:p-4 rounded-3xl bg-[#080c14] border border-slate-800/80 shadow-2xl overflow-hidden min-h-[460px]">
-                <div id="previewBanner">
+            <div class="w-full flex items-center justify-center p-3 sm:p-5 rounded-3xl bg-[#080c14] border border-slate-800/80 shadow-2xl overflow-hidden">
+                <div id="previewBanner" class="shrink-0">
                     <!-- JavaScriptで動的生成 -->
                 </div>
             </div>

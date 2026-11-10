@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>付箋MEMORI (スタンドアロン版)</title>
+    <style>
+:root {
+    --bg-color: #f4f7f6;
+    --text-color: #333;
+    --header-bg: #ffffff;
+    --card-bg: #fff9c4; /* Sticky note yellow */
+    --card-border: #e0e0e0;
+    --primary-color: #4a90e2;
+    --primary-hover: #357abd;
+    --shadow: 0 4px 6px rgba(0,0,0,0.1);
+    --modal-bg: rgba(0,0,0,0.5);
+    --modal-content-bg: #fff;
+    --input-border: #ccc;
+    --danger-color: #e74c3c;
+    --danger-hover: #c0392b;
+}
+
+[data-theme="dark"] {
+    --bg-color: #1e1e1e;
+    --text-color: #e0e0e0;
+    --header-bg: #2d2d2d;
+    --card-bg: #3d3d3b; /* Darker sticky note */
+    --card-border: #555;
+    --primary-color: #64b5f6;
+    --primary-hover: #42a5f5;
+    --shadow: 0 4px 6px rgba(0,0,0,0.5);
+    --modal-bg: rgba(0,0,0,0.7);
+    --modal-content-bg: #2d2d2d;
+    --input-border: #555;
+    --danger-color: #ef5350;
+    --danger-hover: #d32f2f;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+    line-height: 1.6;
+}
+
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--header-bg);
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+    transition: background-color 0.3s;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background-color 0.3s, color 0.3s;
+    width: 250px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--text-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, color 0.2s;
+    border: 1px solid var(--input-border);
+}
+
+button:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+button.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+button.primary-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+#board-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+    padding-bottom: 20px;
+}
+
+.category-filter {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    background-color: var(--header-bg);
+    color: var(--text-color);
+    border: 1px solid var(--input-border);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.filter-btn:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+.filter-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.filter-btn.colored-btn {
+    background-color: var(--btn-color);
+    border-color: var(--btn-color);
+    color: #333;
+}
+
+.filter-btn.colored-btn:hover {
+    filter: brightness(0.9);
+}
+
+.filter-btn.colored-btn.active {
+    box-shadow: 0 0 0 2px var(--text-color);
+}
+
+.note-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.note-card-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    word-break: break-word;
+    padding-right: 40px; /* Space for actions */
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: flex-start;
+}
+
+.note-card-title:hover {
+    opacity: 0.8;
+}
+
+.note-card-title::before {
+    content: '▶';
+    font-size: 0.8em;
+    display: inline-block;
+    margin-right: 5px;
+    margin-top: 4px;
+    transition: transform 0.2s;
+}
+
+.note-card.expanded .note-card-title::before {
+    transform: rotate(90deg);
+}
+
+.badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: normal;
+    white-space: nowrap;
+    align-self: center;
+}
+
+.badge-new {
+    background-color: #ff5252;
+    color: white;
+}
+
+.badge-updated {
+    background-color: #4caf50;
+    color: white;
+}
+
+.note-card-date {
+    font-size: 0.75rem;
+    color: #777;
+    margin-bottom: 10px;
+}
+
+[data-theme="dark"] .note-card-date {
+    color: #aaa;
+}
+
+.note-card-content {
+    display: none;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+.note-card.expanded .note-card-content {
+    display: block;
+}
+
+[data-theme="dark"] .note-card-content {
+    border-top: 1px dashed rgba(255,255,255,0.1);
+}
+
+.note-card-url {
+    display: none;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+.note-card.expanded .note-card-url {
+    display: block;
+}
+
+[data-theme="dark"] .note-card-url {
+    border-top: 1px dashed rgba(255,255,255,0.1);
+}
+
+.note-card-url a {
+    color: var(--primary-color);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.note-card-url a:hover {
+    text-decoration: underline;
+}
+
+.note-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+.note-card:hover .note-actions {
+    opacity: 1;
+}
+
+.note-actions button {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border: none;
+    background: var(--header-bg);
+    color: var(--text-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.note-actions button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+.note-actions button.delete-btn:hover {
+    background-color: var(--danger-hover);
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(3px);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--modal-content-bg);
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-group textarea {
+    height: 200px;
+    resize: vertical;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* レスポンシブ対応 (モバイル用) */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 15px;
+    }
+
+    .header-controls {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .search-input {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+    
+    .header-controls button {
+        flex: 1;
+        min-width: 70px;
+        padding: 8px 4px;
+        font-size: 0.85rem;
+    }
+
+    #theme-toggle-btn {
+        flex: 0 0 auto;
+    }
+}
+
+.app-footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.app-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.app-footer a:hover {
+    text-decoration: underline;
+    color: var(--primary-hover);
+}
+    </style>
+</head>
+<body data-theme="light">
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <h1>付箋MEMORI</h1>
+            <div class="header-controls">
+                <input type="text" id="search-input" placeholder="付箋を検索..." class="search-input">
+                <button id="theme-toggle-btn" title="テーマ切り替え">🌙</button>
+                <button id="export-btn">エクスポート</button>
+                <input type="file" id="import-input" accept=".json" style="display: none;">
+                <button id="import-btn">インポート</button>
+                <button id="add-note-btn" class="primary-btn">+ 新規付箋</button>
+            </div>
+        </header>
+
+        <!-- Category Filter -->
+        <div id="category-filter" class="category-filter"></div>
+
+        <!-- Main Board -->
+        <main id="board-container">
+            <!-- Categories will be rendered here -->
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Product by 異次元ポケット <a href="https://ijigenpocket.booth.pm/" target="_blank" rel="noopener noreferrer">https://ijigenpocket.booth.pm/</a></p>
+        </footer>
+    </div>
+
+    <!-- Note Editor Modal -->
+    <div id="note-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">付箋を追加</h2>
+            <form id="note-form">
+                <input type="hidden" id="note-id">
+                
+                <div class="form-group">
+                    <label for="note-category">カテゴリ</label>
+                    <input type="text" id="note-category" list="category-options" required placeholder="例: アイデア, Todo, 共有...">
+                    <datalist id="category-options"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="note-color">付箋の色</label>
+                    <input type="color" id="note-color" value="#fff9c4" style="height: 40px; padding: 5px;">
+                </div>
+
+                <div class="form-group">
+                    <label for="note-title">タイトル (最大1000文字)</label>
+                    <input type="text" id="note-title" maxlength="1000" required placeholder="タイトルを入力">
+                </div>
+
+                <div class="form-group">
+                    <label for="note-content">メモ (最大30000文字)</label>
+                    <textarea id="note-content" maxlength="30000" required placeholder="メモ内容を入力..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="note-url">参照URL (任意)</label>
+                    <input type="url" id="note-url" placeholder="https://example.com">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-note-btn">キャンセル</button>
+                    <button type="submit" id="save-note-btn" class="primary-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+// State
+let notes = [];
+let currentCategoryFilter = 'すべて';
+let currentSearchQuery = '';
+const STORAGE_KEY = 'fusen_memori_notes';
+const THEME_KEY = 'fusen_memori_theme';
+
+// DOM Elements
+const boardContainer = document.getElementById('board-container');
+const categoryFilterContainer = document.getElementById('category-filter');
+const categoryOptionsDatalist = document.getElementById('category-options');
+const searchInput = document.getElementById('search-input');
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const addNoteBtn = document.getElementById('add-note-btn');
+const exportBtn = document.getElementById('export-btn');
+const importBtn = document.getElementById('import-btn');
+const importInput = document.getElementById('import-input');
+
+// Modal Elements
+const noteModal = document.getElementById('note-modal');
+const noteForm = document.getElementById('note-form');
+const cancelNoteBtn = document.getElementById('cancel-note-btn');
+const noteIdInput = document.getElementById('note-id');
+const noteCategoryInput = document.getElementById('note-category');
+const noteTitleInput = document.getElementById('note-title');
+const noteContentInput = document.getElementById('note-content');
+const noteUrlInput = document.getElementById('note-url');
+const noteColorInput = document.getElementById('note-color');
+const modalTitle = document.getElementById('modal-title');
+
+function init() {
+    loadTheme();
+    loadFromLocal();
+    renderBoard();
+    setupEventListeners();
+}
+
+// Data Management
+function loadFromLocal() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+                notes = parsed;
+            }
+        } catch (e) {
+            console.error("Local data parse error:", e);
+        }
+    }
+}
+
+function saveToLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+}
+
+function saveNote(noteData) {
+    const now = new Date().toISOString();
+    
+    if (noteData.id) {
+        // 更新 (上書き)
+        const index = notes.findIndex(n => n.id === noteData.id);
+        if (index > -1) {
+            notes[index] = { ...notes[index], ...noteData, updatedAt: now };
+        }
+    } else {
+        // 新規作成
+        const newId = 'note_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const newNote = {
+            ...noteData,
+            id: newId,
+            createdAt: now,
+            updatedAt: now
+        };
+        notes.unshift(newNote);
+    }
+    
+    saveToLocal();
+    renderBoard();
+}
+
+function deleteNote(id) {
+    if (!confirm('この付箋を削除してもよろしいですか？')) return;
+
+    notes = notes.filter(n => n.id !== id);
+    saveToLocal();
+    renderBoard();
+}
+
+// Render
+function renderBoard() {
+    boardContainer.innerHTML = '';
+    
+    // Get unique categories and their latest colors
+    const categoryColors = {};
+    const categorySet = new Set();
+    const sortedNotesForColors = [...notes].sort((a, b) => {
+        const timeA = new Date(a.updatedAt).getTime() || 0;
+        const timeB = new Date(b.updatedAt).getTime() || 0;
+        return timeB - timeA;
+    });
+    
+    sortedNotesForColors.forEach(note => {
+        const cat = note.category || '未分類';
+        categorySet.add(cat);
+        if (!categoryColors[cat] && note.color) {
+            categoryColors[cat] = note.color;
+        }
+    });
+    const uniqueCategories = Array.from(categorySet).sort();
+
+    // 1. Update Datalist for Modal
+    if (categoryOptionsDatalist) {
+        categoryOptionsDatalist.innerHTML = '';
+        uniqueCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            categoryOptionsDatalist.appendChild(option);
+        });
+    }
+
+    // 2. Render Category Filters
+    if (categoryFilterContainer) {
+        categoryFilterContainer.innerHTML = '';
+        
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn' + (currentCategoryFilter === 'すべて' ? ' active' : '');
+        allBtn.textContent = 'すべて';
+        allBtn.addEventListener('click', () => {
+            currentCategoryFilter = 'すべて';
+            renderBoard();
+        });
+        categoryFilterContainer.appendChild(allBtn);
+
+        uniqueCategories.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn' + (currentCategoryFilter === cat ? ' active' : '');
+            btn.textContent = cat;
+            
+            const catColor = categoryColors[cat];
+            if (catColor) {
+                btn.style.setProperty('--btn-color', catColor);
+                btn.classList.add('colored-btn');
+            }
+            
+            btn.addEventListener('click', () => {
+                currentCategoryFilter = cat;
+                renderBoard();
+            });
+            categoryFilterContainer.appendChild(btn);
+        });
+    }
+    
+    // 3. Filter notes
+    let filteredNotes = notes;
+    if (currentCategoryFilter !== 'すべて') {
+        filteredNotes = notes.filter(n => (n.category || '未分類') === currentCategoryFilter);
+    }
+
+    if (currentSearchQuery) {
+        const query = currentSearchQuery.toLowerCase();
+        filteredNotes = filteredNotes.filter(n => 
+            (n.title && n.title.toLowerCase().includes(query)) || 
+            (n.content && n.content.toLowerCase().includes(query))
+        );
+    }
+    
+    // Sort descending
+    filteredNotes.sort((a, b) => {
+        const timeA = new Date(a.updatedAt).getTime() || 0;
+        const timeB = new Date(b.updatedAt).getTime() || 0;
+        return timeB - timeA;
+    });
+
+    // 4. Render Note Cards
+    const fragment = document.createDocumentFragment();
+    const nowMs = Date.now();
+
+    filteredNotes.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        
+        if (note.color) {
+            card.style.backgroundColor = note.color;
+            card.style.color = '#333';
+        }
+        
+        const dateStr = new Date(note.updatedAt).toLocaleString('ja-JP');
+        
+        const createdMs = new Date(note.createdAt || note.updatedAt).getTime();
+        const updatedMs = new Date(note.updatedAt).getTime();
+        const daysSinceCreated = (nowMs - createdMs) / (1000 * 60 * 60 * 24);
+        const daysSinceUpdated = (nowMs - updatedMs) / (1000 * 60 * 60 * 24);
+        
+        let badgeHtml = '';
+        if (daysSinceCreated <= 3) {
+            badgeHtml = '<span class="badge badge-new">新着</span>';
+        } else if (daysSinceUpdated <= 3) {
+            badgeHtml = '<span class="badge badge-updated">更新</span>';
+        }
+        
+        let urlHtml = '';
+        if (note.url) {
+            urlHtml = `<div class="note-card-url"><a href="${escapeHTML(note.url)}" target="_blank" rel="noopener noreferrer">🔗 参照を開く</a></div>`;
+        }
+        
+        card.innerHTML = `
+            <div class="note-actions">
+                <button class="copy-btn" data-id="${escapeHTML(note.id)}" title="コピー">📋</button>
+                <button class="edit-btn" data-id="${escapeHTML(note.id)}" title="編集">✏️</button>
+                <button class="delete-btn" data-id="${escapeHTML(note.id)}" title="削除">🗑️</button>
+            </div>
+            <div class="note-card-title"><span>${escapeHTML(note.title)}</span>${badgeHtml}</div>
+            <div class="note-card-date">更新: ${dateStr}</div>
+            <div class="note-card-content">${escapeHTML(note.content)}</div>
+            ${urlHtml}
+        `;
+        
+        card.querySelector('.note-card-title').addEventListener('click', () => {
+            card.classList.toggle('expanded');
+        });
+        
+        card.querySelector('.edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModal(note);
+        });
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteNote(note.id);
+        });
+        card.querySelector('.copy-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                await navigator.clipboard.writeText(note.content);
+                const btn = e.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✔️';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1500);
+            } catch (err) {
+                alert('コピーに失敗しました');
+            }
+        });
+
+        fragment.appendChild(card);
+    });
+    
+    boardContainer.appendChild(fragment);
+}
+
+// Modal Management
+function openModal(note = null) {
+    if (note) {
+        modalTitle.textContent = '付箋を編集';
+        noteIdInput.value = note.id;
+        noteCategoryInput.value = note.category;
+        noteTitleInput.value = note.title;
+        noteContentInput.value = note.content;
+        noteUrlInput.value = note.url || '';
+        noteColorInput.value = note.color || '#fff9c4';
+    } else {
+        modalTitle.textContent = '付箋を追加';
+        noteForm.reset();
+        noteIdInput.value = '';
+        noteUrlInput.value = '';
+        noteColorInput.value = '#fff9c4';
+    }
+    noteModal.classList.remove('hidden');
+}
+
+function closeModal() {
+    noteModal.classList.add('hidden');
+    noteForm.reset();
+}
+
+// Event Listeners
+function setupEventListeners() {
+    addNoteBtn.addEventListener('click', () => openModal());
+    cancelNoteBtn.addEventListener('click', closeModal);
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.trim();
+            renderBoard();
+        });
+    }
+    
+    noteForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const noteData = {
+            id: noteIdInput.value || null,
+            category: noteCategoryInput.value.trim() || '未分類',
+            title: noteTitleInput.value.trim(),
+            content: noteContentInput.value.trim(),
+            url: noteUrlInput.value.trim(),
+            color: noteColorInput.value
+        };
+        saveNote(noteData);
+        closeModal();
+    });
+
+    // Auto-sync color when category is selected/typed
+    noteCategoryInput.addEventListener('input', (e) => {
+        const selectedCategory = e.target.value.trim();
+        if (selectedCategory) {
+            const matchingNotes = notes.filter(n => (n.category || '未分類') === selectedCategory);
+            if (matchingNotes.length > 0) {
+                matchingNotes.sort((a, b) => {
+                    const timeA = new Date(a.updatedAt).getTime() || 0;
+                    const timeB = new Date(b.updatedAt).getTime() || 0;
+                    return timeB - timeA;
+                });
+                if (matchingNotes[0].color) {
+                    noteColorInput.value = matchingNotes[0].color;
+                }
+            }
+        }
+    });
+
+    // Theme Toggle
+    themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', newTheme);
+        themeToggleBtn.textContent = newTheme === 'light' ? '🌙' : '☀️';
+        localStorage.setItem(THEME_KEY, newTheme);
+    });
+
+    // Export
+    exportBtn.addEventListener('click', () => {
+        const dataStr = JSON.stringify(notes, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fusen_memori_export_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Import
+    importBtn.addEventListener('click', () => {
+        importInput.click();
+    });
+
+    importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedNotes = JSON.parse(e.target.result);
+                if (Array.isArray(importedNotes)) {
+                    if (confirm(`インポートすると現在のデータが上書きされます。よろしいですか？\n（現在のデータを残したい場合は先にエクスポートしてください）`)) {
+                        notes = importedNotes;
+                        saveToLocal();
+                        renderBoard();
+                        alert('インポートが完了しました。');
+                    }
+                } else {
+                    alert('無効なファイルフォーマットです。');
+                }
+            } catch (err) {
+                alert('ファイルの読み込みに失敗しました。');
+                console.error(err);
+            }
+            importInput.value = ''; // reset
+        };
+        reader.readAsText(file);
+    });
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+    themeToggleBtn.textContent = savedTheme === 'light' ? '🌙' : '☀️';
+}
+
+// Utility
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
+// Run
+init();
+    </script>
+</body>
+</html>

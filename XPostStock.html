@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Post Stock - X(Twitter)用 連続投稿・画像ストッカー＆投稿支援ツール</title>
+  <meta name="description" content="X(Twitter)用の連続投稿（スレッド・ツリー）ドラフトや画像をストック・管理し、ワンクリックでのコピペ＆X送信ができる高機能Webツールです。">
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-base: #0b0f17;
+      --bg-surface: rgba(18, 24, 38, 0.78);
+      --bg-surface-solid: #121826;
+      --bg-card: rgba(24, 32, 50, 0.7);
+      --bg-card-hover: rgba(30, 41, 64, 0.9);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(29, 155, 240, 0.6);
+      
+      --accent-x: #1d9bf0;
+      --accent-x-hover: #1a8cd8;
+      --accent-x-glow: rgba(29, 155, 240, 0.35);
+      --accent-purple: #8a3ffc;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+      --shadow-lg: 0 16px 36px -8px rgba(0, 0, 0, 0.45), 0 0 20px var(--accent-x-glow);
+      --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(29, 155, 240, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(138, 63, 252, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
+      background-attachment: fixed;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-full);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header */
+    header.app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #000, #161e2e);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3);
+    }
+    .brand-text h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+    .brand-text h1 .badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: rgba(29, 155, 240, 0.18);
+      color: var(--accent-x);
+      border: 1px solid rgba(29, 155, 240, 0.3);
+      letter-spacing: 0.05em;
+    }
+    .brand-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 15px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-primary {
+      background: var(--accent-x);
+      color: #fff;
+      box-shadow: 0 4px 16px var(--accent-x-glow);
+    }
+    .btn-primary:hover {
+      background: var(--accent-x-hover);
+      box-shadow: 0 6px 20px var(--accent-x-glow);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .btn-dashed {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed var(--border-subtle);
+      color: var(--text-muted);
+    }
+    .btn-dashed:hover {
+      border-color: var(--accent-x);
+      color: var(--accent-x);
+      background: rgba(29, 155, 240, 0.06);
+    }
+    .btn-icon-only {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: var(--radius-md);
+    }
+
+    /* Layout Main */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 520px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1140px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Editor Panel */
+    .editor-panel {
+      position: sticky;
+      top: 20px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Thread Tweet Item in Editor */
+    .thread-editor-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+    .thread-tweet-block {
+      background: rgba(11, 15, 23, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      transition: var(--transition);
+    }
+    .thread-tweet-block:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.15);
+    }
+    .thread-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .thread-number-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: rgba(29, 155, 240, 0.15);
+      color: var(--accent-x);
+      border: 1px solid rgba(29, 155, 240, 0.3);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .thread-block-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Connecting vertical line for threads */
+    .thread-connector {
+      width: 2px;
+      background: dashed rgba(29, 155, 240, 0.4);
+      height: 16px;
+      margin: -10px auto -10px 24px;
+    }
+
+    .post-textarea {
+      width: 100%;
+      height: 120px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: var(--transition);
+    }
+    .post-textarea:focus {
+      border-color: var(--border-focus);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    /* Counter Bar */
+    .counter-bar-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+    .count-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .progress-ring-container {
+      position: relative;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring__circle {
+      transition: stroke-dashoffset 0.2s ease, stroke 0.2s ease;
+      stroke-dasharray: 59.69; /* 2 * PI * 9.5 */
+      stroke-dashoffset: 59.69;
+    }
+    .count-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+    .count-number.danger {
+      color: var(--accent-rose);
+      font-weight: 700;
+    }
+    .count-number.warn {
+      color: var(--accent-amber);
+    }
+
+    /* Image Attachment Area in Editor */
+    .image-dropzone {
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: var(--transition);
+    }
+    .image-dropzone.dragover {
+      border-color: var(--accent-x);
+      background: rgba(29, 155, 240, 0.08);
+    }
+    .dropzone-prompt {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+    .dropzone-prompt:hover {
+      color: var(--accent-x);
+    }
+    .image-thumbnails-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .image-thumb-item {
+      position: relative;
+      aspect-ratio: 16/9;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #000;
+      group: relative;
+    }
+    .image-thumb-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .image-thumb-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      background: rgba(0, 0, 0, 0.75);
+      color: var(--accent-rose);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      transition: var(--transition);
+    }
+    .image-thumb-delete:hover {
+      background: var(--accent-rose);
+      color: #fff;
+    }
+
+    /* Tag & Snippet Management */
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .tag-chips-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .tag-chip {
+      font-size: 0.78rem;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      user-select: none;
+    }
+    .tag-chip:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: var(--text-main);
+    }
+    .tag-chip.active {
+      background: rgba(29, 155, 240, 0.2);
+      border-color: var(--accent-x);
+      color: var(--accent-x);
+      font-weight: 600;
+    }
+    .tag-chip .tag-del-btn {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      padding: 2px;
+      cursor: pointer;
+    }
+    .tag-chip .tag-del-btn:hover {
+      opacity: 1;
+      color: var(--accent-rose);
+    }
+    .tag-input-inline {
+      border: 1px dashed var(--border-subtle);
+      background: transparent;
+      border-radius: var(--radius-full);
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      outline: none;
+      width: 100px;
+      transition: var(--transition);
+    }
+    .tag-input-inline:focus {
+      width: 140px;
+      border-color: var(--accent-x);
+      background: rgba(11, 15, 23, 0.8);
+    }
+
+    /* Snippets Cloud */
+    .snippets-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 80px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .snippet-pill {
+      font-size: 0.76rem;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+    .snippet-pill:hover {
+      background: rgba(29, 155, 240, 0.15);
+      border-color: rgba(29, 155, 240, 0.4);
+      color: var(--accent-x);
+      transform: translateY(-1px);
+    }
+
+    /* Form Fields */
+    .form-group-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(11, 15, 23, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.84rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--border-focus);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .form-actions .btn {
+      flex: 1;
+    }
+
+    /* Stock List Panel */
+    .list-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Toolbar / Filter Bar */
+    .toolbar-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 12px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-tabs {
+      display: flex;
+      align-items: center;
+      background: rgba(11, 15, 23, 0.6);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+    .tab-btn {
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn.active {
+      background: var(--accent-x);
+      color: #fff;
+      box-shadow: 0 2px 8px var(--accent-x-glow);
+    }
+    .tab-btn .badge-pill {
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .search-box-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 320px;
+    }
+    .search-input {
+      width: 100%;
+      background: rgba(11, 15, 23, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 7px 12px 7px 32px;
+      font-size: 0.84rem;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+    .search-input:focus {
+      border-color: var(--border-focus);
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    /* Tag Filter Bar in List */
+    .filter-tag-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 4px;
+    }
+
+    /* Post Card */
+    .post-cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .post-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+    }
+    .post-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    }
+    .post-card.posted {
+      opacity: 0.8;
+      border-left: 4px solid var(--accent-emerald);
+    }
+    .post-card.draft {
+      border-left: 4px solid var(--accent-x);
+    }
+    .post-card.archived {
+      opacity: 0.55;
+      border-left: 4px solid var(--text-dim);
+    }
+
+    .card-top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-badge.draft {
+      background: rgba(29, 155, 240, 0.16);
+      color: var(--accent-x);
+      border: 1px solid rgba(29, 155, 240, 0.3);
+    }
+    .status-badge.posted {
+      background: rgba(16, 185, 129, 0.16);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-badge.archived {
+      background: rgba(100, 116, 139, 0.2);
+      color: var(--text-muted);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+    .thread-count-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      background: rgba(138, 63, 252, 0.18);
+      color: #c084fc;
+      border: 1px solid rgba(138, 63, 252, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Thread Tweet Item in Card */
+    .card-thread-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+    .card-tweet-item {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .card-tweet-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-tweet-text {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-main);
+    }
+
+    /* Images Grid in Card */
+    .card-images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .card-image-wrapper {
+      position: relative;
+      aspect-ratio: 16/9;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #000;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .card-image-wrapper:hover {
+      border-color: var(--accent-x);
+      box-shadow: 0 4px 12px var(--accent-x-glow);
+    }
+    .card-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card-image-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      gap: 4px;
+    }
+    .card-image-wrapper:hover .card-image-overlay {
+      opacity: 1;
+    }
+
+    .card-tweet-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    /* Empty state */
+    .empty-state {
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 50px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-subtle);
+      border-left: 4px solid var(--accent-x);
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      color: #fff;
+      box-shadow: var(--shadow-lg);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-width: 420px;
+    }
+    .toast.success {
+      border-left-color: var(--accent-emerald);
+    }
+    .toast.error {
+      border-left-color: var(--accent-rose);
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .snippet-manage-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-brands fa-x-twitter"></i>
+        </div>
+        <div class="brand-text">
+          <h1>X Post Stock <span class="badge">PRO & THREAD</span></h1>
+          <p>連続投稿（スレッド）・画像対応 X投稿ストッカー＆コピペ支援ツール</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnManageSnippets" class="btn btn-secondary" title="定型文・ハッシュタグ管理">
+          <i class="fa-solid fa-tags"></i>
+          <span>定型文・タグ管理</span>
+        </button>
+        <button id="btnExportData" class="btn btn-secondary btn-icon-only" title="JSONバックアップ（エクスポート）">
+          <i class="fa-solid fa-file-export"></i>
+        </button>
+        <button id="btnImportData" class="btn btn-secondary btn-icon-only" title="JSON復元（インポート）">
+          <i class="fa-solid fa-file-import"></i>
+        </button>
+        <input type="file" id="fileImportInput" accept=".json" style="display: none;">
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="main-grid">
+
+      <!-- Left Panel: Post Creator & Editor -->
+      <section class="editor-panel" aria-label="投稿作成・編集エリア">
+        <div class="panel-header">
+          <h2 class="panel-title" id="editorTitle">
+            <i class="fa-solid fa-pen-fancy" style="color: var(--accent-x);"></i>
+            新規ドラフト作成
+          </h2>
+          <button id="btnCancelEdit" class="btn btn-secondary btn-icon-only" style="display: none;" title="編集をキャンセルして新規作成に戻る">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Tag Selector Section -->
+        <div>
+          <div class="section-label">
+            <span>タグ / カテゴリ</span>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">クリックで選択 / ＋で新規追加</span>
+          </div>
+          <div class="tag-chips-wrapper" id="editorTagChips">
+            <!-- Dynamic tags will be rendered here -->
+            <input type="text" id="inlineNewTagInput" class="tag-input-inline" placeholder="+ 新規タグ (Enter)">
+          </div>
+        </div>
+
+        <!-- Thread Tweets Blocks Container -->
+        <div class="thread-editor-container" id="threadEditorContainer">
+          <!-- Dynamic tweet blocks rendered here -->
+        </div>
+
+        <!-- Button to Add Thread Tweet -->
+        <button type="button" id="btnAddThreadTweet" class="btn btn-dashed" style="width: 100%;">
+          <i class="fa-solid fa-plus"></i>
+          <span>次のツイートを追加（スレッド・連投）</span>
+        </button>
+
+        <!-- Quick Snippets -->
+        <div class="snippets-section">
+          <div class="section-label">
+            <span>定型文・ハッシュタグ挿入（選択中ツイートに追加）</span>
+          </div>
+          <div id="quickSnippetsList" class="snippets-cloud">
+            <!-- Dynamic snippets -->
+          </div>
+        </div>
+
+        <!-- Post Metadata (Status, Memo) -->
+        <div class="form-group-grid">
+          <div class="form-group">
+            <label for="postStatusSelect" class="section-label">ステータス</label>
+            <select id="postStatusSelect" class="form-select">
+              <option value="draft">未送信（ストック中）</option>
+              <option value="posted">送信済み</option>
+              <option value="archived">アーカイブ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="postMemoInput" class="section-label">全体メモ（任意）</label>
+            <input type="text" id="postMemoInput" class="form-input" placeholder="例: 告知スケジュール、要確認事項など">
+          </div>
+        </div>
+
+        <!-- Submit & Actions -->
+        <div class="form-actions">
+          <button id="btnSavePost" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span id="saveBtnLabel">ストックに保存</span>
+          </button>
+          <button id="btnClearEditor" class="btn btn-secondary">
+            クリア
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Panel: Stocked Posts List -->
+      <section class="list-panel" aria-label="ストック済み投稿一覧">
+
+        <!-- Toolbar (Tabs, Search) -->
+        <div class="toolbar-card">
+          <div class="filter-tabs">
+            <button class="tab-btn active" data-filter="all">すべて <span class="badge-pill" id="badgeAll">0</span></button>
+            <button class="tab-btn" data-filter="draft">未送信 <span class="badge-pill" id="badgeDraft">0</span></button>
+            <button class="tab-btn" data-filter="posted">送信済み <span class="badge-pill" id="badgePosted">0</span></button>
+            <button class="tab-btn" data-filter="archived">アーカイブ <span class="badge-pill" id="badgeArchived">0</span></button>
+          </div>
+
+          <div class="search-box-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="本文やタグ・メモから検索...">
+          </div>
+        </div>
+
+        <!-- Tag Filter Quick Bar -->
+        <div class="filter-tag-bar" id="filterTagBar">
+          <!-- Filter tag buttons -->
+        </div>
+
+        <!-- Post Cards Container -->
+        <div id="postsContainer" class="post-cards-container">
+          <!-- Dynamic cards injected here -->
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Snippets & Tag Management Modal -->
+  <div id="snippetsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem; color: #fff;"><i class="fa-solid fa-tags" style="color: var(--accent-x); margin-right: 8px;"></i> 定型文・ハッシュタグ管理</h3>
+        <button id="btnCloseSnippetsModal" class="btn btn-secondary btn-icon-only">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.82rem; color: var(--text-muted);">
+          よく使うハッシュタグや定型フレーズを登録しておくと、エディタ上でクリックするだけで現在編集中のツイートに挿入できます。
+        </p>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="newSnippetInput" class="form-input" placeholder="例: #今日の積み上げ, 【新作公開】">
+          <button id="btnAddSnippet" class="btn btn-primary" style="white-space: nowrap;">
+            <i class="fa-solid fa-plus"></i> 追加
+          </button>
+        </div>
+
+        <div id="snippetItemsList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          <!-- Items -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCloseSnippetsModalFooter" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    /* =========================================================
+       X Post Stock - IndexedDB Storage & App Logic
+       ========================================================= */
+
+    const DB_NAME = 'XPostStockDB';
+    const DB_VERSION = 1;
+    const STORE_POSTS = 'posts';
+    const STORE_TAGS = 'tags';
+    const STORE_SNIPPETS = 'snippets';
+
+    const DEFAULT_TAGS = ['告知', '日常', 'イラスト', '進捗', 'お知らせ'];
+    const DEFAULT_SNIPPETS = [
+      '#今日の積み上げ',
+      '#イラスト',
+      '#一次創作',
+      '#お知らせ',
+      '【新作公開】',
+      '#Web開発',
+      '#朝活'
+    ];
+
+    let db = null;
+    let posts = [];
+    let tags = [];
+    let snippets = [];
+
+    // Editor active state
+    let activeTweetIndex = 0;
+    let editorTweets = [
+      { id: 'tw_' + Date.now(), content: '', images: [] }
+    ];
+    let editorSelectedTags = [];
+    let editingPostId = null;
+
+    // Filters
+    let currentFilter = 'all';
+    let currentTagFilter = null;
+    let searchQuery = '';
+
+    // DOM Elements
+    const threadEditorContainer = document.getElementById('threadEditorContainer');
+    const btnAddThreadTweet = document.getElementById('btnAddThreadTweet');
+    const editorTagChips = document.getElementById('editorTagChips');
+    const inlineNewTagInput = document.getElementById('inlineNewTagInput');
+    const postStatusSelect = document.getElementById('postStatusSelect');
+    const postMemoInput = document.getElementById('postMemoInput');
+    const btnSavePost = document.getElementById('btnSavePost');
+    const saveBtnLabel = document.getElementById('saveBtnLabel');
+    const btnClearEditor = document.getElementById('btnClearEditor');
+    const btnCancelEdit = document.getElementById('btnCancelEdit');
+    const editorTitle = document.getElementById('editorTitle');
+    const quickSnippetsList = document.getElementById('quickSnippetsList');
+
+    const postsContainer = document.getElementById('postsContainer');
+    const searchInput = document.getElementById('searchInput');
+    const filterTagBar = document.getElementById('filterTagBar');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const badgeAll = document.getElementById('badgeAll');
+    const badgeDraft = document.getElementById('badgeDraft');
+    const badgePosted = document.getElementById('badgePosted');
+    const badgeArchived = document.getElementById('badgeArchived');
+
+    const btnManageSnippets = document.getElementById('btnManageSnippets');
+    const snippetsModal = document.getElementById('snippetsModal');
+    const btnCloseSnippetsModal = document.getElementById('btnCloseSnippetsModal');
+    const btnCloseSnippetsModalFooter = document.getElementById('btnCloseSnippetsModalFooter');
+    const newSnippetInput = document.getElementById('newSnippetInput');
+    const btnAddSnippet = document.getElementById('btnAddSnippet');
+    const snippetItemsList = document.getElementById('snippetItemsList');
+
+    const btnExportData = document.getElementById('btnExportData');
+    const btnImportData = document.getElementById('btnImportData');
+    const fileImportInput = document.getElementById('fileImportInput');
+    const toastContainer = document.getElementById('toastContainer');
+
+    /* =========================================================
+       IndexedDB Initializer & Fallback
+       ========================================================= */
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const dbInstance = e.target.result;
+          if (!dbInstance.objectStoreNames.contains(STORE_POSTS)) {
+            dbInstance.createObjectStore(STORE_POSTS, { keyPath: 'id' });
+          }
+          if (!dbInstance.objectStoreNames.contains(STORE_TAGS)) {
+            dbInstance.createObjectStore(STORE_TAGS, { keyPath: 'id' });
+          }
+          if (!dbInstance.objectStoreNames.contains(STORE_SNIPPETS)) {
+            dbInstance.createObjectStore(STORE_SNIPPETS, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        req.onerror = (e) => {
+          console.error('IndexedDB open error:', e);
+          reject(e);
+        };
+      });
+    }
+
+    async function loadAllData() {
+      await initDB();
+
+      // Load Tags
+      tags = await dbGetAll(STORE_TAGS);
+      if (!tags || tags.length === 0) {
+        tags = DEFAULT_TAGS.map(t => ({ id: t, name: t }));
+        for (const t of tags) await dbPut(STORE_TAGS, t);
+      }
+
+      // Load Snippets
+      snippets = await dbGetAll(STORE_SNIPPETS);
+      if (!snippets || snippets.length === 0) {
+        snippets = DEFAULT_SNIPPETS.map(s => ({ id: s, text: s }));
+        for (const s of snippets) await dbPut(STORE_SNIPPETS, s);
+      }
+
+      // Load Posts
+      posts = await dbGetAll(STORE_POSTS);
+
+      // Check migration from localStorage v1 if DB was empty
+      if (!posts || posts.length === 0) {
+        const oldV1 = localStorage.getItem('xpoststock_posts_v1');
+        if (oldV1) {
+          try {
+            const parsed = JSON.parse(oldV1);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              posts = parsed.map(p => ({
+                id: p.id || 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                tags: p.tag ? p.tag.split(/[,、\s]+/).filter(Boolean) : [],
+                status: p.status || 'draft',
+                memo: p.memo || '',
+                createdAt: p.createdAt || Date.now(),
+                postedAt: p.postedAt || null,
+                tweets: [
+                  {
+                    id: 'tw_migrated_1',
+                    content: p.content || '',
+                    images: []
+                  }
+                ]
+              }));
+              for (const post of posts) {
+                await dbPut(STORE_POSTS, post);
+              }
+            }
+          } catch (e) {
+            console.error('Migration error:', e);
+          }
+        }
+      }
+
+      // If still empty, supply sample
+      if (!posts || posts.length === 0) {
+        posts = [
+          {
+            id: 'sample-thread-1',
+            tags: ['告知', '進捗'],
+            status: 'draft',
+            memo: 'スレッド形式の投稿サンプルです',
+            createdAt: Date.now() - 3600000,
+            postedAt: null,
+            tweets: [
+              {
+                id: 'tw_s1',
+                content: '【新機能追加！】X Post Stockがスレッド連続投稿＆画像貼り付けに対応しました！🎉\n\n1つの記事の中に複数のツリー投稿をつなげてストックできます。（1/2）',
+                images: []
+              },
+              {
+                id: 'tw_s2',
+                content: '画像もドラッグ＆ドロップで保存でき、ワンクリックで画像データをクリップボードにコピー可能！Xの画面でCtrl+Vを押すだけで瞬時に貼り付けられます👍（2/2） #Web開発',
+                images: []
+              }
+            ]
+          }
+        ];
+        for (const p of posts) await dbPut(STORE_POSTS, p);
+      }
+
+      // Sort by createdAt desc
+      posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      renderTagsInEditor();
+      renderTagFilterBar();
+      renderSnippets();
+      renderEditorTweets();
+      renderPosts();
+    }
+
+    /* DB Helper wrappers */
+    function dbGetAll(storeName) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    }
+
+    function dbPut(storeName, value) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(value);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    function dbDelete(storeName, key) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    /* =========================================================
+       Character Calculation (X official specs)
+       ========================================================= */
+    function calculateXLength(text) {
+      if (!text) return { characters: 0, weights: 0, isExceeded: false };
+      const urlRegex = /https?:\/\/[^\s]+/g;
+      const strippedText = text.replace(urlRegex, '');
+      const urlMatches = text.match(urlRegex) || [];
+
+      let totalWeight = urlMatches.length * 46; // 23 full chars = 46 weights
+      for (const char of strippedText) {
+        const code = char.codePointAt(0);
+        if (code <= 0x007f || (code >= 0xff61 && code <= 0xff9f)) {
+          totalWeight += 1;
+        } else {
+          totalWeight += 2;
+        }
+      }
+      return {
+        characters: Math.ceil(totalWeight / 2),
+        weights: totalWeight,
+        isExceeded: totalWeight > 280
+      };
+    }
+
+    /* =========================================================
+       Tags Management (CRUD & UI)
+       ========================================================= */
+    function renderTagsInEditor() {
+      // Clear chips except inline input
+      const chips = editorTagChips.querySelectorAll('.tag-chip');
+      chips.forEach(c => c.remove());
+
+      tags.forEach(tag => {
+        const chip = document.createElement('div');
+        const isSelected = editorSelectedTags.includes(tag.name);
+        chip.className = `tag-chip ${isSelected ? 'active' : ''}`;
+        chip.innerHTML = `
+          <span>#${escapeHtml(tag.name)}</span>
+          <span class="tag-del-btn" title="タグマスターから削除" onclick="handleDeleteTag(event, '${escapeHtml(tag.name)}')">
+            <i class="fa-solid fa-xmark"></i>
+          </span>
+        `;
+        chip.addEventListener('click', (e) => {
+          if (e.target.closest('.tag-del-btn')) return;
+          toggleEditorTag(tag.name);
+        });
+        editorTagChips.insertBefore(chip, inlineNewTagInput);
+      });
+    }
+
+    function toggleEditorTag(tagName) {
+      if (editorSelectedTags.includes(tagName)) {
+        editorSelectedTags = editorSelectedTags.filter(t => t !== tagName);
+      } else {
+        editorSelectedTags.push(tagName);
+      }
+      renderTagsInEditor();
+    }
+
+    async function handleAddTag(name) {
+      const cleanName = name.replace(/^#/, '').trim();
+      if (!cleanName) return;
+      if (!tags.some(t => t.name === cleanName)) {
+        const newTag = { id: cleanName, name: cleanName };
+        tags.push(newTag);
+        await dbPut(STORE_TAGS, newTag);
+        renderTagFilterBar();
+      }
+      if (!editorSelectedTags.includes(cleanName)) {
+        editorSelectedTags.push(cleanName);
+      }
+      renderTagsInEditor();
+    }
+
+    window.handleDeleteTag = async function(event, tagName) {
+      event.stopPropagation();
+      if (!confirm(`タグ「#${tagName}」をタグリストから削除しますか？`)) return;
+
+      tags = tags.filter(t => t.name !== tagName);
+      editorSelectedTags = editorSelectedTags.filter(t => t !== tagName);
+      await dbDelete(STORE_TAGS, tagName);
+      renderTagsInEditor();
+      renderTagFilterBar();
+      showToast(`タグ「#${tagName}」を削除しました`);
+    };
+
+    inlineNewTagInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = inlineNewTagInput.value.trim();
+        if (val) {
+          await handleAddTag(val);
+          inlineNewTagInput.value = '';
+        }
+      }
+    });
+
+    function renderTagFilterBar() {
+      filterTagBar.innerHTML = '';
+      const allBtn = document.createElement('button');
+      allBtn.className = `tab-btn ${currentTagFilter === null ? 'active' : ''}`;
+      allBtn.style.padding = '4px 10px';
+      allBtn.style.fontSize = '0.75rem';
+      allBtn.textContent = 'すべてのタグ';
+      allBtn.addEventListener('click', () => {
+        currentTagFilter = null;
+        renderTagFilterBar();
+        renderPosts();
+      });
+      filterTagBar.appendChild(allBtn);
+
+      tags.forEach(tag => {
+        const btn = document.createElement('button');
+        const isActive = currentTagFilter === tag.name;
+        btn.className = `tab-btn ${isActive ? 'active' : ''}`;
+        btn.style.padding = '4px 10px';
+        btn.style.fontSize = '0.75rem';
+        btn.textContent = `#${tag.name}`;
+        btn.addEventListener('click', () => {
+          currentTagFilter = isActive ? null : tag.name;
+          renderTagFilterBar();
+          renderPosts();
+        });
+        filterTagBar.appendChild(btn);
+      });
+    }
+
+    /* =========================================================
+       Thread Tweet Editor Blocks
+       ========================================================= */
+    function renderEditorTweets() {
+      threadEditorContainer.innerHTML = '';
+
+      editorTweets.forEach((tweet, index) => {
+        if (index > 0) {
+          const connector = document.createElement('div');
+          connector.className = 'thread-connector';
+          threadEditorContainer.appendChild(connector);
+        }
+
+        const block = document.createElement('div');
+        block.className = 'thread-tweet-block';
+        block.id = `editor-tweet-${index}`;
+
+        const isLastAndMultiple = editorTweets.length > 1;
+
+        block.innerHTML = `
+          <div class="thread-block-header">
+            <span class="thread-number-badge">
+              <i class="fa-solid fa-link"></i> ${index + 1} / ${editorTweets.length}
+            </span>
+            <div class="thread-block-actions">
+              ${isLastAndMultiple ? `
+                <button type="button" class="btn btn-secondary btn-icon-only" style="width:26px; height:26px;" title="このツイートを削除" onclick="removeEditorTweet(${index})">
+                  <i class="fa-solid fa-trash-can" style="font-size: 0.72rem; color: var(--accent-rose);"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+
+          <textarea class="post-textarea" data-tweet-idx="${index}" placeholder="${index === 0 ? 'いまどうしてる？（1ツイート目を入力）' : `スレッド ${index + 1} つ目のツイートを入力`}" spellcheck="false">${escapeHtml(tweet.content)}</textarea>
+
+          <div class="counter-bar-wrapper">
+            <div class="count-indicator">
+              <div class="progress-ring-container">
+                <svg class="progress-ring" width="22" height="22">
+                  <circle stroke="rgba(255,255,255,0.1)" stroke-width="2.2" fill="transparent" r="8.5" cx="11" cy="11"/>
+                  <circle id="counterRing-${index}" class="progress-ring__circle" stroke="var(--accent-x)" stroke-width="2.2" fill="transparent" r="8.5" cx="11" cy="11"/>
+                </svg>
+              </div>
+              <span id="charCountLabel-${index}" class="count-number">0 / 140 字</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-dim);">
+              <span>X換算: </span><span id="xWeightCount-${index}">0</span>/280
+            </div>
+          </div>
+
+          <!-- Image Dropzone & Thumbnails -->
+          <div class="image-dropzone" id="dropzone-${index}">
+            <div class="image-thumbnails-grid" id="thumbGrid-${index}">
+              <!-- Render existing images -->
+            </div>
+            <div class="dropzone-prompt" id="dropzonePrompt-${index}">
+              <i class="fa-regular fa-image" style="color: var(--accent-x); font-size: 1rem;"></i>
+              <span><strong>画像を追加</strong> (クリックして選択 / ドラッグ＆ドロップ / Ctrl+Vで貼付け・最大4枚)</span>
+            </div>
+            <input type="file" id="fileInput-${index}" accept="image/*" multiple style="display: none;">
+          </div>
+        `;
+
+        threadEditorContainer.appendChild(block);
+
+        // Bind events for textarea
+        const ta = block.querySelector('textarea');
+        ta.addEventListener('input', (e) => {
+          tweet.content = e.target.value;
+          updateTweetCounter(index);
+        });
+        ta.addEventListener('focus', () => {
+          activeTweetIndex = index;
+        });
+
+        // Paste image directly into textarea
+        ta.addEventListener('paste', (e) => {
+          handlePasteImageEvent(e, index);
+        });
+
+        // Dropzone click & drag-and-drop
+        const dz = block.querySelector(`#dropzone-${index}`);
+        const fi = block.querySelector(`#fileInput-${index}`);
+
+        dz.addEventListener('click', (e) => {
+          // If clicked on thumbnail delete or image itself, ignore
+          if (e.target.closest('.image-thumb-delete') || e.target.closest('.image-thumb-item')) return;
+          fi.click();
+        });
+
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dz.classList.remove('dragover');
+          if (e.dataTransfer.files) {
+            Array.from(e.dataTransfer.files).forEach(file => {
+              if (file.type.startsWith('image/')) {
+                addImageToTweet(index, file);
+              }
+            });
+          }
+        });
+
+        // File input change
+        fi.addEventListener('change', (e) => {
+          if (e.target.files) {
+            Array.from(e.target.files).forEach(file => addImageToTweet(index, file));
+          }
+          fi.value = '';
+        });
+
+        // Render thumbs & update initial count
+        renderThumbnails(index);
+        updateTweetCounter(index);
+      });
+    }
+
+    function updateTweetCounter(index) {
+      const tweet = editorTweets[index];
+      if (!tweet) return;
+
+      const { characters, weights, isExceeded } = calculateXLength(tweet.content);
+      const label = document.getElementById(`charCountLabel-${index}`);
+      const weightEl = document.getElementById(`xWeightCount-${index}`);
+      const ring = document.getElementById(`counterRing-${index}`);
+
+      if (!label || !weightEl || !ring) return;
+
+      label.textContent = `${characters} / 140 字`;
+      weightEl.textContent = weights;
+
+      const maxWeights = 280;
+      const circumference = 2 * Math.PI * 8.5; // ~53.4
+      const percent = Math.min(weights / maxWeights, 1);
+      const offset = circumference - (percent * circumference);
+
+      ring.style.strokeDasharray = `${circumference}`;
+      ring.style.strokeDashoffset = `${offset}`;
+
+      if (isExceeded) {
+        label.classList.add('danger');
+        label.classList.remove('warn');
+        ring.style.stroke = 'var(--accent-rose)';
+      } else if (characters > 120) {
+        label.classList.remove('danger');
+        label.classList.add('warn');
+        ring.style.stroke = 'var(--accent-amber)';
+      } else {
+        label.classList.remove('danger', 'warn');
+        ring.style.stroke = 'var(--accent-x)';
+      }
+    }
+
+    btnAddThreadTweet.addEventListener('click', () => {
+      editorTweets.push({
+        id: 'tw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        content: '',
+        images: []
+      });
+      activeTweetIndex = editorTweets.length - 1;
+      renderEditorTweets();
+      // focus new textarea
+      setTimeout(() => {
+        const ta = document.querySelector(`textarea[data-tweet-idx="${activeTweetIndex}"]`);
+        if (ta) ta.focus();
+      }, 50);
+    });
+
+    window.removeEditorTweet = function(index) {
+      if (editorTweets.length <= 1) return;
+      editorTweets.splice(index, 1);
+      if (activeTweetIndex >= editorTweets.length) activeTweetIndex = editorTweets.length - 1;
+      renderEditorTweets();
+    };
+
+    /* =========================================================
+       Image Management for Tweets
+       ========================================================= */
+    function handlePasteImageEvent(e, targetIndex) {
+      let hasImage = false;
+      const idx = (targetIndex >= 0 && targetIndex < editorTweets.length) ? targetIndex : 0;
+
+      // Check items
+      const items = e.clipboardData && e.clipboardData.items;
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.startsWith('image/')) {
+            const file = items[i].getAsFile();
+            if (file) {
+              addImageToTweet(idx, file);
+              hasImage = true;
+            }
+          }
+        }
+      }
+
+      // Check files (e.g. copied from file explorer)
+      if (!hasImage && e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+        for (let i = 0; i < e.clipboardData.files.length; i++) {
+          const file = e.clipboardData.files[i];
+          if (file.type && file.type.startsWith('image/')) {
+            addImageToTweet(idx, file);
+            hasImage = true;
+          }
+        }
+      }
+
+      if (hasImage) {
+        e.preventDefault();
+      }
+    }
+
+    // Global paste listener so pressing Ctrl+V anywhere adds image to active tweet
+    window.addEventListener('paste', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.target.tagName === 'TEXTAREA') return; // Handled by textarea listener
+
+      const targetIdx = (activeTweetIndex >= 0 && activeTweetIndex < editorTweets.length) ? activeTweetIndex : 0;
+      handlePasteImageEvent(e, targetIdx);
+    });
+
+    window.triggerImageSelect = function(index) {
+      const fi = document.getElementById(`fileInput-${index}`);
+      if (fi) fi.click();
+    };
+
+    function addImageToTweet(index, file) {
+      const tweet = editorTweets[index];
+      if (!tweet) return;
+      if (!tweet.images) tweet.images = [];
+      if (tweet.images.length >= 4) {
+        showToast('1ツイートに添付できる画像は最大4枚です', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        tweet.images.push({
+          id: 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          dataUrl: e.target.result,
+          name: file.name || `image_${tweet.images.length + 1}.png`
+        });
+        renderThumbnails(index);
+        showToast(`画像「${file.name || '画像'}」を追加しました！`, 'success');
+      };
+      reader.onerror = () => {
+        showToast('画像の読み込みに失敗しました', 'error');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderThumbnails(index) {
+      const grid = document.getElementById(`thumbGrid-${index}`);
+      if (!grid) return;
+      const tweet = editorTweets[index];
+      grid.innerHTML = '';
+
+      if (!tweet.images || tweet.images.length === 0) {
+        grid.style.display = 'none';
+        return;
+      }
+      grid.style.display = 'grid';
+
+      tweet.images.forEach((img, imgIdx) => {
+        const item = document.createElement('div');
+        item.className = 'image-thumb-item';
+        item.innerHTML = `
+          <img src="${img.dataUrl}" alt="添付画像">
+          <button type="button" class="image-thumb-delete" title="画像を削除" onclick="removeImage(${index}, ${imgIdx})">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    window.removeImage = function(tweetIndex, imgIndex) {
+      const tweet = editorTweets[tweetIndex];
+      if (tweet && tweet.images) {
+        tweet.images.splice(imgIndex, 1);
+        renderThumbnails(tweetIndex);
+      }
+    };
+
+    /* =========================================================
+       Snippets Insertion & Management
+       ========================================================= */
+    function renderSnippets() {
+      quickSnippetsList.innerHTML = '';
+      snippets.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'snippet-pill';
+        btn.type = 'button';
+        btn.innerHTML = `<i class="fa-solid fa-plus"></i> ${escapeHtml(s.text)}`;
+        btn.addEventListener('click', () => insertSnippetToActiveTweet(s.text));
+        quickSnippetsList.appendChild(btn);
+      });
+
+      snippetItemsList.innerHTML = '';
+      snippets.forEach((s, idx) => {
+        const item = document.createElement('div');
+        item.className = 'snippet-manage-item';
+        item.innerHTML = `
+          <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${escapeHtml(s.text)}</span>
+          <button class="btn btn-secondary btn-icon-only" style="width: 26px; height: 26px;" title="削除" onclick="removeSnippet(${idx})">
+            <i class="fa-solid fa-trash-can" style="font-size: 0.72rem; color: var(--accent-rose);"></i>
+          </button>
+        `;
+        snippetItemsList.appendChild(item);
+      });
+    }
+
+    function insertSnippetToActiveTweet(text) {
+      if (activeTweetIndex < 0 || activeTweetIndex >= editorTweets.length) {
+        activeTweetIndex = 0;
+      }
+      const tweet = editorTweets[activeTweetIndex];
+      const ta = document.querySelector(`textarea[data-tweet-idx="${activeTweetIndex}"]`);
+
+      if (ta) {
+        const curPos = ta.selectionStart;
+        const val = ta.value;
+        const before = val.substring(0, curPos);
+        const after = val.substring(ta.selectionEnd);
+        const spacing = (before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n')) ? ' ' : '';
+        tweet.content = before + spacing + text + ' ' + after;
+        ta.value = tweet.content;
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = curPos + spacing.length + text.length + 1;
+      } else {
+        tweet.content += (tweet.content.length ? ' ' : '') + text;
+      }
+      updateTweetCounter(activeTweetIndex);
+    }
+
+    btnManageSnippets.addEventListener('click', () => {
+      renderSnippets();
+      snippetsModal.classList.add('active');
+    });
+    btnCloseSnippetsModal.addEventListener('click', () => snippetsModal.classList.remove('active'));
+    btnCloseSnippetsModalFooter.addEventListener('click', () => snippetsModal.classList.remove('active'));
+    snippetsModal.addEventListener('click', (e) => {
+      if (e.target === snippetsModal) snippetsModal.classList.remove('active');
+    });
+
+    btnAddSnippet.addEventListener('click', async () => {
+      const text = newSnippetInput.value.trim();
+      if (!text) return;
+      if (!snippets.some(s => s.text === text)) {
+        const s = { id: text, text: text };
+        snippets.push(s);
+        await dbPut(STORE_SNIPPETS, s);
+        renderSnippets();
+      }
+      newSnippetInput.value = '';
+    });
+
+    window.removeSnippet = async function(index) {
+      const item = snippets[index];
+      if (!item) return;
+      snippets.splice(index, 1);
+      await dbDelete(STORE_SNIPPETS, item.id);
+      renderSnippets();
+    };
+
+    /* =========================================================
+       Save, Edit, Delete Post
+       ========================================================= */
+    btnSavePost.addEventListener('click', async () => {
+      // Validate: at least one tweet has content or image
+      const hasContent = editorTweets.some(t => t.content.trim().length > 0 || (t.images && t.images.length > 0));
+      if (!hasContent) {
+        showToast('投稿の本文または画像を入力してください', 'error');
+        return;
+      }
+
+      const status = postStatusSelect.value;
+      const memo = postMemoInput.value.trim();
+
+      if (editingPostId) {
+        const post = posts.find(p => p.id === editingPostId);
+        if (post) {
+          post.tweets = JSON.parse(JSON.stringify(editorTweets));
+          post.tags = [...editorSelectedTags];
+          post.status = status;
+          post.memo = memo;
+          post.updatedAt = Date.now();
+          await dbPut(STORE_POSTS, post);
+          showToast('投稿スレッドを更新しました', 'success');
+        }
+        cancelEdit();
+      } else {
+        const newPost = {
+          id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          tags: [...editorSelectedTags],
+          status: status,
+          memo: memo,
+          createdAt: Date.now(),
+          postedAt: status === 'posted' ? Date.now() : null,
+          tweets: JSON.parse(JSON.stringify(editorTweets))
+        };
+        posts.unshift(newPost);
+        await dbPut(STORE_POSTS, newPost);
+        showToast('ストックに保存しました！', 'success');
+        resetEditorForm();
+      }
+
+      renderPosts();
+    });
+
+    btnClearEditor.addEventListener('click', () => resetEditorForm());
+    btnCancelEdit.addEventListener('click', () => cancelEdit());
+
+    function resetEditorForm() {
+      editorTweets = [{ id: 'tw_' + Date.now(), content: '', images: [] }];
+      activeTweetIndex = 0;
+      editorSelectedTags = [];
+      postStatusSelect.value = 'draft';
+      postMemoInput.value = '';
+      renderTagsInEditor();
+      renderEditorTweets();
+    }
+
+    function startEditPost(id) {
+      const post = posts.find(p => p.id === id);
+      if (!post) return;
+
+      editingPostId = id;
+      editorTweets = JSON.parse(JSON.stringify(post.tweets || [{ id: 'tw_1', content: post.content || '', images: [] }]));
+      editorSelectedTags = [...(post.tags || [])];
+      postStatusSelect.value = post.status || 'draft';
+      postMemoInput.value = post.memo || '';
+
+      editorTitle.innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: var(--accent-amber);"></i> 投稿を編集中`;
+      saveBtnLabel.textContent = '変更を更新';
+      btnCancelEdit.style.display = 'inline-flex';
+
+      renderTagsInEditor();
+      renderEditorTweets();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+      editingPostId = null;
+      editorTitle.innerHTML = `<i class="fa-solid fa-pen-fancy" style="color: var(--accent-x);"></i> 新規ドラフト作成`;
+      saveBtnLabel.textContent = 'ストックに保存';
+      btnCancelEdit.style.display = 'none';
+      resetEditorForm();
+    }
+
+    window.deletePost = async function(id) {
+      if (!confirm('この投稿（スレッド全体）を削除してもよろしいですか？')) return;
+      posts = posts.filter(p => p.id !== id);
+      await dbDelete(STORE_POSTS, id);
+      if (editingPostId === id) cancelEdit();
+      renderPosts();
+      showToast('投稿を削除しました');
+    };
+
+    window.cycleStatus = async function(id) {
+      const post = posts.find(p => p.id === id);
+      if (!post) return;
+      const order = ['draft', 'posted', 'archived'];
+      const nextIdx = (order.indexOf(post.status) + 1) % order.length;
+      post.status = order[nextIdx];
+      if (post.status === 'posted') post.postedAt = Date.now();
+      await dbPut(STORE_POSTS, post);
+      renderPosts();
+      showToast(`ステータスを更新しました`);
+    };
+
+    /* =========================================================
+       X (Twitter) Send & Copy Automation
+       ========================================================= */
+
+    // Copy single tweet text and launch X web intent
+    window.postSingleTweet = async function(postId, tweetIndex) {
+      const post = posts.find(p => p.id === postId);
+      if (!post || !post.tweets[tweetIndex]) return;
+
+      const tweet = post.tweets[tweetIndex];
+
+      // 1. Copy text to clipboard
+      await copyTextToClipboard(tweet.content);
+
+      // 2. Open X Intent
+      const encodedText = encodeURIComponent(tweet.content);
+      const url = `https://twitter.com/intent/tweet?text=${encodedText}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+
+      // 3. If image exists, prompt toast about images
+      if (tweet.images && tweet.images.length > 0) {
+        showToast(`本文をコピーしてXを開きました！画像は下の「画像コピー」を押してXでCtrl+Vすると貼り付けられます。`, 'success');
+      } else {
+        showToast('本文をコピーしてX投稿画面を開きました！', 'success');
+      }
+
+      // Auto update status to posted if draft
+      if (post.status === 'draft') {
+        post.status = 'posted';
+        post.postedAt = Date.now();
+        await dbPut(STORE_POSTS, post);
+        renderPosts();
+      }
+    };
+
+    window.copyTweetOnly = async function(postId, tweetIndex) {
+      const post = posts.find(p => p.id === postId);
+      if (!post || !post.tweets[tweetIndex]) return;
+      await copyTextToClipboard(post.tweets[tweetIndex].content);
+      showToast('ツイート本文をクリップボードにコピーしました！', 'success');
+    };
+
+    async function copyTextToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const dummy = document.createElement('textarea');
+        dummy.value = text;
+        document.body.appendChild(dummy);
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+      }
+    }
+
+    // Convert any DataURL/image to PNG Blob for ClipboardItem compatibility (Chrome requires image/png)
+    function dataUrlToPngBlob(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('Canvas to Blob conversion failed'));
+            }, 'image/png');
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => reject(new Error('Image failed to load'));
+        img.src = dataUrl;
+      });
+    }
+
+    // Copy Image to Clipboard as PNG Blob (Compatible with X post editor Ctrl+V)
+    window.copyImageToClipboard = async function(dataUrl) {
+      try {
+        const pngBlob = await dataUrlToPngBlob(dataUrl);
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': pngBlob })
+        ]);
+        showToast('画像をクリップボードにコピーしました！Xの投稿画面で「Ctrl + V」を押すと貼り付けられます。', 'success');
+      } catch (err) {
+        console.error('Image clipboard write error:', err);
+        // Fallback: prompt download
+        showToast('クリップボードへの直接書き込みが制限されているため、画像をダウンロード保存してください。', 'warn');
+        downloadImage(dataUrl, 'post_image.png');
+      }
+    };
+
+    window.downloadImage = function(dataUrl, filename) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename || 'post_image.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('画像をダウンロードしました', 'success');
+    };
+
+    /* =========================================================
+       Render Stock List Cards
+       ========================================================= */
+    function updateBadges() {
+      badgeAll.textContent = posts.length;
+      badgeDraft.textContent = posts.filter(p => p.status === 'draft').length;
+      badgePosted.textContent = posts.filter(p => p.status === 'posted').length;
+      badgeArchived.textContent = posts.filter(p => p.status === 'archived').length;
+    }
+
+    function renderPosts() {
+      updateBadges();
+
+      let filtered = posts.filter(post => {
+        if (currentFilter !== 'all' && post.status !== currentFilter) return false;
+        if (currentTagFilter && (!post.tags || !post.tags.includes(currentTagFilter))) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchMemo = (post.memo || '').toLowerCase().includes(q);
+          const matchTag = (post.tags || []).some(t => t.toLowerCase().includes(q));
+          const matchContent = (post.tweets || []).some(tw => (tw.content || '').toLowerCase().includes(q));
+          if (!matchMemo && !matchTag && !matchContent) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        postsContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-box-open" style="font-size: 3rem; color: var(--text-dim); opacity: 0.5;"></i>
+            <p style="font-weight: 500;">該当する投稿がありません</p>
+            <p style="font-size: 0.8rem;">左側のフォームからドラフトを作成して保存してください。</p>
+          </div>
+        `;
+        return;
+      }
+
+      postsContainer.innerHTML = '';
+
+      filtered.forEach(post => {
+        const card = document.createElement('article');
+        card.className = `post-card ${post.status}`;
+        card.id = `post-${post.id}`;
+
+        const formattedDate = new Date(post.createdAt).toLocaleString('ja-JP', {
+          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        const statusLabels = {
+          draft: '<i class="fa-solid fa-clock"></i> 未送信',
+          posted: '<i class="fa-solid fa-circle-check"></i> 送信済み',
+          archived: '<i class="fa-solid fa-box-archive"></i> アーカイブ'
+        };
+
+        const tagBadges = (post.tags || [])
+          .map(t => `<span class="tag-badge" style="font-size:0.72rem; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:var(--text-muted);"><i class="fa-solid fa-hashtag" style="font-size:0.65rem;"></i>${escapeHtml(t)}</span>`)
+          .join('');
+
+        const tweetCount = (post.tweets && post.tweets.length) || 1;
+        const threadBadge = tweetCount > 1 
+          ? `<span class="thread-count-badge"><i class="fa-solid fa-diagram-project"></i> ${tweetCount}連投スレッド</span>` 
+          : '';
+
+        // Build Tweets HTML inside card
+        let tweetsHtml = '';
+        (post.tweets || []).forEach((tweet, twIdx) => {
+          const { characters, isExceeded } = calculateXLength(tweet.content);
+
+          let imagesHtml = '';
+          if (tweet.images && tweet.images.length > 0) {
+            imagesHtml = `
+              <div class="card-images-grid">
+                ${tweet.images.map((img, iIdx) => `
+                  <div class="card-image-wrapper" title="クリックで画像コピー（XでCtrl+V）" onclick="copyImageToClipboard('${img.dataUrl}')">
+                    <img src="${img.dataUrl}" alt="添付画像">
+                    <div class="card-image-overlay">
+                      <i class="fa-regular fa-copy"></i>
+                      <span>画像コピー</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-icon-only" style="position: absolute; bottom: 4px; right: 4px; width: 22px; height: 22px; padding: 0; font-size: 0.65rem; background: rgba(0,0,0,0.7); z-index: 2;" title="PCに保存" onclick="event.stopPropagation(); downloadImage('${img.dataUrl}', '${escapeHtml(img.name || `image_${iIdx+1}.png`)}')">
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+
+          tweetsHtml += `
+            <div class="card-tweet-item">
+              <div class="card-tweet-item-header">
+                <span style="font-size: 0.74rem; font-weight: 700; color: var(--accent-x);">
+                  <i class="fa-solid fa-feather-pointed"></i> #${twIdx + 1}
+                </span>
+                <span style="font-size: 0.75rem; font-family:'JetBrains Mono',monospace; color: ${isExceeded ? 'var(--accent-rose)' : 'var(--text-dim)'}; font-weight: ${isExceeded ? '700' : '500'};">
+                  ${characters} / 140 字
+                </span>
+              </div>
+
+              <div class="card-tweet-text">${escapeHtml(tweet.content || '（本文なし）')}</div>
+
+              ${imagesHtml}
+
+              <div class="card-tweet-actions">
+                <span style="font-size: 0.72rem; color: var(--text-dim);">
+                  ${twIdx === 0 ? '親ツイート' : `リプライ・ツリー #${twIdx + 1}`}
+                </span>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.76rem;" onclick="copyTweetOnly('${post.id}', ${twIdx})" title="本文のみコピー">
+                    <i class="fa-regular fa-copy"></i> コピー
+                  </button>
+                  <button class="btn btn-primary" style="padding: 4px 12px; font-size: 0.76rem;" onclick="postSingleTweet('${post.id}', ${twIdx})" title="コピーしてX投稿画面を開く">
+                    <i class="fa-brands fa-x-twitter"></i> 送信＆コピー
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="card-top-meta">
+            <div class="card-badges">
+              <span class="status-badge ${post.status}">${statusLabels[post.status]}</span>
+              ${threadBadge}
+              ${tagBadges}
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+              <i class="fa-regular fa-calendar"></i> ${formattedDate}
+            </span>
+          </div>
+
+          ${post.memo ? `
+            <div style="font-size: 0.8rem; color: var(--text-muted); background: rgba(245, 158, 11, 0.08); border-left: 3px solid var(--accent-amber); padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-note-sticky"></i>
+              <span>${escapeHtml(post.memo)}</span>
+            </div>
+          ` : ''}
+
+          <div class="card-thread-list">
+            ${tweetsHtml}
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <button class="btn btn-secondary btn-icon-only" onclick="startEditPost('${post.id}')" title="スレッド全体を編集">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-secondary btn-icon-only" onclick="cycleStatus('${post.id}')" title="ステータス切り替え（未送信 / 送信済み / アーカイブ）">
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <button class="btn btn-secondary btn-icon-only" onclick="deletePost('${post.id}')" title="スレッド全体を削除">
+              <i class="fa-solid fa-trash-can" style="color: var(--accent-rose);"></i>
+            </button>
+          </div>
+        `;
+
+        postsContainer.appendChild(card);
+      });
+    }
+
+    /* =========================================================
+       Tabs & Search Listeners
+       ========================================================= */
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderPosts();
+      });
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      renderPosts();
+    });
+
+    /* =========================================================
+       Export & Import (Full Database Backup)
+       ========================================================= */
+    btnExportData.addEventListener('click', () => {
+      const backup = {
+        version: '2.0',
+        exportedAt: new Date().toISOString(),
+        posts: posts,
+        tags: tags,
+        snippets: snippets
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", `xpoststock_thread_backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('全データをJSON形式で書き出しました', 'success');
+    });
+
+    btnImportData.addEventListener('click', () => fileImportInput.click());
+
+    fileImportInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (imported.posts && Array.isArray(imported.posts)) {
+            if (confirm(`読み込んだ${imported.posts.length}件の投稿データをデータベースに統合しますか？`)) {
+              for (const p of imported.posts) {
+                // Ensure tweets array structure
+                if (!p.tweets && p.content) {
+                  p.tweets = [{ id: 'tw_imp_1', content: p.content, images: [] }];
+                }
+                await dbPut(STORE_POSTS, p);
+              }
+
+              if (imported.tags && Array.isArray(imported.tags)) {
+                for (const t of imported.tags) await dbPut(STORE_TAGS, t);
+              }
+              if (imported.snippets && Array.isArray(imported.snippets)) {
+                for (const s of imported.snippets) await dbPut(STORE_SNIPPETS, s);
+              }
+
+              await loadAllData();
+              showToast('データのインポートと復元が完了しました！', 'success');
+            }
+          } else {
+            showToast('無効なデータ形式のファイルです', 'error');
+          }
+        } catch (err) {
+          showToast('JSONファイルの読み込みに失敗しました', 'error');
+        }
+        fileImportInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+
+    /* =========================================================
+       Toast & Utilities
+       ========================================================= */
+    function showToast(message, type = 'normal') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      let icon = 'fa-solid fa-circle-info';
+      if (type === 'success') icon = 'fa-solid fa-circle-check';
+      if (type === 'error') icon = 'fa-solid fa-circle-exclamation';
+
+      toast.innerHTML = `
+        <i class="${icon}" style="font-size: 1.1rem;"></i>
+        <span>${escapeHtml(message)}</span>
+      `;
+
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(30px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /* Start App */
+    loadAllData();
+  </script>
+</body>
+</html>

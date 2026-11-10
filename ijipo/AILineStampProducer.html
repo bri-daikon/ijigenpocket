@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Line Stamp Producer - Emo Jellyfish Edition</title>
+    <style>
+        :root {
+            --primary: #8BC34A;
+            --primary-dark: #689F38;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .grid-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #475569; color: white; }
+        .preview-canvas {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #334155;
+            cursor: crosshair;
+            margin-top: 10px;
+        }
+        .results-grid {
+            display: none;
+        }
+        .stamp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .stamp-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .stamp-card:hover {
+            background: #444;
+            transform: translateY(-5px);
+        }
+        .stamp-card canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            background: #fff;
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+        }
+
+        /* Editor Modal */
+        #editor-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+        body.modal-open { overflow: hidden; }
+        .editor-container {
+            background: #333;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+        }
+        #editor-canvas {
+            cursor: crosshair;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+        }
+        #editor-canvas.bg-white { background: #fff; background-image: none; }
+        #editor-canvas.bg-black { background: #000; background-image: none; }
+        #editor-canvas.bg-check { 
+            background: #fff; 
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .bg-toggle {
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .bg-toggle:hover { background: #555; }
+
+        .editor-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            color: #fff;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        .editor-btns {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .status-badge {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #334155;
+        }
+        .status-ready { background: #10b981; }
+        .toggle-btn {
+            background-color: #334155;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover {
+            background-color: #475569;
+            color: #fff;
+        }
+        .toggle-btn.active {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+<style>
+.usage-guide{max-width:1050px;margin:36px auto;padding:28px clamp(20px,4vw,42px);background:#fff;color:#243243;border:1px solid #dce4ef;border-radius:24px;box-shadow:0 12px 35px rgba(15,23,42,.14);font-family:system-ui,"Yu Gothic",Meiryo,sans-serif;line-height:1.8}
+.usage-guide h2{font-size:clamp(1.5rem,3vw,2rem);margin:0 0 12px;color:#1e293b}.usage-guide h3{font-size:1.12rem;margin:24px 0 8px;color:#263b5c}.usage-guide p{margin:0 0 14px;color:#475569}.usage-guide ol{padding-left:1.5em;margin:8px 0 16px}.usage-guide li{margin:7px 0}.usage-guide .guide-note{padding:14px 17px;background:#eef6ff;border-left:4px solid #3b82f6;border-radius:8px}.usage-guide a{color:#1d4ed8}
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👾 Emo Jellyfish Stamp Center</h1><a href="#usage-guide" style="display:inline-block;margin:12px 0;padding:8px 14px;border-radius:999px;background:#e0e7ff;color:#1e3a8a;font-weight:700;text-decoration:none">使い方を見る ↓</a>
+            <p>Precise Manual Grid Slicing & Background Removal</p>
+        </div>
+
+        <div class="grid-panel">
+            <!-- Settings Section -->
+            <div class="flex gap-6 mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700 flex-wrap">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-300">切り抜きグリッド数 (最大6):</label>
+                    <div class="flex gap-2" style="align-items: center;">
+                        <span class="text-slate-300">縦 (行):</span>
+                        <input type="number" id="grid-rows" min="1" max="6" value="5" class="toggle-btn" style="width: 70px; padding: 4px 8px;" onchange="updateCustomGrid()">
+                        <span class="text-slate-300">× 横 (列):</span>
+                        <input type="number" id="grid-cols" min="1" max="6" value="4" class="toggle-btn" style="width: 70px; padding: 4px 8px;" onchange="updateCustomGrid()">
+                        <span id="grid-total-count" class="text-slate-300 ml-2">(計40枚)</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-slate-300">出力画像タイプ:</label>
+                    <div class="flex gap-2">
+                        <button id="type-stamp" onclick="setOutputType('stamp')" class="toggle-btn active">スタンプ (320x320)</button>
+                        <button id="type-emoji" onclick="setOutputType('emoji')" class="toggle-btn">絵文字 (180x180)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <div>
+                    <label>Grid 1 (Stamps 01-20):</label>
+                    <input type="file" id="grid-input-1" accept="image/*">
+                    <span id="grid-1-status" class="status-badge">No file</span>
+                </div>
+                <div>
+                    <label>Grid 2 (Stamps 21-40):</label>
+                    <input type="file" id="grid-input-2" accept="image/*">
+                    <span id="grid-2-status" class="status-badge">No file</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <label>BG Removal Color:</label>
+                <input type="color" id="bg-color-picker" value="#32CD32">
+                <input type="text" id="bg-color-hex" value="#32CD32" size="7">
+                <label>Tolerance:</label>
+                <input type="range" id="bg-tolerance" min="0" max="100" value="30">
+                <button id="process-grid-btn" class="btn btn-primary">🚀 Process All (Symmetry Slice)</button>
+                <button id="download-all-btn" class="btn btn-secondary">Download All (Zip/Multiple)</button>
+            </div>
+
+            <div id="results-container" class="results-grid"></div>
+
+            <!-- Editor Modal -->
+            <div id="editor-modal">
+                <div class="editor-container">
+                    <h3 id="editor-title" style="color: #fff; margin-bottom: 15px;">Edit Stamp</h3>
+                    <canvas id="editor-canvas" width="320" height="320" class="bg-check"></canvas>
+                    <div class="editor-controls">
+                        <div class="control-group">
+                            <label>Size (Scale):</label>
+                            <input type="range" id="editor-scale" min="0.1" max="3.0" step="0.01" value="1.0">
+                            <input type="number" id="scale-val" value="100" min="10" max="300" style="width: 50px; padding: 2px; text-align: right; background: #333; color: #fff; border: 1px solid #666; border-radius: 4px;"> <span style="color: #fff; margin-left: -5px;">%</span>
+                            <button class="bg-toggle" style="margin-left: 10px;" onclick="setFitScale(81)">81% Fit</button>
+                            <button class="bg-toggle" style="margin-left: 10px;" onclick="setFitScale(140)">140% Fit</button>
+                        </div>
+                        <div class="control-group">
+                            <label>Editor BG:</label>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-check')">Check</button>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-white')">White</button>
+                            <button class="bg-toggle" onclick="setEditorBg('bg-black')">Black</button>
+                        </div>
+                        <div class="control-group" style="color: #fff;">
+                            <input type="checkbox" id="show-guide" checked onchange="drawEditor()">
+                            <label for="show-guide">Show 10px Guide (Red Line)</label>
+                        </div>
+                        <p style="color: #aaa; font-size: 0.8em;">
+                            🖱️ <b>Click</b>: Remove color | 🖱️ <b>Drag</b>: Move image
+                        </p>
+                    </div>
+                    <div class="editor-btns">
+                        <button id="editor-undo-btn" class="btn btn-secondary" style="background: #6366f1;">Undo (元に戻す)</button>
+                        <button id="editor-reset-btn" class="btn btn-secondary" style="background: #e11d48;">Reset (初期状態)</button>
+                        <button id="editor-cancel-btn" class="btn btn-secondary">Cancel</button>
+                        <button id="editor-save-btn" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="preview-container-1" style="display:none;">
+                <h3>Grid 1 Editor (1-20) - Drag red lines to align</h3>
+                <canvas id="grid-canvas-1" class="preview-canvas"></canvas>
+            </div>
+            <div id="preview-container-2" style="display:none;">
+                <h3>Grid 2 Editor (21-40) - Drag red lines to align</h3>
+                <canvas id="grid-canvas-2" class="preview-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="stamp-grid" id="stamp-results">
+            <!-- 40 stamp cards generated here -->
+        </div>
+    </div>
+
+<section id="usage-guide" class="usage-guide" aria-labelledby="usage-title">
+<h2 id="usage-title">AI Line Stamp Producerの使い方</h2><p>複数のイラストが並んだ一覧画像から、LINEスタンプ・絵文字用の個別画像を切り出すツールです。</p>
+<ol><li>「切り抜きグリッド数」で一覧画像の行数と列数を設定し、「スタンプ」か「絵文字」を選びます。</li><li>一覧画像をGrid 1に読み込みます。枚数が多い場合はGrid 2にも読み込みます。</li><li>背景色と許容範囲を調整し、「Process All」で切り出します。赤い線を動かして区切り位置を合わせられます。</li><li>切り出し結果を確認し、必要な画像は個別に編集してから「Download All」で保存します。</li></ol>
+<p class="guide-note">背景とキャラクターの色が近い場合、背景除去で絵の一部が消えることがあります。保存前に各画像の輪郭と透過部分を確認してください。</p>
+</section>
+    <script>
+        let gridRows = 5;
+        let gridCols = 4;
+        let outputType = 'stamp';
+        let stampPlan = [];
+
+        function updateCustomGrid() {
+            let r = parseInt(document.getElementById('grid-rows').value) || 5;
+            let c = parseInt(document.getElementById('grid-cols').value) || 4;
+            if (r < 1) r = 1; if (r > 6) r = 6;
+            if (c < 1) c = 1; if (c > 6) c = 6;
+            document.getElementById('grid-rows').value = r;
+            document.getElementById('grid-cols').value = c;
+            
+            gridRows = r;
+            gridCols = c;
+            
+            document.getElementById('grid-total-count').innerText = `(計${r * c * 2}枚)`;
+            
+            [1, 2].forEach(idx => {
+                const state = gridStates[idx];
+                if (state.img && state.initLines && state.draw) {
+                    state.initLines(state.img.width, state.img.height);
+                    state.draw();
+                }
+            });
+            
+            initStampResults();
+        }
+        window.updateCustomGrid = updateCustomGrid;
+
+        function initStampResults() {
+            const resultsContainer = document.getElementById('stamp-results');
+            resultsContainer.innerHTML = '';
+            
+            const cols = gridCols;
+            const rows = gridRows;
+            const totalStamps = cols * rows * 2;
+            
+            // アップロードラベルの動的更新
+            const labels = document.querySelectorAll('.upload-section label');
+            const padLen = (outputType === 'emoji') ? 3 : 2;
+            if (labels.length >= 2) {
+                labels[0].innerText = `Grid 1 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(1).padStart(padLen, '0')}-${String(cols*rows).padStart(padLen, '0')}):`;
+                labels[1].innerText = `Grid 2 (${outputType === 'stamp' ? 'Stamps' : 'Emojis'} ${String(cols*rows + 1).padStart(padLen, '0')}-${String(totalStamps).padStart(padLen, '0')}):`;
+            }
+            
+            // プレビューコンテナ見出しの更新
+            const h3_1 = document.querySelector('#preview-container-1 h3');
+            const h3_2 = document.querySelector('#preview-container-2 h3');
+            if (h3_1) h3_1.innerText = `Grid 1 Editor (1-${cols*rows}) - Drag red lines to align`;
+            if (h3_2) h3_2.innerText = `Grid 2 Editor (${cols*rows + 1}-${totalStamps}) - Drag red lines to align`;
+            
+            stampPlan = Array.from({length: totalStamps}, (_, i) => ({
+                id: i + 1,
+                status: 'pending'
+            }));
+
+            stampPlan.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'stamp-card';
+                card.innerHTML = `
+                    <canvas id="canvas-${s.id}" width="320" height="320"></canvas>
+                    <div>${outputType === 'stamp' ? 'Stamp' : 'Emoji'} ${String(s.id).padStart(padLen, '0')}</div>
+                    <div id="status-${s.id}" class="status-badge">PENDING</div>
+                `;
+                resultsContainer.appendChild(card);
+                
+                if (stampData[s.id]) {
+                    updateStampCanvas(s.id);
+                    const badge = document.getElementById(`status-${s.id}`);
+                    badge.innerText = 'READY';
+                    badge.classList.add('status-ready');
+                    card.onclick = () => openEditor(s.id);
+                }
+            });
+        }
+
+        function setOutputType(type) {
+            outputType = type;
+            
+            const btnStamp = document.getElementById('type-stamp');
+            const btnEmoji = document.getElementById('type-emoji');
+            if (type === 'stamp') {
+                btnStamp.classList.add('active');
+                btnEmoji.classList.remove('active');
+            } else {
+                btnStamp.classList.remove('active');
+                btnEmoji.classList.add('active');
+            }
+            
+            initStampResults();
+        }
+        window.setOutputType = setOutputType;
+
+
+
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        const bgColorHex = document.getElementById('bg-color-hex');
+        const bgToleranceInput = document.getElementById('bg-tolerance');
+
+        bgColorPicker.oninput = () => bgColorHex.value = bgColorPicker.value.toUpperCase();
+        bgColorHex.oninput = () => bgColorPicker.value = bgColorHex.value;
+
+        const gridStates = {
+            1: { img: null, vLines: [], hLines: [], dragging: null },
+            2: { img: null, vLines: [], hLines: [], dragging: null }
+        };
+
+        const stampData = {}; 
+        const editorModal = document.getElementById('editor-modal');
+        const editorCanvas = document.getElementById('editor-canvas');
+        const editorCtx = editorCanvas.getContext('2d', {willReadFrequently: true});
+        const editorScale = document.getElementById('editor-scale');
+        const scaleVal = document.getElementById('scale-val');
+        let currentEditId = null;
+        let isDraggingStamp = false;
+        let lastMousePos = { x: 0, y: 0 };
+        let mouseDownTime = 0;
+
+        function setupGridPreview(inputId, canvasId, containerId, gridIdx) {
+            const input = document.getElementById(inputId);
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById(containerId);
+            const state = gridStates[gridIdx];
+
+            function initLines(w, h) {
+                state.cells = [];
+                const cols = gridCols;
+                const rows = gridRows;
+                const cellW = w / cols;
+                const cellH = h / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        state.cells.push({
+                            left: c * cellW,
+                            right: (c + 1) * cellW,
+                            top: r * cellH,
+                            bottom: (r + 1) * cellH
+                        });
+                    }
+                }
+            }
+            state.initLines = initLines;
+
+            let hoverState = null;
+
+            function draw() {
+                if (!state.img) return;
+                canvas.width = state.img.width;
+                canvas.height = state.img.height;
+                ctx.drawImage(state.img, 0, 0);
+
+                state.cells.forEach((cell, i) => {
+                    const isHoveringCell = hoverState && hoverState.idx === i;
+                    const isDraggingCell = state.dragging && state.dragging.idx === i;
+                    const activeEdge = state.dragging ? state.dragging.edge : (hoverState ? hoverState.edge : null);
+                    
+                    const drawEdge = (edgeName, x1, y1, x2, y2) => {
+                        ctx.beginPath();
+                        ctx.lineWidth = ((isDraggingCell || isHoveringCell) && activeEdge === edgeName) ? 4 : 2;
+                        ctx.strokeStyle = ((isDraggingCell || isHoveringCell) && activeEdge === edgeName) ? '#00ff00' : '#ff0000';
+                        if (!isDraggingCell && !isHoveringCell) {
+                            ctx.setLineDash([5, 5]);
+                        } else {
+                            ctx.setLineDash([]);
+                        }
+                        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                    };
+
+                    drawEdge('left', cell.left, cell.top, cell.left, cell.bottom);
+                    drawEdge('right', cell.right, cell.top, cell.right, cell.bottom);
+                    drawEdge('top', cell.left, cell.top, cell.right, cell.top);
+                    drawEdge('bottom', cell.left, cell.bottom, cell.right, cell.bottom);
+
+                    if ((isDraggingCell || isHoveringCell) && activeEdge === 'center') {
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                        ctx.fillRect(cell.left, cell.top, cell.right - cell.left, cell.bottom - cell.top);
+                    }
+                    
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+                    const text = String(i + 1 + (gridIdx === 1 ? 0 : gridCols * gridRows));
+                    ctx.strokeText(text, cell.left + 5, cell.top + 20);
+                    ctx.fillText(text, cell.left + 5, cell.top + 20);
+                });
+            }
+            state.draw = draw;
+
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const img = new Image();
+                img.onload = () => {
+                    state.img = img;
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    initLines(img.width, img.height);
+                    container.style.display = 'block';
+                    draw();
+                    document.getElementById(`grid-${gridIdx}-status`).innerText = file.name;
+                };
+                img.src = URL.createObjectURL(file);
+            };
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+            }
+
+            canvas.onmousemove = e => {
+                const pos = getMousePos(e);
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+
+                if (state.dragging) {
+                    const cell = state.cells[state.dragging.idx];
+                    if (state.dragging.edge === 'left') cell.left = pos.x;
+                    else if (state.dragging.edge === 'right') cell.right = pos.x;
+                    else if (state.dragging.edge === 'top') cell.top = pos.y;
+                    else if (state.dragging.edge === 'bottom') cell.bottom = pos.y;
+                    else if (state.dragging.edge === 'center') {
+                        const dx = pos.x - state.dragging.startX;
+                        const dy = pos.y - state.dragging.startY;
+                        cell.left += dx; cell.right += dx;
+                        cell.top += dy; cell.bottom += dy;
+                        state.dragging.startX = pos.x;
+                        state.dragging.startY = pos.y;
+                    }
+                    draw();
+                    return;
+                }
+                
+                let closest = null;
+                let minDist = 15;
+                
+                for(let i = state.cells.length - 1; i >= 0; i--) {
+                    const cell = state.cells[i];
+                    const inY = pos.y * scaleY >= cell.top * scaleY - 15 && pos.y * scaleY <= cell.bottom * scaleY + 15;
+                    const inX = pos.x * scaleX >= cell.left * scaleX - 15 && pos.x * scaleX <= cell.right * scaleX + 15;
+                    
+                    if (inY) {
+                        let dLeft = Math.abs(pos.x * scaleX - cell.left * scaleX);
+                        if (dLeft < minDist) { minDist = dLeft; closest = { idx: i, edge: 'left' }; }
+                        let dRight = Math.abs(pos.x * scaleX - cell.right * scaleX);
+                        if (dRight < minDist) { minDist = dRight; closest = { idx: i, edge: 'right' }; }
+                    }
+                    if (inX) {
+                        let dTop = Math.abs(pos.y * scaleY - cell.top * scaleY);
+                        if (dTop < minDist) { minDist = dTop; closest = { idx: i, edge: 'top' }; }
+                        let dBottom = Math.abs(pos.y * scaleY - cell.bottom * scaleY);
+                        if (dBottom < minDist) { minDist = dBottom; closest = { idx: i, edge: 'bottom' }; }
+                    }
+                    
+                    if (!closest && inX && inY) {
+                        if (pos.x * scaleX > cell.left * scaleX + 15 && pos.x * scaleX < cell.right * scaleX - 15 &&
+                            pos.y * scaleY > cell.top * scaleY + 15 && pos.y * scaleY < cell.bottom * scaleY - 15) {
+                            closest = { idx: i, edge: 'center' };
+                            break;
+                        }
+                    }
+                }
+                
+                hoverState = closest;
+
+                if (closest) {
+                    if (closest.edge === 'left' || closest.edge === 'right') canvas.style.cursor = 'ew-resize';
+                    else if (closest.edge === 'top' || closest.edge === 'bottom') canvas.style.cursor = 'ns-resize';
+                    else if (closest.edge === 'center') canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+                draw();
+            };
+
+            canvas.onmousedown = e => {
+                if (hoverState) {
+                    state.dragging = { ...hoverState };
+                    if (hoverState.edge === 'center') {
+                        const pos = getMousePos(e);
+                        state.dragging.startX = pos.x;
+                        state.dragging.startY = pos.y;
+                    }
+                } else {
+                    const pos = getMousePos(e);
+                    try {
+                        const pixel = ctx.getImageData(pos.x, pos.y, 1, 1).data;
+                        const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                        bgColorHex.value = hex;
+                        bgColorPicker.value = hex;
+                    } catch (e) {}
+                }
+                draw();
+            };
+            window.addEventListener('mouseup', () => { if (state.dragging) { state.dragging = null; draw(); } });
+        }
+
+        setupGridPreview('grid-input-1', 'grid-canvas-1', 'preview-container-1', 1);
+        setupGridPreview('grid-input-2', 'grid-canvas-2', 'preview-container-2', 2);
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        document.getElementById('process-grid-btn').onclick = async () => {
+            const cols = gridCols;
+            const rows = gridRows;
+            if (gridStates[1].img) await processGridFile(1, 1);
+            if (gridStates[2].img) await processGridFile(2, cols * rows + 1);
+            alert('Processing complete!');
+        };
+
+        async function processGridFile(gridIdx, startId) {
+            const state = gridStates[gridIdx];
+            const img = state.img;
+            
+            for (let i = 0; i < state.cells.length; i++) {
+                const id = startId + i;
+                const canvas = document.getElementById(`canvas-${id}`);
+                if (!canvas) continue;
+                
+                const cell = state.cells[i];
+                const sx = Math.min(cell.left, cell.right);
+                const sy = Math.min(cell.top, cell.bottom);
+                const sw = Math.max(0.1, Math.abs(cell.right - cell.left));
+                const sh = Math.max(0.1, Math.abs(cell.bottom - cell.top));
+
+                const rawCanvas = document.createElement('canvas');
+                rawCanvas.width = sw;
+                rawCanvas.height = sh;
+                rawCanvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+                const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = sw;
+                processedCanvas.height = sh;
+                const pCtx = processedCanvas.getContext('2d');
+                pCtx.drawImage(rawCanvas, 0, 0);
+                applyFloodFill(pCtx, bgColorHex.value, parseInt(bgToleranceInput.value));
+
+                const scale = Math.min(280 / sw, 280 / sh);
+                stampData[id] = {
+                    originalProcessed: null, 
+                    rawCanvas: processedCanvas,
+                    history: [], // Undo history
+                    scale: scale,
+                    x: (320 - sw * scale) / 2,
+                    y: (320 - sh * scale) / 2
+                };
+
+                const backup = document.createElement('canvas');
+                backup.width = sw; backup.height = sh;
+                backup.getContext('2d').drawImage(processedCanvas, 0, 0);
+                stampData[id].originalProcessed = backup;
+
+                updateStampCanvas(id);
+                document.getElementById(`status-${id}`).innerText = 'READY';
+                document.getElementById(`status-${id}`).classList.add('status-ready');
+                document.getElementById(`canvas-${id}`).parentElement.onclick = () => openEditor(id);
+            }
+        }
+
+        function updateStampCanvas(id) {
+            const data = stampData[id];
+            const canvas = document.getElementById(`canvas-${id}`);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 320, 320);
+            ctx.drawImage(data.rawCanvas, data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
+        }
+
+        function openEditor(id) {
+            currentEditId = id;
+            const data = stampData[id];
+            editorScale.value = data.scale;
+            scaleVal.value = Math.round(data.scale * 100);
+            editorModal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+            drawEditor();
+        }
+
+        function drawEditor() {
+            if (currentEditId === null) return;
+            const data = stampData[currentEditId];
+            editorCtx.clearRect(0, 0, 320, 320);
+            
+            editorCtx.strokeStyle = '#ddd';
+            editorCtx.setLineDash([2, 2]);
+            editorCtx.strokeRect(data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
+            editorCtx.setLineDash([]);
+
+            editorCtx.drawImage(data.rawCanvas, data.x, data.y, data.rawCanvas.width * data.scale, data.rawCanvas.height * data.scale);
+            
+            if (document.getElementById('show-guide').checked) {
+                editorCtx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+                editorCtx.lineWidth = 1;
+                editorCtx.strokeRect(10, 10, 300, 300);
+            }
+        }
+
+        editorCanvas.onmousedown = e => {
+            const rect = editorCanvas.getBoundingClientRect();
+            lastMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            isDraggingStamp = true;
+            mouseDownTime = Date.now();
+        };
+
+        window.addEventListener('mousemove', e => {
+            if (!isDraggingStamp || currentEditId === null) return;
+            const rect = editorCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const dx = mouseX - lastMousePos.x;
+            const dy = mouseY - lastMousePos.y;
+            const data = stampData[currentEditId];
+            data.x += dx;
+            data.y += dy;
+            lastMousePos = { x: mouseX, y: mouseY };
+            drawEditor();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingStamp = false;
+        });
+
+        editorCanvas.onclick = e => {
+            if (Date.now() - mouseDownTime > 200) return;
+            const rect = editorCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const data = stampData[currentEditId];
+            const rx = (mouseX - data.x) / data.scale;
+            const ry = (mouseY - data.y) / data.scale;
+            if (rx >= 0 && rx < data.rawCanvas.width && ry >= 0 && ry < data.rawCanvas.height) {
+                const ctx = data.rawCanvas.getContext('2d', {willReadFrequently: true});
+                const pixel = ctx.getImageData(rx, ry, 1, 1).data;
+                if (pixel[3] === 0) return;
+
+                // Save to history before modifying
+                saveToHistory(currentEditId);
+
+                applyFloodFillAt(ctx, rx, ry, rgbToHex(pixel[0], pixel[1], pixel[2]), parseInt(bgToleranceInput.value));
+                drawEditor();
+            }
+        };
+
+        function saveToHistory(id) {
+            const data = stampData[id];
+            const canvas = document.createElement('canvas');
+            canvas.width = data.rawCanvas.width;
+            canvas.height = data.rawCanvas.height;
+            canvas.getContext('2d').drawImage(data.rawCanvas, 0, 0);
+            data.history.push(canvas);
+            if (data.history.length > 20) data.history.shift(); // Limit history size
+        }
+
+        function setEditorBg(className) {
+            editorCanvas.className = '';
+            editorCanvas.classList.add(className);
+        }
+
+        editorScale.oninput = () => {
+            if (currentEditId === null) return;
+            const data = stampData[currentEditId];
+            data.scale = parseFloat(editorScale.value);
+            scaleVal.value = Math.round(data.scale * 100);
+            data.x = (320 - data.rawCanvas.width * data.scale) / 2;
+            data.y = (320 - data.rawCanvas.height * data.scale) / 2;
+            drawEditor();
+        };
+
+        scaleVal.oninput = () => {
+            if (currentEditId === null) return;
+            let percent = parseFloat(scaleVal.value);
+            if (isNaN(percent) || percent <= 0) return;
+            const data = stampData[currentEditId];
+            data.scale = percent / 100;
+            editorScale.value = data.scale;
+            data.x = (320 - data.rawCanvas.width * data.scale) / 2;
+            data.y = (320 - data.rawCanvas.height * data.scale) / 2;
+            drawEditor();
+        };
+
+        window.setFitScale = (percent) => {
+            if (currentEditId === null) return;
+            scaleVal.value = percent;
+            const data = stampData[currentEditId];
+            data.scale = percent / 100;
+            editorScale.value = data.scale;
+            data.x = (320 - data.rawCanvas.width * data.scale) / 2;
+            data.y = (320 - data.rawCanvas.height * data.scale) / 2;
+            drawEditor();
+        };
+
+        function applyFloodFillAt(ctx, startX, startY, targetHex, tolerance) {
+            const canvas = ctx.canvas;
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const targetRGB = hexToRgb(targetHex);
+            const visited = new Uint8Array(canvas.width * canvas.height);
+            const stack = [[Math.floor(startX), Math.floor(startY)]];
+
+            while (stack.length) {
+                const [x, y] = stack.pop();
+                const idx = y * canvas.width + x;
+                if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height || visited[idx]) continue;
+                const i = idx * 4;
+                const dist = Math.sqrt(Math.pow(data[i]-targetRGB.r,2)+Math.pow(data[i+1]-targetRGB.g,2)+Math.pow(data[i+2]-targetRGB.b,2));
+                if (dist < tolerance * 2.55) {
+                    data[i+3] = 0;
+                    visited[idx] = 1;
+                    stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function applyFloodFill(ctx, targetHex, tolerance) {
+            const canvas = ctx.canvas;
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const targetRGB = hexToRgb(targetHex);
+            const visited = new Uint8Array(canvas.width * canvas.height);
+            const stack = [[0, 0], [canvas.width - 1, 0], [0, canvas.height - 1], [canvas.width - 1, canvas.height - 1]];
+
+            while (stack.length) {
+                const [x, y] = stack.pop();
+                const idx = y * canvas.width + x;
+                if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height || visited[idx]) continue;
+                const i = idx * 4;
+                const dist = Math.sqrt(Math.pow(data[i]-targetRGB.r,2)+Math.pow(data[i+1]-targetRGB.g,2)+Math.pow(data[i+2]-targetRGB.b,2));
+                if (dist < tolerance * 2.55) {
+                    data[i+3] = 0;
+                    visited[idx] = 1;
+                    stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        document.getElementById('editor-save-btn').onclick = () => {
+            updateStampCanvas(currentEditId);
+            editorModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        };
+
+        document.getElementById('editor-cancel-btn').onclick = () => {
+            updateStampCanvas(currentEditId);
+            editorModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        };
+
+        document.getElementById('editor-reset-btn').onclick = () => {
+            const data = stampData[currentEditId];
+            saveToHistory(currentEditId); // Save state before resetting to allow undoing the reset
+            const ctx = data.rawCanvas.getContext('2d');
+            ctx.clearRect(0, 0, data.rawCanvas.width, data.rawCanvas.height);
+            ctx.drawImage(data.originalProcessed, 0, 0);
+            drawEditor();
+        };
+
+        document.getElementById('editor-undo-btn').onclick = () => {
+            const data = stampData[currentEditId];
+            if (data.history.length === 0) return;
+            const lastState = data.history.pop();
+            const ctx = data.rawCanvas.getContext('2d');
+            ctx.clearRect(0, 0, data.rawCanvas.width, data.rawCanvas.height);
+            ctx.drawImage(lastState, 0, 0);
+            drawEditor();
+        };
+
+        async function downloadResized(sourceCanvas, targetW, targetH, filename) {
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = targetW;
+            offCanvas.height = targetH;
+            const offCtx = offCanvas.getContext('2d');
+            const sW = sourceCanvas.width;
+            const sH = sourceCanvas.height;
+            const ratio = Math.min(targetW / sW, targetH / sH);
+            const nw = sW * ratio;
+            const nh = sH * ratio;
+            offCtx.drawImage(sourceCanvas, (targetW - nw) / 2, (targetH - nh) / 2, nw, nh);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = offCanvas.toDataURL('image/png');
+            link.click();
+            await new Promise(r => setTimeout(r, 100));
+        }
+
+        document.getElementById('download-all-btn').onclick = async () => {
+            const canvas1 = document.getElementById('canvas-1');
+            const isEmoji = (outputType === 'emoji');
+            const cols = gridCols;
+            const rows = gridRows;
+            const totalStamps = cols * rows * 2;
+
+            if (canvas1 && document.getElementById('status-1').classList.contains('status-ready')) {
+                if (!isEmoji) {
+                    await downloadResized(canvas1, 240, 240, 'main.png');
+                }
+                await downloadResized(canvas1, 96, 74, 'tab.png');
+            }
+            for (let i = 1; i <= totalStamps; i++) {
+                const canvas = document.getElementById(`canvas-${i}`);
+                if (canvas && document.getElementById(`status-${i}`).classList.contains('status-ready')) {
+                    if (isEmoji) {
+                        await downloadResized(canvas, 180, 180, `${String(i).padStart(3, '0')}.png`);
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = `${String(i).padStart(2, '0')}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                }
+            }
+        };
+
+        // 初期化実行
+        initStampResults();
+    </script>
+</body>
+</html>

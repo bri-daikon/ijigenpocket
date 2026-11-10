@@ -1,0 +1,91 @@
+Created At: 2026-06-04T05:37:03Z
+Completed At: 2026-06-04T05:37:06Z
+The following changes were made by the replace_file_content tool to: Y:\ijigenpocket\js\ccfolialayoutmaker.js. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -1691,6 +1691,88 @@
+   aiChatBox.scrollTop = aiChatBox.scrollHeight;
+ }
+ 
++async function callGeminiApiForLayout(apiKey, theme, numPlayers, layoutType, customPrompt) {
++  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
++  
++  const systemPrompt = `
++あなたはココフォリアの部屋レイアウトを設計するAI社員チームです。
++以下のメンバー構成でCEO（ユーザー）の要望を議論し、最終的なデザイン配色とアセットの方向性を決定してください。
++
++【チームメンバー】
++- タクミ (プランナー): 部屋全体の配置や使いやすさを企画する
++- アオイ (デザイナー): 部屋のカラーコーディネートや装飾のスタイルを担当する
++
++【CEOからの要望】
++- 大枠のテーマ: \${theme}
++- プレイヤー人数: \${numPlayers}人部屋
++- 配置: \${layoutType === 'right-vertical' ? '右側に縦並び' : '下部に横並び'}
++- 追加の要望（フリー入力）: "\${customPrompt || '特になし'}"
++
++【出力指示】
++1. まず、タクミとアオイがCEOの要望に沿ってどのようなカラーや装飾にするかを相談する会話ログを「合計で4回の発話（タクミ2回、アオイ2回）」で作成してください。
++2. 次に、相談の結果決定した部屋の「デザインパラメータ」を以下のカラーコード等で指定してください。
++   - bg_gradient_start: 背景のグラデーション開始色 (ダークカラー推奨、16進数)
++   - bg_gradient_end: 背景のグラデーション終了色 (ダークカラー推奨、16進数)
++   - accent_color: アクセントとして
+<truncated 633 bytes>
+さい。前置きや\`\`\`json マークダウンなどは含めないでください。
++
++{
++  "discussion": [
++    {"speaker": "takumi", "text": "タクミの発言1"},
++    {"speaker": "aoi", "text": "アオイの発言1"},
++    {"speaker": "takumi", "text": "タクミの発言2"},
++    {"speaker": "aoi", "text": "アオイの発言2"}
++  ],
++  "design": {
++    "bg_gradient_start": "#XXXXXX",
++    "bg_gradient_end": "#XXXXXX",
++    "accent_color": "#XXXXXX",
++    "accent_color_rgb": "R, G, B",
++    "border_color": "#XXXXXX",
++    "text_color": "#XXXXXX",
++    "panel_bg": "#XXXXXX",
++    "style_description": "説明"
++  }
++}
++`;
++
++  let delay = 1000;
++  for (let i = 0; i < 3; i++) {
++    try {
++      const response = await fetch(url, {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: systemPrompt }] }] })
++      });
++      
++      if (response.status === 503 || response.status === 429) {
++        if (i < 2) {
++          console.warn(`Gemini API returned \${response.status}. Retrying in \${delay}ms...`);
++          await new Promise(resolve => setTimeout(resolve, delay));
++          delay *= 2;
++          continue;
++        }
++      }
++      
++      if (!response.ok) throw new Error(`API error: \${response.status} \${response.statusText}`);
++      
++      const data = await response.json();
++      return data.candidates[0].content.parts[0].text;
++    } catch (err) {
++      if (i === 2) throw err;
++      console.warn(`Fetch error: \${err.message}. Retrying in \${delay}ms...`);
++      await new Promise(resolve => setTimeout(resolve, delay));
++      delay *= 2;
++    }
++  }
++}
++
+ // テーマ別のSVG生成ロジック
+ const themeSvgGenerators = {
+   cyberpunk: {
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

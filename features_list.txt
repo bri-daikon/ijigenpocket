@@ -1,0 +1,135 @@
+
+            PDF楽々変換ツール
+            <span class="text-xs font-normal text-teal-100 bg-white/20 px-2 py-0.5 rounded-full tracking-normal">Ver.1.3.3</span>
+          
+
+          <i data-lucide="upload" class="w-4 h-4 text-teal-600"></i>
+          1. PDF / Text ファイルを読込
+        
+
+            <i data-lucide="eye" class="w-4 h-4 text-teal-600"></i>
+            PDF本紙 プレビュー表示
+          
+
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="menu" class="w-3.5 h-3.5 text-teal-600"></i>
+                PDFドキュメント目次
+              </span>
+              <button onclick="importOutlineToCards()" class="text-[10px] bg-teal-50 text-teal-700 px-2 py-1 rounded hover:bg-teal-100 font-bold transition-colors shadow-sm flex items-center gap-1">
+                <i data-lucide="list-plus" class="w-3 h-3"></i> カードに追加
+              </button>
+            
+
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="bookmark" class="w-4 h-4 text-amber-500 fill-amber-500"></i>
+            しおりを挟んだ項目
+          </span>
+          <span id="bookmark-count"
+            class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
+        
+
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="list" class="w-4 h-4 text-indigo-500"></i>
+            目次項目
+          </span>
+          <span id="toc-count"
+            class="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
+        
+
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="sticky-note" class="w-4 h-4 text-emerald-500 fill-emerald-100"></i>
+            作成した付箋（メモ）
+          </span>
+          <span id="note-count"
+            class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold">0</span>
+        
+
+        抽出されたテキスト一覧
+        <span id="items-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">0件</span>
+      
+
+          <i data-lucide="sliders" class="w-4 h-4 text-teal-600"></i>
+          2. テキスト表示・整形設定
+        
+
+          <i data-lucide="replace" class="w-4 h-4 text-teal-600"></i>
+          3. カッコ {} 一括変換
+        
+
+          <i data-lucide="send" class="w-4 h-4 text-teal-600"></i>
+          4. ココフォリア連携ツール
+        
+
+          <i data-lucide="replace-all" class="w-4 h-4 text-teal-600"></i>
+          5. カスタム一括置換
+        
+
+          <span class="flex items-center gap-1.5"><i data-lucide="palette" class="w-4 h-4 text-teal-600"></i>6. タブ・カラー連携設定</span>
+          <button onclick="addTabColorSetting()" class="text-teal-600 hover:text-teal-800" title="新しいタブを追加"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+        
+
+          <span class="flex items-center gap-1.5"><i data-lucide="check-square" class="w-4 h-4 text-teal-600"></i>7. 一括カード選択</span>
+        
+${escapeHtml(title)}
+Textエンコード:
+
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            読込
+            <input type="file" id="pec-input" accept=".pec" class="hidden" onchange="loadProjectFile(event)">
+          
+
+            <input type="checkbox" id="chk-clean-newlines"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">PDF列折り返しの改行を繋ぐ（行末が文末以外の場合）</span>
+          
+
+            <input type="checkbox" id="chk-remove-half-spaces"
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">半角スペースを削除</span>
+          
+
+            <input type="checkbox" id="chk-exclude-header-footer" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">ヘッダー・フッターを除外</span>
+          
+
+            <input type="checkbox" id="chk-exclude-toc" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">目次・リーダー線を除外</span>
+          
+
+            <input type="checkbox" id="chk-indent-toc" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="renderList()">
+            <span class="text-xs font-bold text-slate-700">目次レベルに応じてカードを字下げする</span>
+          
+
+            <input type="checkbox" id="chk-convert-alphanum" checked
+              class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500"
+              onchange="processAndDisplay()">
+            <span class="text-xs font-bold text-slate-700">全角英数字を半角に変換</span>
+          
+
+              <input type="checkbox" id="chk-furigana"
+                class="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500" onchange="toggleFurigana()">
+              <span class="text-xs font-bold text-violet-700">ふりがな（ホバーで表示）</span>
+            
+置換する語句（カンマ区切り）
+
+            <input type="checkbox" id="chk-regex-replace" class="w-3.5 h-3.5 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+            <span class="text-xs font-bold text-slate-700">正規表現を使用する</span>
+          
+
+            <div class="${isCustom ? '' : `${colorObj.bg} ${colorObj.border}`} border w-3 h-3 rounded-full flex-shrink-0 shadow-sm tab-color-preview" style="${customStyle}"></div>
+            <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer tab-custom-color" value="${isCustom ? colorId : '#000000'}" onchange="updateTabCustomColor(this)">
+          
+
+                      <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" onchange="addCustomColor(this.value); changeCardColor(${item.id}, this.value); toggleColorPalette(${item.id}, event)">
+                    
+
+          <input type="color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" onchange="addCustomColor(this.value); changeCardColorSelected(this.value)">
+        
