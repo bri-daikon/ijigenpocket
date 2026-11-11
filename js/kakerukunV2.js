@@ -4719,7 +4719,7 @@ const pecCardColors = [
     { id: "pink", name: "ピンク (pink)", bg: "#ec4899" }
 ];
 
-const PEC_SETTINGS_VERSION = 2;
+const PEC_SETTINGS_VERSION = 3;
 
 const defaultPecSettings = {
     _version: PEC_SETTINGS_VERSION,
@@ -4744,7 +4744,8 @@ const defaultPecSettings = {
     splitParagraphs: true,
     splitDialogues: true,
     includeBoxHeader: true,
-    tocHeadings: true
+    tocHeadings: true,
+    sceneHeadings: true
 };
 
 // HO番号・名前を抽出するヘルパー（例: 【HO1：秘匿描写】 / ■ {HO1}秘匿 -> "HO1"）
@@ -4862,6 +4863,7 @@ function renderPecSettingsUI() {
     setCheck('pec-split-dialogues', settings.splitDialogues);
     setCheck('pec-include-box-header', settings.includeBoxHeader);
     setCheck('pec-toc-headings', settings.tocHeadings);
+    setCheck('pec-scene-headings', settings.sceneHeadings !== false);
 }
 
 function openPecExportModal() {
@@ -4897,7 +4899,8 @@ function collectPecSettingsFromUI() {
         splitParagraphs: getVal('pec-split-paragraphs', true),
         splitDialogues: getVal('pec-split-dialogues', true),
         includeBoxHeader: getVal('pec-include-box-header', true),
-        tocHeadings: getVal('pec-toc-headings', true)
+        tocHeadings: getVal('pec-toc-headings', true),
+        sceneHeadings: getVal('pec-scene-headings', true)
     };
 
     savePecSettings(newSettings);
@@ -5015,7 +5018,7 @@ function generatePecData(settings) {
     // パターン3: 「こんにちは」 (発言者未設定)
     const speechPattern3 = /^[「『]([\s\S]*?)[」』]$/;
 
-    function createCard(text, typeKey, overrideSpeaker = null, isToc = false, tocLevel = 1, tocName = "") {
+    function createCard(text, typeKey, overrideSpeaker = null, isToc = false, tocLevel = 1, tocName = "", isCommand = false) {
         const trimmed = (text || "").trim();
         if (!trimmed && !isToc) return;
 
@@ -5037,7 +5040,7 @@ function generatePecData(settings) {
             color: color,
             tabName: tab,
             charName: speaker,
-            isCommand: false,
+            isCommand: !!isCommand,
             isToc: !!isToc,
             tocLevel: isToc ? tocLevel : 1,
             tocName: isToc ? (tocName || trimmed) : "",
@@ -5046,7 +5049,7 @@ function generatePecData(settings) {
         });
     }
 
-    function createCardExplicit(text, tab, color, speaker = "", isToc = false, tocLevel = 1, tocName = "") {
+    function createCardExplicit(text, tab, color, speaker = "", isToc = false, tocLevel = 1, tocName = "", isCommand = false) {
         const trimmed = (text || "").trim();
         if (!trimmed && !isToc) return;
         if (speaker) detectedSpeakers.add(speaker);
@@ -5062,7 +5065,7 @@ function generatePecData(settings) {
             color: color || "slate",
             tabName: tab || "",
             charName: speaker || "",
-            isCommand: false,
+            isCommand: !!isCommand,
             isToc: !!isToc,
             tocLevel: isToc ? tocLevel : 1,
             tocName: isToc ? (tocName || trimmed) : "",
@@ -5311,11 +5314,27 @@ function generatePecData(settings) {
                     currentSectionHo = null;
                 }
 
+                let targetTab = "";
+                let targetColor = "slate";
                 if (currentSectionHo) {
                     const { tab: hoTab, color: hoColor } = resolveHoTabAndColor(currentSectionHo, settings);
+                    targetTab = hoTab;
+                    targetColor = hoColor;
                     createCardExplicit(hText, hoTab, hoColor, "", settings.tocHeadings, level, hText);
                 } else {
+                    const typeInfo = settings.types['heading'] || { tab: "", color: "slate" };
+                    targetTab = typeInfo.tab || "";
+                    targetColor = typeInfo.color || "slate";
                     createCard(hText, 'heading', "", settings.tocHeadings, level, hText);
+                }
+
+                // 見出し1・見出し2の直下にシーン切り替えコマンドカード（/scene 見出しタイトル）を追加
+                if (settings.sceneHeadings && (level === 1 || level === 2)) {
+                    const cleanSceneTitle = hText.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+                    if (cleanSceneTitle) {
+                        const commandText = `/scene ${cleanSceneTitle}`;
+                        createCardExplicit(commandText, targetTab, "slate", "", false, 1, "", true);
+                    }
                 }
             }
             continue;
