@@ -2763,6 +2763,7 @@ function exportPDF() {
     const marginBottom = parseInt(document.getElementById('export-margin-bottom')?.value) || 20;
     const marginLeft = parseInt(document.getElementById('export-margin-left')?.value) || 20;
     const marginRight = parseInt(document.getElementById('export-margin-right')?.value) || 20;
+    const pageBreakH1 = document.getElementById('export-page-break-h1')?.checked ?? true;
 
     let paperWidthMm = 210, paperHeightMm = 297;
     if (paperSize === 'B5') {
@@ -2771,11 +2772,10 @@ function exportPDF() {
         paperWidthMm = 148; paperHeightMm = 210;
     }
 
-    // ページ分割ロジック
+    // エディタ内容の複製と入力欄の静的テキスト化
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editor.innerHTML;
 
-    // input/textarea 要素の入力値を印刷用テキストに変換（キャラシ等の値反映）
     tempDiv.querySelectorAll('input, textarea').forEach(input => {
         if (input.type === 'checkbox') {
             const span = document.createElement('span');
@@ -2791,113 +2791,18 @@ function exportPDF() {
         }
     });
 
-    const nodes = Array.from(tempDiv.childNodes);
+    // ブラウザのネイティブ改ページに任せることで、インデントの完全保持・白紙ページの根絶・文字被りや欠落のゼロ化を実現
+    const printContent = tempDiv.innerHTML;
 
-    let pagesHtml = '', currentPageContent = '', currentLineCount = 0, pageNum = 1;
-    const limitInput = document.getElementById('page-line-limit');
-    const MAX_LINES = limitInput ? (parseInt(limitInput.value) || 35) : 35;
-    const charLimit = parseInt(document.getElementById('page-char-limit')?.value) || 40;
-    const charLimitPerLine = layout === '2' ? Math.max(15, Math.ceil(charLimit / 2)) : charLimit;
-
-    const flushPage = () => {
-        if (currentPageContent.trim() === '') return;
-        pagesHtml += `
-            <div class="page">
-                <div class="page-content ${layout === '2' ? 'col-2' : ''}">
-                    ${currentPageContent}
-                </div>
-                <div class="page-footer">- ${pageNum} -</div>
-            </div>
-        `;
-        currentPageContent = '';
-        currentLineCount = 0;
-        pageNum++;
-    };
-
-    nodes.forEach(node => {
-        // 手動改ページマークの検出
-        let isManualPageBreak = false;
-        if (node.nodeType === 1 && (node.classList.contains('page-break') || node.querySelector('.page-break'))) {
-            isManualPageBreak = true;
-            flushPage();
-            if (!node.textContent.trim() && !node.querySelector('img, table')) {
-                return;
-            }
-        }
-
-        let weight = 1; // 基本1行分
-        if (node.nodeType === 1) { // Element node
-            const tag = node.tagName;
-            const text = (node.innerText || "").trim();
-
-            const fontSize = parseInt(window.getComputedStyle(node).fontSize) || 16;
-            const sizeRatio = fontSize / 16;
-
-            const pbH1 = document.getElementById('export-page-break-h1');
-            if (tag === 'H1' && pbH1 && pbH1.checked && currentLineCount > 0) {
-                flushPage();
-                isManualPageBreak = true;
-            }
-
-            if (tag === 'H1') {
-                weight = 4;
-            } else if (tag === 'H2') {
-                weight = 3;
-            } else if (tag === 'H3') {
-                weight = 2;
-            } else if (tag === 'H4' || tag === 'H5' || tag === 'H6') {
-                weight = 2;
-            } else if (tag === 'IMG') {
-                weight = 12;
-            } else if (node.classList.contains('divider')) {
-                weight = 2;
-            } else if (tag === 'TABLE') {
-                const rowCount = node.querySelectorAll('tr').length || 1;
-                weight = Math.max(4, Math.ceil(rowCount * 1.5 + 1));
-            } else if (node.classList.contains('box-char-sheet')) {
-                weight = 20;
-            } else if (node.classList.contains('box-flowchart')) {
-                weight = 12;
-            } else if (node.classList.contains('kp-info') || node.classList.contains('quote') || (node.className && typeof node.className === 'string' && node.className.includes('box-'))) {
-                // ボックス内の実テキスト行数を正確に計算（巨大な枠が同一ページに押し込められて被るバグを防止）
-                const lines = text.split('\n');
-                let boxLines = 0;
-                for (let l of lines) {
-                    const lineLen = l.trim().length;
-                    boxLines += lineLen === 0 ? 1 : Math.ceil(lineLen / charLimitPerLine);
-                }
-                weight = Math.max(3, boxLines + 2);
-            } else {
-                const lines = text.split('\n');
-                let pLines = 0;
-                for (let l of lines) {
-                    const lineLen = l.trim().length;
-                    pLines += lineLen === 0 ? 1 : Math.ceil(lineLen / charLimitPerLine);
-                }
-                weight = Math.max(1, Math.ceil(pLines * sizeRatio));
-            }
-
-            // 見出しがページの最下部にポツンと取り残される（オーファン）のを防ぐ
-            if ((tag === 'H1' || tag === 'H2' || tag === 'H3') && currentLineCount + weight >= MAX_LINES - 2 && currentPageContent !== '') {
-                flushPage();
-            }
-        }
-
-        if (!isManualPageBreak && currentLineCount + weight > MAX_LINES && currentPageContent !== '') {
-            flushPage();
-        }
-
-        currentPageContent += node.nodeType === 1 ? node.outerHTML : (node.textContent || '');
-        currentLineCount += weight;
-    });
-
-    if (currentPageContent.trim() !== '') flushPage();
-
-    // PDF用印刷スタイル（エディタのスタイルを再現しつつ、ブラウザ印刷時の要素被り・コンテンツ消失バグを根絶）
     const printStyles = `
         @page {
             size: ${paperSize} portrait;
             margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+            @bottom-center {
+                content: "- " counter(page) " -";
+                font-size: 9pt;
+                color: #94a3b8;
+            }
         }
 
         * { box-sizing: border-box; }
@@ -2911,7 +2816,6 @@ function exportPDF() {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        main { width: 100%; }
 
         /* 画面プレビュー表示時 */
         @media screen {
@@ -2919,33 +2823,28 @@ function exportPDF() {
                 background-color: #f1f5f9;
                 padding: 24px 0;
             }
-            main {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 24px;
-            }
-            .page {
+            .document-container {
                 width: ${paperWidthMm}mm;
                 min-height: ${paperHeightMm}mm;
+                margin: 0 auto;
                 padding: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
                 background-color: #ffffff;
                 box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
                 border: 1px solid #e2e8f0;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
                 box-sizing: border-box;
             }
-            .page-content {
-                flex: 1;
-            }
-            .page-footer {
-                text-align: center;
-                font-size: 9pt;
-                color: #94a3b8;
-                padding-top: 10mm;
+            .print-tip {
+                max-width: ${paperWidthMm}mm;
+                margin: 0 auto 16px auto;
+                padding: 10px 16px;
+                background: #eef2ff;
+                border: 1px solid #c7d2fe;
+                border-radius: 8px;
+                font-size: 11px;
+                color: #4338ca;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
         }
 
@@ -2953,59 +2852,136 @@ function exportPDF() {
         @media print {
             body {
                 background: #ffffff !important;
-            }
-            main {
-                display: block !important;
-            }
-            .page {
-                width: 100% !important;
-                height: auto !important;
-                min-height: 0 !important;
                 margin: 0 !important;
-                padding: 0 0 10mm 0 !important;
-                border: none !important;
+                padding: 0 !important;
+            }
+            .document-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 box-shadow: none !important;
-                display: block !important; /* flexboxを解除！Chromium印刷の重なりバグを根絶 */
-                position: relative !important;
-                page-break-after: always;
-                break-after: page;
+                border: none !important;
             }
-            .page-content {
-                display: block !important;
-                overflow: visible !important; /* コンテンツ消滅を根絶 */
-            }
-            .page-footer {
-                text-align: center;
-                font-size: 9pt;
-                color: #94a3b8;
-                padding-top: 6mm;
-                page-break-before: avoid;
-                break-before: avoid;
+            .no-print {
+                display: none !important;
             }
         }
 
+        /* 段組設定 */
         .col-2 {
             column-count: 2;
             column-gap: 12mm;
             column-fill: auto;
         }
+        .col-2 h1, .col-2 .page-break {
+            column-span: all;
+        }
         
-        h1 { font-size: 22pt; font-weight: bold; color: #4f46e5; border-bottom: 3px solid #4f46e5; padding-bottom: 5px; margin-top: 0; margin-bottom: 16px; break-after: avoid; page-break-after: avoid; clear: both; }
-        h2 { font-size: 16pt; font-weight: bold; border-left: 6px solid #4f46e5; padding-left: 10px; margin-top: 18px; margin-bottom: 10px; background-color: rgba(79, 70, 229, 0.05); break-after: avoid; page-break-after: avoid; clear: both; }
-        h3 { font-size: 13pt; font-weight: bold; border-bottom: 1px solid #e2e8f0; margin-top: 14px; margin-bottom: 6px; break-after: avoid; page-break-after: avoid; clear: both; }
-        h4, h5, h6 { font-weight: bold; margin-top: 12px; margin-bottom: 4px; break-after: avoid; page-break-after: avoid; clear: both; }
+        /* 見出しスタイル（インラインスタイルの margin-left は保持） */
+        h1 {
+            font-size: 22pt;
+            font-weight: bold;
+            color: #4f46e5;
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 5px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            ${pageBreakH1 ? 'break-before: page; page-break-before: always;' : ''}
+            break-after: avoid;
+            page-break-after: avoid;
+            clear: both;
+        }
+        h2 {
+            font-size: 16pt;
+            font-weight: bold;
+            border-left: 6px solid #4f46e5;
+            padding-left: 10px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            background-color: rgba(79, 70, 229, 0.05);
+            break-after: avoid;
+            page-break-after: avoid;
+            clear: both;
+        }
+        h3 {
+            font-size: 13pt;
+            font-weight: bold;
+            border-bottom: 1px solid #e2e8f0;
+            margin-top: 16px;
+            margin-bottom: 6px;
+            break-after: avoid;
+            page-break-after: avoid;
+            clear: both;
+        }
+        h4, h5, h6 {
+            font-weight: bold;
+            margin-top: 12px;
+            margin-bottom: 4px;
+            break-after: avoid;
+            page-break-after: avoid;
+            clear: both;
+        }
         .h7 { font-size: 11pt; font-weight: bold; color: #64748b; margin-top: 5px; border-left: 2px solid #64748b; padding-left: 5px; display: block; break-after: avoid; page-break-after: avoid; }
         .h8 { font-size: 10pt; font-weight: bold; color: #64748b; font-style: italic; margin-top: 5px; opacity: 0.8; display: block; break-after: avoid; page-break-after: avoid; }
-        p { margin: 0 0 0.4em 0; }
-        img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; break-inside: avoid; page-break-inside: avoid; }
         
-        table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.5pt; break-inside: avoid; page-break-inside: avoid; }
+        /* 段落: インラインスタイルの margin-left (インデント) を絶対に阻害しない */
+        p {
+            margin-top: 0;
+            margin-bottom: 0.35em;
+            min-height: 1em;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+            font-size: 9.5pt;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
         td, th { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
         th { background-color: #f8fafc; font-weight: bold; }
-        .divider { border: 0; height: 1px; background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0)); margin: 16px 0; clear: both; }
-        details { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.02); margin: 12px 0; break-inside: avoid; page-break-inside: avoid; }
+        
+        .divider {
+            border: 0;
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(79, 70, 229, 0), rgba(79, 70, 229, 0.75), rgba(79, 70, 229, 0));
+            margin: 16px 0;
+            clear: both;
+        }
+        
+        /* 手動改ページ要素: 確実に改ページ */
+        .page-break {
+            break-before: page !important;
+            page-break-before: always !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            clear: both !important;
+        }
+        
+        details {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: rgba(0,0,0,0.02);
+            margin: 12px 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
         summary { cursor: pointer; font-weight: bold; color: #4f46e5; }
         
+        /* TRPG専用枠: ページの境目で中途半端に分断されないようにする */
         .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-flowchart, .box-char-sheet {
             padding: 12px 14px;
             border-radius: 8px;
@@ -3031,12 +3007,13 @@ function exportPDF() {
         .box-flowchart .flowchart-actions {
             display: none;
         }
-        /* キャラクターシートの印刷用スタイル */
         .box-char-sheet {
             border: 1px solid #ccd3e0;
             background: #ffffff;
             margin: 12px 0;
             border-radius: 8px;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         .box-char-sheet .char-stats-grid {
             display: grid !important;
@@ -3079,7 +3056,6 @@ function exportPDF() {
             text-align: right !important;
             font-weight: bold !important;
         }
-        
         .box-char-sheet .char-profile-row {
             display: flex !important;
             align-items: center !important;
@@ -3115,41 +3091,6 @@ function exportPDF() {
         }
     `;
 
-    // Pタグをまとめてコピーしやすくする（空行を段落区切りとする）
-    {
-        const outDiv = document.createElement('div');
-        outDiv.innerHTML = pagesHtml;
-        const pTags = Array.from(outDiv.querySelectorAll('p, div:not([class])'));
-        for (let i = 0; i < pTags.length; i++) {
-            let p = pTags[i];
-            if (!p.parentNode) continue;
-
-            const isPEmpty = p.innerHTML.trim() === '' || p.innerHTML === '<br>' || p.querySelector('img, table, div');
-            if (isPEmpty) {
-                if (p.innerHTML.trim() === '') p.innerHTML = '<br>';
-                continue;
-            }
-
-            p.style.margin = '0 0 0.4em 0';
-
-            let next = p.nextElementSibling;
-
-            while (next && (next.tagName === 'P' || (next.tagName === 'DIV' && !next.className))) {
-                const isNextEmpty = next.innerHTML.trim() === '' || next.innerHTML === '<br>' || next.querySelector('img, table, div');
-                if (isNextEmpty) {
-                    if (next.innerHTML.trim() === '') next.innerHTML = '<br>';
-                    break;
-                }
-                p.innerHTML += '<br>' + next.innerHTML;
-                let toRemove = next;
-
-                next = next.nextElementSibling;
-                toRemove.remove();
-            }
-        }
-        pagesHtml = outDiv.innerHTML;
-    }
-
     const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -3158,8 +3099,12 @@ function exportPDF() {
     <style>${printStyles}</style>
 </head>
 <body>
-    <main>
-        ${pagesHtml}
+    <div class="print-tip no-print">
+        <span>💡 <strong>ヒント:</strong> ページ番号を印字したい場合は、印刷画面の「詳細設定」→「ヘッダーとフッター」にチェックを入れてください。</span>
+        <button onclick="window.print()" style="background:#4338ca;color:white;border:none;border-radius:6px;padding:4px 12px;font-weight:bold;cursor:pointer;">🖨️ 印刷 / PDF保存</button>
+    </div>
+    <main class="document-container ${layout === '2' ? 'col-2' : ''}">
+        ${printContent}
     </main>
     <script>
         window.onload = () => {
