@@ -1102,6 +1102,33 @@ async function exportWord() {
     // エクスポート用：ドラッグハンドルを削除
     tempDiv.querySelectorAll('.drag-handle, .drag-handle-container').forEach(el => el.remove());
 
+    // Word出力用の調整: 枠要素（TRPG枠・スニペット等）のインデントを統合・Word対応化
+    const trpgBoxSelector = '.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-char-sheet, .box-flowchart';
+    tempDiv.querySelectorAll(trpgBoxSelector).forEach(box => {
+        const wrapper = box.closest('.box-wrapper');
+        let marginEm = 0;
+        if (wrapper && wrapper.style.marginLeft) {
+            marginEm = parseFloat(wrapper.style.marginLeft) || 0;
+        } else if (box.style.marginLeft) {
+            marginEm = parseFloat(box.style.marginLeft) || 0;
+        }
+
+        if (marginEm > 0) {
+            const ptVal = (marginEm * 10.5).toFixed(1);
+            box.style.marginLeft = `${ptVal}pt`;
+            box.style.setProperty('mso-margin-left-alt', `${ptVal}pt`);
+        } else {
+            box.style.marginLeft = '0pt';
+            box.style.setProperty('mso-margin-left-alt', '0pt');
+        }
+
+        // wrapper があればスタイルを引き継いでアンラップ（Wordでの多重divネストによるマージン消失を防止）
+        if (wrapper && wrapper !== box) {
+            wrapper.parentNode.insertBefore(box, wrapper);
+            wrapper.remove();
+        }
+    });
+
     // Word出力用の調整: フローチャート(SVG)をPNG画像に変換
     const svgs = Array.from(tempDiv.querySelectorAll('svg'));
     if (svgs.length > 0) {
@@ -1325,7 +1352,11 @@ async function exportWord() {
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
                 .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
-                    border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin: 10px 0;
+                    border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin-top: 10px; margin-bottom: 10px; margin-right: 0;
+                }
+                .kp-info p, .box-summary p, .box-check p, .box-spot p, .box-search p, .box-listen p, .box-library p, .box-san p, .box-secret p, .box-gimmick p, .box-tendency p, .box-custom p, .box-special p, .box-custom-snippet p, .quote p {
+                    margin-left: 0 !important;
+                    mso-margin-left-alt: 0 !important;
                 }
                 .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
                 .box-secret { border-style: dashed; }
@@ -1362,6 +1393,29 @@ function exportGoogleDocs() {
 
     // Word/GDocs出力用の調整: drag-handleを削除
     tempDiv.querySelectorAll('.drag-handle, .drag-handle-container').forEach(el => el.remove());
+
+    // Word/GDocs出力用の調整: 枠要素のインデントを統合
+    const trpgBoxSelectorGDocs = '.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-char-sheet, .box-flowchart';
+    tempDiv.querySelectorAll(trpgBoxSelectorGDocs).forEach(box => {
+        const wrapper = box.closest('.box-wrapper');
+        let marginEm = 0;
+        if (wrapper && wrapper.style.marginLeft) {
+            marginEm = parseFloat(wrapper.style.marginLeft) || 0;
+        } else if (box.style.marginLeft) {
+            marginEm = parseFloat(box.style.marginLeft) || 0;
+        }
+
+        if (marginEm > 0) {
+            box.style.marginLeft = `${marginEm}em`;
+        } else {
+            box.style.marginLeft = '0';
+        }
+
+        if (wrapper && wrapper !== box) {
+            wrapper.parentNode.insertBefore(box, wrapper);
+            wrapper.remove();
+        }
+    });
 
     // Word/GDocs出力用の調整: 入力欄をテキストに変換 (キャラクターシート等)
     tempDiv.querySelectorAll('input, textarea').forEach(input => {
@@ -1484,7 +1538,11 @@ function exportGoogleDocs() {
                 h1 { color: #4f46e5; font-size: 24pt; border-bottom: 2px solid #4f46e5; }
                 h2 { color: #4f46e5; font-size: 18pt; border-left: 10px solid #4f46e5; padding-left: 10px; background: #f0f0ff; }
                 .kp-info, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .quote, .box-char-sheet, .box-flowchart {
-                    border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin: 10px 0;
+                    border: 1px solid #ccc; background: #f9f9f9; padding: 10px; margin-top: 10px; margin-bottom: 10px; margin-right: 0;
+                }
+                .kp-info p, .box-summary p, .box-check p, .box-spot p, .box-search p, .box-listen p, .box-library p, .box-san p, .box-secret p, .box-gimmick p, .box-tendency p, .box-custom p, .box-special p, .box-custom-snippet p, .quote p {
+                    margin-left: 0 !important;
+                    mso-margin-left-alt: 0 !important;
                 }
                 .box-special { border-top-width: 4px; border-left: 0; border-right: 0; border-bottom: 0; border-style: solid; }
                 .box-secret { border-style: dashed; }
@@ -1521,16 +1579,17 @@ function manualIndent(isIndent) {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
+    const boxSelector = '.box-wrapper, .kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-char-sheet, .box-flowchart';
     let blocks = [];
     if (range.collapsed) {
         let node = range.commonAncestorContainer;
         if (node.nodeType === 3) node = node.parentNode;
         let target = node.closest('p, h1, h2, h3, h4, h5, h6, .h7, .h8, div, table, blockquote');
 
-        // もし枠（box-wrapper）の中であれば、枠全体をインデントの対象にする
-        const wrapper = node.closest('.box-wrapper');
-        if (wrapper) {
-            target = wrapper;
+        // もし枠（box-wrapper または 枠要素本体）の中であれば、枠全体をインデントの対象にする
+        const box = node.closest(boxSelector);
+        if (box) {
+            target = box.closest('.box-wrapper') || box;
         }
         if (!target || target === editor) {
             document.execCommand('formatBlock', false, 'p');
@@ -1548,14 +1607,22 @@ function manualIndent(isIndent) {
         if (blocks.length === 0) {
             let node = range.commonAncestorContainer;
             if (node.nodeType === 3) node = node.parentNode;
-            let target = node.closest('.box-wrapper') || node.closest('p, h1, h2, h3, h4, h5, h6, .h7, .h8, div, table, blockquote');
+            let target = node.closest(boxSelector) || node.closest('p, h1, h2, h3, h4, h5, h6, .h7, .h8, div, table, blockquote');
             if (target && target !== editor) blocks.push(target);
         }
     }
     blocks.forEach(block => {
         if (block === editor) return;
         let currentMargin = parseFloat(block.style.marginLeft) || 0;
-        block.style.marginLeft = isIndent ? (currentMargin + 1) + 'em' : Math.max(0, currentMargin - 1) + 'em';
+        const newMargin = isIndent ? (currentMargin + 1) + 'em' : Math.max(0, currentMargin - 1) + 'em';
+        block.style.marginLeft = newMargin;
+        // もし block が .box-wrapper なら、中の実際の枠要素にも同期
+        if (block.classList.contains('box-wrapper')) {
+            const innerBox = block.querySelector('.kp-info, .quote, .box-summary, .box-check, .box-spot, .box-search, .box-listen, .box-library, .box-san, .box-secret, .box-gimmick, .box-tendency, .box-custom, .box-special, .box-custom-snippet, .box-char-sheet, .box-flowchart');
+            if (innerBox) {
+                innerBox.style.marginLeft = newMargin;
+            }
+        }
     });
     autoUpdateUI();
 }
