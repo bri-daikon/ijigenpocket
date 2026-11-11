@@ -2791,6 +2791,87 @@ function exportPDF() {
         }
     });
 
+    // --- 白紙ページの根絶処理（空段落の除去・重複改ページの統合・二重改ページの防止） ---
+    const isEffectivelyEmpty = (el) => {
+        if (!el || el.nodeType !== 1) return false;
+        if (el.classList?.contains('page-break') || el.classList?.contains('divider')) return false;
+        if (el.querySelector('img, table, iframe, svg, canvas, hr, .box-char-sheet, .box-flowchart')) return false;
+        const text = el.textContent.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, '');
+        return text === '';
+    };
+
+    // ドキュメント先頭・末尾の空要素や改ページをクリーンアップ
+    while (tempDiv.firstElementChild && isEffectivelyEmpty(tempDiv.firstElementChild)) {
+        tempDiv.firstElementChild.remove();
+    }
+    while (tempDiv.firstElementChild && tempDiv.firstElementChild.classList.contains('page-break')) {
+        tempDiv.firstElementChild.remove();
+    }
+    while (tempDiv.lastElementChild && isEffectivelyEmpty(tempDiv.lastElementChild)) {
+        tempDiv.lastElementChild.remove();
+    }
+    while (tempDiv.lastElementChild && tempDiv.lastElementChild.classList.contains('page-break')) {
+        tempDiv.lastElementChild.remove();
+    }
+
+    // 各改ページ要素（.page-break）の前後を精査
+    const allPageBreaks = Array.from(tempDiv.querySelectorAll('.page-break'));
+    allPageBreaks.forEach(pb => {
+        if (!pb.parentNode) return;
+
+        // 直前の連続する空要素を削除
+        let prev = pb.previousElementSibling;
+        while (prev && isEffectivelyEmpty(prev)) {
+            const toRemove = prev;
+            prev = prev.previousElementSibling;
+            toRemove.remove();
+        }
+
+        // 直後の連続する空要素（insertPageBreakが挿入した <p><br></p> など）を削除
+        let next = pb.nextElementSibling;
+        while (next && isEffectivelyEmpty(next)) {
+            const toRemove = next;
+            next = next.nextElementSibling;
+            toRemove.remove();
+        }
+
+        // 直後にも改ページがある場合、この改ページは重複なので削除
+        if (next && next.classList.contains('page-break')) {
+            pb.remove();
+            return;
+        }
+
+        // 直後に H1 が来る場合（または H1 を含む要素）
+        if (next && (next.tagName === 'H1' || next.querySelector('h1'))) {
+            if (pageBreakH1) {
+                // H1 の自動改ページが有効な場合、手動改ページを残すと二重改ページ（白紙ページ）になるため手動改ページ側を削除
+                pb.remove();
+                return;
+            } else {
+                // H1 の自動改ページが無効な場合は手動改ページを残す
+                const h1El = next.tagName === 'H1' ? next : next.querySelector('h1');
+                if (h1El) h1El.classList.add('no-break-before');
+            }
+        }
+    });
+
+    // ドキュメント最初の H1 要素（タイトルなど）による不要な改ページを抑止
+    const firstH1 = tempDiv.querySelector('h1');
+    if (firstH1) {
+        let isFirstMeaningful = true;
+        let prev = firstH1.previousElementSibling;
+        while (prev) {
+            if (!isEffectivelyEmpty(prev) && !prev.classList.contains('page-break')) {
+                isFirstMeaningful = false;
+                break;
+            }
+            prev = prev.previousElementSibling;
+        }
+        if (isFirstMeaningful) {
+            firstH1.classList.add('no-break-before');
+        }
+    }
+
     // ブラウザのネイティブ改ページに任せることで、インデントの完全保持・白紙ページの根絶・文字被りや欠落のゼロ化を実現
     const printContent = tempDiv.innerHTML;
 
@@ -2963,11 +3044,32 @@ function exportPDF() {
         .page-break {
             break-before: page !important;
             page-break-before: always !important;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
             height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            line-height: 0 !important;
+            font-size: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             clear: both !important;
+            overflow: hidden !important;
+            display: block !important;
+        }
+
+        /* 最初の見出しや page-break 直後の二重改ページを完全に防止 */
+        .document-container > h1:first-child,
+        .document-container > *:first-child h1,
+        .no-break-before,
+        h1.no-break-before,
+        .page-break + h1,
+        .page-break + .no-break-before,
+        .page-break + * h1 {
+            break-before: auto !important;
+            page-break-before: auto !important;
+            margin-top: 0 !important;
         }
         
         details {
