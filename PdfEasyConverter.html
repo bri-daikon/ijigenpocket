@@ -7311,21 +7311,17 @@ function updateLeftPaneUI() {
     headerBtn.innerHTML = `<i data-lucide="${isOpen ? "panel-left-close" : "panel-left"}" class="w-4 h-4"></i><span id="header-toggle-left-text">${isOpen ? "閉じる" : "PDF・目次"}</span>`;
     headerBtn.classList.toggle("bg-white/30", isOpen);
     headerBtn.classList.toggle("bg-white/20", !isOpen);
-    if (narrow) {
-      headerBtn.classList.remove("hidden");
-    } else {
-      headerBtn.classList.toggle("hidden", isOpen);
-    }
+    headerBtn.classList.remove("hidden");
   }
 
-  // メニュー部分（左パネル）が折りたたまれているとき（!isOpen）のみ、右メニューボタンとメニュー折りたたみボタンを表示
+  // 左ツール（左パネル）の開閉状態に関わらず、ヘッダーのクイック操作ボタンを常時表示
   const headerRightBtn = document.getElementById("btn-header-toggle-right");
   const headerToolbarBtn = document.getElementById("btn-header-toggle-toolbar");
   if (headerRightBtn) {
-    headerRightBtn.classList.toggle("hidden", isOpen);
+    headerRightBtn.classList.remove("hidden");
   }
   if (headerToolbarBtn) {
-    headerToolbarBtn.classList.toggle("hidden", isOpen);
+    headerToolbarBtn.classList.remove("hidden");
   }
 
   if (typeof lucide !== "undefined" && lucide.createIcons) {
