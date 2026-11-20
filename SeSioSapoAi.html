@@ -3053,12 +3053,16 @@ video {
       cursor: grabbing;
     }
 
-    /* ステータスバッジ (HP, MP, SAN, DB) */
+    /* ステータスバッジ (HP, MP, SAN, DB, 装甲) */
     .char-resource-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 5px;
       width: 100%;
+    }
+
+    .char-resource-grid.has-armor {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
     /* 縦並び1列表示時はヘッダー右側にステータスを横並び配置して超スリム化 */
@@ -3079,6 +3083,10 @@ video {
     .layout-vertical .char-resource-grid {
       flex: 1;
       max-width: 440px;
+    }
+
+    .layout-vertical .char-resource-grid.has-armor {
+      max-width: 520px;
     }
 
     .char-resource {
@@ -3144,6 +3152,13 @@ video {
     }
     .char-res-db b { color: #64748b; }
     .char-res-db span { color: #1e293b; font-size: 12px; font-weight: 700; }
+
+    .char-res-armor {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+    .char-res-armor b { color: #d97706; }
+    .char-res-armor span { color: #b45309; font-size: 12px; font-weight: 700; }
 
     .char-card-body {
       padding: 10px 12px 12px;
@@ -3486,6 +3501,13 @@ video {
     }
     body[data-theme="dark"] .char-res-db b { color: #94a3b8 !important; }
     body[data-theme="dark"] .char-res-db span { color: #f1f5f9 !important; }
+
+    body[data-theme="dark"] .char-res-armor {
+      background: rgba(217, 119, 6, 0.15) !important;
+      border-color: rgba(217, 119, 6, 0.3) !important;
+    }
+    body[data-theme="dark"] .char-res-armor b { color: #fbbf24 !important; }
+    body[data-theme="dark"] .char-res-armor span { color: #fde68a !important; }
 
     body[data-theme="dark"] .char-section-title {
       color: #94a3b8 !important;
@@ -5366,13 +5388,13 @@ video {
           </div>
         </div>
 
-        <!-- リソース (HP, MP, SAN, DB) -->
+        <!-- リソース (HP, MP, SAN, DB, 装甲) -->
         <div class="npc-modal-section">
           <div class="npc-modal-section-title">
             <span>主要リソース</span>
             <span class="text-[10px] text-slate-400 font-normal">※能力値から自動算出（直接変更も可能）</span>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             <div class="npc-form-group">
               <label class="npc-form-label"><span class="text-rose-600 font-bold">HP (耐久力)</span></label>
               <input type="text" id="npc-form-hp" class="npc-form-input text-center font-bold text-rose-700" placeholder="自動">
@@ -5388,6 +5410,10 @@ video {
             <div class="npc-form-group">
               <label class="npc-form-label"><span class="text-slate-600 font-bold">DB (ダメージボーナス)</span></label>
               <input type="text" id="npc-form-db" class="npc-form-input text-center font-bold text-slate-700" placeholder="自動 (例: +1D4)">
+            </div>
+            <div class="npc-form-group col-span-2 sm:col-span-1">
+              <label class="npc-form-label"><span class="text-amber-600 font-bold">装甲</span></label>
+              <input type="text" id="npc-form-armor" class="npc-form-input text-center font-bold text-amber-700" placeholder="なし (例: 2)">
             </div>
           </div>
         </div>
@@ -7921,7 +7947,7 @@ function detectCoCVersion(params, commands, abilities, status) {
 }
 
 function readResources(status, data, abilities, is7th = false) {
-  const res = { hp: "-", mp: "-", san: "-", db: "-" };
+  const res = { hp: "-", mp: "-", san: "-", db: "-", armor: "-" };
   status.forEach(s => {
     if (!s || !s.label) return;
     const label = s.label.toUpperCase();
@@ -7930,7 +7956,13 @@ function readResources(status, data, abilities, is7th = false) {
     if (label.includes("HP") || label.includes("耐久")) res.hp = val;
     if (label.includes("MP") || label.includes("マジック") || label.includes("魔力")) res.mp = val;
     if (label.includes("SAN") || label.includes("正気度")) res.san = val;
+    if (label.includes("装甲") || label.includes("ARMOR")) res.armor = val;
   });
+  const params = Array.isArray(data?.params) ? data.params : [];
+  const armorParam = params.find(p => p && p.label && (p.label.includes("装甲") || p.label.toUpperCase().includes("ARMOR")));
+  if (res.armor === "-" && armorParam && armorParam.value !== undefined && armorParam.value !== "") {
+    res.armor = armorParam.value;
+  }
   if (res.hp === "-" && abilities.CON !== "-" && abilities.SIZ !== "-") {
     const con = Number(abilities.CON);
     const siz = Number(abilities.SIZ);
@@ -8204,8 +8236,8 @@ function renderCharacterCardItem(type, char, index) {
   mainHead.appendChild(info);
   head.appendChild(mainHead);
 
-  // Resources (HP, MP, SAN, DB) in header
-  head.appendChild(renderCharResources(char.resources));
+  // Resources (HP, MP, SAN, DB, 装甲) in header
+  head.appendChild(renderCharResources(char.resources, isNpc));
 
   // Drag Handle & Delete button in Top Right
   const actionsDiv = document.createElement("div");
@@ -8325,15 +8357,20 @@ function createCharPlaceholder(name) {
   return d;
 }
 
-function renderCharResources(res) {
+function renderCharResources(res, isNpc = false) {
   const g = document.createElement("div");
-  g.className = "char-resource-grid";
+  const showArmor = isNpc || (res && res.armor !== undefined && res.armor !== "-" && res.armor !== "");
+  g.className = showArmor ? "char-resource-grid has-armor" : "char-resource-grid";
   const items = [
-    { label: "HP", val: res.hp || "-", cls: "char-res-hp" },
-    { label: "MP", val: res.mp || "-", cls: "char-res-mp" },
-    { label: "SAN", val: res.san || "-", cls: "char-res-san" },
-    { label: "DB", val: res.db || "-", cls: "char-res-db" }
+    { label: "HP", val: res?.hp || "-", cls: "char-res-hp" },
+    { label: "MP", val: res?.mp || "-", cls: "char-res-mp" },
+    { label: "SAN", val: res?.san || "-", cls: "char-res-san" },
+    { label: "DB", val: res?.db || "-", cls: "char-res-db" }
   ];
+  if (showArmor) {
+    const armorVal = (res && res.armor !== undefined && res.armor !== "") ? res.armor : "-";
+    items.push({ label: "装甲", val: armorVal, cls: "char-res-armor" });
+  }
   items.forEach(i => {
     const d = document.createElement("div");
     d.className = `char-resource ${i.cls}`;
@@ -9598,6 +9635,7 @@ function openNpcEditorModal(editIndex = -1) {
     document.getElementById("npc-form-mp").value = (char.resources.mp !== "-" && char.resources.mp !== undefined) ? char.resources.mp : "";
     document.getElementById("npc-form-san").value = (char.resources.san !== "-" && char.resources.san !== undefined) ? char.resources.san : "";
     document.getElementById("npc-form-db").value = (char.resources.db !== "-" && char.resources.db !== undefined) ? char.resources.db : "";
+    document.getElementById("npc-form-armor").value = (char.resources.armor !== "-" && char.resources.armor !== undefined) ? char.resources.armor : "";
 
     const abs = char.abilities || {};
     document.getElementById("npc-form-str").value = abs.STR !== "-" ? abs.STR : "";
@@ -9639,6 +9677,7 @@ function openNpcEditorModal(editIndex = -1) {
     document.getElementById("npc-form-mp").value = "";
     document.getElementById("npc-form-san").value = "";
     document.getElementById("npc-form-db").value = "";
+    document.getElementById("npc-form-armor").value = "";
 
     document.getElementById("npc-form-str").value = "";
     document.getElementById("npc-form-con").value = "";
@@ -9935,6 +9974,9 @@ function saveNpcFromModal() {
   }
   dbVal = dbVal || "-";
 
+  let armorVal = document.getElementById("npc-form-armor").value.trim();
+  armorVal = armorVal !== "" ? (isNaN(armorVal) ? armorVal : Number(armorVal)) : "-";
+
   let bldVal = undefined;
   let movVal = undefined;
   if (is7th) {
@@ -10041,7 +10083,8 @@ function saveNpcFromModal() {
       hp: hpVal,
       mp: mpVal,
       san: sanVal,
-      db: dbVal
+      db: dbVal,
+      armor: armorVal
     },
     abilities: abilities,
     basicChecks: basicChecks,
@@ -10119,6 +10162,9 @@ function parseNpcDataFromText(text, defaultName = "") {
   const dbMatch = text.match(/(?:^|[\s,;/|・（(])(?:DB|ダメージボーナス)[:：\s=]*([+\-]?\s*[0-9]*[Dd]?[0-9]+)/i);
   if (dbMatch) result.resources.db = dbMatch[1].replace(/\s+/g, "");
 
+  const armorMatch = text.match(/(?:^|[\s,;/|・（(])(?:装甲|ARMOR)[:：\s=]*([0-9]+(?:[dD][0-9]+)?(?:\s*点)?|なし)/i);
+  if (armorMatch) result.resources.armor = armorMatch[1].trim() === "なし" ? 0 : armorMatch[1].trim();
+
   // BLD & MOV for 7th
   const bldMatch = text.match(/(?:^|[\s,;/|・（(])(?:ビルド|BLD)[:：\s=]*([+\-0-9]+)/i);
   if (bldMatch) result.bld = bldMatch[1].trim();
@@ -10135,7 +10181,7 @@ function parseNpcDataFromText(text, defaultName = "") {
     while ((sm = skillRegex.exec(sec)) !== null) {
       const sName = sm[1].trim();
       const sVal = parseInt(sm[2], 10);
-      if (sName && !statKeys.includes(sName.toUpperCase()) && !["HP", "MP", "SAN", "DB"].includes(sName.toUpperCase())) {
+      if (sName && !statKeys.includes(sName.toUpperCase()) && !["HP", "MP", "SAN", "DB", "装甲", "ARMOR"].includes(sName.toUpperCase())) {
         result.skills.push({ name: sName, val: sVal });
       }
     }
@@ -10147,7 +10193,7 @@ function parseNpcDataFromText(text, defaultName = "") {
     if (skillMatch) {
       const sName = skillMatch[1].trim();
       const sVal = parseInt(skillMatch[2], 10);
-      if (sName && !statKeys.includes(sName.toUpperCase()) && !["HP", "MP", "SAN", "DB"].includes(sName.toUpperCase())) {
+      if (sName && !statKeys.includes(sName.toUpperCase()) && !["HP", "MP", "SAN", "DB", "装甲", "ARMOR"].includes(sName.toUpperCase())) {
         if (!result.skills.some(s => s.name === sName)) {
           result.skills.push({ name: sName, val: sVal });
         }
@@ -10198,6 +10244,7 @@ function openNpcEditorModalWithPrefill(prefillData) {
   document.getElementById("npc-form-mp").value = prefillData.resources?.mp !== undefined ? prefillData.resources.mp : "";
   document.getElementById("npc-form-san").value = prefillData.resources?.san !== undefined ? prefillData.resources.san : "";
   document.getElementById("npc-form-db").value = prefillData.resources?.db !== undefined ? prefillData.resources.db : "";
+  document.getElementById("npc-form-armor").value = (prefillData.resources?.armor !== undefined && prefillData.resources.armor !== "-") ? prefillData.resources.armor : "";
 
   const abs = prefillData.abilities || {};
   document.getElementById("npc-form-str").value = abs.STR !== undefined ? abs.STR : "";
@@ -10382,6 +10429,9 @@ function generateCcfoliaPieceJson(char) {
 
   if (res.db !== undefined && res.db !== "-") {
     params.push({ label: "DB", value: String(res.db) });
+  }
+  if (res.armor !== undefined && res.armor !== "-") {
+    params.push({ label: "装甲", value: String(res.armor) });
   }
   if (is7th) {
     if (char.bld !== undefined && char.bld !== "") {
@@ -10909,6 +10959,9 @@ window.onload = function() {
     const dbVal = (rawRes.db !== null && rawRes.db !== undefined && String(rawRes.db).trim() !== "" && rawRes.db !== "-")
       ? String(rawRes.db).trim()
       : "-";
+    const armorVal = (rawRes.armor !== null && rawRes.armor !== undefined && String(rawRes.armor).trim() !== "" && rawRes.armor !== "-")
+      ? (isNaN(rawRes.armor) ? String(rawRes.armor).trim() : Number(rawRes.armor))
+      : "-";
 
     const rawBc = npcData.basicChecks || {};
     const ideaVal = rawBc.idea !== null && rawBc.idea !== undefined && rawBc.idea !== "" ? Number(rawBc.idea) : (abilities.INT !== "-" ? (is7th ? abilities.INT : abilities.INT * 5) : undefined);
@@ -10976,6 +11029,7 @@ window.onload = function() {
       if (ex.resources.mp === "-" && mpVal !== "-") ex.resources.mp = mpVal;
       if (ex.resources.san === "-" && sanVal !== "-") ex.resources.san = sanVal;
       if (ex.resources.db === "-" && dbVal !== "-") ex.resources.db = dbVal;
+      if ((ex.resources.armor === "-" || ex.resources.armor === undefined) && armorVal !== "-") ex.resources.armor = armorVal;
       if (ex.basicChecks.idea === undefined && basicChecks.idea !== undefined) ex.basicChecks.idea = basicChecks.idea;
       if (ex.basicChecks.luck === undefined && basicChecks.luck !== undefined) ex.basicChecks.luck = basicChecks.luck;
       if (ex.basicChecks.know === undefined && basicChecks.know !== undefined) ex.basicChecks.know = basicChecks.know;
@@ -11019,12 +11073,12 @@ window.onload = function() {
       is7th: is7th,
       bld: undefined,
       mov: undefined,
-      commands: buildCommands({ hp: hpVal, mp: mpVal, san: sanVal, db: dbVal }, abilities, basicChecks, sortedSkills, customCommands),
+      commands: buildCommands({ hp: hpVal, mp: mpVal, san: sanVal, db: dbVal, armor: armorVal }, abilities, basicChecks, sortedSkills, customCommands),
       customCommands: customCommands,
       secret: false,
       invisible: false,
       hideStatus: false,
-      resources: { hp: hpVal, mp: mpVal, san: sanVal, db: dbVal },
+      resources: { hp: hpVal, mp: mpVal, san: sanVal, db: dbVal, armor: armorVal },
       abilities: abilities,
       basicChecks: basicChecks,
       skills: sortedSkills
@@ -11479,7 +11533,7 @@ ${contextSummary ? `【前チャンクまでの文脈】\n${contextSummary}\n` :
       "ho": "",
       "is7th": false,
       "abilities": { "STR": null, "CON": null, "POW": null, "DEX": null, "APP": null, "SIZ": null, "INT": null, "EDU": null },
-      "resources": { "hp": null, "mp": null, "san": null, "db": null },
+      "resources": { "hp": null, "mp": null, "san": null, "db": null, "armor": null },
       "skills": [{ "name": "目星", "value": 50 }],
       "damageCommands": ["1D4 【ダメージ】"],
       "memo": "運用情報"
