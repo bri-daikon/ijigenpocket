@@ -4920,6 +4920,7 @@
                     </div>
                     <select id="previewCategorySelect" onchange="updateVisualPreview()" class="bg-slate-800 border border-slate-600 rounded px-2 py-0.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
                         <option value="髪型">髪型</option>
+                        <option value="好きな服">好きな服</option>
                     </select>
                 </div>
                 <div id="previewEmptyState" class="text-center py-4 text-xs text-slate-400 bg-slate-800/50 rounded-lg border border-dashed border-slate-700">
@@ -5384,8 +5385,13 @@
             const buttons = group.querySelectorAll('button');
             buttons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            if (group.getAttribute('data-category') === '目色') {
+            const cat = group.getAttribute('data-category');
+            if (cat === '目色') {
                 syncOddEyeVisibility(false);
+            }
+            const previewSelect = document.getElementById('previewCategorySelect');
+            if (previewSelect && cat && Array.from(previewSelect.options).some(o => o.value === cat)) {
+                previewSelect.value = cat;
             }
             updateResult();
         }
@@ -5649,6 +5655,25 @@
                 "ウォータードロップロング": { m: "img/charachos/hair/hair_67_m.png", f: "img/charachos/hair/hair_67_f.png" },
                 "グラビティロング": { m: "img/charachos/hair/hair_68_m.png", f: "img/charachos/hair/hair_68_f.png" },
                 "オーロラストリームロング": { m: "img/charachos/hair/hair_69_m.png", f: "img/charachos/hair/hair_69_f.png" }
+            },
+            "好きな服": {
+                "緩いだぼっとした服": { m: "img/charachos/outfit/outfit_01_m.png", f: "img/charachos/outfit/outfit_01_f.png" },
+                "ストリート系": { m: "img/charachos/outfit/outfit_02_m.png", f: "img/charachos/outfit/outfit_02_f.png" },
+                "スーツ": { m: "img/charachos/outfit/outfit_03_m.png", f: "img/charachos/outfit/outfit_03_f.png" },
+                "爽やかな服": { m: "img/charachos/outfit/outfit_04_m.png", f: "img/charachos/outfit/outfit_04_f.png" },
+                "かっちりした服": { m: "img/charachos/outfit/outfit_05_m.png", f: "img/charachos/outfit/outfit_05_f.png" },
+                "柔らかい布の服": { m: "img/charachos/outfit/outfit_06_m.png", f: "img/charachos/outfit/outfit_06_f.png" },
+                "ゴテゴテゴツい服": { m: "img/charachos/outfit/outfit_07_m.png", f: "img/charachos/outfit/outfit_07_f.png" },
+                "ゴージャス派手な服": { m: "img/charachos/outfit/outfit_08_m.png", f: "img/charachos/outfit/outfit_08_f.png" },
+                "ゴシック・モード系": { m: "img/charachos/outfit/outfit_09_m.png", f: "img/charachos/outfit/outfit_09_f.png" },
+                "カラフル原宿系": { m: "img/charachos/outfit/outfit_10_m.png", f: "img/charachos/outfit/outfit_10_f.png" },
+                "Tシャツジーパン族": { m: "img/charachos/outfit/outfit_11_m.png", f: "img/charachos/outfit/outfit_11_f.png" },
+                "動きやすさ重視": { m: "img/charachos/outfit/outfit_12_m.png", f: "img/charachos/outfit/outfit_12_f.png" },
+                "サイバー系": { m: "img/charachos/outfit/outfit_13_m.png", f: "img/charachos/outfit/outfit_13_f.png" },
+                "スポーティ系": { m: "img/charachos/outfit/outfit_14_m.png", f: "img/charachos/outfit/outfit_14_f.png" },
+                "ふわふわ甘系": { m: "img/charachos/outfit/outfit_15_m.png", f: "img/charachos/outfit/outfit_15_f.png" },
+                "布少ない服": { m: "img/charachos/outfit/outfit_16_m.png", f: "img/charachos/outfit/outfit_16_f.png" },
+                "ロリータ系": { m: "img/charachos/outfit/outfit_17_m.png", f: "img/charachos/outfit/outfit_17_f.png" }
             }
         };
 
