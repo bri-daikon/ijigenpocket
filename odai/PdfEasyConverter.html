@@ -5229,7 +5229,10 @@ video {
       <section id="speaker-settings" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
         <h2 class="text-xs font-bold text-slate-500 mb-2 flex items-center justify-between">
           <span class="flex items-center gap-1.5"><i data-lucide="user" class="w-4 h-4 text-purple-600"></i>8. 発言者設定</span>
-          <button type="button" onclick="addSpeakerSetting()" class="text-teal-600 hover:text-teal-800" title="発言者を追加" aria-label="発言者を追加"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+          <span class="flex items-center gap-1.5">
+            <button type="button" onclick="clearSpeakerSettings()" class="text-slate-400 hover:text-rose-500" title="発言者設定をすべてクリア" aria-label="発言者設定をすべてクリア"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            <button type="button" onclick="addSpeakerSetting()" class="text-teal-600 hover:text-teal-800" title="発言者を追加" aria-label="発言者を追加"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+          </span>
         </h2>
         <p class="text-[10px] text-slate-400 mb-2.5">名前を登録すると、カードの発言者欄から選べます。</p>
         <div class="space-y-2 mb-3 text-xs">
@@ -5254,7 +5257,7 @@ video {
 
   <!-- シーン一覧モーダル -->
   <div id="scene-export-modal" class="npc-modal-backdrop" onclick="if(event.target===this) closeSceneExportModal()">
-    <div class="npc-modal-card max-w-xl" onclick="event.stopPropagation()">
+    <div class="npc-modal-card max-w-3xl" onclick="event.stopPropagation()">
       <div class="npc-modal-header bg-slate-800 text-white">
         <div class="flex items-center gap-2 font-bold text-sm">
           <i data-lucide="clapperboard" class="w-4 h-4 text-indigo-400"></i>
@@ -5264,13 +5267,13 @@ video {
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-      <div class="npc-modal-body p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+      <div class="npc-modal-body p-4 space-y-3 max-h-[82vh] overflow-y-auto">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-2">
           <div>
             <h4 class="text-xs font-bold text-slate-700">シーン項目 (<span id="scene-modal-count" class="text-indigo-600">0</span>件)</h4>
-            <p class="text-[11px] text-slate-400 mt-0.5">本文およびカード内のシーンタグ（/scene）を抽出しました。</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">各シーンに画像をドロップまたは選択し、前景／背景やサイズ・自動トリミングを設定してZIP保存できます。</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <button onclick="copySceneNamesOnly()" class="btn-npc-primary text-xs px-3 py-1.5" title="シーン名だけを改行区切りでコピー">
               <i data-lucide="copy" class="w-3.5 h-3.5"></i>
               シーン名のみ一括コピー
@@ -5282,7 +5285,62 @@ video {
           </div>
         </div>
 
-        <div id="scene-modal-list" class="space-y-1.5 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50">
+        <!-- 共通背景画像（任意）設定バー -->
+        <div id="scene-common-bg-dropzone"
+          ondragover="handleSceneImageDragOver(event)"
+          ondragleave="handleSceneImageDragLeave(event)"
+          ondrop="handleCommonBgDrop(event)"
+          class="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-dashed border-slate-300 bg-slate-50/80 transition-colors">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="scene-common-bg-preview" class="w-10 h-10 rounded-md bg-slate-200 border border-slate-300 flex items-center justify-center shrink-0 overflow-hidden">
+              <i data-lucide="image" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-slate-700">共通背景画像（任意）</div>
+              <div id="scene-common-bg-label" class="text-[11px] text-slate-400 truncate">全シーンの背景（backgroundUrl）に設定されます。個別シーンで「背景」を選んだ場合は個別画像が優先されます。</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="triggerCommonBgSelect()" class="px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-colors">
+              画像を選択
+            </button>
+            <button type="button" id="scene-common-bg-clear-btn" onclick="clearCommonBgImage()" class="hidden px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-md transition-colors" title="共通背景画像をクリア">
+              解除
+            </button>
+          </div>
+        </div>
+
+        <!-- 全シーン一括フィールド設定バー -->
+        <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-slate-200 bg-indigo-50/40 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="font-bold text-slate-700 text-[11px]">一括設定:</span>
+            <div class="inline-flex rounded-md border border-slate-300 bg-white overflow-hidden text-[11px]">
+              <button type="button" id="scene-bulk-target-fg" onclick="setBulkSceneTarget('foreground')" class="px-2 py-0.5 font-bold bg-indigo-600 text-white transition-colors">前景</button>
+              <button type="button" id="scene-bulk-target-bg" onclick="setBulkSceneTarget('background')" class="px-2 py-0.5 font-bold text-slate-600 hover:bg-slate-100 transition-colors">背景</button>
+            </div>
+            <div id="scene-bulk-fg-options" class="flex flex-wrap items-center gap-2.5">
+              <label class="inline-flex items-center gap-1 text-[11px] text-slate-600">
+                <span>幅</span>
+                <input type="number" id="scene-bulk-width" min="1" max="200" value="30" class="w-12 px-1.5 py-0.5 text-center border border-slate-300 rounded bg-white text-slate-800 font-mono text-[11px]">
+              </label>
+              <label class="inline-flex items-center gap-1 text-[11px] text-slate-600">
+                <span>高</span>
+                <input type="number" id="scene-bulk-height" min="1" max="200" value="30" class="w-12 px-1.5 py-0.5 text-center border border-slate-300 rounded bg-white text-slate-800 font-mono text-[11px]">
+              </label>
+              <label class="inline-flex items-center gap-1 text-[11px] text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="scene-bulk-trim" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                <span>自動トリミング</span>
+              </label>
+            </div>
+          </div>
+          <button type="button" onclick="applyBulkSceneSettings()" class="px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-300 rounded-md shadow-sm transition-colors">
+            全シーンに反映
+          </button>
+        </div>
+
+        <input type="file" id="scene-image-file-input" accept="image/*" class="hidden" onchange="handleSceneImageInputChange(event)">
+
+        <div id="scene-modal-list" class="space-y-2 max-h-72 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50">
           <!-- シーン一覧動的生成 -->
         </div>
 
@@ -5291,10 +5349,14 @@ video {
             <label class="block text-xs font-bold text-slate-700">シーンテキスト一覧</label>
             <span class="text-[10px] text-slate-400">クリックまたは全選択して自由にコピーできます</span>
           </div>
-          <textarea id="scene-modal-json-text" readonly rows="5" class="w-full text-xs font-mono bg-slate-900 text-emerald-400 p-2.5 rounded-lg border border-slate-700 outline-none select-all" placeholder="シーンを検出するとここに一覧が表示されます"></textarea>
+          <textarea id="scene-modal-json-text" readonly rows="3" class="w-full text-xs font-mono bg-slate-900 text-emerald-400 p-2.5 rounded-lg border border-slate-700 outline-none select-all" placeholder="シーンを検出するとここに一覧が表示されます"></textarea>
         </div>
       </div>
-      <div class="npc-modal-footer flex justify-end gap-2 p-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
+      <div class="npc-modal-footer flex justify-between items-center gap-2 p-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
+        <button type="button" onclick="exportScenesAsCcfoliaZip()" id="scene-export-zip-btn" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all">
+          <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+          ココフォリア用ZIP保存 (.zip)
+        </button>
         <button type="button" onclick="closeSceneExportModal()" class="px-4 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-all">
           閉じる
         </button>
@@ -7059,10 +7121,20 @@ function renderBulkColorPalette(){const container=document.getElementById("bulk-
   const hasChars = explorerCharacters.length > 0;
   const hasNpcs = npcCharacters.length > 0;
   const hasReport = !!((reportData.scenario && reportData.scenario.trim()) || (reportData.pls && reportData.pls.length > 0));
+  const hasSceneData = (typeof sceneImageMap !== "undefined" && Object.keys(sceneImageMap).length > 0) || (typeof sceneCommonBgImage !== "undefined" && !!sceneCommonBgImage);
 
-  if (!hasItems && !hasChars && !hasNpcs && !hasReport) {
+  if (!hasItems && !hasChars && !hasNpcs && !hasReport && !hasSceneData) {
     showToast("お知らせ", "保存するデータがありません。", "info");
     return;
+  }
+
+  // 発言者設定欄の未保存入力も同期して保存対象に含める
+  const speakerInputs = Array.from(document.querySelectorAll("#speaker-settings-list input"));
+  if (speakerInputs.length > 0 && typeof normalizeSpeakerNames === "function") {
+    const inputNames = normalizeSpeakerNames(speakerInputs.map(input => input.value));
+    if (inputNames.length > 0) {
+      speakerNames = normalizeSpeakerNames([...speakerNames, ...inputNames]);
+    }
   }
 
   const saveObj = {
@@ -7091,7 +7163,8 @@ function renderBulkColorPalette(){const container=document.getElementById("bulk-
     })),
     characters: explorerCharacters,
     npcs: npcCharacters,
-    report: reportData
+    report: reportData,
+    sceneData: (typeof serializeSceneData === "function") ? serializeSceneData() : null
   };
 
   let encoded = "";
@@ -7207,7 +7280,7 @@ function loadProjectFile(event) {
         return;
       }
 
-      if (!data || (!data.version && !data.items && !data.characters && !data.npcs && !data.report)) {
+      if (!data || (!data.version && !data.items && !data.characters && !data.npcs && !data.report && !data.sceneData)) {
         showToast("読込エラー", "有効な .pec ファイルではありません。", "error");
         return;
       }
@@ -7217,16 +7290,6 @@ function loadProjectFile(event) {
         resetFileScopedData();
       } catch (e) {
         console.warn("resetFileScopedData エラー:", e);
-      }
-
-      if (Array.isArray(data.speakerNames)) {
-        try {
-          speakerNames = normalizeSpeakerNames(data.speakerNames);
-          localStorage.setItem("pdf_tool_speaker_names", JSON.stringify(speakerNames));
-          renderSpeakerSettings();
-        } catch (e) {
-          console.warn("speakerNames 復元エラー:", e);
-        }
       }
 
       if (data.tabColorMapping) {
@@ -7303,6 +7366,27 @@ function loadProjectFile(event) {
       }, 0);
       globalId = Math.max(maxId, globalId) + 1;
       currentFileName = data.fileName || file.name.replace(/\.pec$/i, "");
+
+      // 発言者設定の復元（保存時の発言者リスト＋カード内の発言者を統合）
+      try {
+        const loadedSpeakers = Array.isArray(data.speakerNames) ? data.speakerNames : [];
+        const cardSpeakers = processedItems.map(it => it.charName).filter(Boolean);
+        speakerNames = normalizeSpeakerNames([...loadedSpeakers, ...cardSpeakers]);
+        localStorage.setItem("pdf_tool_speaker_names", JSON.stringify(speakerNames));
+        if (typeof renderSpeakerSettings === "function") renderSpeakerSettings();
+      } catch (e) {
+        console.warn("speakerNames 復元エラー:", e);
+      }
+
+      // シーン画像・設定の復元
+      try {
+        if (data.sceneData && typeof restoreSceneData === "function") {
+          restoreSceneData(data.sceneData);
+        }
+      } catch (e) {
+        console.warn("sceneData 復元エラー:", e);
+      }
+
       renderList();
 
       // ローカルストレージにも保存（クォータ上限時も読込完了を妨げない）
@@ -8625,12 +8709,29 @@ function saveFileScopedCharacters() {
   } catch(e) {}
 }
 
+function clearSpeakerSettings() {
+  if (typeof speakerNames !== "undefined") {
+    speakerNames = [];
+  }
+  try {
+    localStorage.setItem("pdf_tool_speaker_names", "[]");
+  } catch (e) {}
+  if (typeof renderSpeakerSettings === "function") renderSpeakerSettings();
+  if (typeof updateSpeakerFilterOptions === "function") updateSpeakerFilterOptions();
+  showToast("クリア完了", "発言者設定をすべてクリアしました。", "info");
+}
+
 function resetFileScopedData() {
   explorerCharacters = [];
   npcCharacters = [];
   renderExplorerCards();
   renderNpcCards();
   resetReportData();
+  if (typeof resetSceneData === "function") resetSceneData();
+  if (typeof speakerNames !== "undefined") speakerNames = [];
+  try { localStorage.setItem("pdf_tool_speaker_names", "[]"); } catch (e) {}
+  if (typeof renderSpeakerSettings === "function") renderSpeakerSettings();
+  if (typeof updateSpeakerFilterOptions === "function") updateSpeakerFilterOptions();
 }
 
 function loadFileScopedData(fileName) {
@@ -10306,42 +10407,677 @@ function getAllDetectedScenes() {
   return scenes;
 }
 
-function openSceneExportModal() {
+// シーン画像・ココフォリアZIP出力用状態管理
+const sceneImageMap = {};
+const sceneSettingsMap = {};
+let sceneCommonBgImage = null;
+let pendingSceneImageTarget = null;
+let bulkSceneTarget = "foreground";
+let lastRenderedScenes = [];
+
+function uint8ArrayToBase64(bytes) {
+  let binStr = "";
+  const len = bytes.byteLength;
+  const chunk = 8192;
+  for (let i = 0; i < len; i += chunk) {
+    binStr += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binStr);
+}
+
+function base64ToUint8Array(base64) {
+  const binStr = atob(base64);
+  const len = binStr.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binStr.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function serializeSceneImage(imgObj) {
+  if (!imgObj || !imgObj.bytes) return null;
+  return {
+    fileName: imgObj.fileName,
+    mimeType: imgObj.mimeType,
+    ext: imgObj.ext,
+    hash: imgObj.hash,
+    resourceName: imgObj.resourceName,
+    base64: uint8ArrayToBase64(imgObj.bytes)
+  };
+}
+
+function deserializeSceneImage(obj) {
+  if (!obj || !obj.base64) return null;
+  const bytes = base64ToUint8Array(obj.base64);
+  const mimeType = obj.mimeType || "image/png";
+  const previewUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+  return {
+    fileName: obj.fileName || "image.png",
+    mimeType,
+    ext: obj.ext || "png",
+    bytes,
+    hash: obj.hash || "",
+    resourceName: obj.resourceName || "",
+    previewUrl
+  };
+}
+
+function serializeSceneData() {
+  const images = {};
+  Object.keys(sceneImageMap).forEach(key => {
+    const serialized = serializeSceneImage(sceneImageMap[key]);
+    if (serialized) images[key] = serialized;
+  });
+  return {
+    commonBg: serializeSceneImage(sceneCommonBgImage),
+    images,
+    settings: JSON.parse(JSON.stringify(sceneSettingsMap))
+  };
+}
+
+function resetSceneData() {
+  Object.keys(sceneImageMap).forEach(key => {
+    if (sceneImageMap[key] && sceneImageMap[key].previewUrl) {
+      URL.revokeObjectURL(sceneImageMap[key].previewUrl);
+    }
+    delete sceneImageMap[key];
+  });
+  Object.keys(sceneSettingsMap).forEach(key => {
+    delete sceneSettingsMap[key];
+  });
+  if (sceneCommonBgImage && sceneCommonBgImage.previewUrl) {
+    URL.revokeObjectURL(sceneCommonBgImage.previewUrl);
+  }
+  sceneCommonBgImage = null;
+  if (typeof renderSceneModalList === "function") renderSceneModalList();
+}
+
+function restoreSceneData(sceneData) {
+  resetSceneData();
+  if (!sceneData) return;
+  if (sceneData.commonBg) {
+    const bg = deserializeSceneImage(sceneData.commonBg);
+    if (bg) sceneCommonBgImage = bg;
+  }
+  if (sceneData.images && typeof sceneData.images === "object") {
+    Object.keys(sceneData.images).forEach(key => {
+      const img = deserializeSceneImage(sceneData.images[key]);
+      if (img) sceneImageMap[key] = img;
+    });
+  }
+  if (sceneData.settings && typeof sceneData.settings === "object") {
+    Object.keys(sceneData.settings).forEach(key => {
+      sceneSettingsMap[key] = { ...sceneData.settings[key] };
+    });
+  }
+  if (typeof renderSceneModalList === "function") renderSceneModalList();
+}
+
+function getDefaultSceneSetting() {
+  const wEl = document.getElementById("scene-bulk-width");
+  const hEl = document.getElementById("scene-bulk-height");
+  const trimEl = document.getElementById("scene-bulk-trim");
+  return {
+    target: bulkSceneTarget || "foreground",
+    width: Math.max(1, parseInt(wEl && wEl.value, 10) || 30),
+    height: Math.max(1, parseInt(hEl && hEl.value, 10) || 30),
+    trim: trimEl ? trimEl.checked : true
+  };
+}
+
+function getSceneSetting(sceneName) {
+  if (!sceneSettingsMap[sceneName]) {
+    sceneSettingsMap[sceneName] = getDefaultSceneSetting();
+  }
+  return sceneSettingsMap[sceneName];
+}
+
+function setBulkSceneTarget(target) {
+  bulkSceneTarget = target === "background" ? "background" : "foreground";
+  const fgBtn = document.getElementById("scene-bulk-target-fg");
+  const bgBtn = document.getElementById("scene-bulk-target-bg");
+  const fgOpts = document.getElementById("scene-bulk-fg-options");
+  if (fgBtn && bgBtn) {
+    if (bulkSceneTarget === "foreground") {
+      fgBtn.className = "px-2 py-0.5 font-bold bg-indigo-600 text-white transition-colors";
+      bgBtn.className = "px-2 py-0.5 font-bold text-slate-600 hover:bg-slate-100 transition-colors";
+    } else {
+      fgBtn.className = "px-2 py-0.5 font-bold text-slate-600 hover:bg-slate-100 transition-colors";
+      bgBtn.className = "px-2 py-0.5 font-bold bg-indigo-600 text-white transition-colors";
+    }
+  }
+  if (fgOpts) {
+    fgOpts.classList.toggle("opacity-40", bulkSceneTarget === "background");
+    fgOpts.classList.toggle("pointer-events-none", bulkSceneTarget === "background");
+  }
+}
+
+function applyBulkSceneSettings() {
   const scenes = getAllDetectedScenes();
+  const base = getDefaultSceneSetting();
+  scenes.forEach(sc => {
+    sceneSettingsMap[sc.name] = { ...base };
+  });
+  renderSceneModalList();
+  showToast("一括反映", `${scenes.length}件のシーン設定を更新しました。`, "success");
+}
+
+function setSceneTargetByIdx(idx, target) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  const setting = getSceneSetting(sc.name);
+  setting.target = target === "background" ? "background" : "foreground";
+  renderSceneModalList();
+}
+
+function updateSceneSizeByIdx(idx, axis, value) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  const setting = getSceneSetting(sc.name);
+  const num = Math.max(1, Math.min(200, parseInt(value, 10) || 30));
+  if (axis === "width") setting.width = num;
+  if (axis === "height") setting.height = num;
+}
+
+function updateSceneTrimByIdx(idx, checked) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  const setting = getSceneSetting(sc.name);
+  setting.trim = !!checked;
+}
+
+function triggerSceneImageSelectByIdx(idx) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  triggerSceneImageSelect(sc.name);
+}
+
+function clearSceneImageByIdx(idx) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  clearSceneImage(sc.name);
+}
+
+function copySceneNameByIdx(idx) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  copyText(sc.name, "シーン名");
+}
+
+async function handleSceneImageDropByIdx(event, idx) {
+  const sc = lastRenderedScenes[idx];
+  if (!sc) return;
+  await handleSceneImageDrop(event, sc.name);
+}
+
+function generateCcfoliaId(length = 20) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const array = new Uint8Array(length);
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(array);
+    for (let i = 0; i < length; i++) {
+      result += chars[array[i] % chars.length];
+    }
+  } else {
+    for (let i = 0; i < length; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+  return result;
+}
+
+async function computeSha256Hex(uint8Array) {
+  if (window.crypto && window.crypto.subtle) {
+    try {
+      const hashBuffer = await window.crypto.subtle.digest("SHA-256", uint8Array);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) {
+      // file:// 等で subtle が使えない場合はフォールバックへ
+    }
+  }
+  // 純粋JS SHA-256 フォールバック
+  const K = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ]);
+  const H = new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+  ]);
+  const len = uint8Array.length;
+  const bitLen = len * 8;
+  const paddedLen = Math.ceil((len + 9) / 64) * 64;
+  const padded = new Uint8Array(paddedLen);
+  padded.set(uint8Array);
+  padded[len] = 0x80;
+  const view = new DataView(padded.buffer);
+  view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
+  view.setUint32(paddedLen - 4, bitLen >>> 0, false);
+
+  const w = new Uint32Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let i = 0; i < paddedLen; i += 64) {
+    for (let j = 0; j < 16; j++) w[j] = view.getUint32(i + j * 4, false);
+    for (let j = 16; j < 64; j++) {
+      const s0 = rotr(w[j - 15], 7) ^ rotr(w[j - 15], 18) ^ (w[j - 15] >>> 3);
+      const s1 = rotr(w[j - 2], 17) ^ rotr(w[j - 2], 19) ^ (w[j - 2] >>> 10);
+      w[j] = (w[j - 16] + s0 + w[j - 7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let j = 0; j < 64; j++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const temp1 = (h + S1 + ch + K[j] + w[j]) >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const temp2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + temp1) >>> 0;
+      d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+    }
+    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+  }
+  return Array.from(H).map(v => v.toString(16).padStart(8, "0")).join("");
+}
+
+async function processSceneImageFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選択してください。");
+  }
+  let mimeType = file.type.toLowerCase();
+  if (mimeType === "image/jpg") mimeType = "image/jpeg";
+  const extMap = {
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/svg+xml": "svg"
+  };
+  const ext = extMap[mimeType] || (file.name.split(".").pop() || "png").toLowerCase();
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const hash = await computeSha256Hex(bytes);
+  const previewUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+  return {
+    fileName: file.name,
+    mimeType,
+    ext,
+    bytes,
+    hash,
+    resourceName: `${hash}.${ext}`,
+    previewUrl
+  };
+}
+
+function updateCommonBgPreviewUI() {
+  const previewEl = document.getElementById("scene-common-bg-preview");
+  const labelEl = document.getElementById("scene-common-bg-label");
+  const clearBtn = document.getElementById("scene-common-bg-clear-btn");
+  if (!previewEl || !labelEl || !clearBtn) return;
+
+  if (sceneCommonBgImage) {
+    previewEl.innerHTML = `<img src="${sceneCommonBgImage.previewUrl}" alt="共通背景" class="w-full h-full object-cover">`;
+    labelEl.textContent = sceneCommonBgImage.fileName;
+    labelEl.classList.remove("text-slate-400");
+    labelEl.classList.add("text-slate-700", "font-medium");
+    clearBtn.classList.remove("hidden");
+  } else {
+    previewEl.innerHTML = `<i data-lucide="image" class="w-4 h-4 text-slate-400"></i>`;
+    labelEl.textContent = "全シーンの背景（backgroundUrl）に設定されます。個別シーンで「背景」を選んだ場合は個別画像が優先されます。";
+    labelEl.classList.add("text-slate-400");
+    labelEl.classList.remove("text-slate-700", "font-medium");
+    clearBtn.classList.add("hidden");
+  }
+}
+
+function renderSceneModalList() {
+  const scenes = getAllDetectedScenes();
+  lastRenderedScenes = scenes;
   const modal = document.getElementById("scene-export-modal");
   const countEl = document.getElementById("scene-modal-count");
   const listEl = document.getElementById("scene-modal-list");
   const jsonEl = document.getElementById("scene-modal-json-text");
+  if (!modal || !listEl) return;
 
-  if (!modal) return;
   countEl.textContent = scenes.length;
+  updateCommonBgPreviewUI();
 
   if (scenes.length === 0) {
     listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">カード内に <code>/scene [シーン名]</code> のコマンドが見つかりませんでした。<br>カードの「＋」ボタンからシーンを追加できます。</p>`;
-    jsonEl.value = "";
+    if (jsonEl) jsonEl.value = "";
   } else {
     let listHtml = "";
     scenes.forEach((sc, idx) => {
+      const escapedName = escapeHtml(sc.name);
+      const imgObj = sceneImageMap[sc.name];
+      const setting = getSceneSetting(sc.name);
+      const isBg = setting.target === "background";
+
+      const imgSection = imgObj
+        ? `<div class="flex items-center gap-1.5 bg-indigo-50/70 border border-indigo-200 rounded-md px-1.5 py-0.5">
+             <img src="${imgObj.previewUrl}" alt="${escapedName}" class="w-7 h-7 rounded object-cover border border-indigo-200 shrink-0 cursor-pointer" onclick="triggerSceneImageSelectByIdx(${idx})" title="画像を変更">
+             <span class="text-[10px] text-indigo-800 max-w-[100px] truncate" title="${escapeHtml(imgObj.fileName)}">${escapeHtml(imgObj.fileName)}</span>
+             <button type="button" onclick="clearSceneImageByIdx(${idx})" class="text-slate-400 hover:text-rose-500 p-0.5" title="画像を解除">
+               <i data-lucide="x" class="w-3 h-3"></i>
+             </button>
+           </div>`
+        : `<button type="button" onclick="triggerSceneImageSelectByIdx(${idx})" class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-dashed border-slate-300 hover:border-indigo-300 rounded-md transition-colors" title="画像をドロップまたは選択">
+             <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
+             <span>画像追加</span>
+           </button>`;
+
+      const fgBtnCls = !isBg
+        ? "bg-indigo-600 text-white"
+        : "text-slate-600 hover:bg-slate-100";
+      const bgBtnCls = isBg
+        ? "bg-indigo-600 text-white"
+        : "text-slate-600 hover:bg-slate-100";
+
+      const fgOptionsHtml = !isBg
+        ? `<div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
+             <label class="inline-flex items-center gap-1">
+               <span>幅</span>
+               <input type="number" min="1" max="200" value="${setting.width}" onchange="updateSceneSizeByIdx(${idx}, 'width', this.value)" class="w-12 px-1 py-0.5 text-center border border-slate-300 rounded bg-white text-slate-800 font-mono text-[11px]">
+             </label>
+             <label class="inline-flex items-center gap-1">
+               <span>高</span>
+               <input type="number" min="1" max="200" value="${setting.height}" onchange="updateSceneSizeByIdx(${idx}, 'height', this.value)" class="w-12 px-1 py-0.5 text-center border border-slate-300 rounded bg-white text-slate-800 font-mono text-[11px]">
+             </label>
+             <label class="inline-flex items-center gap-1 text-slate-700 cursor-pointer select-none">
+               <input type="checkbox" ${setting.trim ? "checked" : ""} onchange="updateSceneTrimByIdx(${idx}, this.checked)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+               <span>自動トリミング</span>
+             </label>
+           </div>`
+        : `<span class="text-[10px] text-slate-400">画面全体に表示（背景としてセット）</span>`;
+
       listHtml += `
-        <div class="flex items-center justify-between p-2 bg-white rounded-md border border-slate-200 text-xs hover:border-indigo-300 transition-colors">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-slate-400 w-5 text-right">${idx + 1}.</span>
-            <span class="font-bold text-slate-800">${escapeHtml(sc.name)}</span>
-            <span class="text-[10px] text-slate-400">P.${sc.page}</span>
+        <div
+          ondragover="handleSceneImageDragOver(event)"
+          ondragleave="handleSceneImageDragLeave(event)"
+          ondrop="handleSceneImageDropByIdx(event, ${idx})"
+          class="flex flex-col gap-1.5 p-2 bg-white rounded-md border border-slate-200 text-xs hover:border-indigo-300 transition-colors">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[10px] font-bold text-slate-400 w-5 text-right shrink-0">${idx + 1}.</span>
+              <span class="font-bold text-slate-800 truncate">${escapedName}</span>
+              <span class="text-[10px] text-slate-400 shrink-0">P.${sc.page}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              ${imgSection}
+              <button onclick="copySceneNameByIdx(${idx})" class="text-slate-400 hover:text-indigo-600 p-1 flex items-center gap-1 text-[11px]" title="このシーン名をコピー">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
+              </button>
+            </div>
           </div>
-          <button onclick="copyText('${escapeHtml(sc.name).replace(/'/g, "\\'")}', 'シーン名')" class="text-slate-400 hover:text-indigo-600 p-1 flex items-center gap-1 text-[11px]" title="このシーン名をコピー">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i> コピー
-          </button>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 pl-7">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-slate-400">配置:</span>
+              <div class="inline-flex rounded border border-slate-300 bg-white overflow-hidden text-[10px]">
+                <button type="button" onclick="setSceneTargetByIdx(${idx}, 'foreground')" class="px-2 py-0.5 font-bold transition-colors ${fgBtnCls}">前景</button>
+                <button type="button" onclick="setSceneTargetByIdx(${idx}, 'background')" class="px-2 py-0.5 font-bold transition-colors ${bgBtnCls}">背景</button>
+              </div>
+            </div>
+            ${fgOptionsHtml}
+          </div>
         </div>
       `;
     });
     listEl.innerHTML = listHtml;
 
-    // Default display: scene names only
     const names = scenes.map(s => s.name).join("\n");
-    jsonEl.value = names;
+    if (jsonEl) jsonEl.value = names;
   }
 
+  if (typeof lucide !== "undefined" && lucide.createIcons) {
+    lucide.createIcons({ root: modal });
+  }
+}
+
+function triggerSceneImageSelect(sceneName) {
+  pendingSceneImageTarget = sceneName;
+  const input = document.getElementById("scene-image-file-input");
+  if (input) {
+    input.value = "";
+    input.click();
+  }
+}
+
+function triggerCommonBgSelect() {
+  pendingSceneImageTarget = "__COMMON_BG__";
+  const input = document.getElementById("scene-image-file-input");
+  if (input) {
+    input.value = "";
+    input.click();
+  }
+}
+
+async function assignSceneImageFile(target, file) {
+  try {
+    const imgObj = await processSceneImageFile(file);
+    if (target === "__COMMON_BG__") {
+      if (sceneCommonBgImage && sceneCommonBgImage.previewUrl) {
+        URL.revokeObjectURL(sceneCommonBgImage.previewUrl);
+      }
+      sceneCommonBgImage = imgObj;
+      showToast("共通背景設定", `共通背景画像「${file.name}」を設定しました。`, "success");
+    } else {
+      if (sceneImageMap[target] && sceneImageMap[target].previewUrl) {
+        URL.revokeObjectURL(sceneImageMap[target].previewUrl);
+      }
+      sceneImageMap[target] = imgObj;
+      showToast("シーン画像設定", `「${target}」に画像を設定しました。`, "success");
+    }
+    renderSceneModalList();
+  } catch (err) {
+    showToast("画像エラー", err.message || "画像の読み込みに失敗しました。", "error");
+  }
+}
+
+async function handleSceneImageInputChange(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || !pendingSceneImageTarget) return;
+  const target = pendingSceneImageTarget;
+  pendingSceneImageTarget = null;
+  await assignSceneImageFile(target, file);
+}
+
+function handleSceneImageDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.currentTarget) {
+    event.currentTarget.classList.add("ring-2", "ring-indigo-400", "bg-indigo-50/50");
+  }
+}
+
+function handleSceneImageDragLeave(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.currentTarget) {
+    event.currentTarget.classList.remove("ring-2", "ring-indigo-400", "bg-indigo-50/50");
+  }
+}
+
+async function handleSceneImageDrop(event, sceneName) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.currentTarget) {
+    event.currentTarget.classList.remove("ring-2", "ring-indigo-400", "bg-indigo-50/50");
+  }
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  if (file) {
+    await assignSceneImageFile(sceneName, file);
+  }
+}
+
+async function handleCommonBgDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.currentTarget) {
+    event.currentTarget.classList.remove("ring-2", "ring-indigo-400", "bg-indigo-50/50");
+  }
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  if (file) {
+    await assignSceneImageFile("__COMMON_BG__", file);
+  }
+}
+
+function clearSceneImage(sceneName) {
+  if (sceneImageMap[sceneName]) {
+    if (sceneImageMap[sceneName].previewUrl) {
+      URL.revokeObjectURL(sceneImageMap[sceneName].previewUrl);
+    }
+    delete sceneImageMap[sceneName];
+    renderSceneModalList();
+  }
+}
+
+function clearCommonBgImage() {
+  if (sceneCommonBgImage) {
+    if (sceneCommonBgImage.previewUrl) {
+      URL.revokeObjectURL(sceneCommonBgImage.previewUrl);
+    }
+    sceneCommonBgImage = null;
+    renderSceneModalList();
+  }
+}
+
+async function exportScenesAsCcfoliaZip() {
+  if (typeof JSZip === "undefined") {
+    showToast("エラー", "ZIP生成ライブラリ（JSZip）が読み込まれていません。", "error");
+    return;
+  }
+  const scenes = getAllDetectedScenes();
+  if (scenes.length === 0) {
+    showToast("エラー", "出力するシーンがありません。", "error");
+    return;
+  }
+
+  const btn = document.getElementById("scene-export-zip-btn");
+  const originalHtml = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> 生成中...`;
+    if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons({ root: btn });
+  }
+
+  try {
+    const zip = new JSZip();
+    const resources = {};
+    const addedFiles = new Set();
+    const scenesObj = {};
+
+    const registerResource = (imgObj) => {
+      if (!imgObj) return null;
+      if (!addedFiles.has(imgObj.resourceName)) {
+        zip.file(imgObj.resourceName, imgObj.bytes);
+        resources[imgObj.resourceName] = { type: imgObj.mimeType };
+        addedFiles.add(imgObj.resourceName);
+      }
+      return imgObj.resourceName;
+    };
+
+    const commonBgUrl = registerResource(sceneCommonBgImage);
+
+    scenes.forEach((sc, idx) => {
+      const sceneId = generateCcfoliaId(20);
+      const setting = getSceneSetting(sc.name);
+      const imgObj = sceneImageMap[sc.name] || null;
+      const imgUrl = registerResource(imgObj);
+
+      let backgroundUrl = commonBgUrl;
+      let foregroundUrl = null;
+      if (imgUrl) {
+        if (setting.target === "background") {
+          backgroundUrl = imgUrl;
+          foregroundUrl = null;
+        } else {
+          foregroundUrl = imgUrl;
+        }
+      }
+
+      scenesObj[sceneId] = {
+        name: sc.name,
+        backgroundUrl: backgroundUrl,
+        foregroundUrl: foregroundUrl,
+        fieldObjectFit: setting.trim ? "cover" : "fill",
+        fieldWidth: Math.max(1, parseInt(setting.width, 10) || 30),
+        fieldHeight: Math.max(1, parseInt(setting.height, 10) || 30),
+        displayGrid: false,
+        gridSize: 1,
+        markers: {},
+        text: "",
+        mediaRef: null,
+        soundRef: null,
+        locked: false,
+        order: idx
+      };
+    });
+
+    const roomData = {
+      meta: { version: "1.1.0" },
+      entities: {
+        room: {},
+        items: {},
+        decks: {},
+        notes: {},
+        characters: {},
+        effects: {},
+        scenes: scenesObj,
+        savedatas: {},
+        snapshots: {}
+      },
+      resources: resources
+    };
+
+    const dataJsonStr = JSON.stringify(roomData);
+    const dataBytes = new TextEncoder().encode(dataJsonStr);
+    const dataHash = await computeSha256Hex(dataBytes);
+
+    zip.file("__data.json", dataBytes);
+    zip.file(".token", "0." + dataHash);
+
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 }
+    });
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ccfolia_scenes_${dateStr}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    showToast("ZIP生成完了", `${scenes.length}件のシーンを含むココフォリア用ZIPを保存しました！`, "success");
+  } catch (err) {
+    console.error("CCFOLIA ZIP export error:", err);
+    showToast("エラー", "ZIPの生成に失敗しました: " + (err.message || err), "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+      if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons({ root: btn });
+    }
+  }
+}
+
+function openSceneExportModal() {
+  const modal = document.getElementById("scene-export-modal");
+  if (!modal) return;
+  renderSceneModalList();
   modal.classList.add("is-open");
   if (typeof lucide !== "undefined" && lucide.createIcons) {
     lucide.createIcons({ root: modal });
